@@ -64,7 +64,7 @@ export default function HomePage() {
     {
       id: "1",
       title: "The Great Gatsby",
-      price: 4.99,
+      price: 88,
       image: "/book-listing-cover.png",
       condition: "Like New",
       seller: "BookLover123"
@@ -309,8 +309,8 @@ export default function HomePage() {
       {/* HERO SECTION */}
       <section className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-12 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">Buy & Sell Used Media</h1>
-          <p className="text-lg mb-6">Find great deals on books, CDs, DVDs, games, and mix bundles. List your items in seconds!</p>
+          <h1 className="text-3xl md:text-4xl font-bold mb-4">Buy & Sell Used Media in Bulk</h1>
+          <p className="text-lg mb-6">Find great deals on gently used books, CDs, DVDs, games, and mix bundles. List your items in seconds!</p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link href="/sell" className="bg-white text-blue-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition">
               Start Selling
