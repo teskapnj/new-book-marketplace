@@ -238,7 +238,7 @@ export default function HomePage() {
   const categories = [
     { name: "Books", icon: "📚", href: "/browse?category=book" },
     { name: "CDs", icon: "💿", href: "/browse?category=cd" },
-    { name: "DVDs", icon: "📀", href: "/browse?category=dvd" },
+    { name: "DVDs/Blu-rays", icon: "📀", href: "/browse?category=dvd" },
     { name: "Games", icon: "🎮", href: "/browse?category=game" },
     { name: "Mix Bundles", icon: "🎁", href: "/browse?category=mix" },
   ];
@@ -275,7 +275,7 @@ export default function HomePage() {
           <nav className="hidden lg:flex space-x-6">
             <Link href="/browse?category=book" className="font-medium hover:text-blue-600">Books</Link>
             <Link href="/browse?category=cd" className="font-medium hover:text-blue-600">CDs</Link>
-            <Link href="/browse?category=dvd" className="font-medium hover:text-blue-600">DVDs</Link>
+            <Link href="/browse?category=dvd" className="font-medium hover:text-blue-600">DVDs/BLU-RAYs</Link>
             <Link href="/browse?category=game" className="font-medium hover:text-blue-600">Games</Link>
             <Link href="/browse?category=mix" className="font-medium hover:text-blue-600">Mix Bundles</Link>
           </nav>
@@ -408,7 +408,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <h3 className="text-xl font-bold mb-4">MarketPlace</h3>
-            <p className="text-gray-400">Buy and sell used books, CDs, DVDs, games, and mix bundles with confidence.</p>
+            <p className="text-gray-400">Buy and sell used books, CDs, DVDs, games, and mix bundles in bulk with confidence.</p>
           </div>
           
           <div>

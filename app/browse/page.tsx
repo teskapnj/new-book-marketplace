@@ -269,7 +269,7 @@ export default function BrowsePage() {
     { id: "mix", name: "🎁 Mix Bundles", count: allProducts.filter(p => p.category === "mix").length },
     { id: "book", name: "📚 Books", count: allProducts.filter(p => p.category === "book").length },
     { id: "cd", name: "💿 CDs", count: allProducts.filter(p => p.category === "cd").length },
-    { id: "dvd", name: "📀 DVDs", count: allProducts.filter(p => p.category === "dvd").length },
+    { id: "dvd", name: "📀 DVDs/Blu-rays", count: allProducts.filter(p => p.category === "dvd").length },
     { id: "game", name: "🎮 Games", count: allProducts.filter(p => p.category === "game").length },
   ];
 
@@ -287,7 +287,7 @@ export default function BrowsePage() {
                selectedCategory === "mix" ? "Mix Bundles" :
                selectedCategory === "book" ? "Books" :
                selectedCategory === "cd" ? "CDs" :
-               selectedCategory === "dvd" ? "DVDs" :
+               selectedCategory === "dvd" ? "DVDs/Blu-rays" :
                selectedCategory === "game" ? "Games" : "Browse Items"}
             </h1>
           </div>
