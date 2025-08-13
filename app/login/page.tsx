@@ -1,89 +1,244 @@
+// app/login/page.tsx
 "use client";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import PasswordInput from "@/components/PasswordInput";
+import { FcGoogle } from "react-icons/fc";
+import { FaFacebook, FaTwitter, FaGithub } from "react-icons/fa";
+import { FiHome } from "react-icons/fi";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    rememberMe: false
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
-
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.type === "checkbox" ? e.target.checked : e.target.value
+    });
+  };
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError("");
-
+    setLoading(true);
+  
     try {
-      // Sign in with Firebase
       const userCredential = await signInWithEmailAndPassword(
         auth,
-        email,
-        password
+        formData.email,
+        formData.password
       );
-      
-      console.log("User signed in:", userCredential.user);
-      
-      // Redirect to dashboard
+  
+      console.log("Login successful:", userCredential.user);
       router.push("/dashboard");
-    } catch (err: any) {
-      setError(err.message);
+  
+    } catch (error: any) {
+      console.error("Login error:", error);
+  
+      // Sadece yanlış şifre veya credential hatalarını tek mesajda birleştir
+      if (error.code === "auth/wrong-password" || error.code === "auth/invalid-credential") {
+        setError("Incorrect email or password");
+      } else if (error.code === "auth/user-not-found") {
+        setError("No account found with this email address");
+      } else if (error.code === "auth/invalid-email") {
+        setError("Invalid email address");
+      } else if (error.code === "auth/user-disabled") {
+        setError("This account has been disabled");
+      } else if (error.code === "auth/too-many-requests") {
+        setError("Too many failed attempts. Please try again later");
+      } else {
+        setError(`Login error: ${error.message}`);
+      }
     } finally {
       setLoading(false);
     }
   };
-
+  
+  
+  const handleSocialLogin = (provider: string) => {
+    // Placeholder for social login integration
+    console.log(`Login with ${provider}`);
+    // Google, Facebook, Twitter integration will be added here
+  };
+  
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6">Login</h1>
-        
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
+      {/* Back to Home Button */}
+      <Link href="/" className="fixed top-4 left-4 flex items-center text-blue-600 hover:text-blue-800 transition-colors duration-200">
+        <FiHome className="h-5 w-5 mr-1" />
+        <span className="font-medium">Back to Home</span>
+      </Link>
+      
+      <div className="max-w-md w-full space-y-8">
+        {/* Logo and Title */}
+        <div className="text-center">
+          <div className="mx-auto h-16 w-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center">
+            <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 2L2 7l10 5 10-5-10-5z" />
+            </svg>
           </div>
-        )}
-        
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2" htmlFor="email">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              required
-            />
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+            Welcome Back
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Sign in to your account to continue
+          </p>
+        </div>
+        {/* Login Form */}
+        <div className="bg-white rounded-2xl shadow-xl p-8">
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center">
+                <svg className="h-5 w-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 9H7a1 1 0 00-2 0V7a1 1 0 00-2 0v2.586l-2.707 2.707a1 1 0 00-1.414 1.414l2.707-2.707A1 1 0 008 10z" clipRule="evenodd" />
+                </svg>
+                <span className="text-red-800 font-medium">{error}</span>
+              </div>
+            </div>
+          )}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address
+              </label>
+              <div className="relative">
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                  placeholder="Enter your email"
+                />
+                <svg className="absolute right-3 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12a4 4 0 11-8 0 4 4 0 018 0zM2 12a6 6 0 1112 0 6 6 0 0112 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l-2-2m0 0l-2-2m2 2l2-2m-2 2l2-2" />
+                </svg>
+              </div>
+            </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <PasswordInput
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Enter your password"
+                required
+                autoComplete="current-password"
+                className="w-full"
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  name="rememberMe"
+                  type="checkbox"
+                  checked={formData.rememberMe}
+                  onChange={handleChange}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                  Remember me
+                </label>
+              </div>
+              <div className="text-sm">
+                <Link href="/forgot-password" className="font-medium text-blue-600 hover:text-blue-500">
+                  Forgot password?
+                </Link>
+              </div>
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-0V8a8 8 0 018-0z"></path>
+                  </svg>
+                  Signing in...
+                </div>
+              ) : (
+                <span className="flex items-center justify-center">
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l-4-4m4 4V4m0 0l4-4m-4 4h4m-4 0l4-4m4 4V4m0 0l4-4" />
+                  </svg>
+                  Sign In
+                </span>
+              )}
+            </button>
+          </form>
+          {/* Divider Line */}
+          <div className="relative mt-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Or continue with</span>
+            </div>
           </div>
-          
-          <div className="mb-6">
-            <label className="block text-gray-700 mb-2" htmlFor="password">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              required
-            />
+          {/* Social Login Buttons */}
+          <div className="grid grid-cols-3 gap-3 mt-6">
+            <button
+              onClick={() => handleSocialLogin("Google")}
+              className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-200"
+            >
+              <FcGoogle className="h-5 w-5 mr-2" />
+              <span className="text-sm font-medium text-gray-700">Google</span>
+            </button>
+            
+            <button
+              onClick={() => handleSocialLogin("Facebook")}
+              className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-200"
+            >
+              <FaFacebook className="h-5 w-5 mr-2 text-blue-600" />
+              <span className="text-sm font-medium text-gray-700">Facebook</span>
+            </button>
+            
+            <button
+              onClick={() => handleSocialLogin("Twitter")}
+              className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-200"
+            >
+              <FaTwitter className="h-5 w-5 mr-2 text-blue-400" />
+              <span className="text-sm font-medium text-gray-700">Twitter</span>
+            </button>
           </div>
-          
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? "Signing in..." : "Login"}
-          </button>
-        </form>
+        </div>
+        {/* Sign Up Link */}
+        <p className="text-center text-sm text-gray-600">
+          Don't have an account?{' '}
+          <Link href="/register" className="font-medium text-blue-600 hover:text-blue-500">
+            Sign up
+          </Link>
+        </p>
+        {/* Footer */}
+        <div className="mt-8 text-center text-xs text-gray-500">
+          <p>© 2024 MarketPlace. All rights reserved.</p>
+          <div className="mt-2 space-x-4">
+            <Link href="/terms" className="hover:text-gray-700">Terms</Link>
+            <Link href="/privacy" className="hover:text-gray-700">Privacy</Link>
+            <Link href="/help" className="hover:text-gray-700">Help</Link>
+          </div>
+        </div>
       </div>
     </div>
   );
