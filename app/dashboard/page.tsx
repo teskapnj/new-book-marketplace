@@ -1,28 +1,28 @@
 "use client";
-
 import { useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
+import Link from "next/link"; // Import Link component
 
 export default function DashboardPage() {
   const [user, loading] = useAuthState(auth);
   const [activeTab, setActiveTab] = useState("overview");
-
+  
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
-
+  
   if (!user) {
     // Login sayfasına yönlendir
     return null;
   }
-
+  
   const handleLogout = async () => {
     await signOut(auth);
     window.location.href = "/";
   };
-
+  
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -31,7 +31,10 @@ export default function DashboardPage() {
           <div className="flex justify-between h-16">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                <h1 className="text-xl font-bold text-blue-600">MarketPlace</h1>
+                {/* Make MarketPlace clickable and link to home page */}
+                <Link href="/" className="text-xl font-bold text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                  MarketPlace
+                </Link>
               </div>
               <nav className="ml-6 flex space-x-8">
                 <button
@@ -77,7 +80,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </header>
-
+      
       <main>
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           {/* Overview Tab */}
@@ -91,7 +94,7 @@ export default function DashboardPage() {
               </div>
             </div>
           )}
-
+          
           {/* Subscription Tab */}
           {activeTab === "subscription" && (
             <div className="px-4 py-6 sm:px-0">
@@ -125,7 +128,7 @@ export default function DashboardPage() {
               </div>
             </div>
           )}
-
+          
           {/* Roles Tab */}
           {activeTab === "roles" && (
             <div className="px-4 py-6 sm:px-0">
@@ -154,7 +157,6 @@ export default function DashboardPage() {
                         Active
                       </span>
                     </div>
-
                     <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
                       <div className="flex items-center">
                         <div className="flex-shrink-0">

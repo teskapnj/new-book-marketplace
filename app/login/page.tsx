@@ -1,16 +1,19 @@
 // app/login/page.tsx
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, setPersistence, browserLocalPersistence, browserSessionPersistence } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { useAuthState } from "react-firebase-hooks/auth";
 import PasswordInput from "@/components/PasswordInput";
 import { FcGoogle } from "react-icons/fc";
 import { FaFacebook, FaTwitter, FaGithub } from "react-icons/fa";
 import { FiHome } from "react-icons/fi";
 
 export default function LoginPage() {
+  const [user, authLoading] = useAuthState(auth);
+  const router = useRouter();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -18,7 +21,21 @@ export default function LoginPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const router = useRouter();
+
+  // Redirect to dashboard if user is already logged in
+  useEffect(() => {
+    if (user && !authLoading) {
+      router.push("/dashboard");
+    }
+  }, [user, authLoading, router]);
+
+  if (authLoading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+
+  if (user) {
+    return null; // Will redirect to dashboard
+  }
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -31,39 +48,55 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-  
+    
     try {
+      // Set persistence based on remember me checkbox
+      if (formData.rememberMe) {
+        await setPersistence(auth, browserLocalPersistence);
+      } else {
+        await setPersistence(auth, browserSessionPersistence);
+      }
+      
       const userCredential = await signInWithEmailAndPassword(
         auth,
         formData.email,
         formData.password
       );
-  
+      
       console.log("Login successful:", userCredential.user);
+      
+      // Redirect to dashboard
       router.push("/dashboard");
-  
+      
     } catch (error: any) {
       console.error("Login error:", error);
-  
-      // Sadece yanlış şifre veya credential hatalarını tek mesajda birleştir
-      if (error.code === "auth/wrong-password" || error.code === "auth/invalid-credential") {
-        setError("Incorrect email or password");
-      } else if (error.code === "auth/user-not-found") {
-        setError("No account found with this email address");
-      } else if (error.code === "auth/invalid-email") {
-        setError("Invalid email address");
-      } else if (error.code === "auth/user-disabled") {
-        setError("This account has been disabled");
-      } else if (error.code === "auth/too-many-requests") {
-        setError("Too many failed attempts. Please try again later");
-      } else {
-        setError(`Login error: ${error.message}`);
+      
+      switch (error.code) {
+        case "auth/user-not-found":
+          setError("No account found with this email address");
+          break;
+        case "auth/invalid-credential":
+          setError("Incorrect email or password");
+          break;
+        case "auth/wrong-password":
+          setError("Incorrect password");
+          break;
+        case "auth/invalid-email":
+          setError("Invalid email address");
+          break;
+        case "auth/user-disabled":
+          setError("This account has been disabled");
+          break;
+        case "auth/too-many-requests":
+          setError("Too many failed attempts. Please try again later");
+          break;
+        default:
+          setError(`Login error: ${error.message}`);
       }
     } finally {
       setLoading(false);
     }
   };
-  
   
   const handleSocialLogin = (provider: string) => {
     // Placeholder for social login integration
@@ -241,5 +274,4 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
-  );
-}
+  )}

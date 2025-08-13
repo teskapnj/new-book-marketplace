@@ -1,10 +1,12 @@
 // app/page.tsx
 "use client";
-
+import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import ProductCard from "@/components/ProductCard";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 // SVG İkon Bileşenleri
 function SearchIcon({ size = 24, className = "" }) {
@@ -55,9 +57,10 @@ function CloseIcon({ size = 24, className = "" }) {
 }
 
 export default function HomePage() {
+  const { user, loading, error } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-
+  
   // DAHA FAZLA ÜRÜN EKLENDİ
   const featuredProducts = [
     // Kitaplar
@@ -234,7 +237,7 @@ export default function HomePage() {
       description: "Includes: 4 classic rock CDs, 1 band biography book"
     }
   ];
-
+  
   const categories = [
     { name: "Books", icon: "📚", href: "/browse?category=book" },
     { name: "CDs", icon: "💿", href: "/browse?category=cd" },
@@ -243,6 +246,18 @@ export default function HomePage() {
     { name: "Mix Bundles", icon: "🎁", href: "/browse?category=mix" },
   ];
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      console.log("User logged out successfully");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
+  // Debug log
+  console.log("Home page auth state:", { user, loading, error });
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobil Header */}
@@ -250,28 +265,45 @@ export default function HomePage() {
         <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
           {mobileMenuOpen ? <CloseIcon size={24} /> : <MenuIcon size={24} />}
         </button>
-        <div className="text-xl font-bold text-blue-600">MarketPlace</div>
+        <Link href="/"><div className="text-xl font-bold text-blue-600">MarketPlace</div></Link>
         <div className="flex space-x-3">
           <SearchIcon size={20} />
           <CartIcon size={20} />
         </div>
       </div>
-
+      
       {/* Mobil Menu */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-white shadow-lg p-4">
           <div className="flex flex-col space-y-4">
-            <Link href="/sell" className="font-medium">Sell Items</Link>
-            <Link href="/login" className="font-medium">Login</Link>
-            <Link href="/register" className="font-medium">Register</Link>
+            {loading ? (
+              <span className="font-medium">Loading...</span>
+            ) : error ? (
+              <span className="font-medium text-red-500">Auth Error</span>
+            ) : user ? (
+              <>
+                <Link href="/dashboard" className="font-medium">Dashboard</Link>
+                <button 
+                  onClick={handleLogout}
+                  className="font-medium text-left"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link href="/register" className="font-medium">Sell Items</Link>
+                <Link href="/login" className="font-medium">Login</Link>
+              </>
+            )}
           </div>
         </div>
       )}
-
+      
       {/* Desktop Header */}
       <header className="hidden md:flex bg-white shadow-sm p-4 items-center justify-between">
         <div className="flex items-center space-x-10">
-          <div className="text-2xl font-bold text-blue-600">MarketPlace</div>
+          <Link href="/"><div className="text-2xl font-bold text-blue-600">MarketPlace</div></Link>
           <nav className="hidden lg:flex space-x-6">
             <Link href="/browse?category=book" className="font-medium hover:text-blue-600">Books</Link>
             <Link href="/browse?category=cd" className="font-medium hover:text-blue-600">CDs</Link>
@@ -280,7 +312,6 @@ export default function HomePage() {
             <Link href="/browse?category=mix" className="font-medium hover:text-blue-600">Mix Bundles</Link>
           </nav>
         </div>
-
         <div className="flex-1 max-w-lg mx-4">
           <div className="relative">
             <input
@@ -293,35 +324,62 @@ export default function HomePage() {
             <SearchIcon className="absolute right-3 top-2.5 text-gray-400" size={20} />
           </div>
         </div>
-
         <div className="flex items-center space-x-4">
-          <Link href="/sell" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-            Sell Items
-          </Link>
-          <Link href="/login" className="font-medium">Login</Link>
+          {loading ? (
+            <span className="font-medium">Loading...</span>
+          ) : error ? (
+            <span className="font-medium text-red-500">Auth Error</span>
+          ) : user ? (
+            <>
+              <Link href="/dashboard" className="font-medium">Dashboard</Link>
+              <button 
+                onClick={handleLogout}
+                className="font-medium cursor-pointer"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link href="/register" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                Sell Items
+              </Link>
+              <Link href="/login" className="font-medium">Login</Link>
+            </>
+          )}
           <div className="flex space-x-3">
             <UserIcon size={20} />
             <CartIcon size={20} />
           </div>
         </div>
       </header>
-
+      
       {/* HERO SECTION */}
       <section className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-12 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-3xl md:text-4xl font-bold mb-4">Buy & Sell Used Media in Bulk</h1>
           <p className="text-lg mb-6">Find great deals on gently used books, CDs, DVDs, games, and mix bundles. List your items in seconds!</p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Link href="/sell" className="bg-white text-blue-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition">
-              Start Selling
-            </Link>
+            {loading ? (
+              <span className="bg-white text-blue-600 px-6 py-3 rounded-lg font-medium">
+                Loading...
+              </span>
+            ) : user ? (
+              <Link href="/dashboard/sell" className="bg-white text-blue-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition">
+                Start Selling
+              </Link>
+            ) : (
+              <Link href="/register" className="bg-white text-blue-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition">
+                Start Selling
+              </Link>
+            )}
             <Link href="/browse" className="bg-transparent border-2 border-white px-6 py-3 rounded-lg font-medium hover:bg-white/10 transition">
               Browse All Items
             </Link>
           </div>
         </div>
       </section>
-
+      
       {/* CATEGORIES */}
       <section className="py-12 px-4 bg-white">
         <div className="max-w-6xl mx-auto">
@@ -340,7 +398,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
+      
       {/* FEATURED PRODUCTS */}
       <section className="py-12 px-4 bg-gray-50">
         <div className="max-w-6xl mx-auto">
@@ -358,7 +416,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
+      
       {/* HOW IT WORKS */}
       <section className="py-12 px-4 bg-white">
         <div className="max-w-4xl mx-auto">
@@ -391,23 +449,33 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
+      
       {/* CTA SECTION */}
       <section className="py-12 px-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-2xl md:text-3xl font-bold mb-4">Ready to Start Selling?</h2>
           <p className="text-lg mb-6 max-w-2xl mx-auto">Join thousands of sellers earning money from their used media and mix bundles.</p>
-          <Link href="/register" className="bg-white text-blue-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition inline-block">
-            Create Your Account
-          </Link>
+          {loading ? (
+            <span className="bg-white text-blue-600 px-6 py-3 rounded-lg font-medium inline-block">
+              Loading...
+            </span>
+          ) : user ? (
+            <Link href="/dashboard/sell" className="bg-white text-blue-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition inline-block">
+              List Items
+            </Link>
+          ) : (
+            <Link href="/register" className="bg-white text-blue-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition inline-block">
+              Create Your Account
+            </Link>
+          )}
         </div>
       </section>
-
+      
       {/* FOOTER */}
       <footer className="bg-gray-800 text-white py-12 px-4">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <h3 className="text-xl font-bold mb-4">MarketPlace</h3>
+            <Link href="/"><h3 className="text-xl font-bold mb-4">MarketPlace</h3></Link>
             <p className="text-gray-400">Buy and sell used books, CDs, DVDs, games, and mix bundles in bulk with confidence.</p>
           </div>
           
@@ -423,7 +491,11 @@ export default function HomePage() {
           <div>
             <h4 className="font-bold mb-4">For Sellers</h4>
             <ul className="space-y-2 text-gray-400">
-              <li><Link href="/sell" className="hover:text-white">Start Selling</Link></li>
+              {user ? (
+                <li><Link href="/dashboard/sell" className="hover:text-white">List Items</Link></li>
+              ) : (
+                <li><Link href="/register" className="hover:text-white">Start Selling</Link></li>
+              )}
               <li><Link href="/fees" className="hover:text-white">Seller Fees</Link></li>
               <li><Link href="/seller-protection" className="hover:text-white">Seller Protection</Link></li>
             </ul>
@@ -432,7 +504,7 @@ export default function HomePage() {
           <div>
             <h4 className="font-bold mb-4">Support</h4>
             <ul className="space-y-2 text-gray-400">
-              <li><Link href="/help" className="hover:text-white">Help Center</Link></li>
+            <li><Link href="/help" className="hover:text-white">Help Center</Link></li>
               <li><Link href="/contact" className="hover:text-white">Contact Us</Link></li>
               <li><Link href="/terms" className="hover:text-white">Terms of Service</Link></li>
             </ul>

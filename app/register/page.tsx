@@ -1,10 +1,10 @@
 "use client";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { FiHome } from "react-icons/fi"; // Ana sayfa ikonu için import
 
 interface PasswordInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
@@ -21,7 +21,6 @@ function PasswordInput({
   autoComplete,
 }: PasswordInputProps) {
   const [showPassword, setShowPassword] = useState(false);
-
   return (
     <div>
       <label htmlFor={id} className="block text-sm font-medium text-gray-700">
@@ -78,15 +77,13 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const router = useRouter();
-
+  
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
-
     // Anlık şifre eşleşme kontrolü
     if (
       (name === "password" && formData.confirmPassword && value !== formData.confirmPassword) ||
@@ -97,42 +94,35 @@ export default function RegisterPage() {
       setError("");
     }
   };
-
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
-
     // Form validasyonu
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
       setLoading(false);
       return;
     }
-
     if (formData.password.length < 6) {
       setError("Password must be at least 6 characters");
       setLoading(false);
       return;
     }
-
     try {
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         formData.email,
         formData.password
       );
-
       console.log("User created:", userCredential.user);
-
       setSuccess(true);
-
       setTimeout(() => {
         router.push("/login");
       }, 3000);
     } catch (error: any) {
       console.error("Registration error:", error);
-
       switch (error.code) {
         case "auth/email-already-in-use":
           setError("This email address is already in use");
@@ -159,7 +149,13 @@ export default function RegisterPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 relative">
+        {/* Ana Sayfaya Dönüş Butonu */}
+        <Link href="/" className="fixed top-6 left-6 flex items-center text-blue-600 hover:text-blue-800 transition-colors duration-200">
+          <FiHome className="h-5 w-5 mr-1" />
+          <span className="font-medium">Back to Home</span>
+        </Link>
+        
         <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -177,7 +173,13 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 relative">
+      {/* Ana Sayfaya Dönüş Butonu */}
+      <Link href="/" className="fixed top-6 left-6 flex items-center text-blue-600 hover:text-blue-800 transition-colors duration-200">
+        <FiHome className="h-5 w-5 mr-1" />
+        <span className="font-medium">Back to Home</span>
+      </Link>
+      
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
@@ -190,13 +192,11 @@ export default function RegisterPage() {
             </Link>
           </p>
         </div>
-
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
             {error}
           </div>
         )}
-
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -215,7 +215,6 @@ export default function RegisterPage() {
                   placeholder="Your first name"
                 />
               </div>
-
               <div>
                 <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
                   Last Name
@@ -232,7 +231,6 @@ export default function RegisterPage() {
                 />
               </div>
             </div>
-
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email Address
@@ -249,7 +247,6 @@ export default function RegisterPage() {
                 placeholder="example@email.com"
               />
             </div>
-
             <PasswordInput
               id="password"
               name="password"
@@ -260,7 +257,6 @@ export default function RegisterPage() {
               autoComplete="new-password"
               label="Password"
             />
-
             <PasswordInput
               id="confirmPassword"
               name="confirmPassword"
@@ -272,7 +268,6 @@ export default function RegisterPage() {
               label="Confirm Password"
             />
           </div>
-
           <div className="flex items-center">
             <input
               id="agree-terms"
@@ -292,7 +287,6 @@ export default function RegisterPage() {
               I have read and agree to.
             </label>
           </div>
-
           <div>
             <button
               type="submit"
@@ -313,7 +307,6 @@ export default function RegisterPage() {
             </button>
           </div>
         </form>
-
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             Already have an account?{' '}
@@ -322,7 +315,6 @@ export default function RegisterPage() {
             </Link>
           </p>
         </div>
-
         <div className="mt-8 text-center">
           <p className="text-xs text-gray-500">
             © 2024 MarketPlace. All rights reserved.
