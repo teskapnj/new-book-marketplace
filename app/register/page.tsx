@@ -1,11 +1,14 @@
+// app/register/page.tsx
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { FiHome } from "react-icons/fi"; // Ana sayfa ikonu için import
+import { FiHome } from "react-icons/fi";
+import SocialLogin from "@/components/SocialLogin";
 
+// PasswordInput bileşenini RegisterPage dışına taşıyoruz
 interface PasswordInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
 }
@@ -76,6 +79,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   const router = useRouter();
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,16 +115,23 @@ export default function RegisterPage() {
       return;
     }
     try {
+      // Kullanıcı oluştur
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         formData.email,
         formData.password
       );
+      
       console.log("User created:", userCredential.user);
-      setSuccess(true);
-      setTimeout(() => {
-        router.push("/login");
-      }, 3000);
+      
+      // Doğrulama e-postası gönder
+      await sendEmailVerification(userCredential.user);
+      console.log("Verification email sent");
+      
+      // Kullanıcıyı oturumdan çıkar (e-posta doğrulanana kadar giriş yapamaması için)
+      await auth.signOut();
+      
+      setEmailSent(true);
     } catch (error: any) {
       console.error("Registration error:", error);
       switch (error.code) {
@@ -147,6 +158,87 @@ export default function RegisterPage() {
     }
   };
 
+  const handleSocialLoginSuccess = () => {
+    setSuccess(true);
+    setTimeout(() => {
+      router.push("/dashboard");
+    }, 3000);
+  };
+
+  const handleSocialLoginError = (errorMessage: string) => {
+    setError(errorMessage);
+  };
+
+  const handleResendEmail = async () => {
+    setLoading(true);
+    try {
+      // Kullanıcıyı tekrar oluştur (e-posta doğrulanmamışsa)
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        formData.email,
+        formData.password
+      );
+      
+      // Doğrulama e-postasını tekrar gönder
+      await sendEmailVerification(userCredential.user);
+      
+      // Kullanıcıyı oturumdan çıkar
+      await auth.signOut();
+      
+      alert("Verification email resent successfully!");
+    } catch (error: any) {
+      console.error("Resend email error:", error);
+      setError("Failed to resend verification email. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // E-posta gönderildi sayfası
+  if (emailSent) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 relative">
+        {/* Ana Sayfaya Dönüş Butonu */}
+        <Link href="/" className="fixed top-6 left-6 flex items-center text-blue-600 hover:text-blue-800 transition-colors duration-200">
+          <FiHome className="h-5 w-5 mr-1" />
+          <span className="font-medium">Back to Home</span>
+        </Link>
+        
+        <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md text-center">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Verify Your Email</h2>
+          <p className="text-gray-600 mb-6">
+            We've sent a verification email to <strong>{formData.email}</strong>. 
+            Please check your inbox and click the verification link to activate your account.
+          </p>
+          <p className="text-sm text-gray-500 mb-6">
+            If you don't see the email, check your spam folder.
+          </p>
+          <div className="space-y-4">
+            <button
+              onClick={handleResendEmail}
+              disabled={loading}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
+            >
+              {loading ? "Sending..." : "Resend Email"}
+            </button>
+            <Link 
+              href="/login" 
+              className="block w-full bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 text-center"
+            >
+              Back to Login
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Başarılı kayıt sayfası (sadece sosyal medya ile kayıt için)
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 relative">
@@ -164,7 +256,7 @@ export default function RegisterPage() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Successful!</h2>
           <p className="text-gray-600 mb-6">
-            Your account has been created successfully. Redirecting to login page...
+            Your account has been created successfully. Redirecting to dashboard...
           </p>
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
         </div>
@@ -307,6 +399,13 @@ export default function RegisterPage() {
             </button>
           </div>
         </form>
+        
+        <SocialLogin 
+          isLogin={false}
+          onSuccess={handleSocialLoginSuccess}
+          onError={handleSocialLoginError}
+        />
+        
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             Already have an account?{' '}

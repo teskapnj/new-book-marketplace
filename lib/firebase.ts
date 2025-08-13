@@ -14,3 +14,5 @@ const firebaseConfig = {
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
+import { setPersistence, browserLocalPersistence } from "firebase/auth";
+setPersistence(auth, browserLocalPersistence);

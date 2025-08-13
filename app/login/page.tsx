@@ -5,14 +5,15 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signInWithEmailAndPassword, setPersistence, browserLocalPersistence, browserSessionPersistence } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { useAuthState } from "react-firebase-hooks/auth";
 import PasswordInput from "@/components/PasswordInput";
+import SocialLogin from "@/components/SocialLogin";
 import { FcGoogle } from "react-icons/fc";
 import { FaFacebook, FaTwitter, FaGithub } from "react-icons/fa";
 import { FiHome } from "react-icons/fi";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
-  const [user, authLoading] = useAuthState(auth);
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [formData, setFormData] = useState({
     email: "",
@@ -97,11 +98,13 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
-  
-  const handleSocialLogin = (provider: string) => {
-    // Placeholder for social login integration
-    console.log(`Login with ${provider}`);
-    // Google, Facebook, Twitter integration will be added here
+
+  const handleSocialLoginSuccess = () => {
+    router.push("/dashboard");
+  };
+
+  const handleSocialLoginError = (errorMessage: string) => {
+    setError(errorMessage);
   };
   
   return (
@@ -220,41 +223,12 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-          {/* Divider Line */}
-          <div className="relative mt-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or continue with</span>
-            </div>
-          </div>
-          {/* Social Login Buttons */}
-          <div className="grid grid-cols-3 gap-3 mt-6">
-            <button
-              onClick={() => handleSocialLogin("Google")}
-              className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-200"
-            >
-              <FcGoogle className="h-5 w-5 mr-2" />
-              <span className="text-sm font-medium text-gray-700">Google</span>
-            </button>
-            
-            <button
-              onClick={() => handleSocialLogin("Facebook")}
-              className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-200"
-            >
-              <FaFacebook className="h-5 w-5 mr-2 text-blue-600" />
-              <span className="text-sm font-medium text-gray-700">Facebook</span>
-            </button>
-            
-            <button
-              onClick={() => handleSocialLogin("Twitter")}
-              className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-200"
-            >
-              <FaTwitter className="h-5 w-5 mr-2 text-blue-400" />
-              <span className="text-sm font-medium text-gray-700">Twitter</span>
-            </button>
-          </div>
+          
+          <SocialLogin 
+            isLogin={true}
+            onSuccess={handleSocialLoginSuccess}
+            onError={handleSocialLoginError}
+          />
         </div>
         {/* Sign Up Link */}
         <p className="text-center text-sm text-gray-600">
@@ -274,4 +248,5 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
-  )}
+  );
+}

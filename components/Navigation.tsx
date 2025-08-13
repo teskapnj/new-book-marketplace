@@ -12,7 +12,7 @@ export default function Navigation() {
     await signOut(auth);
   };
 
-  console.log("Navigation auth state:", { user, loading }); // Debug log
+  console.log("Navigation auth state:", { user, loading });
 
   return (
     <nav className="bg-white shadow">
@@ -52,9 +52,14 @@ export default function Navigation() {
                 </button>
               </div>
             ) : (
-              <Link href="/login" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
-                Login
-              </Link>
+              <div className="flex items-center space-x-4">
+                <Link href="/login" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                  Login
+                </Link>
+                <Link href="/register" className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700">
+                  Sign Up
+                </Link>
+              </div>
             )}
           </div>
         </div>
