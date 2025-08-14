@@ -305,11 +305,7 @@ export default function HomePage() {
         <div className="flex items-center space-x-10">
           <Link href="/"><div className="text-2xl font-bold text-blue-600">MarketPlace</div></Link>
           <nav className="hidden lg:flex space-x-6">
-            <Link href="/browse?category=book" className="font-medium hover:text-blue-600">Books</Link>
-            <Link href="/browse?category=cd" className="font-medium hover:text-blue-600">CDs</Link>
-            <Link href="/browse?category=dvd" className="font-medium hover:text-blue-600">DVDs/BLU-RAYs</Link>
-            <Link href="/browse?category=game" className="font-medium hover:text-blue-600">Games</Link>
-            <Link href="/browse?category=mix" className="font-medium hover:text-blue-600">Mix Bundles</Link>
+         
           </nav>
         </div>
         <div className="flex-1 max-w-lg mx-4">

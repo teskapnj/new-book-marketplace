@@ -142,7 +142,7 @@ export default function DashboardPage() {
                       <h4 className="font-semibold mb-2">List New Items</h4>
                       <p className="text-sm text-gray-600 mb-4">Add new products to your store</p>
                       <Link 
-                        href="/dashboard/sell" 
+                        href="/dashboard/listings/create" 
                         className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
                       >
                         Get Started
