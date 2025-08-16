@@ -1,14 +1,12 @@
-// app/login/page.tsx
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signInWithEmailAndPassword, setPersistence, browserLocalPersistence, browserSessionPersistence } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
 import PasswordInput from "@/components/PasswordInput";
 import SocialLogin from "@/components/SocialLogin";
-import { FcGoogle } from "react-icons/fc";
-import { FaFacebook, FaTwitter, FaGithub } from "react-icons/fa";
 import { FiHome } from "react-icons/fi";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -23,19 +21,79 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Redirect to dashboard if user is already logged in
+  // 🔄 Redirect to appropriate dashboard if user is already logged in
   useEffect(() => {
     if (user && !authLoading) {
-      router.push("/dashboard");
+      checkUserRoleAndRedirect(user.uid);
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading]);
+
+  // 🔍 Check user role from Firestore and redirect accordingly
+  const checkUserRoleAndRedirect = async (userId: string) => {
+    try {
+      console.log("🔍 Checking user role for:", userId);
+      const userDoc = await getDoc(doc(db, "users", userId));
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const userRole = userData.role || "seller";
+        
+        console.log("👤 User role detected:", userRole);
+        
+        // 💾 Store user role and info in localStorage
+        localStorage.setItem("userRole", userRole);
+        localStorage.setItem("userEmail", user?.email || "");
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("userName", userData.name || "User");
+        localStorage.setItem("userId", userId);
+        
+        // 🎯 Force redirect based on role (use window.location for hard redirect)
+        if (userRole === "admin") {
+          console.log("✅ Admin user detected, redirecting to admin panel");
+          window.location.href = "/admin/listings";
+        } else {
+          console.log("✅ Regular user detected, redirecting to dashboard");
+          window.location.href = "/dashboard";
+        }
+      } else {
+        console.warn("⚠️ User document not found, defaulting to seller role");
+        localStorage.setItem("userRole", "seller");
+        localStorage.setItem("userEmail", user?.email || "");
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("userId", userId);
+        window.location.href = "/dashboard";
+      }
+    } catch (error) {
+      console.error("Error checking user role:", error);
+      // Default to seller if error occurs
+      localStorage.setItem("userRole", "seller");
+      localStorage.setItem("userEmail", user?.email || "");
+      localStorage.setItem("isLoggedIn", "true");
+      localStorage.setItem("userId", userId);
+      window.location.href = "/dashboard";
+    }
+  };
 
   if (authLoading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   if (user) {
-    return null; // Will redirect to dashboard
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Redirecting...</p>
+        </div>
+      </div>
+    );
   }
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,56 +109,129 @@ export default function LoginPage() {
     setLoading(true);
     
     try {
-      // Set persistence based on remember me checkbox
+      // 🔥 Set Firebase persistence based on remember me checkbox
       if (formData.rememberMe) {
         await setPersistence(auth, browserLocalPersistence);
       } else {
         await setPersistence(auth, browserSessionPersistence);
       }
       
+      // 🚀 Firebase authentication
       const userCredential = await signInWithEmailAndPassword(
         auth,
         formData.email,
         formData.password
       );
       
-      console.log("Login successful:", userCredential.user);
+      console.log("🔐 Firebase login successful:", userCredential.user.email);
       
-      // Redirect to dashboard
-      router.push("/dashboard");
+      // 🔍 Get user role from Firestore
+      const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const userRole = userData.role || "seller";
+        
+        console.log(`👤 User role detected: ${userRole}`);
+        
+        // 💾 Store user session data
+        localStorage.setItem("userRole", userRole);
+        localStorage.setItem("userEmail", formData.email);
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("userId", userCredential.user.uid);
+        localStorage.setItem("userName", userData.name || userData.displayName || "User");
+        
+        if (formData.rememberMe) {
+          localStorage.setItem("rememberMe", "true");
+        }
+        
+        // 🎯 Force redirect based on user role
+        if (userRole === "admin") {
+          console.log("🔧 Redirecting admin to admin panel");
+          window.location.href = "/admin/listings";
+        } else {
+          console.log("👤 Redirecting user to dashboard");
+          window.location.href = "/dashboard";
+        }
+      } else {
+        // 📝 User document doesn't exist, create default seller role
+        console.warn("⚠️ User document not found, treating as seller");
+        localStorage.setItem("userRole", "seller");
+        localStorage.setItem("userEmail", formData.email);
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("userId", userCredential.user.uid);
+        localStorage.setItem("userName", userCredential.user.displayName || "User");
+        window.location.href = "/dashboard";
+      }
       
     } catch (error: any) {
-      console.error("Login error:", error);
+      console.error("❌ Login error:", error);
       
+      // 🛡️ Firebase error handling with user-friendly messages
       switch (error.code) {
         case "auth/user-not-found":
-          setError("No account found with this email address");
+          setError("No account found with this email address. Please register first.");
           break;
         case "auth/invalid-credential":
-          setError("Incorrect email or password");
+          setError("Incorrect email or password. Please check your credentials.");
           break;
         case "auth/wrong-password":
-          setError("Incorrect password");
+          setError("Incorrect password. Please try again.");
           break;
         case "auth/invalid-email":
-          setError("Invalid email address");
+          setError("Invalid email address format.");
           break;
         case "auth/user-disabled":
-          setError("This account has been disabled");
+          setError("This account has been disabled. Contact support.");
           break;
         case "auth/too-many-requests":
-          setError("Too many failed attempts. Please try again later");
+          setError("Too many failed attempts. Please try again later.");
+          break;
+        case "auth/network-request-failed":
+          setError("Network error. Please check your internet connection.");
           break;
         default:
-          setError(`Login error: ${error.message}`);
+          setError(`Login failed: ${error.message}`);
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSocialLoginSuccess = () => {
-    router.push("/dashboard");
+  const handleSocialLoginSuccess = async (socialUser: any) => {
+    try {
+      // 🔍 Check if user exists in Firestore for social login
+      const userDoc = await getDoc(doc(db, "users", socialUser.uid));
+      
+      let userRole = "seller"; // Default role for social login
+      let userName = socialUser.displayName || "User";
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        userRole = userData.role || "seller";
+        userName = userData.name || userData.displayName || socialUser.displayName || "User";
+      }
+      
+      // 💾 Store session data for social login
+      localStorage.setItem("userRole", userRole);
+      localStorage.setItem("userEmail", socialUser.email || "");
+      localStorage.setItem("isLoggedIn", "true");
+      localStorage.setItem("userId", socialUser.uid);
+      localStorage.setItem("userName", userName);
+      
+      // 🎯 Force redirect based on role
+      if (userRole === "admin") {
+        window.location.href = "/admin/listings";
+      } else {
+        window.location.href = "/dashboard";
+      }
+    } catch (error) {
+      console.error("Social login role check error:", error);
+      // Default to seller on error
+      localStorage.setItem("userRole", "seller");
+      localStorage.setItem("isLoggedIn", "true");
+      window.location.href = "/dashboard";
+    }
   };
 
   const handleSocialLoginError = (errorMessage: string) => {
@@ -109,14 +240,14 @@ export default function LoginPage() {
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
-      {/* Back to Home Button */}
+      {/* 🏠 Back to Home Button */}
       <Link href="/" className="fixed top-4 left-4 flex items-center text-blue-600 hover:text-blue-800 transition-colors duration-200">
         <FiHome className="h-5 w-5 mr-1" />
         <span className="font-medium">Back to Home</span>
       </Link>
       
       <div className="max-w-md w-full space-y-8">
-        {/* Logo and Title */}
+        {/* 🏢 Logo and Title */}
         <div className="text-center">
           <div className="mx-auto h-16 w-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center">
             <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -130,19 +261,37 @@ export default function LoginPage() {
             Sign in to your account to continue
           </p>
         </div>
-        {/* Login Form */}
+
+        {/* 📋 Login Form */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
+          {/* ❌ Error Message Display */}
           {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex items-center">
                 <svg className="h-5 w-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 9H7a1 1 0 00-2 0V7a1 1 0 00-2 0v2.586l-2.707 2.707a1 1 0 00-1.414 1.414l2.707-2.707A1 1 0 008 10z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 9H7a1 1 0 100-2v2.586l-2.707 2.707a1 1 0 001.414 1.414L8.586 11H10a1 1 0 000-2z" clipRule="evenodd" />
                 </svg>
                 <span className="text-red-800 font-medium">{error}</span>
               </div>
             </div>
           )}
+
+          {/* ℹ️ Info Message */}
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start">
+              <svg className="h-5 w-5 text-blue-400 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              <div className="text-sm text-blue-800">
+                <strong>🔐 Automatic Role Detection:</strong>
+                <p className="mt-1">Enter your credentials and you'll be redirected to the appropriate dashboard based on your account type.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* 📝 Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* 📧 Email Input */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 Email Address
@@ -156,15 +305,16 @@ export default function LoginPage() {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                  className="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                   placeholder="Enter your email"
                 />
-                <svg className="absolute right-3 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12a4 4 0 11-8 0 4 4 0 018 0zM2 12a6 6 0 1112 0 6 6 0 0112 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l-2-2m0 0l-2-2m2 2l2-2m-2 2l2-2" />
+                <svg className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zM12 14l-3-3m0 0l-3-3m3 3h7.5m-7.5 0l3 3" />
                 </svg>
               </div>
             </div>
+
+            {/* 🔒 Password Input */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Password
@@ -180,6 +330,8 @@ export default function LoginPage() {
                 className="w-full"
               />
             </div>
+
+            {/* ⚙️ Remember Me & Forgot Password */}
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input
@@ -200,10 +352,12 @@ export default function LoginPage() {
                 </Link>
               </div>
             </div>
+
+            {/* 🚀 Submit Button */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
             >
               {loading ? (
                 <div className="flex items-center justify-center">
@@ -216,7 +370,7 @@ export default function LoginPage() {
               ) : (
                 <span className="flex items-center justify-center">
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l-4-4m4 4V4m0 0l4-4m-4 4h4m-4 0l4-4m4 4V4m0 0l4-4" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l-4-4m4 4h12" />
                   </svg>
                   Sign In
                 </span>
@@ -224,20 +378,33 @@ export default function LoginPage() {
             </button>
           </form>
           
+          {/* 🌐 Social Login Component */}
           <SocialLogin 
             isLogin={true}
             onSuccess={handleSocialLoginSuccess}
             onError={handleSocialLoginError}
           />
         </div>
-        {/* Sign Up Link */}
+
+        {/* 📝 Sign Up Link */}
         <p className="text-center text-sm text-gray-600">
           Don't have an account?{' '}
           <Link href="/register" className="font-medium text-blue-600 hover:text-blue-500">
             Sign up
           </Link>
         </p>
-        {/* Footer */}
+
+        {/* ℹ️ Account Types Info */}
+        <div className="bg-white rounded-lg p-4 text-center border border-gray-200">
+          <h4 className="text-sm font-medium text-gray-900 mb-2">🎯 Account Types</h4>
+          <div className="text-xs text-gray-600 space-y-1">
+            <p><strong>🔧 Admin:</strong> Access admin panel to manage listings and users</p>
+            <p><strong>👤 Seller:</strong> Create and manage your product listings</p>
+            <p><strong>🛒 Buyer:</strong> Browse and purchase items from the marketplace</p>
+          </div>
+        </div>
+
+        {/* 📄 Footer */}
         <div className="mt-8 text-center text-xs text-gray-500">
           <p>© 2024 MarketPlace. All rights reserved.</p>
           <div className="mt-2 space-x-4">
