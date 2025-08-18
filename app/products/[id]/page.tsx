@@ -1,4 +1,3 @@
-// app/products/[id]/page.tsx
 "use client";
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
@@ -10,7 +9,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 
 // SVG İkonlar
-function ArrowLeftIcon({ size = 24, className = "" }) {
+function ArrowLeftIcon({ size = 24, className = "" }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <polyline points="15 18 9 12 15 6"></polyline>
@@ -18,7 +17,7 @@ function ArrowLeftIcon({ size = 24, className = "" }) {
   );
 }
 
-function ShoppingCartIcon({ size = 24, className = "" }) {
+function ShoppingCartIcon({ size = 24, className = "" }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <circle cx="9" cy="21" r="1"></circle>
@@ -28,7 +27,7 @@ function ShoppingCartIcon({ size = 24, className = "" }) {
   );
 }
 
-function HeartIcon({ size = 24, className = "", filled = false }) {
+function HeartIcon({ size = 24, className = "", filled = false }: { size?: number; className?: string; filled?: boolean }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
       <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
@@ -36,7 +35,7 @@ function HeartIcon({ size = 24, className = "", filled = false }) {
   );
 }
 
-function ShareIcon({ size = 24, className = "" }) {
+function ShareIcon({ size = 24, className = "" }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <circle cx="18" cy="5" r="3"></circle>
@@ -48,7 +47,7 @@ function ShareIcon({ size = 24, className = "" }) {
   );
 }
 
-function PackageIcon({ size = 24, className = "" }) {
+function PackageIcon({ size = 24, className = "" }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line>
@@ -59,7 +58,7 @@ function PackageIcon({ size = 24, className = "" }) {
   );
 }
 
-function ShieldCheckIcon({ size = 24, className = "" }) {
+function ShieldCheckIcon({ size = 24, className = "" }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M9 12l2 2 4-4"></path>
@@ -114,8 +113,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           const dominantCondition = Object.entries(conditionCounts)
             .sort((a, b) => b[1] - a[1])[0]?.[0] || "good";
           
+          // Collect all images from bundle items
+          const bundleImages = data.bundleItems
+            .filter((item: any) => item.image) // Only items with images
+            .map((item: any) => item.image);
+          
           const firstItemImage = data.bundleItems[0]?.image || null;
-          const images = firstItemImage ? [firstItemImage] : [];
+          const images = bundleImages.length > 0 ? bundleImages : (firstItemImage ? [firstItemImage] : []);
           
           const features = [
             `Items: ${data.totalItems || data.bundleItems.length}`,
@@ -153,7 +157,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       fetchProduct();
     }
   }, [resolvedParams.id]);
-
+  
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
@@ -167,7 +171,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       </div>
     );
   }
-
+  
   if (notFound || !product) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
@@ -188,7 +192,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       </div>
     );
   }
-
+  
   const handleAddToCart = () => {
     addToCart({
       id: product.id,
@@ -200,7 +204,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     setShowNotification(true);
     setTimeout(() => setShowNotification(false), 3000);
   };
-
+  
   const handleWishlist = () => {
     if (isInWishlist(product.id)) {
       removeFromWishlist(product.id);
@@ -213,7 +217,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       });
     }
   };
-
+  
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -230,7 +234,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       alert('Link copied to clipboard!');
     }
   };
-
+  
   const getCategoryIcon = (category: string) => {
     const icons = {
       book: "📚",
@@ -241,49 +245,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     };
     return icons[category as keyof typeof icons] || "📦";
   };
-
+  
   const getConditionColor = (condition: string) => {
     return condition === 'like-new' 
       ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
       : 'bg-amber-50 text-amber-700 border-amber-200';
   };
-
+  
   const handleImageError = () => {
     setImageError(true);
   };
-
-  // Bundle Item Preview Component with error handling
-  const BundleItemPreview = ({ item, index }: { item: any; index: number }) => {
-    const [itemImageError, setItemImageError] = useState(false);
-
-    const handleItemImageError = () => {
-      setItemImageError(true);
-    };
-
-    return (
-      <div className="group relative">
-        <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl overflow-hidden border-2 border-gray-200 group-hover:border-blue-300 transition-colors">
-          {item.image && !itemImageError ? (
-            <Image 
-              src={item.image} 
-              alt="Bundle item"
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-200"
-              onError={handleItemImageError}
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <span className="text-2xl">{getCategoryIcon(item.category)}</span>
-            </div>
-          )}
-        </div>
-        <div className="absolute -top-2 -right-2 bg-white border-2 border-gray-200 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold text-gray-600">
-          {index + 1}
-        </div>
-      </div>
-    );
-  };
-
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Notification */}
@@ -313,6 +285,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Product Images */}
           <div className="space-y-6">
+            {/* Main Image with Navigation */}
             <div className="relative h-[500px] bg-white rounded-3xl overflow-hidden shadow-2xl border border-gray-100">
               {product.images.length > 0 && !imageError ? (
                 <Image 
@@ -321,6 +294,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   fill
                   className="object-contain p-8"
                   onError={handleImageError}
+                  priority
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
@@ -328,6 +303,44 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     <span className="text-8xl mb-4 block">{getCategoryIcon(product.category)}</span>
                     <p className="text-gray-500 font-medium">Bundle Preview</p>
                   </div>
+                </div>
+              )}
+              
+              {/* Image Navigation */}
+              {product.images.length > 1 && (
+                <>
+                  <button 
+                    onClick={() => setSelectedImageIndex((prev) => (prev === 0 ? product.images.length - 1 : prev - 1))}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 rounded-full p-2 shadow-md transition-all"
+                    aria-label="Previous image"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <button 
+                    onClick={() => setSelectedImageIndex((prev) => (prev === product.images.length - 1 ? 0 : prev + 1))}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 rounded-full p-2 shadow-md transition-all"
+                    aria-label="Next image"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </>
+              )}
+              
+              {/* Image Indicators */}
+              {product.images.length > 1 && (
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-2">
+                  {product.images.map((_: any, index: number) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedImageIndex(index)}
+                      className={`w-3 h-3 rounded-full transition-all ${selectedImageIndex === index ? 'bg-white' : 'bg-white/50'}`}
+                      aria-label={`Go to image ${index + 1}`}
+                    />
+                  ))}
                 </div>
               )}
               
@@ -340,28 +353,29 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
             
-            {/* Bundle Items Preview Grid */}
-            {product.bundleItems && product.bundleItems.length > 0 && (
-              <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold text-gray-900">Bundle Contents</h3>
-                  <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
-                    {product.bundleItems.length} items
-                  </span>
-                </div>
-                <div className="grid grid-cols-4 gap-4">
-                  {product.bundleItems.slice(0, 8).map((item: any, index: number) => (
-                    <BundleItemPreview key={index} item={item} index={index} />
-                  ))}
-                  {product.bundleItems.length > 8 && (
-                    <div className="aspect-square bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl border-2 border-dashed border-blue-300 flex items-center justify-center">
-                      <div className="text-center">
-                        <span className="text-blue-600 font-bold text-lg">+{product.bundleItems.length - 8}</span>
-                        <p className="text-blue-500 text-xs font-medium">more</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
+            {/* Thumbnail Gallery */}
+            {product.images.length > 1 && (
+              <div className="grid grid-cols-4 gap-3">
+                {product.images.map((image: string, index: number) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedImageIndex(index)}
+                    className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all ${
+                      selectedImageIndex === index 
+                        ? 'border-blue-500 ring-2 ring-blue-200' 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    aria-label={`View image ${index + 1}`}
+                  >
+                    <Image 
+                      src={image} 
+                      alt={`Thumbnail ${index + 1}`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 25vw, (max-width: 1200px) 12vw, 8vw"
+                    />
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -414,7 +428,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               </div>
             </div>
-
+            
             {/* Seller Info */}
             <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Seller Information</h3>
@@ -511,8 +525,18 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                       <tr key={index} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center space-x-4">
-                            <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center border border-gray-200">
-                              <span className="text-xl">{getCategoryIcon(item.category)}</span>
+                            <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center border border-gray-200 overflow-hidden">
+                              {item.image ? (
+                                <Image 
+                                  src={item.image} 
+                                  alt={`Item ${index + 1}`}
+                                  width={48}
+                                  height={48}
+                                  className="object-cover w-full h-full"
+                                />
+                              ) : (
+                                <span className="text-xl">{getCategoryIcon(item.category)}</span>
+                              )}
                             </div>
                             <div>
                               <div className="text-sm font-bold text-gray-900">Item #{index + 1}</div>

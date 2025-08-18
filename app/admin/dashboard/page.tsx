@@ -8,6 +8,7 @@ import {
   onSnapshot, 
   doc, 
   updateDoc, 
+  deleteDoc,
   serverTimestamp,
   query,
   orderBy,
@@ -28,6 +29,7 @@ export default function AdminListingsPage() {
   const [rejectionReason, setRejectionReason] = useState("");
   const [adminNotes, setAdminNotes] = useState("");
   const [loadingListings, setLoadingListings] = useState(true);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   // 📄 Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -245,6 +247,32 @@ export default function AdminListingsPage() {
     } catch (error) {
       console.error("Error rejecting listing:", error);
       alert("❌ Error occurred while rejecting listing!");
+    }
+    
+    setIsProcessing(false);
+  };
+  
+  // 🗑️ Delete listing function - Removes from Firebase
+  const deleteListing = async (listingId: string) => {
+    setIsProcessing(true);
+    
+    try {
+      const listingRef = doc(db, "listings", listingId);
+      
+      await deleteDoc(listingRef);
+      
+      console.log(`🗑️ Listing ${listingId} deleted by ${user?.email}`);
+      
+      // Reset modal state
+      setSelectedListing(null);
+      setShowDeleteConfirm(false);
+      
+      // Show success message
+      alert("🗑️ Listing deleted successfully!");
+      
+    } catch (error) {
+      console.error("Error deleting listing:", error);
+      alert("❌ Error occurred while deleting listing!");
     }
     
     setIsProcessing(false);
@@ -575,7 +603,10 @@ export default function AdminListingsPage() {
                   Review Listing: {selectedListing.title}
                 </h3>
                 <button
-                  onClick={() => setSelectedListing(null)}
+                  onClick={() => {
+                    setSelectedListing(null);
+                    setShowDeleteConfirm(false);
+                  }}
                   className="text-gray-400 hover:text-gray-600 text-2xl"
                 >
                   ✕
@@ -677,6 +708,40 @@ export default function AdminListingsPage() {
                     </>
                   )}
                   
+                  {/* Delete button for all listings */}
+                  {!showDeleteConfirm ? (
+                    <button
+                      onClick={() => setShowDeleteConfirm(true)}
+                      disabled={isProcessing}
+                      className="w-full bg-gray-800 hover:bg-gray-900 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isProcessing ? "Processing..." : "🗑️ Delete Listing"}
+                    </button>
+                  ) : (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <p className="text-red-800 font-medium mb-3">⚠️ Confirm Deletion</p>
+                      <p className="text-red-700 text-sm mb-4">
+                        Are you sure you want to permanently delete this listing? This action cannot be undone.
+                      </p>
+                      <div className="flex space-x-3">
+                        <button
+                          onClick={() => deleteListing(selectedListing.id)}
+                          disabled={isProcessing}
+                          className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isProcessing ? "Deleting..." : "🗑️ Confirm Delete"}
+                        </button>
+                        <button
+                          onClick={() => setShowDeleteConfirm(false)}
+                          disabled={isProcessing}
+                          className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* Show status if already reviewed */}
                   {selectedListing.status !== "pending" && (
                     <div className={`p-4 rounded-lg ${
@@ -726,6 +791,7 @@ export default function AdminListingsPage() {
                       setSelectedListing(null);
                       setAdminNotes("");
                       setRejectionReason("");
+                      setShowDeleteConfirm(false);
                     }}
                     className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                   >

@@ -151,7 +151,14 @@ export default function ListingsPage() {
             const dominantCondition = Object.entries(conditionCounts)
               .sort((a, b) => b[1] - a[1])[0]?.[0] || "good";
             
-            const firstItemImage = data.bundleItems[0]?.image || null;
+            // İlk ürün fotoğrafı yoksa, fotoğraf olan ilk ürünü bul
+            let firstItemImage = null;
+            for (const item of data.bundleItems) {
+              if (item.image) {
+                firstItemImage = item.image;
+                break;
+              }
+            }
             
             listingsData.push({
               id: doc.id,
@@ -159,14 +166,20 @@ export default function ListingsPage() {
               price: data.totalValue || 0,
               category: dominantCategory,
               condition: dominantCondition,
-              imageUrl: firstItemImage,
+              imageUrl: firstItemImage, // Artık ilk fotoğraf olan ürünün resmi burada
               sellerName: data.vendorName || data.vendorId || "Anonymous Seller",
               createdAt: data.createdAt?.toDate() || new Date(),
               bundleItems: data.bundleItems,
               description: `Bundle of ${data.totalItems || data.bundleItems.length} items including various ${dominantCategory === "mix" ? "categories" : dominantCategory + "s"} in ${dominantCondition === "like-new" ? "Like New" : "Good"} condition.`,
               totalItems: data.totalItems || data.bundleItems.length,
               vendorId: data.vendorId,
-              distinctCategories: Array.from(distinctCategories)
+              distinctCategories: Array.from(distinctCategories),
+              // Tüm liste bilgilerini ekliyoruz
+              status: data.status,
+              updatedAt: data.updatedAt?.toDate() || null,
+              location: data.location || null,
+              tags: data.tags || [],
+              highlights: data.highlights || []
             });
           });
           
@@ -231,8 +244,15 @@ export default function ListingsPage() {
           
           const dominantCondition = Object.entries(conditionCounts)
             .sort((a, b) => b[1] - a[1])[0]?.[0] || "good";
-          
-          const firstItemImage = data.bundleItems[0]?.image || null;
+            
+          // İlk ürün fotoğrafı yoksa, fotoğraf olan ilk ürünü bul
+          let firstItemImage = null;
+          for (const item of data.bundleItems) {
+            if (item.image) {
+              firstItemImage = item.image;
+              break;
+            }
+          }
           
           listingsData.push({
             id: doc.id,
@@ -240,14 +260,20 @@ export default function ListingsPage() {
             price: data.totalValue || 0,
             category: dominantCategory,
             condition: dominantCondition,
-            imageUrl: firstItemImage,
+            imageUrl: firstItemImage, // Artık ilk fotoğraf olan ürünün resmi burada
             sellerName: data.vendorName || data.vendorId || "Anonymous Seller",
             createdAt: data.createdAt?.toDate() || new Date(),
             bundleItems: data.bundleItems,
             description: `Bundle of ${data.totalItems || data.bundleItems.length} items including various ${dominantCategory === "mix" ? "categories" : dominantCategory + "s"} in ${dominantCondition === "like-new" ? "Like New" : "Good"} condition.`,
             totalItems: data.totalItems || data.bundleItems.length,
             vendorId: data.vendorId,
-            distinctCategories: Array.from(distinctCategories)
+            distinctCategories: Array.from(distinctCategories),
+            // Tüm liste bilgilerini ekliyoruz
+            status: data.status,
+            updatedAt: data.updatedAt?.toDate() || null,
+            location: data.location || null,
+            tags: data.tags || [],
+            highlights: data.highlights || []
           });
         });
         
@@ -616,7 +642,7 @@ function DesktopFilterContent({ categories, selectedCategory, setSelectedCategor
                   type="radio"
                   name="category"
                   checked={selectedCategory === category.id}
-                  onChange={() => setSelectedCategory(category.id)}
+                  onChange={() => handleCategoryChange(category.id)}
                   className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                 />
                 <span className="ml-3 text-gray-700 group-hover:text-gray-900 transition-colors">
@@ -723,7 +749,7 @@ function MobileFilterContent({ categories, selectedCategory, setSelectedCategory
                   type="radio"
                   name="category"
                   checked={selectedCategory === category.id}
-                  onChange={() => setSelectedCategory(category.id)}
+                  onChange={() => handleCategoryChange(category.id)}
                   className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                 />
                 <span className="ml-3 text-gray-700">
@@ -800,17 +826,14 @@ function ProductCard({ product, onSelect }: any) {
     const icons = { book: "📚", cd: "💿", dvd: "📀", game: "🎮", mix: "📦" };
     return icons[category as keyof typeof icons] || "📦";
   };
-
   const getConditionColor = (condition: string) => {
     return condition === 'like-new' 
       ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
       : 'bg-amber-50 text-amber-700 border border-amber-200';
   };
-
   const handleImageError = () => {
     setImageError(true);
   };
-
   return (
     <div className="group bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
       <div className="relative h-56 bg-gradient-to-br from-gray-50 to-gray-100">
@@ -886,17 +909,14 @@ function ProductListItem({ product, onSelect }: any) {
     const icons = { book: "📚", cd: "💿", dvd: "📀", game: "🎮", mix: "📦" };
     return icons[category as keyof typeof icons] || "📦";
   };
-
   const getConditionColor = (condition: string) => {
     return condition === 'like-new' 
       ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
       : 'bg-amber-50 text-amber-700 border border-amber-200';
   };
-
   const handleImageError = () => {
     setImageError(true);
   };
-
   return (
     <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-all duration-300">
       <div className="flex items-center space-x-6">
@@ -948,41 +968,51 @@ function ProductListItem({ product, onSelect }: any) {
   );
 }
 
-// Product Modal
+/// Product Modal
 function ProductModal({ product, onClose }: any) {
   const [imageError, setImageError] = useState(false);
+  const [activeTab, setActiveTab] = useState("details"); // Tab navigasyonu için
   
   const getCategoryIcon = (category: string) => {
     const icons = { book: "📚", cd: "💿", dvd: "📀", game: "🎮", mix: "📦" };
     return icons[category as keyof typeof icons] || "📦";
   };
-
   const getCategoryName = (category: string) => {
     const names = { book: "Book", cd: "CD", dvd: "DVD", game: "Game", mix: "Mix Bundle" };
     return names[category as keyof typeof names] || category;
   };
-
   const getConditionColor = (condition: string) => {
     return condition === 'like-new' 
       ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
       : 'bg-amber-50 text-amber-700 border border-amber-200';
   };
-
   const handleImageError = () => {
     setImageError(true);
   };
-
+  
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-3xl max-w-5xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+      <div className="bg-white rounded-3xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
         {/* Modal Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-8 text-white">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
           <div className="flex justify-between items-start">
-            <div>
+            <div className="flex-1">
               <h3 className="text-2xl font-bold mb-2">{product.title}</h3>
-              <p className="text-blue-100">
-                Listed on {new Date(product.createdAt).toLocaleDateString()} • {product.totalItems} items
-              </p>
+              <div className="flex flex-wrap items-center gap-3 text-blue-100">
+                <span>Listed on {new Date(product.createdAt).toLocaleDateString()}</span>
+                <span>•</span>
+                <span>{product.totalItems} items</span>
+                <span>•</span>
+                <span className="inline-flex items-center">
+                  {getCategoryIcon(product.category)} {getCategoryName(product.category)}
+                </span>
+                {product.updatedAt && (
+                  <>
+                    <span>•</span>
+                    <span>Updated on {new Date(product.updatedAt).toLocaleDateString()}</span>
+                  </>
+                )}
+              </div>
             </div>
             <button
               onClick={onClose}
@@ -993,108 +1023,389 @@ function ProductModal({ product, onClose }: any) {
           </div>
         </div>
         
+        {/* Tab Navigation */}
+        <div className="flex border-b border-gray-200 bg-gray-50">
+          <button
+            onClick={() => setActiveTab("details")}
+            className={`px-6 py-3 font-medium text-sm ${activeTab === "details" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500 hover:text-gray-700"}`}
+          >
+            Overview
+          </button>
+          <button
+            onClick={() => setActiveTab("contents")}
+            className={`px-6 py-3 font-medium text-sm ${activeTab === "contents" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500 hover:text-gray-700"}`}
+          >
+            Bundle Contents ({product.bundleItems?.length || 0})
+          </button>
+          <button
+            onClick={() => setActiveTab("seller")}
+            className={`px-6 py-3 font-medium text-sm ${activeTab === "seller" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500 hover:text-gray-700"}`}
+          >
+            Seller Info
+          </button>
+        </div>
+        
         {/* Modal Content */}
-        <div className="flex-1 overflow-y-auto p-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Product Image */}
-            <div className="space-y-6">
-              <div className="relative h-80 bg-gradient-to-br from-gray-50 to-gray-100 rounded-3xl overflow-hidden">
-                {product.imageUrl && !imageError ? (
-                  <Image 
-                    src={product.imageUrl} 
-                    alt="Product image"
-                    fill
-                    className="object-cover"
-                    onError={handleImageError}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <span className="text-8xl">{getCategoryIcon(product.category)}</span>
+        <div className="flex-1 overflow-y-auto">
+          {activeTab === "details" && (
+            <div className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Column - Image */}
+                <div className="lg:col-span-1">
+                  <div className="relative h-72 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl overflow-hidden mb-4">
+                    {product.imageUrl && !imageError ? (
+                      <Image 
+                        src={product.imageUrl} 
+                        alt="Product image"
+                        fill
+                        className="object-cover"
+                        onError={handleImageError}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <span className="text-8xl">{getCategoryIcon(product.category)}</span>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              
-              {/* Quick Stats */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-blue-50 rounded-2xl p-4 text-center border border-blue-200">
-                  <div className="text-2xl font-bold text-blue-600">${product.price.toFixed(2)}</div>
-                  <div className="text-sm text-blue-700">Total Value</div>
+                  
+                  {/* Quick Stats */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-blue-50 rounded-xl p-3 text-center border border-blue-200">
+                      <div className="text-xl font-bold text-blue-600">${product.price.toFixed(2)}</div>
+                      <div className="text-xs text-blue-700">Total Value</div>
+                    </div>
+                    <div className="bg-purple-50 rounded-xl p-3 text-center border border-purple-200">
+                      <div className="text-xl font-bold text-purple-600">{product.totalItems}</div>
+                      <div className="text-xs text-purple-700">Items</div>
+                    </div>
+                  </div>
                 </div>
-                <div className="bg-purple-50 rounded-2xl p-4 text-center border border-purple-200">
-                  <div className="text-2xl font-bold text-purple-600">{product.totalItems}</div>
-                  <div className="text-sm text-purple-700">Items Included</div>
+                
+                {/* Right Column - Details */}
+                <div className="lg:col-span-2 space-y-4">
+                  {/* Categories */}
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <h4 className="font-semibold text-gray-900 mb-2">Categories</h4>
+                    {product.category === "mix" ? (
+                      <div className="flex flex-wrap gap-2">
+                        {product.distinctCategories.map((cat: string, index: number) => (
+                          <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                            {getCategoryIcon(cat)} {getCategoryName(cat)}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center">
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                          {getCategoryIcon(product.category)} {getCategoryName(product.category)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Description */}
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <h4 className="font-semibold text-gray-900 mb-2">Description</h4>
+                    <p className="text-gray-700 text-sm">
+                      {product.description || "No description available for this bundle."}
+                    </p>
+                  </div>
+                  
+                  {/* Condition and Status */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <p className="text-sm text-gray-500 mb-1">Condition</p>
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${getConditionColor(product.condition)}`}>
+                        {product.condition === "like-new" ? "Like New" : "Good"}
+                      </span>
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <p className="text-sm text-gray-500 mb-1">Status</p>
+                      <p className="font-bold text-gray-900 capitalize">{product.status || "Approved"}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Location */}
+                  {product.location && (
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <h4 className="font-semibold text-gray-900 mb-2">Location</h4>
+                      <p className="text-gray-700 text-sm">{product.location}</p>
+                    </div>
+                  )}
+                  
+                  {/* Tags */}
+                  {product.tags && product.tags.length > 0 && (
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <h4 className="font-semibold text-gray-900 mb-2">Tags</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {product.tags.map((tag: string, index: number) => (
+                          <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Highlights */}
+                  {product.highlights && product.highlights.length > 0 && (
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <h4 className="font-semibold text-gray-900 mb-2">Highlights</h4>
+                      <ul className="space-y-1">
+                        {product.highlights.map((highlight: string, index: number) => (
+                          <li key={index} className="flex items-start">
+                            <svg className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span className="text-gray-700 text-sm">{highlight}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-            
-            {/* Product Details */}
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-50 rounded-2xl p-4">
-                  <p className="text-sm text-gray-500 mb-1">Condition</p>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${getConditionColor(product.condition)}`}>
-                    {product.condition === "like-new" ? "Like New" : "Good"}
-                  </span>
-                </div>
-                <div className="bg-gray-50 rounded-2xl p-4">
-                  <p className="text-sm text-gray-500 mb-1">Category</p>
-                  <p className="font-bold text-gray-900">
-                    {getCategoryIcon(product.category)} {getCategoryName(product.category)}
-                  </p>
-                </div>
-                <div className="bg-gray-50 rounded-2xl p-4">
-                  <p className="text-sm text-gray-500 mb-1">Seller</p>
-                  <p className="font-bold text-gray-900">{product.sellerName}</p>
-                </div>
-                {product.category === "mix" && (
-                  <div className="bg-gray-50 rounded-2xl p-4">
-                    <p className="text-sm text-gray-500 mb-1">Categories</p>
-                    <p className="font-bold text-gray-900">{product.distinctCategories.length} different</p>
-                  </div>
-                )}
-              </div>
+          )}
+          
+          {activeTab === "contents" && (
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Bundle Contents ({product.bundleItems?.length || 0} items)</h3>
               
-              <div>
-                <h4 className="text-lg font-bold text-gray-900 mb-3">Description</h4>
-                <p className="text-gray-700 leading-relaxed">
-                  {product.description || "No description available for this bundle."}
-                </p>
-              </div>
-              
-              {/* Bundle Items */}
-              {product.bundleItems && product.bundleItems.length > 0 && (
-                <div>
-                  <h4 className="text-lg font-bold text-gray-900 mb-4">Bundle Contents ({product.bundleItems.length} items)</h4>
-                  <div className="max-h-60 overflow-y-auto rounded-2xl border border-gray-200">
-                    {product.bundleItems.map((item: any, index: number) => (
-                      <div key={index} className="flex items-center justify-between p-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors">
-                        <div className="flex items-center space-x-4">
-                          <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center">
-                            <span className="text-lg">{getCategoryIcon(item.category)}</span>
-                          </div>
-                          <div>
-                            <div className="font-medium text-gray-900">Item #{index + 1}</div>
-                            <div className="text-sm text-gray-500">
-                              {item.isbn && <span className="font-mono bg-gray-100 px-2 py-1 rounded text-xs mr-2">{item.isbn}</span>}
-                              {getCategoryName(item.category)} • {item.condition === "like-new" ? "Like New" : "Good"}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-bold text-gray-900">${item.price.toFixed(2)}</div>
-                          <div className="text-sm text-gray-500">Qty: {item.quantity}</div>
-                        </div>
-                      </div>
-                    ))}
+              {product.bundleItems && product.bundleItems.length > 0 ? (
+                <div className="overflow-hidden rounded-xl border border-gray-200">
+                  <div className="max-h-[60vh] overflow-y-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50 sticky top-0">
+                        <tr>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Condition</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {product.bundleItems.map((item: any, index: number) => (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
+                                  <span className="text-lg">{getCategoryIcon(item.category)}</span>
+                                </div>
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">Item #{index + 1}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{getCategoryName(item.category)}</div>
+                              {item.isbn && (
+                                <div className="text-sm text-gray-500 font-mono">ISBN: {item.isbn}</div>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${item.condition === 'like-new' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                                {item.condition === "like-new" ? "Like New" : "Good"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              ${item.price.toFixed(2)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {item.quantity}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
+                </div>
+              ) : (
+                <div className="text-center py-12 bg-gray-50 rounded-xl">
+                  <PackageIcon size={48} className="mx-auto text-gray-400" />
+                  <h3 className="mt-4 text-lg font-medium text-gray-900">No items found</h3>
+                  <p className="mt-1 text-sm text-gray-500">This bundle doesn't contain any items.</p>
                 </div>
               )}
             </div>
-          </div>
+          )}
+          
+          {activeTab === "seller" && (
+            <div className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-1">
+                  <div className="bg-gray-50 rounded-xl p-6 text-center">
+                    <div className="mx-auto h-24 w-24 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center mb-4">
+                      <span className="text-3xl">👤</span>
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900">{product.sellerName}</h3>
+                    <div className="mt-2 text-sm text-gray-500">Bundle Seller</div>
+                    <div className="mt-4">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                        <svg className="-ml-1 mr-1.5 h-2 w-2 text-green-600" fill="currentColor" viewBox="0 0 8 8">
+                          <circle cx="4" cy="4" r="3" />
+                        </svg>
+                        Verified Seller
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6 bg-gray-50 rounded-xl p-4">
+                    <h4 className="font-semibold text-gray-900 mb-3">Contact Seller</h4>
+                    <div className="space-y-3">
+                      <button className="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                        Send Message
+                      </button>
+                      <button className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                        View Profile
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="lg:col-span-2 space-y-4">
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <h4 className="font-semibold text-gray-900 mb-2">Seller Information</h4>
+                    <dl className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
+                      <div className="sm:col-span-1">
+                        <dt className="text-sm font-medium text-gray-500">Member Since</dt>
+                        <dd className="mt-1 text-sm text-gray-900">January 2023</dd>
+                      </div>
+                      <div className="sm:col-span-1">
+                        <dt className="text-sm font-medium text-gray-500">Response Rate</dt>
+                        <dd className="mt-1 text-sm text-gray-900">98%</dd>
+                      </div>
+                      <div className="sm:col-span-1">
+                        <dt className="text-sm font-medium text-gray-500">Response Time</dt>
+                        <dd className="mt-1 text-sm text-gray-900">Within 1 hour</dd>
+                      </div>
+                      <div className="sm:col-span-1">
+                        <dt className="text-sm font-medium text-gray-500">Total Listings</dt>
+                        <dd className="mt-1 text-sm text-gray-900">24</dd>
+                      </div>
+                    </dl>
+                  </div>
+                  
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <h4 className="font-semibold text-gray-900 mb-2">Seller Ratings</h4>
+                    <div className="flex items-center">
+                      <div className="flex items-center">
+                        {[0, 1, 2, 3, 4].map((rating) => (
+                          <svg
+                            key={rating}
+                            className={`h-5 w-5 flex-shrink-0 ${rating < 4.5 ? 'text-yellow-400' : 'text-gray-300'}`}
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                            aria-hidden="true"
+                          >
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                        ))}
+                      </div>
+                      <p className="ml-2 text-sm text-gray-900">4.5 out of 5</p>
+                      <span className="mx-2 text-gray-400">•</span>
+                      <p className="text-sm text-gray-500">128 reviews</p>
+                    </div>
+                    
+                    <div className="mt-4 space-y-2">
+                      <div className="flex items-center text-sm">
+                        <span className="w-24 text-gray-500">5 stars</span>
+                        <div className="ml-2 flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-yellow-400 rounded-full" style={{ width: '75%' }}></div>
+                        </div>
+                        <span className="ml-2 text-gray-500 w-8">75%</span>
+                      </div>
+                      <div className="flex items-center text-sm">
+                        <span className="w-24 text-gray-500">4 stars</span>
+                        <div className="ml-2 flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-yellow-400 rounded-full" style={{ width: '15%' }}></div>
+                        </div>
+                        <span className="ml-2 text-gray-500 w-8">15%</span>
+                      </div>
+                      <div className="flex items-center text-sm">
+                        <span className="w-24 text-gray-500">3 stars</span>
+                        <div className="ml-2 flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-yellow-400 rounded-full" style={{ width: '7%' }}></div>
+                        </div>
+                        <span className="ml-2 text-gray-500 w-8">7%</span>
+                      </div>
+                      <div className="flex items-center text-sm">
+                        <span className="w-24 text-gray-500">2 stars</span>
+                        <div className="ml-2 flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-yellow-400 rounded-full" style={{ width: '2%' }}></div>
+                        </div>
+                        <span className="ml-2 text-gray-500 w-8">2%</span>
+                      </div>
+                      <div className="flex items-center text-sm">
+                        <span className="w-24 text-gray-500">1 star</span>
+                        <div className="ml-2 flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-yellow-400 rounded-full" style={{ width: '1%' }}></div>
+                        </div>
+                        <span className="ml-2 text-gray-500 w-8">1%</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <h4 className="font-semibold text-gray-900 mb-2">Recent Reviews</h4>
+                    <div className="space-y-4">
+                      <div className="border-b border-gray-200 pb-4">
+                        <div className="flex items-center">
+                          <div className="flex items-center">
+                            {[0, 1, 2, 3, 4].map((rating) => (
+                              <svg
+                                key={rating}
+                                className={`h-4 w-4 flex-shrink-0 ${rating < 5 ? 'text-yellow-400' : 'text-gray-300'}`}
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                                aria-hidden="true"
+                              >
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                            ))}
+                          </div>
+                          <p className="ml-2 text-sm text-gray-900">Great seller!</p>
+                          <span className="mx-2 text-gray-400">•</span>
+                          <p className="text-sm text-gray-500">2 days ago</p>
+                        </div>
+                        <p className="mt-2 text-sm text-gray-700">The bundle was exactly as described. Fast shipping and great communication.</p>
+                      </div>
+                      
+                      <div>
+                        <div className="flex items-center">
+                          <div className="flex items-center">
+                            {[0, 1, 2, 3, 4].map((rating) => (
+                              <svg
+                                key={rating}
+                                className={`h-4 w-4 flex-shrink-0 ${rating < 4 ? 'text-yellow-400' : 'text-gray-300'}`}
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                                aria-hidden="true"
+                              >
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                            ))}
+                          </div>
+                          <p className="ml-2 text-sm text-gray-900">Good bundle</p>
+                          <span className="mx-2 text-gray-400">•</span>
+                          <p className="text-sm text-gray-500">1 week ago</p>
+                        </div>
+                        <p className="mt-2 text-sm text-gray-700">Items were in good condition as described. Would buy from again.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         
         {/* Modal Footer */}
-        <div className="bg-gray-50 px-8 py-6 border-t border-gray-200">
+        <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="text-center sm:text-left">
               <div className="text-2xl font-bold text-gray-900">${product.price.toFixed(2)}</div>
@@ -1103,13 +1414,13 @@ function ProductModal({ product, onClose }: any) {
             <div className="flex gap-3 w-full sm:w-auto">
               <button
                 onClick={onClose}
-                className="flex-1 sm:flex-none px-6 py-3 border border-gray-300 rounded-2xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                className="flex-1 sm:flex-none px-6 py-2 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 Close
               </button>
               <Link
                 href={`/products/${product.id}`}
-                className="flex-1 sm:flex-none px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-sm font-medium rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl text-center"
+                className="flex-1 sm:flex-none px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl text-center"
               >
                 View Full Details
               </Link>

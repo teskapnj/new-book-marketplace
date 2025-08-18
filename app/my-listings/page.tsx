@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { collection, query, where, onSnapshot, orderBy, getDocs } from "firebase/firestore";
+import { collection, query, where, onSnapshot, orderBy, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export default function SellerListingsPage() {
@@ -15,6 +15,7 @@ export default function SellerListingsPage() {
   const [selectedListing, setSelectedListing] = useState<any>(null);
   const [indexError, setIndexError] = useState<string | null>(null);
   const [fallbackMode, setFallbackMode] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null); // Track which listing is being deleted
 
   // Kullanıcı durumunu takip et
   useEffect(() => {
@@ -22,9 +23,41 @@ export default function SellerListingsPage() {
       setUser(user);
       setAuthLoading(false);
     });
-
     return () => unsubscribe();
   }, []);
+
+  // Handle listing deletion
+  const handleDeleteListing = async (listingId: string) => {
+    if (!user) return;
+    
+    // Show confirmation dialog
+    if (!confirm("Are you sure you want to delete this listing? This action cannot be undone.")) {
+      return;
+    }
+    
+    setDeleteLoading(listingId);
+    
+    try {
+      // Delete the listing from Firestore
+      await deleteDoc(doc(db, "listings", listingId));
+      
+      // Update local state
+      setListings(prev => prev.filter(listing => listing.id !== listingId));
+      
+      // If the deleted listing is currently selected, close the modal
+      if (selectedListing && selectedListing.id === listingId) {
+        setSelectedListing(null);
+      }
+      
+      // Show success message
+      alert("Listing deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting listing:", error);
+      alert("Failed to delete listing. Please try again.");
+    } finally {
+      setDeleteLoading(null);
+    }
+  };
 
   // Fetch listings from Firebase for the current user
   useEffect(() => {
@@ -392,12 +425,25 @@ export default function SellerListingsPage() {
                         {getStatusBadge(listing.status)}
                         <span className="text-sm text-gray-500">ID: {listing.id}</span>
                       </div>
-                      <button
-                        onClick={() => setSelectedListing(listing)}
-                        className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        👁️ View Details
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setSelectedListing(listing)}
+                          className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          👁️ View Details
+                        </button>
+                        <button
+                          onClick={() => handleDeleteListing(listing.id)}
+                          disabled={deleteLoading === listing.id}
+                          className={`px-4 py-2 text-sm rounded-lg transition-colors ${
+                            deleteLoading === listing.id
+                              ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                              : "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+                          }`}
+                        >
+                          {deleteLoading === listing.id ? "Deleting..." : "🗑️ Delete"}
+                        </button>
+                      </div>
                     </div>
                     
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">
@@ -645,6 +691,17 @@ export default function SellerListingsPage() {
                     Create New Listing
                   </Link>
                 )}
+                <button
+                  onClick={() => handleDeleteListing(selectedListing.id)}
+                  disabled={deleteLoading === selectedListing.id}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    deleteLoading === selectedListing.id
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-red-600 hover:bg-red-700 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  }`}
+                >
+                  {deleteLoading === selectedListing.id ? "Deleting..." : "Delete Listing"}
+                </button>
               </div>
             </div>
           </div>

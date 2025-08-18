@@ -1,13 +1,13 @@
 "use client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCart } from "@/contexts/CartContext";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import ProductCard from "@/components/ProductCard";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { collection, query, where, onSnapshot, orderBy, getDocs } from "firebase/firestore";
+import { collection, query, where, onSnapshot, orderBy, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 // SVG Icons
@@ -107,8 +107,20 @@ function ShieldCheckIcon({ size = 24, className = "" }) {
   );
 }
 
+function AdminIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"></path>
+      <path d="M12 22v-6"></path>
+      <path d="M12 12h-2"></path>
+      <path d="M12 12h2"></path>
+    </svg>
+  );
+}
+
 export default function HomePage() {
   const { user, loading, error } = useAuth();
+  const { getTotalItems } = useCart();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -116,11 +128,36 @@ export default function HomePage() {
   const [productsLoading, setProductsLoading] = useState(true);
   const [indexError, setIndexError] = useState<string | null>(null);
   const [fallbackMode, setFallbackMode] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  // Kullanıcı rolünü kontrol et
+  useEffect(() => {
+    const checkUserRole = async () => {
+      if (user) {
+        try {
+          if (user.email === "admin@marketplace.com") {
+            setUserRole("admin");
+            return;
+          }
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setUserRole(userData.role || "user");
+          } else {
+            setUserRole("user");
+          }
+        } catch (error) {
+          console.error("Error checking user role:", error);
+          setUserRole("user");
+        }
+      }
+    };
+    checkUserRole();
+  }, [user]);
 
   // Fetch listings from Firebase
   useEffect(() => {
     setProductsLoading(true);
-
     const fetchListings = async () => {
       try {
         const q = query(
@@ -128,21 +165,16 @@ export default function HomePage() {
           where("status", "==", "approved"),
           orderBy("createdAt", "desc")
         );
-
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
           const listingsData: any[] = [];
-
           querySnapshot.forEach((doc) => {
             const data = doc.data();
-
             if (!data.bundleItems || !Array.isArray(data.bundleItems)) {
               console.warn(`Listing ${doc.id} has invalid bundleItems:`, data.bundleItems);
               return;
             }
-
             const distinctCategories = new Set<string>();
             const conditionCounts: Record<string, number> = {};
-
             data.bundleItems.forEach((item: any) => {
               if (item.category) {
                 distinctCategories.add(item.category);
@@ -151,15 +183,26 @@ export default function HomePage() {
                 conditionCounts[item.condition] = (conditionCounts[item.condition] || 0) + 1;
               }
             });
-
             const dominantCategory = distinctCategories.size > 1 ? "mix" :
               (distinctCategories.values().next().value || "mix");
-
             const dominantCondition = Object.entries(conditionCounts)
               .sort((a, b) => b[1] - a[1])[0]?.[0] || "good";
-
-            const firstItemImage = data.bundleItems[0]?.image || null;
-
+            
+            let firstItemImage = null;
+            for (const item of data.bundleItems) {
+              if (item.image) {
+                try {
+                  const url = new URL(item.image);
+                  if (url.hostname === 'firebasestorage.googleapis.com' && url.pathname.includes('/v0/b/')) {
+                    firstItemImage = item.image;
+                    break;
+                  }
+                } catch (e) {
+                  console.warn("Invalid image URL:", item.image);
+                }
+              }
+            }
+            
             listingsData.push({
               id: doc.id,
               title: data.title || "Untitled Bundle",
@@ -173,21 +216,24 @@ export default function HomePage() {
               description: `Bundle of ${data.totalItems || data.bundleItems.length} items including various ${dominantCategory === "mix" ? "categories" : dominantCategory + "s"} in ${dominantCondition === "like-new" ? "Like New" : "Good"} condition.`,
               totalItems: data.totalItems || data.bundleItems.length,
               vendorId: data.vendorId,
-              distinctCategories: Array.from(distinctCategories)
+              distinctCategories: Array.from(distinctCategories),
+              status: data.status,
+              updatedAt: data.updatedAt?.toDate() || null,
+              location: data.location || null,
+              tags: data.tags || [],
+              highlights: data.highlights || []
             });
           });
-
+          console.log(`✅ Loaded ${listingsData.length} listings from Firebase`);
           setFeaturedProducts(listingsData.slice(0, 8));
           setProductsLoading(false);
           setIndexError(null);
           setFallbackMode(false);
         }, (error) => {
           console.error("Firestore error:", error);
-
           if (error.code === 'failed-precondition' && error.message.includes('index')) {
             const match = error.message.match(/https:\/\/console\.firebase\.google\.com\/[^\s]*/);
             const indexLink = match ? match[0] : null;
-
             setIndexError(indexLink || "Index required but no link provided");
             setFallbackMode(true);
             fetchWithoutIndex();
@@ -195,35 +241,29 @@ export default function HomePage() {
             setProductsLoading(false);
           }
         });
-
         return unsubscribe;
       } catch (error) {
         console.error("Query setup error:", error);
         setProductsLoading(false);
       }
     };
-
+    
     const fetchWithoutIndex = async () => {
       try {
         const q = query(
           collection(db, "listings"),
           where("status", "==", "approved")
         );
-
         const querySnapshot = await getDocs(q);
         const listingsData: any[] = [];
-
         querySnapshot.forEach((doc) => {
           const data = doc.data();
-
           if (!data.bundleItems || !Array.isArray(data.bundleItems)) {
             console.warn(`Listing ${doc.id} has invalid bundleItems:`, data.bundleItems);
             return;
           }
-
           const distinctCategories = new Set<string>();
           const conditionCounts: Record<string, number> = {};
-
           data.bundleItems.forEach((item: any) => {
             if (item.category) {
               distinctCategories.add(item.category);
@@ -232,15 +272,26 @@ export default function HomePage() {
               conditionCounts[item.condition] = (conditionCounts[item.condition] || 0) + 1;
             }
           });
-
           const dominantCategory = distinctCategories.size > 1 ? "mix" :
             (distinctCategories.values().next().value || "mix");
-
           const dominantCondition = Object.entries(conditionCounts)
             .sort((a, b) => b[1] - a[1])[0]?.[0] || "good";
-
-          const firstItemImage = data.bundleItems[0]?.image || null;
-
+          
+          let firstItemImage = null;
+          for (const item of data.bundleItems) {
+            if (item.image) {
+              try {
+                const url = new URL(item.image);
+                if (url.hostname === 'firebasestorage.googleapis.com' && url.pathname.includes('/v0/b/')) {
+                  firstItemImage = item.image;
+                  break;
+                }
+              } catch (e) {
+                console.warn("Invalid image URL:", item.image);
+              }
+            }
+          }
+          
           listingsData.push({
             id: doc.id,
             title: data.title || "Untitled Bundle",
@@ -254,14 +305,17 @@ export default function HomePage() {
             description: `Bundle of ${data.totalItems || data.bundleItems.length} items including various ${dominantCategory === "mix" ? "categories" : dominantCategory + "s"} in ${dominantCondition === "like-new" ? "Like New" : "Good"} condition.`,
             totalItems: data.totalItems || data.bundleItems.length,
             vendorId: data.vendorId,
-            distinctCategories: Array.from(distinctCategories)
+            distinctCategories: Array.from(distinctCategories),
+            status: data.status,
+            updatedAt: data.updatedAt?.toDate() || null,
+            location: data.location || null,
+            tags: data.tags || [],
+            highlights: data.highlights || []
           });
         });
-
         listingsData.sort((a, b) => {
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         });
-
         setFeaturedProducts(listingsData.slice(0, 8));
         setProductsLoading(false);
       } catch (error) {
@@ -269,7 +323,7 @@ export default function HomePage() {
         setProductsLoading(false);
       }
     };
-
+    
     fetchListings();
   }, []);
 
@@ -296,69 +350,149 @@ export default function HomePage() {
     router.push(`/listings?category=${category}`);
   };
 
-  // Custom ProductCard component for homepage
+  // Custom ProductCard component for homepage - GÜNCELLENMİŞ
   const HomeProductCard = ({ product }: { product: any }) => {
+    const { addToCart } = useCart();
     const [imageError, setImageError] = useState(false);
+    const [imageLoading, setImageLoading] = useState(true);
+    const [isAdding, setIsAdding] = useState(false);
     
     const getCategoryIcon = (category: string) => {
       const icons = { book: "📚", cd: "💿", dvd: "📀", game: "🎮", mix: "📦" };
       return icons[category as keyof typeof icons] || "📦";
     };
-
+    
     const getConditionColor = (condition: string) => {
-      return condition === 'like-new' 
-        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+      return condition === 'like-new'
+        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
         : 'bg-amber-50 text-amber-700 border border-amber-200';
     };
-
+    
+    const handleImageLoad = () => {
+      setImageLoading(false);
+    };
+    
     const handleImageError = () => {
+      setImageLoading(false);
       setImageError(true);
     };
-
+    
+    // SEPETE EKLE FONKSİYONU - GELİŞTİRİLMİŞ
+    const handleAddToCart = async (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      setIsAdding(true);
+      
+      try {
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        addToCart({
+          id: product.id,
+          sellerId: product.vendorId,
+          title: product.title,
+          price: product.price,
+          image: product.imageUrl || ""
+        });
+      } catch (error) {
+        console.error("Sepete eklenirken hata:", error);
+      } finally {
+        setIsAdding(false);
+      }
+    };
+    
+    const isValidImageUrl = product.imageUrl &&
+      (product.imageUrl.startsWith('https://firebasestorage.googleapis.com') ||
+      product.imageUrl.startsWith('https://storage.googleapis.com'));
+      
     return (
-      <Link href={`/products/${product.id}`}>
-        <div className="group bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-2xl hover:-translate-y-2 transition-all duration-300">
-          <div className="relative h-48 bg-gradient-to-br from-gray-50 to-gray-100">
-            {product.imageUrl && !imageError ? (
-              <Image 
-                src={product.imageUrl} 
-                alt="Product image"
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
-                onError={handleImageError}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <span className="text-5xl">{getCategoryIcon(product.category)}</span>
-              </div>
-            )}
-            
-            {/* Clean image without badges on top-left */}
-            <div className="absolute top-3 right-3">
-              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold ${getConditionColor(product.condition)}`}>
-                {product.condition === "like-new" ? "Like New" : "Good"}
-              </span>
+      <div className="group bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-2xl hover:-translate-y-2 transition-all duration-300">
+        <div className="relative h-48 bg-gradient-to-br from-gray-50 to-gray-100">
+          {isValidImageUrl && !imageError ? (
+            <Image
+              src={product.imageUrl}
+              alt="Product image"
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              unoptimized={true}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <span className="text-5xl">{getCategoryIcon(product.category)}</span>
             </div>
-          </div>
-          
-          <div className="p-4">
-            <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
-              {product.title.length > 50 ? product.title.substring(0, 50) + "..." : product.title}
-            </h3>
-            
-            <p className="text-gray-600 text-sm mb-3">
-              by <span className="font-medium">{product.sellerName}</span>
-            </p>
-            
-            <div className="flex items-center justify-between">
-              <span className="text-xl font-bold text-gray-900">${product.price.toFixed(2)}</span>
-              <span className="text-xs text-gray-500 capitalize">{product.category}</span>
-            </div>
+          )}
+          <div className="absolute top-3 right-3">
+            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold ${getConditionColor(product.condition)}`}>
+              {product.condition === "like-new" ? "Like New" : "Good"}
+            </span>
           </div>
         </div>
-      </Link>
+        <div className="p-4">
+          <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+            {product.title.length > 50 ? product.title.substring(0, 50) + "..." : product.title}
+          </h3>
+          <p className="text-gray-600 text-sm mb-3">
+            by <span className="font-medium">{product.sellerName}</span>
+          </p>
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-xl font-bold text-gray-900">${product.price.toFixed(2)}</span>
+            <span className="text-xs text-gray-500 capitalize">{product.category}</span>
+          </div>
+          
+          {/* BUTONLAR - GÜNCELLENMİŞ */}
+          <div className="flex flex-col sm:flex-row gap-2">
+            {/* ÜRÜNÜ İNCELE BUTONU */}
+            <Link 
+              href={`/products/${product.id}`}
+              className="flex-1 py-2 px-4 bg-gray-100 text-gray-800 font-medium rounded-lg hover:bg-gray-200 transition-colors text-center flex items-center justify-center"
+            >
+              <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              View Product
+            </Link>
+            
+            {/* SEPETE EKLE BUTONU */}
+            <button
+              onClick={handleAddToCart}
+              disabled={isAdding}
+              className={`flex-1 py-2 px-4 font-medium rounded-lg transition-colors flex items-center justify-center ${
+                isAdding 
+                  ? 'bg-blue-400 cursor-not-allowed' 
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+            >
+              {isAdding ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Adding...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 22C9.55228 22 10 21.5523 10 21C10 20.4477 9.55228 20 9 20C8.44772 20 8 20.4477 8 21C8 21.5523 8.44772 22 9 22Z"></path>
+                    <path d="M15 22C15.5523 22 16 21.5523 16 21C16 20.4477 15.5523 20 15 20C14.4477 20 14 20.4477 14 21C14 21.5523 14.4477 22 15 22Z"></path>
+                    <path d="M5 2C4.44772 2 4 2.44772 4 3V4H2C1.44772 4 1 4.44772 1 5C1 5.55228 1.44772 6 2 6H3V19C3 20.6569 4.34315 22 6 22H18C19.6569 22 21 20.6569 21 19V6H22C22.5523 6 23 5.55228 23 5C23 4.44772 22.5523 4 22 4H20V3C20 2.44772 19.5523 2 19 2C18.4477 2 18 2.44772 18 3V4H6V3C6 2.44772 5.55228 2 5 2Z"></path>
+                  </svg>
+                  Add to Cart
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
     );
   };
+
+  // Sadece giriş yapmamış kullanıcılar için butonları göster
+  const shouldShowActionButtons = !user;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -403,7 +537,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Mobile Header */}
           <div className="flex md:hidden items-center justify-between py-4">
-            <button 
+            <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"
             >
@@ -416,9 +550,14 @@ export default function HomePage() {
               <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors">
                 <SearchIcon size={20} />
               </button>
-              <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors">
+              <Link href="/cart" className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors relative">
                 <CartIcon size={20} />
-              </button>
+                {getTotalItems() > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {getTotalItems()}
+                  </span>
+                )}
+              </Link>
             </div>
           </div>
 
@@ -429,7 +568,6 @@ export default function HomePage() {
                 MarketPlace
               </Link>
             </div>
-            
             <div className="flex-1 max-w-xl mx-8">
               <div className="relative">
                 <input
@@ -442,7 +580,6 @@ export default function HomePage() {
                 <SearchIcon className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
               </div>
             </div>
-            
             <div className="flex items-center space-x-4">
               {loading ? (
                 <div className="h-8 w-20 bg-gray-200 rounded-lg animate-pulse"></div>
@@ -450,15 +587,32 @@ export default function HomePage() {
                 <span className="text-red-500 font-medium">Auth Error</span>
               ) : user ? (
                 <>
-                  <Link href="/dashboard" className="font-medium text-gray-700 hover:text-gray-900 transition-colors">
-                    Dashboard
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="font-medium text-gray-700 hover:text-gray-900 transition-colors"
-                  >
-                    Logout
-                  </button>
+                  {userRole === "admin" ? (
+                    <>
+                      <Link href="/admin/dashboard" className="font-medium text-gray-700 hover:text-gray-900 transition-colors flex items-center">
+                        <AdminIcon size={20} className="mr-1" />
+                        Admin Dashboard
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                      >
+                        Logout
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link href="/dashboard" className="font-medium text-gray-700 hover:text-gray-900 transition-colors">
+                        Dashboard
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                      >
+                        Logout
+                      </button>
+                    </>
+                  )}
                 </>
               ) : (
                 <>
@@ -470,14 +624,18 @@ export default function HomePage() {
                   </Link>
                 </>
               )}
-              
               <div className="flex items-center space-x-3 ml-4">
                 <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors">
                   <UserIcon size={20} />
                 </button>
-                <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors">
+                <Link href="/cart" className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors relative">
                   <CartIcon size={20} />
-                </button>
+                  {getTotalItems() > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {getTotalItems()}
+                    </span>
+                  )}
+                </Link>
               </div>
             </div>
           </div>
@@ -493,15 +651,32 @@ export default function HomePage() {
                 <span className="text-red-500 font-medium">Auth Error</span>
               ) : user ? (
                 <>
-                  <Link href="/dashboard" className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors">
-                    Dashboard
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors text-left w-full"
-                  >
-                    Logout
-                  </button>
+                  {userRole === "admin" ? (
+                    <>
+                      <Link href="/admin/dashboard" className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors flex items-center">
+                        <AdminIcon size={20} className="mr-1" />
+                        Admin Dashboard
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors text-left w-full"
+                      >
+                        Logout
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link href="/dashboard" className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors">
+                        Dashboard
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors text-left w-full"
+                      >
+                        Logout
+                      </button>
+                    </>
+                  )}
                 </>
               ) : (
                 <>
@@ -522,13 +697,10 @@ export default function HomePage() {
       <section className="relative py-16 sm:py-24 lg:py-32 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700"></div>
         <div className="absolute inset-0 bg-black/20"></div>
-        
-        {/* Floating Elements */}
         <div className="absolute top-20 left-10 text-6xl animate-bounce opacity-20">📚</div>
         <div className="absolute top-32 right-16 text-5xl animate-pulse opacity-20">💿</div>
         <div className="absolute bottom-20 left-1/4 text-4xl animate-bounce opacity-20">🎮</div>
         <div className="absolute bottom-32 right-1/3 text-5xl animate-pulse opacity-20">📀</div>
-        
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="max-w-4xl mx-auto">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
@@ -537,34 +709,10 @@ export default function HomePage() {
                 in Bulk
               </span>
             </h1>
-            
             <p className="text-xl sm:text-2xl text-blue-100 mb-8 leading-relaxed">
-              Discover amazing deals on gently used books, CDs, DVDs, games, and curated mix bundles. 
+              Discover amazing deals on gently used books, CDs, DVDs, games, and curated mix bundles.
               Start earning from your collection today!
             </p>
-            
-            <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6">
-              {loading ? (
-                <div className="h-14 w-40 bg-white/20 rounded-2xl animate-pulse"></div>
-              ) : user ? (
-                <Link href="/create-listing" className="group inline-flex items-center justify-center px-8 py-4 bg-white text-blue-600 font-bold text-lg rounded-2xl hover:bg-gray-50 transition-all duration-200 shadow-xl hover:shadow-2xl transform hover:-translate-y-1">
-                  <PackageIcon size={24} className="mr-3 group-hover:rotate-12 transition-transform" />
-                  Start Selling
-                </Link>
-              ) : (
-                <Link href="/register" className="group inline-flex items-center justify-center px-8 py-4 bg-white text-blue-600 font-bold text-lg rounded-2xl hover:bg-gray-50 transition-all duration-200 shadow-xl hover:shadow-2xl transform hover:-translate-y-1">
-                  <SparklesIcon size={24} className="mr-3 group-hover:rotate-12 transition-transform" />
-                  Start Selling
-                </Link>
-              )}
-              
-              <Link href="/listings" className="group inline-flex items-center justify-center px-8 py-4 bg-transparent border-2 border-white text-white font-bold text-lg rounded-2xl hover:bg-white/10 transition-all duration-200 backdrop-blur-sm">
-                Browse Marketplace
-                <ArrowRightIcon size={24} className="ml-3 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </div>
-            
-            {/* Stats */}
             <div className="grid grid-cols-3 gap-8 mt-16 max-w-2xl mx-auto">
               <div className="text-center">
                 <div className="text-3xl sm:text-4xl font-bold text-white mb-2">1000+</div>
@@ -594,7 +742,6 @@ export default function HomePage() {
               Find exactly what you're looking for in our curated categories
             </p>
           </div>
-          
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
             {categories.map((category) => (
               <button
@@ -630,15 +777,15 @@ export default function HomePage() {
                 Hand-picked deals you won't want to miss
               </p>
             </div>
-            <Link 
-              href="/listings" 
+            <Link
+              href="/listings"
               className="group inline-flex items-center mt-4 sm:mt-0 px-6 py-3 bg-blue-600 text-white font-medium rounded-2xl hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               View All
               <ArrowRightIcon size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
-
+          
           {productsLoading ? (
             <div className="flex flex-col items-center justify-center h-64">
               <div className="relative">
@@ -662,18 +809,15 @@ export default function HomePage() {
               <p className="text-gray-600 mb-8 max-w-md mx-auto">
                 Be the first to create amazing bundles and start earning money from your collection!
               </p>
-              {loading ? (
-                <div className="h-12 w-48 bg-gray-200 rounded-2xl animate-pulse mx-auto"></div>
-              ) : user ? (
-                <Link href="/create-listing" className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-2xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl">
-                  <PackageIcon size={24} className="mr-3" />
-                  Create Your First Bundle
-                </Link>
-              ) : (
-                <Link href="/register" className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-2xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl">
-                  <SparklesIcon size={24} className="mr-3" />
-                  Create Your Account
-                </Link>
+              {shouldShowActionButtons && (
+                loading ? (
+                  <div className="h-12 w-48 bg-gray-200 rounded-2xl animate-pulse mx-auto"></div>
+                ) : (
+                  <Link href="/create-listing" className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-2xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+                    <PackageIcon size={24} className="mr-3" />
+                    Create Your First Bundle
+                  </Link>
+                )
               )}
             </div>
           )}
@@ -691,7 +835,6 @@ export default function HomePage() {
               Start selling your used media in three simple steps
             </p>
           </div>
-
           <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
             <div className="group text-center">
               <div className="relative mb-8">
@@ -704,11 +847,10 @@ export default function HomePage() {
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-4">List Your Items</h3>
               <p className="text-gray-600 leading-relaxed">
-                Scan ISBN codes or manually add your used books, CDs, DVDs, and games. 
+                Scan ISBN codes or manually add your used books, CDs, DVDs, and games.
                 Create custom bundles for better deals.
               </p>
             </div>
-
             <div className="group text-center">
               <div className="relative mb-8">
                 <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-3xl flex items-center justify-center mx-auto shadow-xl group-hover:shadow-2xl transition-all duration-300">
@@ -720,11 +862,10 @@ export default function HomePage() {
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-4">Get Paid</h3>
               <p className="text-gray-600 leading-relaxed">
-                When your bundle sells, we handle secure payment processing and 
+                When your bundle sells, we handle secure payment processing and
                 transfer funds directly to your account.
               </p>
             </div>
-
             <div className="group text-center">
               <div className="relative mb-8">
                 <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-purple-600 rounded-3xl flex items-center justify-center mx-auto shadow-xl group-hover:shadow-2xl transition-all duration-300">
@@ -736,8 +877,7 @@ export default function HomePage() {
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-4">Ship & Track</h3>
               <p className="text-gray-600 leading-relaxed">
-                Ship your bundle with tracking included. Funds are securely released 
-                after delivery confirmation.
+                Ship your bundle with tracking included. Funds are securely released 3 business days after delivery confirmation.
               </p>
             </div>
           </div>
@@ -747,36 +887,16 @@ export default function HomePage() {
       {/* CTA Section */}
       <section className="py-16 sm:py-20 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 relative overflow-hidden">
         <div className="absolute inset-0 bg-black/20"></div>
-        
-        {/* Floating Elements */}
         <div className="absolute top-10 left-10 text-4xl animate-bounce opacity-30">💰</div>
         <div className="absolute bottom-10 right-10 text-4xl animate-pulse opacity-30">🚀</div>
-        
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6">
             Ready to Start Earning?
           </h2>
           <p className="text-xl sm:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto leading-relaxed">
-            Join thousands of sellers who've already earned money from their used media collections. 
+            Join thousands of sellers who've already earned money from their used media collections.
             Turn your clutter into cash today!
           </p>
-          
-          <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6">
-            {loading ? (
-              <div className="h-14 w-40 bg-white/20 rounded-2xl animate-pulse mx-auto"></div>
-            ) : user ? (
-              <Link href="/create-listing" className="group inline-flex items-center justify-center px-8 py-4 bg-white text-blue-600 font-bold text-lg rounded-2xl hover:bg-gray-50 transition-all duration-200 shadow-xl hover:shadow-2xl transform hover:-translate-y-1">
-                <PackageIcon size={24} className="mr-3 group-hover:rotate-12 transition-transform" />
-                Create Bundle Now
-              </Link>
-            ) : (
-              <Link href="/register" className="group inline-flex items-center justify-center px-8 py-4 bg-white text-blue-600 font-bold text-lg rounded-2xl hover:bg-gray-50 transition-all duration-200 shadow-xl hover:shadow-2xl transform hover:-translate-y-1">
-                <SparklesIcon size={24} className="mr-3 group-hover:rotate-12 transition-transform" />
-                Create Your Account
-              </Link>
-            )}
-          </div>
-          
           <div className="mt-12 flex justify-center space-x-8 text-blue-200">
             <div className="flex items-center">
               <ShieldCheckIcon size={20} className="mr-2" />
@@ -803,7 +923,7 @@ export default function HomePage() {
                 MarketPlace
               </Link>
               <p className="text-gray-400 leading-relaxed mb-6">
-                The premier marketplace for buying and selling used books, CDs, DVDs, games, and curated bundles. 
+                The premier marketplace for buying and selling used books, CDs, DVDs, games, and curated bundles.
                 Turn your collection into cash with confidence.
               </p>
               <div className="flex space-x-4">
@@ -818,7 +938,6 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
-
             <div>
               <h4 className="font-bold text-lg mb-6 text-white">For Buyers</h4>
               <ul className="space-y-3">
@@ -828,11 +947,10 @@ export default function HomePage() {
                 <li><Link href="/returns" className="text-gray-400 hover:text-white transition-colors">Returns & Refunds</Link></li>
               </ul>
             </div>
-
             <div>
               <h4 className="font-bold text-lg mb-6 text-white">For Sellers</h4>
               <ul className="space-y-3">
-                {user ? (
+                {shouldShowActionButtons ? (
                   <li><Link href="/create-listing" className="text-gray-400 hover:text-white transition-colors">Create Bundle</Link></li>
                 ) : (
                   <li><Link href="/register" className="text-gray-400 hover:text-white transition-colors">Start Selling</Link></li>
@@ -842,7 +960,6 @@ export default function HomePage() {
                 <li><Link href="/seller-guide" className="text-gray-400 hover:text-white transition-colors">Seller Guide</Link></li>
               </ul>
             </div>
-
             <div>
               <h4 className="font-bold text-lg mb-6 text-white">Support</h4>
               <ul className="space-y-3">
@@ -853,7 +970,6 @@ export default function HomePage() {
               </ul>
             </div>
           </div>
-
           <div className="mt-12 pt-8 border-t border-gray-800">
             <div className="flex flex-col sm:flex-row justify-between items-center">
               <p className="text-gray-400 text-sm">

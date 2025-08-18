@@ -2,11 +2,14 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { auth, db } from "@/lib/firebase";
+import { auth, db, storage } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { FiHome, FiSave, FiCamera, FiDollarSign, FiPackage, FiPlus, FiMinus, FiX, FiCheck, FiAlertCircle, FiRefreshCw } from "react-icons/fi";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { FiHome, FiSave, FiCamera, FiDollarSign, FiPackage, FiPlus, FiMinus, FiX, FiCheck, FiAlertCircle, FiUpload } from "react-icons/fi";
 import Link from "next/link";
 import Head from "next/head";
+// Image optimization utilities
+import { smartOptimizeImage, formatFileSize } from "@/utils/imageOptimization";
 
 interface BundleItem {
   id: string;
@@ -14,7 +17,9 @@ interface BundleItem {
   condition: "like-new" | "good";
   quantity: number;
   price: number;
-  image: string | null;
+  image: string | null;        // Preview için thumbnail
+  imageBlob: Blob | null;       // Upload için optimized blob
+  imageStats?: any;             // Optimization istatistikleri
   category: "book" | "cd" | "dvd" | "game" | "mix";
 }
 
@@ -31,6 +36,7 @@ export default function CreateListingPage() {
     quantity: 1,
     price: 0,
     image: null,
+    imageBlob: null,
     category: "book"
   });
   
@@ -44,19 +50,18 @@ export default function CreateListingPage() {
   const [generatedTitle, setGeneratedTitle] = useState("");
   const [storageWarning, setStorageWarning] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [storageStatus, setStorageStatus] = useState<string>("");
-  const [saveStatus, setSaveStatus] = useState<string>("");
-  const [loadStatus, setLoadStatus] = useState<string>("");
+  const [uploadProgress, setUploadProgress] = useState("");
+  const [imageProcessing, setImageProcessing] = useState(false);
   const [isPrivateMode, setIsPrivateMode] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   
-  // Kullanıcıya özel depolama anahtarı - useCallback ile memoize edildi
+  // Kullanıcıya özel depolama anahtarı
   const getStorageKey = useCallback(() => {
     return user ? `bundleListingDraft_${user.uid}` : 'bundleListingDraft_guest';
   }, [user]);
   
-  // localStorage testi ve özel mod kontrolü - sadece bir kez çalışacak
+  // localStorage testi
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
@@ -64,30 +69,20 @@ export default function CreateListingPage() {
     
     const initializeStorage = async () => {
       try {
-        // Özel mod kontrolü
-        try {
-          const testKey = 'storageTest_' + Date.now();
-          localStorage.setItem(testKey, 'test');
-          const testValue = localStorage.getItem(testKey);
-          localStorage.removeItem(testKey);
-          
-          if (!mounted) return;
-          
-          if (testValue === 'test') {
-            setIsPrivateMode(false);
-            setStorageStatus("✅ localStorage is working");
-          } else {
-            throw new Error("Storage test failed");
-          }
-        } catch (e) {
-          if (!mounted) return;
-          setIsPrivateMode(true);
-          setStorageStatus("❌ Private browsing mode detected");
+        const testKey = 'storageTest_' + Date.now();
+        localStorage.setItem(testKey, 'test');
+        const testValue = localStorage.getItem(testKey);
+        localStorage.removeItem(testKey);
+        
+        if (!mounted) return;
+        
+        if (testValue === 'test') {
+          setIsPrivateMode(false);
+        } else {
+          throw new Error("Storage test failed");
         }
       } catch (e) {
         if (!mounted) return;
-        console.error("Storage initialization failed:", e);
-        setStorageStatus("❌ localStorage is not available");
         setIsPrivateMode(true);
       } finally {
         if (mounted) {
@@ -103,100 +98,61 @@ export default function CreateListingPage() {
     };
   }, []);
   
-  // Verileri localStorage'a kaydet - useCallback ile optimize edildi
-  const saveToStorage = useCallback(async () => {
+  // Verileri localStorage'a kaydet (resimler hariç)
+  const saveToStorage = useCallback(() => {
     if (!isMounted || isPrivateMode || isInitializing) return;
     
     try {
-      console.log("Attempting to save data to localStorage...");
-      setSaveStatus("Saving...");
-      
-      // Resimleri kaldırarak veriyi küçült
       const dataToSave = {
         bundleItems: bundleItems.map(item => ({
           ...item,
-          image: null // Resimleri kaydetme
+          image: null,      // Resimleri kaydetme
+          imageBlob: null,  // Blob'ları kaydetme
+          imageStats: null  // Stats'ları kaydetme
         })),
         currentItem: {
           ...currentItem,
-          image: null // Resmi kaydetme
+          image: null,
+          imageBlob: null,
+          imageStats: null
         },
-        timestamp: Date.now() // Timestamp ekle
+        timestamp: Date.now()
       };
       
-      const dataString = JSON.stringify(dataToSave);
-      console.log("Data to save (size):", dataString.length);
-      
       const storageKey = getStorageKey();
-      localStorage.setItem(storageKey, dataString);
-      console.log("Data saved successfully to localStorage with key:", storageKey);
-      
-      setSaveStatus(`✅ Saved ${bundleItems.length} items`);
-      setStorageWarning(false);
-      
-      // 3 saniye sonra save status'u temizle
-      setTimeout(() => setSaveStatus(""), 3000);
+      localStorage.setItem(storageKey, JSON.stringify(dataToSave));
+      console.log(`✅ Saved ${bundleItems.length} items to localStorage (without images)`);
       
     } catch (e) {
       console.error("Failed to save to localStorage", e);
-      if (e instanceof DOMException && e.name === 'QuotaExceededError') {
-        setStorageWarning(true);
-        setError("Storage limit reached. Please remove some items or reset.");
-        setSaveStatus("❌ Storage limit exceeded");
-      } else {
-        setError("Failed to save your data. Your changes may not be preserved.");
-        setSaveStatus("❌ Failed to save");
-      }
-      
-      // 5 saniye sonra error status'u temizle
-      setTimeout(() => setSaveStatus(""), 5000);
     }
   }, [bundleItems, currentItem, isMounted, isPrivateMode, isInitializing, getStorageKey]);
   
-  // Verileri localStorage'dan yükle - useCallback ile optimize edildi
-  const loadFromStorage = useCallback(async () => {
+  // Verileri localStorage'dan yükle
+  const loadFromStorage = useCallback(() => {
     if (!isMounted || isPrivateMode || isInitializing) return;
     
     try {
-      console.log("Attempting to load data from localStorage...");
-      setLoadStatus("Loading...");
-      
       const storageKey = getStorageKey();
       const savedData = localStorage.getItem(storageKey);
-      console.log("Saved data from localStorage with key", storageKey, ":", savedData ? "found" : "not found");
       
       if (savedData) {
         const parsed = JSON.parse(savedData);
-        console.log("Parsed data:", { bundleItemsCount: parsed.bundleItems?.length, timestamp: parsed.timestamp });
+        console.log(`✅ Loaded ${parsed.bundleItems?.length || 0} items from localStorage`);
         
-        // State güncellemelerini batch olarak yap
         setBundleItems(parsed.bundleItems || []);
-        setCurrentItem(parsed.currentItem || {
-          id: "",
-          isbn: "",
-          condition: "like-new",
-          quantity: 1,
-          price: 0,
-          image: null,
-          category: "book"
-        });
-        
-        setLoadStatus(`✅ Loaded ${parsed.bundleItems?.length || 0} items`);
-      } else {
-        console.log("No saved data found in localStorage");
-        setLoadStatus("No saved data found");
+        // Current item'ı yükleme (resimler olmadan)
+        if (parsed.currentItem && parsed.currentItem.isbn) {
+          setCurrentItem({
+            ...parsed.currentItem,
+            image: null,
+            imageBlob: null,
+            imageStats: null
+          });
+        }
       }
-      
-      // 3 saniye sonra load status'u temizle
-      setTimeout(() => setLoadStatus(""), 3000);
-      
     } catch (e) {
-      console.error("Failed to load saved data", e);
-      setError("Failed to load your saved data. Please start fresh.");
-      setLoadStatus("❌ Failed to load data");
-      
-      // 5 saniye sonra error status'u temizle
-      setTimeout(() => setLoadStatus(""), 5000);
+      console.error("Failed to load from localStorage", e);
     }
   }, [isMounted, isPrivateMode, isInitializing, getStorageKey]);
   
@@ -207,48 +163,16 @@ export default function CreateListingPage() {
     }
   }, [isMounted, isPrivateMode, isInitializing, loadFromStorage]);
   
-  // Değişiklikleri localStorage'a kaydet - debounced save
+  // Değişiklikleri otomatik kaydet (debounced)
   useEffect(() => {
     if (!isMounted || isInitializing) return;
     
     const timeoutId = setTimeout(() => {
       saveToStorage();
-    }, 500); // 500ms debounce
+    }, 1000); // 1 saniye debounce
     
     return () => clearTimeout(timeoutId);
-  }, [bundleItems, currentItem, saveToStorage, isMounted, isInitializing]);
-  
-  // Sayfa visibility ve focus event'leri için optimize edilmiş handler
-  useEffect(() => {
-    if (!isMounted || isPrivateMode) return;
-    
-    let timeoutId: NodeJS.Timeout;
-    
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        console.log("Page became visible, scheduling data reload...");
-        // Kısa bir delay ile reload et
-        timeoutId = setTimeout(() => {
-          loadFromStorage();
-        }, 100);
-      }
-    };
-    const handleFocus = () => {
-      console.log("Window focused, scheduling data reload...");
-      // Kısa bir delay ile reload et
-      timeoutId = setTimeout(() => {
-        loadFromStorage();
-      }, 100);
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
-    
-    return () => {
-      clearTimeout(timeoutId);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, [isMounted, isPrivateMode, loadFromStorage]);
+  }, [bundleItems, saveToStorage, isMounted, isInitializing]);
   
   // User authentication kontrolü
   useEffect(() => {
@@ -283,19 +207,53 @@ export default function CreateListingPage() {
     }));
   };
   
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // YENİ: Optimize edilmiş image handler
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      const reader = new FileReader();
       
-      reader.onloadend = () => {
+      setImageProcessing(true);
+      setError("");
+      
+      try {
+        // Dosya tipi kontrolü
+        if (!file.type.startsWith('image/')) {
+          setError("Please select a valid image file");
+          setImageProcessing(false);
+          return;
+        }
+        
+        // Resmi optimize et
+        console.log(`Processing image: ${file.name} (${formatFileSize(file.size)})`);
+        const { optimized, thumbnail, stats } = await smartOptimizeImage(file, {
+          maxSizeMB: 1,      // 1MB hedef
+          maxWidth: 1200,    // Max 1200px genişlik
+          maxHeight: 1200,   // Max 1200px yükseklik
+          quality: 0.85      // %85 kalite
+        });
+        
+        // Optimization sonuçlarını göster
+        console.log('Image optimization complete:', stats);
+        
+        // State'i güncelle
         setCurrentItem(prev => ({
           ...prev,
-          image: reader.result as string
+          image: thumbnail,        // Preview için thumbnail
+          imageBlob: optimized,    // Upload için optimized blob
+          imageStats: stats        // İstatistikler (opsiyonel gösterim için)
         }));
-      };
-      
-      reader.readAsDataURL(file);
+        
+        // Başarı mesajı (opsiyonel)
+        if (stats.optimized.compressionApplied) {
+          console.log(`✅ Image optimized: ${stats.original.size} → ${stats.optimized.size} (${stats.optimized.compressionRatio}%)`);
+        }
+        
+      } catch (error) {
+        console.error("Error processing image:", error);
+        setError("Failed to process image. Please try another image.");
+      } finally {
+        setImageProcessing(false);
+      }
     }
   };
   
@@ -322,6 +280,7 @@ export default function CreateListingPage() {
       quantity: 1,
       price: 0,
       image: null,
+      imageBlob: null,
       category: "book"
     });
     
@@ -361,10 +320,36 @@ export default function CreateListingPage() {
     return `${totalItems} ${categoryNames[dominantCategory as keyof typeof categoryNames]} Collection in ${conditionNames[dominantCondition as keyof typeof conditionNames]} Condition`;
   };
   
+  // YENİ: Firebase Storage'a optimize edilmiş resim yükleme
+  const uploadImageToStorage = async (item: BundleItem, userId: string): Promise<string | null> => {
+    if (!item.imageBlob) return null;
+    
+    try {
+      const timestamp = Date.now();
+      const randomString = Math.random().toString(36).substring(7);
+      const imagePath = `listings/${userId}/${timestamp}_${item.isbn}_${randomString}.jpg`;
+      
+      console.log(`Uploading image for ISBN ${item.isbn} to path: ${imagePath}`);
+      
+      // Firebase Storage'a yükle
+      const storageRef = ref(storage, imagePath);
+      const snapshot = await uploadBytes(storageRef, item.imageBlob);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      
+      console.log(`✅ Image uploaded successfully: ${downloadURL}`);
+      return downloadURL;
+      
+    } catch (error) {
+      console.error(`Failed to upload image for ISBN ${item.isbn}:`, error);
+      return null;
+    }
+  };
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError("");
+    setUploadProgress("");
     
     try {
       if (bundleItems.length < 10) {
@@ -376,47 +361,65 @@ export default function CreateListingPage() {
       const title = generateTitle();
       setGeneratedTitle(title);
       
+      // Resimleri Firebase Storage'a yükle
+      setUploadProgress("Uploading images to cloud storage...");
+      const uploadedItems = await Promise.all(
+        bundleItems.map(async (item, index) => {
+          setUploadProgress(`Uploading image ${index + 1} of ${bundleItems.length}...`);
+          
+          const imageUrl = await uploadImageToStorage(item, user!.uid);
+          
+          // Firestore için temiz obje oluştur (undefined field'ları kaldır)
+          return {
+            id: item.id,
+            isbn: item.isbn,
+            condition: item.condition,
+            quantity: item.quantity,
+            price: item.price,
+            category: item.category,
+            image: imageUrl || null  // undefined yerine null kullan
+          };
+        })
+      );
+      
+      setUploadProgress("Saving listing to database...");
+      
       // Toplam değeri hesapla
-      const totalValue = bundleItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      const totalItems = bundleItems.reduce((sum, item) => sum + item.quantity, 0);
+      const totalValue = uploadedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const totalItems = uploadedItems.reduce((sum, item) => sum + item.quantity, 0);
       
-      console.log("Listing data:", {
-        title,
-        items: bundleItems,
-        totalValue,
-        totalItems
-      });
-      
-      // Firebase'e kaydet
+      // Firebase'e kaydet - sadece gerekli field'ları gönder
       const listingData = {
         title: title,
         description: `Bundle of ${totalItems} items including various categories.`,
         totalItems: totalItems,
         totalValue: totalValue,
-        status: "pending", // Admin onayı bekliyor
-        vendorId: user?.uid,
+        status: "pending",
+        vendorId: user?.uid || "",
         vendorName: user?.displayName || user?.email?.split('@')[0] || "Anonymous",
-        bundleItems: bundleItems,
+        bundleItems: uploadedItems, // Temizlenmiş items
         createdAt: serverTimestamp(),
         views: 0
       };
       
       // Firestore'a ekle
       const docRef = await addDoc(collection(db, "listings"), listingData);
-      console.log("Document written with ID: ", docRef.id);
+      console.log("✅ Document written with ID: ", docRef.id);
       
       // Başarılı mesajını göster
       setSuccess(true);
       setShowSuccess(true);
       setIsSubmitting(false);
+      setUploadProgress("");
       
       // localStorage'dan taslağı temizle
       if (!isPrivateMode) {
         const storageKey = getStorageKey();
         localStorage.removeItem(storageKey);
+        console.log("✅ Draft cleared from localStorage");
       }
       
-      // 3 saniye sonra başarı mesajını gizle ve dashboard sayfasına yönlendir
+      // 3 saniye sonra dashboard'a yönlendir
       setTimeout(() => {
         setShowSuccess(false);
         router.push("/dashboard");
@@ -426,10 +429,11 @@ export default function CreateListingPage() {
       console.error("Error creating listing:", err);
       setError("Failed to create listing. Please try again.");
       setIsSubmitting(false);
+      setUploadProgress("");
     }
   };
   
-  // Formu tamamen sıfırla (isteğe bağlı)
+  // Formu tamamen sıfırla
   const resetForm = () => {
     if (window.confirm("Are you sure you want to reset all data? This cannot be undone.")) {
       setBundleItems([]);
@@ -440,6 +444,7 @@ export default function CreateListingPage() {
         quantity: 1,
         price: 0,
         image: null,
+        imageBlob: null,
         category: "book"
       });
       setError("");
@@ -447,43 +452,8 @@ export default function CreateListingPage() {
       if (typeof window !== 'undefined' && !isPrivateMode) {
         const storageKey = getStorageKey();
         localStorage.removeItem(storageKey);
-        console.log("Storage cleared for key:", storageKey);
       }
     }
-  };
-  
-  // Manuel kaydetme
-  const manualSave = () => {
-    saveToStorage();
-  };
-  
-  // Manuel yükleme
-  const manualLoad = () => {
-    loadFromStorage();
-  };
-  
-  // Storage verisini göster
-  const showStorageData = () => {
-    if (typeof window !== 'undefined') {
-      const storageKey = getStorageKey();
-      const savedData = localStorage.getItem(storageKey);
-      if (savedData) {
-        try {
-          const parsed = JSON.parse(savedData);
-          alert(`Storage contains ${parsed.bundleItems?.length || 0} items:\n\nTimestamp: ${new Date(parsed.timestamp || 0).toLocaleString()}\n\n${JSON.stringify(parsed, null, 2)}`);
-        } catch (e) {
-          alert("Failed to parse storage data");
-        }
-      } else {
-        alert("No data found in storage");
-      }
-    }
-  };
-  
-  // Storage anahtarını göster
-  const showStorageKey = () => {
-    const storageKey = getStorageKey();
-    alert(`Storage key: ${storageKey}\nUser: ${user?.uid || 'guest'}\nMounted: ${isMounted}\nPrivate: ${isPrivateMode}`);
   };
   
   if (loading || isInitializing) {
@@ -510,21 +480,6 @@ export default function CreateListingPage() {
       
       <main className="font-sans antialiased">
         <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-          {/* Private Mode Warning */}
-          {isPrivateMode && (
-            <div className="mb-4 bg-orange-50 border-l-4 border-orange-400 p-4 rounded-lg shadow-sm">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <FiAlertCircle className="h-5 w-5 text-orange-400" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-orange-700">
-                    You are in private browsing mode. Your data will not be saved when you close the browser.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
           
           {/* Back to Dashboard Link */}
           <div className="mb-8 flex justify-between items-center">
@@ -554,10 +509,7 @@ export default function CreateListingPage() {
                 <div>
                   <h2 className="text-2xl font-bold text-white">Create New Bundle Listing</h2>
                   <p className="mt-1 text-blue-100 max-w-2xl">
-                    Add at least 10 items to create your bundle. Title will be generated automatically.
-                  </p>
-                  <p className="mt-2 text-blue-200 text-sm">
-                    Your progress is saved automatically. Data persists until you remove items or reset.
+                    Add at least 10 items to create your bundle. Images are automatically optimized for best performance.
                   </p>
                 </div>
                 <div className="hidden md:block">
@@ -568,7 +520,7 @@ export default function CreateListingPage() {
               </div>
             </div>
             
-            {/* Success Message - Toast Notification */}
+            {/* Success Message */}
             {showSuccess && (
               <div className="mx-6 mt-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-lg shadow-sm">
                 <div className="flex items-center">
@@ -584,18 +536,12 @@ export default function CreateListingPage() {
               </div>
             )}
             
-            {/* Storage Warning */}
-            {storageWarning && (
-              <div className="mx-6 mt-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg shadow-sm">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <FiAlertCircle className="h-5 w-5 text-yellow-400" />
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-yellow-700">
-                      Storage limit reached. Only text data is saved. You'll need to re-upload images when you return.
-                    </p>
-                  </div>
+            {/* Upload Progress */}
+            {uploadProgress && (
+              <div className="mx-6 mt-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg shadow-sm">
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-3"></div>
+                  <p className="text-sm text-blue-700">{uploadProgress}</p>
                 </div>
               </div>
             )}
@@ -647,7 +593,7 @@ export default function CreateListingPage() {
                         {isScanning ? (
                           <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-0V8a8 8 0 018-0z"></path>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
                         ) : (
                           <FiCamera className="h-5 w-5" />
@@ -755,10 +701,10 @@ export default function CreateListingPage() {
                     </div>
                   </div>
                   
-                  {/* Image Upload */}
+                  {/* Image Upload with Optimization */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Image
+                      Image (Auto-optimized)
                     </label>
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
@@ -774,10 +720,23 @@ export default function CreateListingPage() {
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                          disabled={imageProcessing}
+                          className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50"
                         >
-                          <FiCamera className="mr-1 h-4 w-4" />
-                          Upload
+                          {imageProcessing ? (
+                            <>
+                              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <FiUpload className="mr-1 h-4 w-4" />
+                              Upload
+                            </>
+                          )}
                         </button>
                         <input
                           type="file"
@@ -786,6 +745,11 @@ export default function CreateListingPage() {
                           className="hidden"
                           accept="image/*"
                         />
+                        {currentItem.imageStats && (
+                          <p className="text-xs text-green-600 mt-1">
+                            ✅ {currentItem.imageStats.original.size} → {currentItem.imageStats.optimized.size}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -841,21 +805,40 @@ export default function CreateListingPage() {
                       <div key={item.id} className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm transition-all duration-200 hover:shadow-md">
                         <div className="flex justify-between items-start">
                           <div className="flex items-center">
-                            <div className="w-10 h-10 rounded-md bg-gray-100 flex items-center justify-center mr-3">
-                              <span className="text-sm font-medium text-gray-700">
-                                {item.category === "book" ? "📚" : 
-                                 item.category === "cd" ? "💿" : 
-                                 item.category === "dvd" ? "📀" : 
-                                 item.category === "game" ? "🎮" : "📦"}
-                              </span>
+                            {/* Fotoğraf varsa fotoğrafı göster, yoksa kategori ikonunu göster */}
+                            <div className="w-16 h-16 rounded-md overflow-hidden mr-4 flex-shrink-0 border border-gray-200">
+                              {item.image ? (
+                                <img 
+                                  src={item.image} 
+                                  alt={`Item ${item.isbn}`} 
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                  <span className="text-xl">
+                                    {item.category === "book" ? "📚" : 
+                                     item.category === "cd" ? "💿" : 
+                                     item.category === "dvd" ? "📀" : 
+                                     item.category === "game" ? "🎮" : "📦"}
+                                  </span>
+                                </div>
+                              )}
                             </div>
+                            
                             <div>
                               <h4 className="text-md font-medium text-gray-900">ISBN: {item.isbn}</h4>
                               <p className="text-sm text-gray-600">
                                 {item.category.charAt(0).toUpperCase() + item.category.slice(1)} • {item.condition === "like-new" ? "Like New" : "Good"} • Qty: {item.quantity} • ${item.price.toFixed(2)}
                               </p>
+                              {item.imageStats && (
+                                <p className="text-xs text-green-600 mt-1">
+                                  📷 Image optimized: {item.imageStats.optimized.compressionRatio}% of original
+                                </p>
+                              )}
                               {!item.image && (
-                                <p className="text-xs text-orange-600 mt-1">⚠️ Image not saved</p>
+                                <p className="text-xs text-orange-600 mt-1">
+                                  ⚠️ No image added
+                                </p>
                               )}
                             </div>
                           </div>
@@ -890,7 +873,7 @@ export default function CreateListingPage() {
                     <div className="flex items-center">
                       <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-0V8a8 8 0 018-0z"></path>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
                       Creating Bundle...
                     </div>
@@ -903,6 +886,17 @@ export default function CreateListingPage() {
                 </button>
               </div>
             </form>
+          </div>
+          
+          {/* Info Box */}
+          <div className="mt-8 bg-blue-50 rounded-lg p-4 border border-blue-200">
+            <h3 className="text-sm font-medium text-blue-900 mb-2">📸 Image Optimization Info</h3>
+            <ul className="text-sm text-blue-700 space-y-1">
+              <li>• Images are automatically compressed to under 1MB</li>
+              <li>• Maximum dimensions: 1200x1200 pixels</li>
+              <li>• Supported formats: JPEG, PNG, GIF, WebP</li>
+              <li>• Original quality preserved while reducing file size by 70-90%</li>
+            </ul>
           </div>
         </div>
       </main>

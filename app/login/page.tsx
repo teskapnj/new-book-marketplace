@@ -20,14 +20,14 @@ export default function LoginPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
+  
   // 🔄 Redirect to appropriate dashboard if user is already logged in
   useEffect(() => {
     if (user && !authLoading) {
       checkUserRoleAndRedirect(user.uid);
     }
   }, [user, authLoading]);
-
+  
   // 🔍 Check user role from Firestore and redirect accordingly
   const checkUserRoleAndRedirect = async (userId: string) => {
     try {
@@ -50,7 +50,7 @@ export default function LoginPage() {
         // 🎯 Force redirect based on role (use window.location for hard redirect)
         if (userRole === "admin") {
           console.log("✅ Admin user detected, redirecting to admin panel");
-          window.location.href = "/admin/listings";
+          window.location.href = "/admin/dashboard"; // YÖNLENDİRME GÜNCELLENDİ
         } else {
           console.log("✅ Regular user detected, redirecting to dashboard");
           window.location.href = "/dashboard";
@@ -73,7 +73,7 @@ export default function LoginPage() {
       window.location.href = "/dashboard";
     }
   };
-
+  
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -84,7 +84,7 @@ export default function LoginPage() {
       </div>
     );
   }
-
+  
   if (user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -148,7 +148,7 @@ export default function LoginPage() {
         // 🎯 Force redirect based on user role
         if (userRole === "admin") {
           console.log("🔧 Redirecting admin to admin panel");
-          window.location.href = "/admin/listings";
+          window.location.href = "/admin/dashboard"; // YÖNLENDİRME GÜNCELLENDİ
         } else {
           console.log("👤 Redirecting user to dashboard");
           window.location.href = "/dashboard";
@@ -197,7 +197,7 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
-
+  
   const handleSocialLoginSuccess = async (socialUser: any) => {
     try {
       // 🔍 Check if user exists in Firestore for social login
@@ -221,7 +221,7 @@ export default function LoginPage() {
       
       // 🎯 Force redirect based on role
       if (userRole === "admin") {
-        window.location.href = "/admin/listings";
+        window.location.href = "/admin/dashboard"; // YÖNLENDİRME GÜNCELLENDİ
       } else {
         window.location.href = "/dashboard";
       }
@@ -233,7 +233,7 @@ export default function LoginPage() {
       window.location.href = "/dashboard";
     }
   };
-
+  
   const handleSocialLoginError = (errorMessage: string) => {
     setError(errorMessage);
   };
@@ -261,7 +261,7 @@ export default function LoginPage() {
             Sign in to your account to continue
           </p>
         </div>
-
+        
         {/* 📋 Login Form */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
           {/* ❌ Error Message Display */}
@@ -275,7 +275,7 @@ export default function LoginPage() {
               </div>
             </div>
           )}
-
+          
           {/* ℹ️ Info Message */}
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-start">
@@ -288,7 +288,7 @@ export default function LoginPage() {
               </div>
             </div>
           </div>
-
+          
           {/* 📝 Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* 📧 Email Input */}
@@ -313,7 +313,7 @@ export default function LoginPage() {
                 </svg>
               </div>
             </div>
-
+            
             {/* 🔒 Password Input */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
@@ -330,7 +330,7 @@ export default function LoginPage() {
                 className="w-full"
               />
             </div>
-
+            
             {/* ⚙️ Remember Me & Forgot Password */}
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -352,7 +352,7 @@ export default function LoginPage() {
                 </Link>
               </div>
             </div>
-
+            
             {/* 🚀 Submit Button */}
             <button
               type="submit"
@@ -385,7 +385,7 @@ export default function LoginPage() {
             onError={handleSocialLoginError}
           />
         </div>
-
+        
         {/* 📝 Sign Up Link */}
         <p className="text-center text-sm text-gray-600">
           Don't have an account?{' '}
@@ -393,7 +393,7 @@ export default function LoginPage() {
             Sign up
           </Link>
         </p>
-
+        
         {/* ℹ️ Account Types Info */}
         <div className="bg-white rounded-lg p-4 text-center border border-gray-200">
           <h4 className="text-sm font-medium text-gray-900 mb-2">🎯 Account Types</h4>
@@ -403,7 +403,7 @@ export default function LoginPage() {
             <p><strong>🛒 Buyer:</strong> Browse and purchase items from the marketplace</p>
           </div>
         </div>
-
+        
         {/* 📄 Footer */}
         <div className="mt-8 text-center text-xs text-gray-500">
           <p>© 2024 MarketPlace. All rights reserved.</p>
