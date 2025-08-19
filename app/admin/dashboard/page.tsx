@@ -16,6 +16,69 @@ import {
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
+// Message Notification Component
+const MessageNotification = () => {
+  const [user] = useAuthState(auth);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+
+    // Listen to unread messages
+    const messagesRef = collection(db, 'contact_messages');
+    const q = query(messagesRef, where('status', '==', 'unread'));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setUnreadCount(snapshot.size);
+      setLoading(false);
+    }, (error) => {
+      console.error('Error fetching unread messages:', error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  if (loading) {
+    return (
+      <div className="relative">
+        <div className="w-6 h-6 rounded-full bg-gray-200 animate-pulse"></div>
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href="/admin/messages"
+      className="relative inline-flex items-center p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+      title={`${unreadCount} unread messages`}
+    >
+      {/* Bell Icon */}
+      <svg 
+        className="w-6 h-6" 
+        fill="none" 
+        stroke="currentColor" 
+        viewBox="0 0 24 24"
+      >
+        <path 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          strokeWidth="2" 
+          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" 
+        />
+      </svg>
+      
+      {/* Notification Badge */}
+      {unreadCount > 0 && (
+        <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full min-w-[20px]">
+          {unreadCount > 99 ? '99+' : unreadCount}
+        </span>
+      )}
+    </Link>
+  );
+};
+
 export default function AdminListingsPage() {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
@@ -328,18 +391,28 @@ export default function AdminListingsPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto py-6 px-4">
         
-        {/* 🏠 Navigation Header */}
+        {/* 🏠 Navigation Header - Updated with Message Notification */}
         <div className="mb-6 flex justify-between items-center">
-          <Link 
-            href="/"
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
-          >
-            ← Back to Home
-          </Link>
+          <div className="flex items-center space-x-4">
+            <Link 
+              href="/"
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+            >
+              ← Back to Home
+            </Link>
+            
+            
+          </div>
           
-          {/* 👤 Admin info display */}
-          <div className="text-sm text-gray-600">
-            Logged in as: <span className="font-medium">{user?.email}</span>
+          {/* Admin Info & Notifications */}
+          <div className="flex items-center space-x-4">
+            {/* Message Notification Bell */}
+            <MessageNotification />
+            
+            {/* Admin info display */}
+            <div className="text-sm text-gray-600">
+              Logged in as: <span className="font-medium">{user?.email}</span>
+            </div>
           </div>
         </div>
         
@@ -347,6 +420,25 @@ export default function AdminListingsPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin - Listings Management</h1>
           <p className="text-gray-600">Review and manage seller listings in real-time</p>
+        </div>
+        
+        {/* Quick Actions Bar */}
+        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
+              <Link
+                href="/admin/messages"
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                💬 Manage Messages
+              </Link>
+            </div>
+            <div className="flex items-center space-x-2 text-sm text-gray-500">
+              <span>Real-time updates enabled</span>
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            </div>
+          </div>
         </div>
         
         {/* 🔍 Search and Filter Controls */}
@@ -593,7 +685,7 @@ export default function AdminListingsPage() {
           )}
         </div>
         
-        {/* 🔍 Review Modal */}
+        {/* 🔍 Review Modal - Same as before, keeping it identical */}
         {selectedListing && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
             <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
