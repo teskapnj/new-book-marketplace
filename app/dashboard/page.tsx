@@ -2,9 +2,10 @@
 import { useState, useEffect } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function DashboardPage() {
   const [user, loading] = useAuthState(auth);
@@ -13,6 +14,8 @@ export default function DashboardPage() {
   const [userName, setUserName] = useState<string>("");
   const [roleLoading, setRoleLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
+  const [userListings, setUserListings] = useState<any[]>([]);
+  const [listingsLoading, setListingsLoading] = useState(true);
   
   // 🔍 Check user role and redirect admin to admin panel
   useEffect(() => {
@@ -104,6 +107,78 @@ export default function DashboardPage() {
     checkUserRoleAndRedirect();
   }, [user, loading, router]);
   
+  // 📦 Fetch user listings
+  useEffect(() => {
+    if (!user || userRole !== "seller") return;
+    
+    const fetchUserListings = async () => {
+      try {
+        setListingsLoading(true);
+        
+        const q = query(
+          collection(db, "listings"),
+          where("vendorId", "==", user.uid),
+          orderBy("createdAt", "desc")
+        );
+        
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+          const listingsData: any[] = [];
+          
+          querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            
+            // Get the first image from bundle items
+            let firstItemImage = null;
+            if (data.bundleItems && Array.isArray(data.bundleItems)) {
+              for (const item of data.bundleItems) {
+                // imageUrl alanını kontrol et (öncelikli)
+                if (item.imageUrl) {
+                  firstItemImage = item.imageUrl;
+                  break;
+                }
+                // Eğer imageUrl yoksa, amazonData.image alanını kontrol et
+                if (item.amazonData && item.amazonData.image) {
+                  firstItemImage = item.amazonData.image;
+                  break;
+                }
+                // Eğer hiçbiri yoksa, image alanını kontrol et (geriye dönük uyum)
+                if (item.image) {
+                  firstItemImage = item.image;
+                  break;
+                }
+              }
+            }
+            
+            listingsData.push({
+              id: doc.id,
+              title: data.title || "Untitled Bundle",
+              price: data.totalValue || 0,
+              imageUrl: firstItemImage,
+              status: data.status || "pending",
+              views: data.views || 0,
+              createdAt: data.createdAt?.toDate() || new Date(),
+              totalItems: data.totalItems || data.bundleItems?.length || 0
+            });
+          });
+          
+          console.log(`✅ Loaded ${listingsData.length} user listings`);
+          setUserListings(listingsData);
+          setListingsLoading(false);
+        }, (error) => {
+          console.error("Error fetching user listings:", error);
+          setListingsLoading(false);
+        });
+        
+        return unsubscribe;
+      } catch (error) {
+        console.error("Error setting up listings query:", error);
+        setListingsLoading(false);
+      }
+    };
+    
+    fetchUserListings();
+  }, [user, userRole]);
+  
   // Loading state
   if (loading || roleLoading) {
     return (
@@ -172,6 +247,23 @@ export default function DashboardPage() {
     );
   }
   
+  // Helper function to get category icon
+  const getCategoryIcon = (category: string) => {
+    const icons = { book: "📚", cd: "💿", dvd: "📀", game: "🎮", mix: "📦" };
+    return icons[category as keyof typeof icons] || "📦";
+  };
+  
+  // Helper function to validate image URL
+  const isValidImageUrl = (url: string) => {
+    return url && (
+      url.startsWith('https://firebasestorage.googleapis.com') ||
+      url.startsWith('https://storage.googleapis.com') ||
+      url.includes('amazon.com') ||
+      url.includes('ssl-images-amazon.com') ||
+      url.includes('m.media-amazon.com')
+    );
+  };
+  
   // Regular seller dashboard
   return (
     <div className="min-h-screen bg-gray-50">
@@ -197,7 +289,6 @@ export default function DashboardPage() {
               >
                 ← Home Page
               </Link>
-              
             </div>
           </div>
         </div>
@@ -269,7 +360,7 @@ export default function DashboardPage() {
             <div className="flex items-center">
               <div className="text-3xl mr-4">📊</div>
               <div>
-                <p className="text-2xl font-bold text-blue-600">0</p>
+                <p className="text-2xl font-bold text-blue-600">{userListings.length}</p>
                 <p className="text-sm text-gray-600">Active Listings</p>
               </div>
             </div>
@@ -279,8 +370,10 @@ export default function DashboardPage() {
             <div className="flex items-center">
               <div className="text-3xl mr-4">💰</div>
               <div>
-                <p className="text-2xl font-bold text-green-600">$0</p>
-                <p className="text-sm text-gray-600">Total Earnings</p>
+                <p className="text-2xl font-bold text-green-600">
+                  ${userListings.reduce((sum, listing) => sum + (listing.price || 0), 0).toFixed(2)}
+                </p>
+                <p className="text-sm text-gray-600">Total Value</p>
               </div>
             </div>
           </div>
@@ -289,7 +382,9 @@ export default function DashboardPage() {
             <div className="flex items-center">
               <div className="text-3xl mr-4">👁️</div>
               <div>
-                <p className="text-2xl font-bold text-purple-600">0</p>
+                <p className="text-2xl font-bold text-purple-600">
+                  {userListings.reduce((sum, listing) => sum + (listing.views || 0), 0)}
+                </p>
                 <p className="text-sm text-gray-600">Total Views</p>
               </div>
             </div>
@@ -304,6 +399,107 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+        </div>
+        
+        {/* Recent Listings */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">📦 Your Recent Listings</h3>
+            <Link 
+              href="/my-listings"
+              className="text-blue-600 hover:text-blue-800 font-medium text-sm"
+            >
+              View All Listings →
+            </Link>
+          </div>
+          
+          {listingsLoading ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+              <span className="text-gray-600">Loading your listings...</span>
+            </div>
+          ) : userListings.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {userListings.slice(0, 6).map((listing) => (
+                <div key={listing.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                  <div className="relative h-40 bg-gray-100">
+                    {listing.imageUrl && isValidImageUrl(listing.imageUrl) ? (
+                      <Image
+                        src={listing.imageUrl}
+                        alt={listing.title}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        unoptimized={true} // Important for Amazon URLs
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <span className="text-4xl">{getCategoryIcon("mix")}</span>
+                      </div>
+                    )}
+                    
+                    {/* Status Badge */}
+                    <div className="absolute top-2 right-2">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        listing.status === "approved" 
+                          ? "bg-green-100 text-green-800" 
+                          : listing.status === "pending"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-red-100 text-red-800"
+                      }`}>
+                        {listing.status === "approved" ? "✅ Approved" : 
+                         listing.status === "pending" ? "⏳ Pending" : "❌ Rejected"}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4">
+                    <h4 className="font-medium text-gray-900 mb-1 line-clamp-1">
+                      {listing.title}
+                    </h4>
+                    
+                    <div className="flex justify-between items-center mt-3">
+                      <span className="text-lg font-bold text-gray-900">
+                        ${listing.price.toFixed(2)}
+                      </span>
+                      <div className="text-xs text-gray-500">
+                        {listing.totalItems} items
+                      </div>
+                    </div>
+                    
+                    <div className="mt-3 flex space-x-2">
+                      <Link 
+                        href={`/products/${listing.id}`}
+                        className="text-xs text-blue-600 hover:text-blue-800"
+                      >
+                        View Details
+                      </Link>
+                      <Link 
+                        href={`/edit-listing/${listing.id}`}
+                        className="text-xs text-gray-600 hover:text-gray-800"
+                      >
+                        Edit
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <div className="text-6xl mb-4">📦</div>
+              <h4 className="text-lg font-medium text-gray-900 mb-2">No listings yet</h4>
+              <p className="text-gray-600 mb-4">
+                Create your first listing to start selling
+              </p>
+              <Link 
+                href="/create-listing"
+                className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+              >
+                Create Your First Listing
+              </Link>
+            </div>
+          )}
         </div>
         
         {/* Recent Activity */}

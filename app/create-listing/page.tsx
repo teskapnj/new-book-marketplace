@@ -5,16 +5,13 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db, storage } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { FiHome, FiSave, FiCamera, FiDollarSign, FiPackage, FiPlus, FiMinus, FiX, FiCheck, FiAlertCircle, FiUpload, FiSearch, FiStar, FiTrendingUp } from "react-icons/fi";
+import { FiHome, FiSave, FiCamera, FiDollarSign, FiPackage, FiPlus, FiMinus, FiX, FiCheck, FiAlertCircle, FiUpload, FiSearch, FiStar, FiTrendingUp, FiFileText, FiTruck, FiBookOpen } from "react-icons/fi";
 import Link from "next/link";
 import Head from "next/head";
 import axios from "axios";
-
-// Import hooks ve utilities
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { smartOptimizeImage, formatFileSize } from "@/utils/imageOptimization";
 import { AmazonProduct, PricingResult } from "@/lib/pricingEngine";
-
 interface BundleItem {
   id: string;
   isbn: string;
@@ -25,33 +22,36 @@ interface BundleItem {
   imageBlob: Blob | null;
   imageStats?: any;
   category: "book" | "cd" | "dvd" | "game" | "mix";
-  // Yeni Amazon verileri
   amazonData?: AmazonProduct;
   ourPrice?: number;
   originalPrice?: number;
+  imageUrl?: string | null;
 }
-
 export default function CreateListingPage() {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Mevcut ürün formu için state
   const [currentItem, setCurrentItem] = useState<BundleItem>({
     id: "",
     isbn: "",
-    condition: "like-new",
+    condition: "like-new", // Default condition fixed to "like-new"
     quantity: 1,
     price: 0,
     image: null,
     imageBlob: null,
-    category: "book"
+    category: "book",
+    imageUrl: null
   });
   
-  // Eklenen ürünler listesi
   const [bundleItems, setBundleItems] = useState<BundleItem[]>([]);
+  const [description, setDescription] = useState<string>('');
+  const [descriptionError, setDescriptionError] = useState<string>('');
   
-  // Mevcut state'ler
+  // Shipping state
+  const [shippingPrice, setShippingPrice] = useState<number>(0);
+  const [shippingError, setShippingError] = useState<string>('');
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -64,7 +64,6 @@ export default function CreateListingPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   
-  // Yeni Amazon ve scanner state'leri
   const [showScanner, setShowScanner] = useState(false);
   const [isCheckingAmazon, setIsCheckingAmazon] = useState(false);
   const [amazonResult, setAmazonResult] = useState<{
@@ -74,12 +73,10 @@ export default function CreateListingPage() {
   } | null>(null);
   const [scannerError, setScannerError] = useState("");
   
-  // Kullanıcıya özel depolama anahtarı
   const getStorageKey = useCallback(() => {
     return user ? `bundleListingDraft_${user.uid}` : 'bundleListingDraft_guest';
   }, [user]);
   
-  // Barcode scanner hook
   const {
     isScanning,
     isCameraReady,
@@ -95,9 +92,42 @@ export default function CreateListingPage() {
     timeout: 30000
   });
   
-  // Barcode tarandığında çağrılan fonksiyon
+  const validateDescription = (text: string): boolean => {
+    if (text.length > 500) {
+      setDescriptionError("Description must be 500 characters or less");
+      return false;
+    }
+    setDescriptionError("");
+    return true;
+  };
+  
+  const validateShippingPrice = (price: number): boolean => {
+    if (price < 0) {
+      setShippingError("Shipping price cannot be negative");
+      return false;
+    }
+    if (price > 100) {
+      setShippingError("Shipping price seems too high. Please verify.");
+      return false;
+    }
+    setShippingError("");
+    return true;
+  };
+  
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const text = e.target.value;
+    setDescription(text);
+    validateDescription(text);
+  };
+  
+  const handleShippingPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const price = parseFloat(e.target.value) || 0;
+    setShippingPrice(price);
+    validateShippingPrice(price);
+  };
+  
   async function handleBarcodeScanned(code: string) {
-    console.log('📱 Barcode tarandı:', code);
+    console.log('📱 Barcode scanned:', code);
     
     try {
       setIsCheckingAmazon(true);
@@ -105,11 +135,9 @@ export default function CreateListingPage() {
       setAmazonResult(null);
       setScannerError("");
       
-      // Scanner'ı kapat
       stopScanning();
       setShowScanner(false);
       
-      // Amazon API'sine istek at
       const response = await axios.post('/api/amazon-check', {
         isbn_upc: code
       });
@@ -119,17 +147,16 @@ export default function CreateListingPage() {
         
         setAmazonResult({ product, pricing, message });
         
-        // Amazon'dan gelen verileri form'a doldur
         setCurrentItem(prev => ({
           ...prev,
           isbn: code,
           amazonData: product,
           image: product.image || null,
+          imageUrl: product.image || null,
           originalPrice: product.price,
           ourPrice: pricing.ourPrice
         }));
         
-        // Kategori mapping
         const categoryMap: Record<string, "book" | "cd" | "dvd" | "game"> = {
           'books': 'book',
           'cds': 'cd', 
@@ -144,26 +171,24 @@ export default function CreateListingPage() {
           }));
         }
         
-        // Eğer kabul edilmişse otomatik ekle
         if (pricing.accepted && pricing.ourPrice) {
           setTimeout(() => {
             autoAddAcceptedItem(code, product, pricing);
-          }, 2000); // 2 saniye sonra otomatik ekle
+          }, 2000);
         }
         
       } else {
-        setError(response.data.error || 'Amazon kontrolü başarısız');
+        setError(response.data.error || 'Amazon check failed');
       }
       
     } catch (err: any) {
-      console.error('Amazon API hatası:', err);
-      setError(err.response?.data?.error || 'Amazon kontrolü sırasında hata oluştu');
+      console.error('Amazon API error:', err);
+      setError(err.response?.data?.error || 'Error occurred during Amazon check');
     } finally {
       setIsCheckingAmazon(false);
     }
   }
   
-  // Kabul edilen ürünü otomatik olarak listeye ekle
   const autoAddAcceptedItem = (isbn: string, product: AmazonProduct, pricing: PricingResult) => {
     if (!pricing.accepted || !pricing.ourPrice) return;
     
@@ -174,6 +199,7 @@ export default function CreateListingPage() {
       quantity: 1,
       price: pricing.ourPrice,
       image: product.image || null,
+      imageUrl: product.image || null,
       imageBlob: null,
       category: getCategoryFromPricing(pricing.category),
       amazonData: product,
@@ -183,7 +209,6 @@ export default function CreateListingPage() {
     
     setBundleItems(prev => [...prev, newItem]);
     
-    // Form'u sıfırla
     setCurrentItem({
       id: "",
       isbn: "",
@@ -192,19 +217,20 @@ export default function CreateListingPage() {
       price: 0,
       image: null,
       imageBlob: null,
-      category: "book"
+      category: "book",
+      imageUrl: null
     });
     
     setAmazonResult(null);
     setError("");
     
-    // Başarı mesajı göster
+    console.log(`✅ Auto-added item with Amazon image: ${product.image}`);
+    
     setTimeout(() => {
       setError("");
     }, 3000);
   };
   
-  // Pricing category'sini BundleItem category'sine çevir
   const getCategoryFromPricing = (pricingCategory: string): "book" | "cd" | "dvd" | "game" | "mix" => {
     switch (pricingCategory) {
       case 'books': return 'book';
@@ -215,10 +241,9 @@ export default function CreateListingPage() {
     }
   };
   
-  // Barcode tarama işlemini başlat
   const handleScanBarcode = () => {
     if (!isMobile) {
-      setError("Barcode tarama sadece mobil cihazlarda çalışır");
+      setError("Barcode scanning only works on mobile devices");
       return;
     }
     
@@ -227,18 +252,15 @@ export default function CreateListingPage() {
     setError("");
     setAmazonResult(null);
     
-    // Scanner'ı başlat
     startScanning();
   };
   
-  // Scanner'ı kapat
   const closeBarcodeScanner = () => {
     stopScanning();
     setShowScanner(false);
     setScannerError("");
   };
   
-  // localStorage testi
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
@@ -275,7 +297,6 @@ export default function CreateListingPage() {
     };
   }, []);
   
-  // Verileri localStorage'a kaydet (resimler hariç)
   const saveToStorage = useCallback(() => {
     if (!isMounted || isPrivateMode || isInitializing) return;
     
@@ -283,9 +304,9 @@ export default function CreateListingPage() {
       const dataToSave = {
         bundleItems: bundleItems.map(item => ({
           ...item,
-          image: null,      // Resimleri kaydetme
-          imageBlob: null,  // Blob'ları kaydetme
-          imageStats: null  // Stats'ları kaydetme
+          image: null,
+          imageBlob: null,
+          imageStats: null
         })),
         currentItem: {
           ...currentItem,
@@ -293,19 +314,20 @@ export default function CreateListingPage() {
           imageBlob: null,
           imageStats: null
         },
+        description: description,
+        shippingPrice: shippingPrice, // Save shipping price
         timestamp: Date.now()
       };
       
       const storageKey = getStorageKey();
       localStorage.setItem(storageKey, JSON.stringify(dataToSave));
-      console.log(`✅ Saved ${bundleItems.length} items to localStorage (without images)`);
+      console.log(`✅ Saved ${bundleItems.length} items, description and shipping price to localStorage`);
       
     } catch (e) {
       console.error("Failed to save to localStorage", e);
     }
-  }, [bundleItems, currentItem, isMounted, isPrivateMode, isInitializing, getStorageKey]);
+  }, [bundleItems, currentItem, description, shippingPrice, isMounted, isPrivateMode, isInitializing, getStorageKey]);
   
-  // Verileri localStorage'dan yükle
   const loadFromStorage = useCallback(() => {
     if (!isMounted || isPrivateMode || isInitializing) return;
     
@@ -318,13 +340,16 @@ export default function CreateListingPage() {
         console.log(`✅ Loaded ${parsed.bundleItems?.length || 0} items from localStorage`);
         
         setBundleItems(parsed.bundleItems || []);
-        // Current item'ı yükleme (resimler olmadan)
+        setDescription(parsed.description || "");
+        setShippingPrice(parsed.shippingPrice || 0); // Load shipping price
+        
         if (parsed.currentItem && parsed.currentItem.isbn) {
           setCurrentItem({
             ...parsed.currentItem,
             image: null,
             imageBlob: null,
-            imageStats: null
+            imageStats: null,
+            imageUrl: null
           });
         }
       }
@@ -333,25 +358,22 @@ export default function CreateListingPage() {
     }
   }, [isMounted, isPrivateMode, isInitializing, getStorageKey]);
   
-  // İlk yüklemede verileri yükle
   useEffect(() => {
     if (isMounted && !isPrivateMode && !isInitializing) {
       loadFromStorage();
     }
   }, [isMounted, isPrivateMode, isInitializing, loadFromStorage]);
   
-  // Değişiklikleri otomatik kaydet (debounced)
   useEffect(() => {
     if (!isMounted || isInitializing) return;
     
     const timeoutId = setTimeout(() => {
       saveToStorage();
-    }, 1000); // 1 saniye debounce
+    }, 1000);
     
     return () => clearTimeout(timeoutId);
-  }, [bundleItems, saveToStorage, isMounted, isInitializing]);
+  }, [bundleItems, description, shippingPrice, saveToStorage, isMounted, isInitializing]);
   
-  // User authentication kontrolü
   useEffect(() => {
     if (!loading && !user) {
       router.push("/login");
@@ -359,13 +381,15 @@ export default function CreateListingPage() {
   }, [user, loading, router]);
   
   const handleCurrentItemChange = (field: keyof BundleItem, value: string | number) => {
+    // Skip condition changes since it's fixed to "like-new"
+    if (field === 'condition') return;
+    
     setCurrentItem(prev => ({
       ...prev,
       [field]: value
     }));
   };
   
-  // YENİ: Optimize edilmiş image handler
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -374,34 +398,30 @@ export default function CreateListingPage() {
       setError("");
       
       try {
-        // Dosya tipi kontrolü
         if (!file.type.startsWith('image/')) {
           setError("Please select a valid image file");
           setImageProcessing(false);
           return;
         }
         
-        // Resmi optimize et
         console.log(`Processing image: ${file.name} (${formatFileSize(file.size)})`);
         const { optimized, thumbnail, stats } = await smartOptimizeImage(file, {
-          maxSizeMB: 1,      // 1MB hedef
-          maxWidth: 1200,    // Max 1200px genişlik
-          maxHeight: 1200,   // Max 1200px yükseklik
-          quality: 0.85      // %85 kalite
+          maxSizeMB: 1,
+          maxWidth: 1200,
+          maxHeight: 1200,
+          quality: 0.85
         });
         
-        // Optimization sonuçlarını göster
         console.log('Image optimization complete:', stats);
         
-        // State'i güncelle
         setCurrentItem(prev => ({
           ...prev,
-          image: thumbnail,        // Preview için thumbnail
-          imageBlob: optimized,    // Upload için optimized blob
-          imageStats: stats        // İstatistikler (opsiyonel gösterim için)
+          image: thumbnail,
+          imageUrl: thumbnail,
+          imageBlob: optimized,
+          imageStats: stats
         }));
         
-        // Başarı mesajı (opsiyonel)
         if (stats.optimized.compressionApplied) {
           console.log(`✅ Image optimized: ${stats.original.size} → ${stats.optimized.size} (${stats.optimized.compressionRatio}%)`);
         }
@@ -416,21 +436,19 @@ export default function CreateListingPage() {
   };
   
   const addNewItem = () => {
-    // Form validasyonu
     if (!currentItem.isbn || currentItem.price <= 0) {
       setError("Please fill in ISBN and price (greater than 0) for the item");
       return;
     }
     
-    // Yeni ürünü listeye ekle
     const newItem = {
       ...currentItem,
-      id: Date.now().toString()
+      id: Date.now().toString(),
+      imageUrl: currentItem.imageUrl || currentItem.image || null
     };
     
     setBundleItems(prev => [...prev, newItem]);
     
-    // Formu sıfırla
     setCurrentItem({
       id: "",
       isbn: "",
@@ -439,7 +457,8 @@ export default function CreateListingPage() {
       price: 0,
       image: null,
       imageBlob: null,
-      category: "book"
+      category: "book",
+      imageUrl: null
     });
     
     setAmazonResult(null);
@@ -479,7 +498,6 @@ export default function CreateListingPage() {
     return `${totalItems} ${categoryNames[dominantCategory as keyof typeof categoryNames]} Collection in ${conditionNames[dominantCondition as keyof typeof conditionNames]} Condition`;
   };
   
-  // YENİ: Firebase Storage'a optimize edilmiş resim yükleme
   const uploadImageToStorage = async (item: BundleItem, userId: string): Promise<string | null> => {
     if (!item.imageBlob) return null;
     
@@ -490,7 +508,6 @@ export default function CreateListingPage() {
       
       console.log(`Uploading image for ISBN ${item.isbn} to path: ${imagePath}`);
       
-      // Firebase Storage'a yükle
       const storageRef = ref(storage, imagePath);
       const snapshot = await uploadBytes(storageRef, item.imageBlob);
       const downloadURL = await getDownloadURL(snapshot.ref);
@@ -511,6 +528,16 @@ export default function CreateListingPage() {
     setUploadProgress("");
     
     try {
+      if (!validateDescription(description)) {
+        setIsSubmitting(false);
+        return;
+      }
+      
+      if (!validateShippingPrice(shippingPrice)) {
+        setIsSubmitting(false);
+        return;
+      }
+      
       if (bundleItems.length < 10) {
         setError("Please add at least 10 items to create a bundle listing");
         setIsSubmitting(false);
@@ -520,15 +547,25 @@ export default function CreateListingPage() {
       const title = generateTitle();
       setGeneratedTitle(title);
       
-      // Resimleri Firebase Storage'a yükle
-      setUploadProgress("Uploading images to cloud storage...");
+      setUploadProgress("Processing images...");
       const uploadedItems = await Promise.all(
         bundleItems.map(async (item, index) => {
-          setUploadProgress(`Uploading image ${index + 1} of ${bundleItems.length}...`);
+          setUploadProgress(`Processing image ${index + 1} of ${bundleItems.length}...`);
           
-          const imageUrl = await uploadImageToStorage(item, user!.uid);
+          let finalImageUrl = null;
           
-          // Firestore için temiz obje oluştur (undefined field'ları kaldır)
+          if (item.amazonData?.image) {
+            finalImageUrl = item.amazonData.image;
+            console.log(`✅ Using Amazon image URL for ISBN ${item.isbn}: ${finalImageUrl}`);
+          }
+          else if (item.imageBlob) {
+            finalImageUrl = await uploadImageToStorage(item, user!.uid);
+            console.log(`✅ Uploaded manual image for ISBN ${item.isbn}: ${finalImageUrl}`);
+          }
+          else {
+            console.log(`⚠️ No image available for ISBN ${item.isbn}`);
+          }
+          
           return {
             id: item.id,
             isbn: item.isbn,
@@ -536,49 +573,59 @@ export default function CreateListingPage() {
             quantity: item.quantity,
             price: item.price,
             category: item.category,
-            image: imageUrl || null  // undefined yerine null kullan
+            imageUrl: finalImageUrl,
+            amazonData: item.amazonData ? {
+              title: item.amazonData.title,
+              asin: item.amazonData.asin,
+              price: item.amazonData.price,
+              sales_rank: item.amazonData.sales_rank,
+              category: item.amazonData.category,
+              image: item.amazonData.image
+            } : null,
+            ourPrice: item.ourPrice || null,
+            originalPrice: item.originalPrice || null
           };
         })
       );
       
       setUploadProgress("Saving listing to database...");
       
-      // Toplam değeri hesapla
       const totalValue = uploadedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const totalItems = uploadedItems.reduce((sum, item) => sum + item.quantity, 0);
       
-      // Firebase'e kaydet - sadece gerekli field'ları gönder
       const listingData = {
         title: title,
-        description: `Bundle of ${totalItems} items including various categories.`,
+        description: description,
         totalItems: totalItems,
         totalValue: totalValue,
+        shippingPrice: shippingPrice, // Add shipping price
         status: "pending",
         vendorId: user?.uid || "",
         vendorName: user?.displayName || user?.email?.split('@')[0] || "Anonymous",
-        bundleItems: uploadedItems, // Temizlenmiş items
+        bundleItems: uploadedItems,
         createdAt: serverTimestamp(),
-        views: 0
+        views: 0,
+        hasAmazonImages: uploadedItems.some(item => 
+          item.imageUrl && item.imageUrl.includes('amazon.com')
+        )
       };
       
-      // Firestore'a ekle
+      console.log("Saving listing with bundleItems:", uploadedItems);
+      
       const docRef = await addDoc(collection(db, "listings"), listingData);
       console.log("✅ Document written with ID: ", docRef.id);
       
-      // Başarılı mesajını göster
       setSuccess(true);
       setShowSuccess(true);
       setIsSubmitting(false);
       setUploadProgress("");
       
-      // localStorage'dan taslağı temizle
       if (!isPrivateMode) {
         const storageKey = getStorageKey();
         localStorage.removeItem(storageKey);
         console.log("✅ Draft cleared from localStorage");
       }
       
-      // 3 saniye sonra dashboard'a yönlendir
       setTimeout(() => {
         setShowSuccess(false);
         router.push("/dashboard");
@@ -592,7 +639,6 @@ export default function CreateListingPage() {
     }
   };
   
-  // Formu tamamen sıfırla
   const resetForm = () => {
     if (window.confirm("Are you sure you want to reset all data? This cannot be undone.")) {
       setBundleItems([]);
@@ -604,8 +650,11 @@ export default function CreateListingPage() {
         price: 0,
         image: null,
         imageBlob: null,
-        category: "book"
+        category: "book",
+        imageUrl: null
       });
+      setDescription("");
+      setShippingPrice(0); // Reset shipping price
       setAmazonResult(null);
       setError("");
       
@@ -641,7 +690,6 @@ export default function CreateListingPage() {
       <main className="font-sans antialiased">
         <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
           
-          {/* Back to Dashboard Link */}
           <div className="mb-8 flex justify-between items-center">
             <Link 
               href="/dashboard" 
@@ -651,17 +699,26 @@ export default function CreateListingPage() {
               Back to Dashboard
             </Link>
             
-            <button
-              type="button"
-              onClick={resetForm}
-              className="inline-flex items-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-red-600 hover:text-red-700 hover:shadow-md transition-all duration-200"
-            >
-              <FiX className="mr-2 h-4 w-4" />
-              Reset All
-            </button>
+            <div className="flex space-x-3">
+              <Link 
+                href="/condition-guidelines" 
+                className="inline-flex items-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-purple-600 hover:text-purple-700 hover:shadow-md transition-all duration-200"
+              >
+                <FiBookOpen className="mr-2 h-4 w-4" />
+                Condition Guidelines
+              </Link>
+              
+              <button
+                type="button"
+                onClick={resetForm}
+                className="inline-flex items-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-red-600 hover:text-red-700 hover:shadow-md transition-all duration-200"
+              >
+                <FiX className="mr-2 h-4 w-4" />
+                Reset All
+              </button>
+            </div>
           </div>
           
-          {/* Mobile Check Warning */}
           {!isMobile && (
             <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg shadow-sm">
               <div className="flex">
@@ -670,20 +727,19 @@ export default function CreateListingPage() {
                 </div>
                 <div className="ml-3">
                   <p className="text-sm text-yellow-700">
-                    📱 Barcode tarama özelliği sadece mobil cihazlarda (iPhone/Android) çalışır. 
-                    Bu sayfayı telefon veya tabletten açın.
+                    📱 Barcode scanning feature only works on mobile devices (iPhone/Android). 
+                    Please open this page on a phone or tablet.
                   </p>
                 </div>
               </div>
             </div>
           )}
           
-          {/* Barcode Scanner Modal */}
           {showScanner && (
             <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
               <div className="bg-white rounded-lg p-6 m-4 max-w-sm w-full">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold">📱 Barcode Tarayıcı</h3>
+                  <h3 className="text-lg font-semibold">📱 Barcode Scanner</h3>
                   <button
                     onClick={closeBarcodeScanner}
                     className="p-2 hover:bg-gray-100 rounded-full"
@@ -695,7 +751,7 @@ export default function CreateListingPage() {
                 {!isCameraReady && !cameraError && (
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Kamera hazırlanıyor...</p>
+                    <p className="text-gray-600">Preparing camera...</p>
                   </div>
                 )}
                 
@@ -727,15 +783,13 @@ export default function CreateListingPage() {
                 </div>
                 
                 <p className="text-center text-sm text-gray-600 mt-4">
-                  Kamerayı barcode/QR kod üzerine tutun
+                  Point the camera at the barcode/QR code
                 </p>
               </div>
             </div>
           )}
           
-          {/* Main Card */}
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl">
-            {/* Header Section */}
             <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 py-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -752,7 +806,6 @@ export default function CreateListingPage() {
               </div>
             </div>
             
-            {/* Success Message */}
             {showSuccess && (
               <div className="mx-6 mt-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-lg shadow-sm">
                 <div className="flex items-center">
@@ -768,7 +821,6 @@ export default function CreateListingPage() {
               </div>
             )}
             
-            {/* Upload Progress */}
             {uploadProgress && (
               <div className="mx-6 mt-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg shadow-sm">
                 <div className="flex items-center">
@@ -778,17 +830,15 @@ export default function CreateListingPage() {
               </div>
             )}
             
-            {/* Amazon Check Progress */}
             {isCheckingAmazon && (
               <div className="mx-6 mt-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg shadow-sm">
                 <div className="flex items-center">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-3"></div>
-                  <p className="text-sm text-blue-700">Amazon'da ürün aranıyor ve fiyat kontrolü yapılıyor...</p>
+                  <p className="text-sm text-blue-700">Searching for the product on Amazon and checking price...</p>
                 </div>
               </div>
             )}
             
-            {/* Amazon Result Card */}
             {amazonResult && (
               <div className="mx-6 mt-6">
                 <div className={`border-l-4 p-4 rounded-lg shadow-sm ${
@@ -818,26 +868,25 @@ export default function CreateListingPage() {
                             {amazonResult.message}
                           </p>
                           
-                          {/* Ürün Detayları */}
                           <div className="mt-3 grid grid-cols-2 gap-4 text-xs">
                             <div>
-                              <span className="font-medium">Amazon Fiyatı:</span>
+                              <span className="font-medium">Amazon Price:</span>
                               <br />
                               ${amazonResult.product.price}
                             </div>
                             <div>
-                              <span className="font-medium">Satış Sıralaması:</span>
+                              <span className="font-medium">Sales Rank:</span>
                               <br />
                               #{amazonResult.product.sales_rank?.toLocaleString() || 'N/A'}
                             </div>
                             <div>
-                              <span className="font-medium">Kategori:</span>
+                              <span className="font-medium">Category:</span>
                               <br />
                               {amazonResult.pricing.category}
                             </div>
                             {amazonResult.pricing.accepted && (
                               <div>
-                                <span className="font-medium">Bizim Fiyatımız:</span>
+                                <span className="font-medium">Our Price:</span>
                                 <br />
                                 <span className="text-lg font-bold text-green-600">
                                   ${amazonResult.pricing.ourPrice}
@@ -848,12 +897,11 @@ export default function CreateListingPage() {
                           
                           {amazonResult.pricing.accepted && (
                             <div className="mt-3 text-xs text-green-600">
-                              ⏱️ Bu ürün 2 saniye içinde otomatik olarak listeye eklenecek...
+                              ⏱️ This product will be automatically added to the list in 2 seconds...
                             </div>
                           )}
                         </div>
                         
-                        {/* Ürün Resmi */}
                         {amazonResult.product.image && (
                           <div className="ml-4 flex-shrink-0">
                             <img
@@ -870,7 +918,6 @@ export default function CreateListingPage() {
               </div>
             )}
             
-            {/* Error Message */}
             {error && (
               <div className="mx-6 mt-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm">
                 <div className="flex items-start">
@@ -885,7 +932,6 @@ export default function CreateListingPage() {
             )}
             
             <form onSubmit={handleSubmit} className="px-6 py-6 space-y-8">
-              {/* Current Item Form */}
               <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 shadow-sm">
                 <div className="flex items-center mb-5">
                   <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
@@ -900,7 +946,6 @@ export default function CreateListingPage() {
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {/* ISBN Input with Check and Scanner */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       ISBN/UPC
@@ -950,19 +995,18 @@ export default function CreateListingPage() {
                       </button>
                     </div>
                     <div className="flex justify-between text-xs text-gray-500 mt-1">
-                      <span>🔍 Enter tuşu veya Check butonu ile kontrol edin</span>
+                      <span>🔍 Press Enter or click Check button to verify</span>
                       {!isMobile && (
-                        <span>📱 Barcode tarama sadece mobil cihazlarda çalışır</span>
+                        <span>📱 Barcode scanning only works on mobile devices</span>
                       )}
                     </div>
                   </div>
                   
-                  {/* Category Selection - Amazon'dan otomatik doldurulabilir */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Category
                       {currentItem.amazonData && (
-                        <span className="ml-2 text-xs text-green-600">📡 Amazon'dan</span>
+                        <span className="ml-2 text-xs text-green-600">📡 from Amazon</span>
                       )}
                     </label>
                     <div className="relative">
@@ -975,7 +1019,6 @@ export default function CreateListingPage() {
                         <option value="cd">CD</option>
                         <option value="dvd">DVD</option>
                         <option value="game">Game</option>
-                        <option value="mix">Mixed Media</option>
                       </select>
                       <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
                         <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
@@ -985,29 +1028,15 @@ export default function CreateListingPage() {
                     </div>
                   </div>
                   
-                  {/* Condition Selection */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Condition
                     </label>
-                    <div className="relative">
-                      <select
-                        value={currentItem.condition}
-                        onChange={(e) => handleCurrentItemChange('condition', e.target.value)}
-                        className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none bg-white"
-                      >
-                        <option value="like-new">Like New</option>
-                        <option value="good">Good</option>
-                      </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                          <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                        </svg>
-                      </div>
+                    <div className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm bg-gray-100">
+                      Like New
                     </div>
                   </div>
                   
-                  {/* Quantity */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Quantity
@@ -1037,7 +1066,6 @@ export default function CreateListingPage() {
                     </div>
                   </div>
                   
-                  {/* Price - Amazon'dan otomatik doldurulabilir */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Our Price ($)
@@ -1062,17 +1090,16 @@ export default function CreateListingPage() {
                     </div>
                     {currentItem.originalPrice && (
                       <p className="text-xs text-gray-600 mt-1">
-                        Amazon fiyatı: ${currentItem.originalPrice}
+                        Amazon price: ${currentItem.originalPrice}
                       </p>
                     )}
                   </div>
                   
-                  {/* Image Upload with Optimization */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Image
                       {currentItem.amazonData?.image && (
-                        <span className="ml-2 text-xs text-green-600">📡 Amazon'dan</span>
+                        <span className="ml-2 text-xs text-green-600">📡 from Amazon</span>
                       )}
                     </label>
                     <div className="flex items-center">
@@ -1086,27 +1113,30 @@ export default function CreateListingPage() {
                         </div>
                       </div>
                       <div className="ml-4">
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={imageProcessing}
-                          className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50"
-                        >
-                          {imageProcessing ? (
-                            <>
-                              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              Processing...
-                            </>
-                          ) : (
-                            <>
-                              <FiUpload className="mr-1 h-4 w-4" />
-                              Upload
-                            </>
-                          )}
-                        </button>
+                        {/* Photo upload button hidden for now */}
+                        {false && (
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={imageProcessing}
+                            className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50"
+                          >
+                            {imageProcessing ? (
+                              <>
+                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Processing...
+                              </>
+                            ) : (
+                              <>
+                                <FiUpload className="mr-1 h-4 w-4" />
+                                Upload
+                              </>
+                            )}
+                          </button>
+                        )}
                         <input
                           type="file"
                           ref={fileInputRef}
@@ -1124,7 +1154,6 @@ export default function CreateListingPage() {
                   </div>
                 </div>
                 
-                {/* Add Item Button */}
                 <div className="mt-6">
                   <button
                     type="button"
@@ -1138,7 +1167,6 @@ export default function CreateListingPage() {
                 </div>
               </div>
               
-              {/* Added Items List */}
               <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center">
@@ -1175,14 +1203,27 @@ export default function CreateListingPage() {
                       <div key={item.id} className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm transition-all duration-200 hover:shadow-md">
                         <div className="flex justify-between items-start">
                           <div className="flex items-center">
-                            {/* Fotoğraf varsa fotoğrafı göster, yoksa kategori ikonunu göster */}
-                            <div className="w-16 h-16 rounded-md overflow-hidden mr-4 flex-shrink-0 border border-gray-200">
-                              {item.image ? (
-                                <img 
-                                  src={item.image} 
-                                  alt={`Item ${item.isbn}`} 
-                                  className="w-full h-full object-cover"
-                                />
+                            <div className="w-16 h-16 rounded-md overflow-hidden mr-4 flex-shrink-0 border border-gray-200 relative">
+                              {item.imageUrl ? (
+                                <>
+                                  <img 
+                                    src={item.imageUrl} 
+                                    alt={`Item ${item.isbn}`} 
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.onerror = null;
+                                      target.src = '/placeholder-image.png';
+                                    }}
+                                  />
+                                  <div className="absolute bottom-0 right-0">
+                                    {item.amazonData?.image === item.imageUrl ? (
+                                      <span className="inline-block w-3 h-3 bg-orange-500 rounded-full border border-white" title="Amazon Image"></span>
+                                    ) : (
+                                      <span className="inline-block w-3 h-3 bg-blue-500 rounded-full border border-white" title="Custom Image"></span>
+                                    )}
+                                  </div>
+                                </>
                               ) : (
                                 <div className="w-full h-full bg-gray-100 flex items-center justify-center">
                                   <span className="text-xl">
@@ -1206,7 +1247,6 @@ export default function CreateListingPage() {
                                 Our Price: ${item.price.toFixed(2)}
                               </p>
                               
-                              {/* Amazon Verileri */}
                               {item.amazonData && (
                                 <div className="flex items-center space-x-4 mt-1">
                                   <span className="text-xs text-blue-600 flex items-center">
@@ -1226,16 +1266,23 @@ export default function CreateListingPage() {
                                 </div>
                               )}
                               
-                              {item.imageStats && (
-                                <p className="text-xs text-green-600 mt-1">
-                                  📷 Image optimized: {item.imageStats.optimized.compressionRatio}% of original
-                                </p>
-                              )}
-                              {!item.image && (
-                                <p className="text-xs text-orange-600 mt-1">
-                                  ⚠️ No image added
-                                </p>
-                              )}
+                              <div className="mt-1">
+                                {item.amazonData?.image === item.imageUrl && (
+                                  <span className="text-xs text-orange-600">
+                                    📦 Amazon image (saved to database)
+                                  </span>
+                                )}
+                                {item.imageUrl && item.imageUrl.includes('firebasestorage.googleapis.com') && (
+                                  <span className="text-xs text-blue-600">
+                                    📷 Custom image (uploaded to Firebase)
+                                  </span>
+                                )}
+                                {!item.imageUrl && (
+                                  <span className="text-xs text-orange-600">
+                                    ⚠️ No image available
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                           <button
@@ -1260,7 +1307,84 @@ export default function CreateListingPage() {
                 )}
               </div>
               
-              {/* Submit Button */}
+              <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 shadow-sm">
+                <div className="flex items-center mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
+                    <FiFileText className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">Bundle Description</h3>
+                </div>
+                
+                <div className="space-y-2">
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                    Description <span className="text-gray-500">(Optional)</span>
+                  </label>
+                  <div className="relative">
+                    <textarea
+                      id="description"
+                      name="description"
+                      rows={4}
+                      value={description}
+                      onChange={handleDescriptionChange}
+                      maxLength={500}
+                      placeholder="Describe your bundle... Mention any special features, condition details, or other relevant information."
+                      className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
+                    />
+                    <div className="absolute bottom-2 right-2 text-xs text-gray-500 bg-white/80 px-2 py-1 rounded">
+                      {description.length}/500
+                    </div>
+                  </div>
+                  
+                  {descriptionError && (
+                    <p className="text-sm text-red-600 mt-1">{descriptionError}</p>
+                  )}
+                  
+                  <p className="text-xs text-gray-500">
+                    Tip: A good description helps buyers understand what they're getting. Mention the condition, any special features, or why this bundle is valuable.
+                  </p>
+                </div>
+              </div>
+              
+              {/* Shipping Section */}
+              <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 shadow-sm">
+                <div className="flex items-center mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
+                    <FiTruck className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">Shipping Information</h3>
+                </div>
+                
+                <div className="space-y-2">
+                  <label htmlFor="shippingPrice" className="block text-sm font-medium text-gray-700">
+                    Shipping Price ($)
+                  </label>
+                  <div className="flex rounded-lg shadow-sm overflow-hidden border border-gray-300 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all duration-200">
+                    <span className="inline-flex items-center px-4 bg-gray-50 text-gray-500 border-r border-gray-300">
+                      <FiDollarSign className="h-5 w-5" />
+                    </span>
+                    <input
+                      type="number"
+                      id="shippingPrice"
+                      value={shippingPrice}
+                      onChange={handleShippingPriceChange}
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      placeholder="0.00"
+                      className="flex-1 block w-full px-4 py-3 border-0 focus:ring-0 text-base"
+                    />
+                  </div>
+                  
+                  {shippingError && (
+                    <p className="text-sm text-red-600 mt-1">{shippingError}</p>
+                  )}
+                  
+                  <p className="text-xs text-gray-500">
+                    Set a shipping price for your bundle. This will be added to the total price at checkout.
+                  </p>
+                </div>
+              </div>
+              
               <div className="pt-5">
                 <button
                   type="submit"
@@ -1286,15 +1410,34 @@ export default function CreateListingPage() {
             </form>
           </div>
           
-          {/* Info Box */}
           <div className="mt-8 bg-blue-50 rounded-lg p-4 border border-blue-200">
             <h3 className="text-sm font-medium text-blue-900 mb-2">📱 How it works</h3>
             <ul className="text-sm text-blue-700 space-y-1">
               <li>• Scan barcode on your mobile device to automatically check Amazon pricing</li>
               <li>• Items meeting our criteria are automatically added with calculated pricing</li>
               <li>• Rejected items show detailed reason (price range, sales rank, etc.)</li>
-              <li>• Images and product details are fetched from Amazon automatically</li>
+              <li>• ✅ Amazon images are automatically saved to Firestore (no upload needed)</li>
+              <li>• Custom uploaded images are optimized and stored in Firebase Storage</li>
               <li>• Manual entry is still available for items without barcodes</li>
+            </ul>
+          </div>
+          
+          <div className="mt-4 bg-green-50 rounded-lg p-4 border border-green-200">
+            <h3 className="text-sm font-medium text-green-900 mb-2">🖼️ Image Persistence</h3>
+            <ul className="text-sm text-green-700 space-y-1">
+              <li>• 📦 <strong>Amazon Images:</strong> Saved directly to Firestore (persistent URLs)</li>
+              <li>• 📷 <strong>Custom Images:</strong> Uploaded to Firebase Storage (optimized)</li>
+              <li>• ✅ <strong>Product Cards:</strong> Display both Amazon and custom images</li>
+              <li>• 🔄 <strong>Page Refresh:</strong> Images will no longer disappear</li>
+            </ul>
+          </div>
+          
+          <div className="mt-4 bg-purple-50 rounded-lg p-4 border border-purple-200">
+            <h3 className="text-sm font-medium text-purple-900 mb-2">🚚 Shipping Information</h3>
+            <ul className="text-sm text-purple-700 space-y-1">
+              <li>• 📦 <strong>Shipping Price:</strong> Set a shipping price for your bundle</li>
+              <li>• 💰 <strong>Added at Checkout:</strong> Shipping price will be added to the total</li>
+              <li>• ✅ <strong>Visible to Buyers:</strong> Shipping price will be displayed on the product page</li>
             </ul>
           </div>
         </div>

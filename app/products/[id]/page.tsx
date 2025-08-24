@@ -16,7 +16,6 @@ function ArrowLeftIcon({ size = 24, className = "" }: { size?: number; className
     </svg>
   );
 }
-
 function ShoppingCartIcon({ size = 24, className = "" }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -26,7 +25,6 @@ function ShoppingCartIcon({ size = 24, className = "" }: { size?: number; classN
     </svg>
   );
 }
-
 function HeartIcon({ size = 24, className = "", filled = false }: { size?: number; className?: string; filled?: boolean }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
@@ -34,7 +32,6 @@ function HeartIcon({ size = 24, className = "", filled = false }: { size?: numbe
     </svg>
   );
 }
-
 function ShareIcon({ size = 24, className = "" }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -46,7 +43,6 @@ function ShareIcon({ size = 24, className = "" }: { size?: number; className?: s
     </svg>
   );
 }
-
 function PackageIcon({ size = 24, className = "" }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -57,7 +53,6 @@ function PackageIcon({ size = 24, className = "" }: { size?: number; className?:
     </svg>
   );
 }
-
 function ShieldCheckIcon({ size = 24, className = "" }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -66,6 +61,28 @@ function ShieldCheckIcon({ size = 24, className = "" }: { size?: number; classNa
       <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"></path>
       <path d="M3 7h2c1 0 1 1 1 1v8c0 1-1 1-1 1H3"></path>
       <path d="M21 7h-2c-1 0-1 1-1 1v8c0 1 1 1 1 1h2"></path>
+    </svg>
+  );
+}
+function FileTextIcon({ size = 24, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+      <polyline points="14 2 14 8 20 8"></polyline>
+      <line x1="16" y1="13" x2="8" y2="13"></line>
+      <line x1="16" y1="17" x2="8" y2="17"></line>
+      <polyline points="10 9 9 9 8 9"></polyline>
+    </svg>
+  );
+}
+// NEW: Truck Icon for Shipping
+function TruckIcon({ size = 24, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="1" y="3" width="15" height="13"></rect>
+      <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+      <circle cx="5.5" cy="18.5" r="2.5"></circle>
+      <circle cx="18.5" cy="18.5" r="2.5"></circle>
     </svg>
   );
 }
@@ -115,10 +132,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           
           // Collect all images from bundle items
           const bundleImages = data.bundleItems
-            .filter((item: any) => item.image) // Only items with images
-            .map((item: any) => item.image);
+            .filter((item: any) => item.imageUrl)
+            .map((item: any) => item.imageUrl);
           
-          const firstItemImage = data.bundleItems[0]?.image || null;
+          const firstItemImage = data.bundleItems[0]?.imageUrl || null;
           const images = bundleImages.length > 0 ? bundleImages : (firstItemImage ? [firstItemImage] : []);
           
           const features = [
@@ -132,6 +149,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             id: docSnap.id,
             title: data.title || "Untitled Bundle",
             price: data.totalValue || 0,
+            shippingPrice: data.shippingPrice || 0, // NEW: Add shipping price
             condition: dominantCondition === "like-new" ? "Like New" : "Good",
             seller: data.vendorName || data.vendorId || "Anonymous Seller",
             sellerRating: 4.5,
@@ -157,6 +175,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       fetchProduct();
     }
   }, [resolvedParams.id]);
+
+  // NEW: Calculate pricing with shipping
+  const calculatePricing = () => {
+    const subtotal = product.price * quantity;
+    const shipping = product.shippingPrice;
+    const total = subtotal + shipping;
+    return { subtotal, shipping, total };
+  };
   
   if (loading) {
     return (
@@ -192,6 +218,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       </div>
     );
   }
+
+  const { subtotal, shipping, total } = calculatePricing();
   
   const handleAddToCart = () => {
     addToCart({
@@ -199,6 +227,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       title: product.title,
       price: product.price,
       image: product.images[0] || "/placeholder.png",
+      sellerId: ""
     });
     
     setShowNotification(true);
@@ -256,6 +285,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     setImageError(true);
   };
   
+  // Helper function to get the image URL from a bundle item
+  const getItemImage = (item: any) => {
+    return item.imageUrl || item.amazonData?.image || item.image;
+  };
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Notification */}
@@ -296,6 +330,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   onError={handleImageError}
                   priority
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  unoptimized={true}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
@@ -351,6 +386,21 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   {product.totalItems} Items Bundle
                 </div>
               </div>
+              
+              {/* Image Source Indicator */}
+              {product.images.length > 0 && (
+                <div className="absolute top-6 right-6">
+                  {product.images[selectedImageIndex].includes('amazon.com') ? (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200">
+                      📦 Amazon Image
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                      📷 Custom Image
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
             
             {/* Thumbnail Gallery */}
@@ -373,6 +423,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                       fill
                       className="object-cover"
                       sizes="(max-width: 768px) 25vw, (max-width: 1200px) 12vw, 8vw"
+                      unoptimized={true}
                     />
                   </button>
                 ))}
@@ -408,6 +459,40 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </span>
               </div>
               
+              {/* NEW: Shipping Information Display */}
+              {product.shippingPrice > 0 && (
+                <div className="bg-blue-50 rounded-2xl p-4 border border-blue-200 mb-6">
+                  <div className="flex items-center">
+                    <TruckIcon size={20} className="text-blue-600 mr-3" />
+                    <div>
+                      <p className="text-blue-900 font-medium">
+                        Shipping: ${product.shippingPrice.toFixed(2)}
+                      </p>
+                      <p className="text-blue-700 text-sm">
+                        Added at checkout
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* FREE SHIPPING indicator for orders over certain amount */}
+              {product.shippingPrice === 0 && (
+                <div className="bg-green-50 rounded-2xl p-4 border border-green-200 mb-6">
+                  <div className="flex items-center">
+                    <TruckIcon size={20} className="text-green-600 mr-3" />
+                    <div>
+                      <p className="text-green-900 font-medium">
+                        🚚 FREE SHIPPING
+                      </p>
+                      <p className="text-green-700 text-sm">
+                        This bundle includes free shipping
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               {/* Product Info Cards */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-4 border border-blue-200">
@@ -427,6 +512,65 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   </div>
                 </div>
               </div>
+            </div>
+            
+            {/* NEW: Price Breakdown Section */}
+            <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
+              <h3 className="text-xl font-bold text-gray-900 mb-6">Price Breakdown</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-gray-700">Bundle Price (×{quantity})</span>
+                  <span className="font-semibold">${subtotal.toFixed(2)}</span>
+                </div>
+                
+                {shipping > 0 && (
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-700 flex items-center">
+                      <TruckIcon size={16} className="mr-2" />
+                      Shipping
+                    </span>
+                    <span className="font-semibold">${shipping.toFixed(2)}</span>
+                  </div>
+                )}
+                
+                {shipping === 0 && (
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-green-700 flex items-center">
+                      <TruckIcon size={16} className="mr-2" />
+                      Shipping
+                    </span>
+                    <span className="font-semibold text-green-600">FREE</span>
+                  </div>
+                )}
+                
+                <div className="border-t border-gray-200 pt-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xl font-bold text-gray-900">Total</span>
+                    <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                      ${total.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Description Section */}
+            <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
+              <div className="flex items-center mb-4">
+                <FileTextIcon size={24} className="text-blue-600 mr-3" />
+                <h3 className="text-xl font-bold text-gray-900">Bundle Description</h3>
+              </div>
+              <div className="bg-blue-50 rounded-2xl p-6 border border-blue-100">
+                <p className="text-gray-700 leading-relaxed">{product.description}</p>
+              </div>
+              {product.description.length > 200 && (
+                <div className="mt-4 text-sm text-gray-500 flex items-center">
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  This description was provided by the seller
+                </div>
+              )}
             </div>
             
             {/* Seller Info */}
@@ -490,12 +634,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </button>
               </div>
             </div>
-            
-            {/* Description */}
-            <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Description</h3>
-              <p className="text-gray-700 leading-relaxed">{product.description}</p>
-            </div>
           </div>
         </div>
         
@@ -521,69 +659,108 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-100">
-                    {product.bundleItems.map((item: any, index: number) => (
-                      <tr key={index} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center space-x-4">
-                            <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center border border-gray-200 overflow-hidden">
-                              {item.image ? (
-                                <Image 
-                                  src={item.image} 
-                                  alt={`Item ${index + 1}`}
-                                  width={48}
-                                  height={48}
-                                  className="object-cover w-full h-full"
-                                />
+                    {product.bundleItems.map((item: any, index: number) => {
+                      const itemImage = getItemImage(item);
+                      return (
+                        <tr key={index} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center space-x-4">
+                              <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center border border-gray-200 overflow-hidden">
+                                {itemImage ? (
+                                  <Image 
+                                    src={itemImage} 
+                                    alt={`Item ${index + 1}`}
+                                    width={48}
+                                    height={48}
+                                    className="object-cover w-full h-full"
+                                    unoptimized={true}
+                                  />
+                                ) : (
+                                  <span className="text-xl">{getCategoryIcon(item.category)}</span>
+                                )}
+                              </div>
+                              <div>
+                                <div className="text-sm font-bold text-gray-900">Item #{index + 1}</div>
+                                <div className="text-xs text-gray-500">
+                                  {itemImage && itemImage.includes('amazon.com') ? (
+                                    <span className="text-orange-600">📦 Amazon Image</span>
+                                  ) : itemImage ? (
+                                    <span className="text-blue-600">📷 Custom Image</span>
+                                  ) : (
+                                    <span className="text-gray-500">No Image</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border border-blue-300">
+                              {item.category.charAt(0).toUpperCase() + item.category.slice(1)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold border ${getConditionColor(item.condition)}`}>
+                              {item.condition === 'like-new' ? 'Like New' : 'Good'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm">
+                              {item.isbn ? (
+                                <span className="font-mono bg-gray-100 px-3 py-1 rounded-lg text-xs border border-gray-200">
+                                  {item.isbn}
+                                </span>
                               ) : (
-                                <span className="text-xl">{getCategoryIcon(item.category)}</span>
+                                <span className="text-gray-400 italic text-xs">Not applicable</span>
                               )}
                             </div>
-                            <div>
-                              <div className="text-sm font-bold text-gray-900">Item #{index + 1}</div>
-                              <div className="text-xs text-gray-500">Bundle item</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border border-blue-300">
-                            {item.category.charAt(0).toUpperCase() + item.category.slice(1)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold border ${getConditionColor(item.condition)}`}>
-                            {item.condition === 'like-new' ? 'Like New' : 'Good'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm">
-                            {item.isbn ? (
-                              <span className="font-mono bg-gray-100 px-3 py-1 rounded-lg text-xs border border-gray-200">
-                                {item.isbn}
-                              </span>
-                            ) : (
-                              <span className="text-gray-400 italic text-xs">Not applicable</span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            <span className="inline-flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-800 rounded-full text-sm font-bold">
+                              {item.quantity}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right">
+                            <div className="text-lg font-bold text-gray-900">${item.price.toFixed(2)}</div>
+                            {item.amazonData?.price && (
+                              <div className="text-xs text-gray-500">Amazon: ${item.amazonData.price.toFixed(2)}</div>
                             )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                          <span className="inline-flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-800 rounded-full text-sm font-bold">
-                            {item.quantity}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <div className="text-lg font-bold text-gray-900">${item.price.toFixed(2)}</div>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                   <tfoot className="bg-gradient-to-r from-gray-50 to-gray-100 border-t-2 border-gray-200">
                     <tr>
                       <td colSpan={5} className="px-6 py-4 text-right text-lg font-bold text-gray-900">
-                        Total Bundle Value:
+                        Bundle Subtotal:
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                           ${product.price.toFixed(2)}
+                        </div>
+                      </td>
+                    </tr>
+                    {/* NEW: Show shipping in table footer */}
+                    {shipping > 0 && (
+                      <tr className="bg-blue-50">
+                        <td colSpan={5} className="px-6 py-3 text-right text-md font-medium text-blue-900 flex items-center justify-end">
+                          <TruckIcon size={16} className="mr-2" />
+                          Shipping:
+                        </td>
+                        <td className="px-6 py-3 text-right">
+                          <div className="text-lg font-bold text-blue-900">
+                            ${shipping.toFixed(2)}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    <tr className="bg-gradient-to-r from-blue-600 to-purple-600">
+                      <td colSpan={5} className="px-6 py-4 text-right text-xl font-bold text-white">
+                        Total with Shipping:
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="text-3xl font-bold text-white">
+                          ${total.toFixed(2)}
                         </div>
                       </td>
                     </tr>
@@ -606,10 +783,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           
           <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 text-center">
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <PackageIcon size={24} className="text-blue-600" />
+              <TruckIcon size={24} className="text-blue-600" />
             </div>
-            <h4 className="font-bold text-gray-900 mb-2">Fast Shipping</h4>
-            <p className="text-gray-600 text-sm">Free shipping on orders over $50</p>
+            <h4 className="font-bold text-gray-900 mb-2">
+              {shipping === 0 ? 'Free Shipping' : 'Fast Shipping'}
+            </h4>
+            <p className="text-gray-600 text-sm">
+              {shipping === 0 
+                ? 'This bundle includes free shipping'
+                : `Shipping cost: ${shipping.toFixed(2)}`
+              }
+            </p>
           </div>
           
           <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 text-center">

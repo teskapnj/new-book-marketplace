@@ -15,20 +15,16 @@ import {
   where
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-
 // Message Notification Component
 const MessageNotification = () => {
   const [user] = useAuthState(auth);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     if (!user) return;
-
     // Listen to unread messages
     const messagesRef = collection(db, 'contact_messages');
     const q = query(messagesRef, where('status', '==', 'unread'));
-
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setUnreadCount(snapshot.size);
       setLoading(false);
@@ -36,10 +32,8 @@ const MessageNotification = () => {
       console.error('Error fetching unread messages:', error);
       setLoading(false);
     });
-
     return () => unsubscribe();
   }, [user]);
-
   if (loading) {
     return (
       <div className="relative">
@@ -47,7 +41,6 @@ const MessageNotification = () => {
       </div>
     );
   }
-
   return (
     <Link
       href="/admin/messages"
@@ -78,7 +71,6 @@ const MessageNotification = () => {
     </Link>
   );
 };
-
 export default function AdminListingsPage() {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
@@ -140,10 +132,12 @@ export default function AdminListingsPage() {
                 title: data.title || "Untitled Bundle",
                 totalItems: data.totalItems || 0,
                 totalValue: data.totalValue || 0,
+                shippingPrice: data.shippingPrice || 0, // Added shipping price
                 status: data.status || "pending",
                 vendorId: data.vendorId,
                 vendorName: data.vendorName || "Unknown Seller",
                 bundleItems: data.bundleItems || [],
+                description: data.description || "", // Added description field
                 createdAt: data.createdAt?.toDate() || new Date(),
                 submittedDate: data.createdAt?.toDate().toLocaleDateString() || new Date().toLocaleDateString(),
                 reviewedDate: data.reviewedDate,
@@ -176,10 +170,12 @@ export default function AdminListingsPage() {
                     title: data.title || "Untitled Bundle",
                     totalItems: data.totalItems || 0,
                     totalValue: data.totalValue || 0,
+                    shippingPrice: data.shippingPrice || 0, // Added shipping price
                     status: data.status || "pending",
                     vendorId: data.vendorId,
                     vendorName: data.vendorName || "Unknown Seller",
                     bundleItems: data.bundleItems || [],
+                    description: data.description || "", // Added description field
                     createdAt: data.createdAt?.toDate() || new Date(),
                     submittedDate: data.createdAt?.toDate().toLocaleDateString() || new Date().toLocaleDateString(),
                     reviewedDate: data.reviewedDate,
@@ -400,8 +396,6 @@ export default function AdminListingsPage() {
             >
               ← Back to Home
             </Link>
-            
-            
           </div>
           
           {/* Admin Info & Notifications */}
@@ -541,6 +535,9 @@ export default function AdminListingsPage() {
                     Items & Value
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Shipping
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -581,6 +578,15 @@ export default function AdminListingsPage() {
                       </div>
                       <div className="text-sm text-gray-500">
                         💰 ${listing.totalValue.toFixed(2)}
+                      </div>
+                    </td>
+                    
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900">
+                        🚚 ${listing.shippingPrice.toFixed(2)}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        Shipping Price
                       </div>
                     </td>
                     
@@ -685,7 +691,7 @@ export default function AdminListingsPage() {
           )}
         </div>
         
-        {/* 🔍 Review Modal - Same as before, keeping it identical */}
+        {/* 🔍 Review Modal */}
         {selectedListing && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
             <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
@@ -717,9 +723,26 @@ export default function AdminListingsPage() {
                       <p><strong>Seller:</strong> {selectedListing.vendorName}</p>
                       <p><strong>Total Items:</strong> {selectedListing.totalItems}</p>
                       <p><strong>Total Value:</strong> ${selectedListing.totalValue.toFixed(2)}</p>
+                      <p><strong>Shipping Price:</strong> ${selectedListing.shippingPrice.toFixed(2)}</p>
                       <p><strong>Submitted:</strong> {selectedListing.submittedDate}</p>
                       <p><strong>Views:</strong> {selectedListing.views}</p>
                       <p><strong>Current Status:</strong> {getStatusBadge(selectedListing.status)}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Description Section - Added */}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-900 mb-2">Description</h4>
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                      {selectedListing.description ? (
+                        <p className="text-sm text-gray-700 leading-relaxed">
+                          {selectedListing.description}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-gray-500 italic">
+                          No description provided by the seller.
+                        </p>
+                      )}
                     </div>
                   </div>
                   

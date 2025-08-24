@@ -1,88 +1,133 @@
 // app/listings/page.tsx
 "use client";
+
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
-import { collection, query, where, onSnapshot, orderBy, getDocs } from "firebase/firestore";
+import { collection, query, where, onSnapshot, orderBy, getDocs, DocumentData } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import ProductCard from "@/components/ProductCard";
 
 // SVG Icons
-function FilterIcon({ size = 24, className = "" }) {
-  return (
-    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-    </svg>
-  );
+interface IconProps {
+  size?: number;
+  className?: string;
 }
 
-function GridIcon({ size = 24, className = "" }) {
-  return (
-    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect x="3" y="3" width="7" height="7"></rect>
-      <rect x="14" y="3" width="7" height="7"></rect>
-      <rect x="14" y="14" width="7" height="7"></rect>
-      <rect x="3" y="14" width="7" height="7"></rect>
-    </svg>
-  );
+const FilterIcon = ({ size = 24, className = "" }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+  </svg>
+);
+
+const GridIcon = ({ size = 24, className = "" }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="3" y="3" width="7" height="7"></rect>
+    <rect x="14" y="3" width="7" height="7"></rect>
+    <rect x="14" y="14" width="7" height="7"></rect>
+    <rect x="3" y="14" width="7" height="7"></rect>
+  </svg>
+);
+
+const ListIcon = ({ size = 24, className = "" }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <line x1="8" y1="6" x2="21" y2="6"></line>
+    <line x1="8" y1="12" x2="21" y2="12"></line>
+    <line x1="8" y1="18" x2="21" y2="18"></line>
+    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+  </svg>
+);
+
+const ArrowLeftIcon = ({ size = 24, className = "" }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <polyline points="15 18 9 12 15 6"></polyline>
+  </svg>
+);
+
+const SearchIcon = ({ size = 24, className = "" }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="11" cy="11" r="8"></circle>
+    <path d="m21 21-4.35-4.35"></path>
+  </svg>
+);
+
+const PackageIcon = ({ size = 24, className = "" }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line>
+    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+  </svg>
+);
+
+const XIcon = ({ size = 24, className = "" }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="m18 6-12 12"></path>
+    <path d="m6 6 12 12"></path>
+  </svg>
+);
+
+const ChevronDownIcon = ({ size = 24, className = "" }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="m6 9 6 6 6-6"></path>
+  </svg>
+);
+
+// TypeScript Interfaces
+interface Product {
+  id: string;
+  title: string;
+  price: number;
+  imageUrl?: string;
+  image?: string;
+  condition: string;
+  seller?: string;
+  sellerName?: string;
+  category?: string;
+  totalItems?: number;
+  vendorId?: string;
+  isbn?: string;
+  quantity?: number;
+  amazonData?: {
+    title?: string;
+    asin?: string;
+    price?: number;
+    sales_rank?: number;
+    category?: string;
+    image?: string;
+  };
+  ourPrice?: number;
+  originalPrice?: number;
+  createdAt?: Date;
+  bundleItems?: any[];
+  description?: string;
+  distinctCategories?: string[];
+  status?: string;
+  updatedAt?: Date | null;
+  location?: string | null;
+  tags?: string[];
+  highlights?: string[];
 }
 
-function ListIcon({ size = 24, className = "" }) {
-  return (
-    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <line x1="8" y1="6" x2="21" y2="6"></line>
-      <line x1="8" y1="12" x2="21" y2="12"></line>
-      <line x1="8" y1="18" x2="21" y2="18"></line>
-      <line x1="3" y1="6" x2="3.01" y2="6"></line>
-      <line x1="3" y1="12" x2="3.01" y2="12"></line>
-      <line x1="3" y1="18" x2="3.01" y2="18"></line>
-    </svg>
-  );
+interface Category {
+  id: string;
+  name: string;
+  count: number;
+  icon: string;
 }
 
-function ArrowLeftIcon({ size = 24, className = "" }) {
-  return (
-    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <polyline points="15 18 9 12 15 6"></polyline>
-    </svg>
-  );
-}
-
-function SearchIcon({ size = 24, className = "" }) {
-  return (
-    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="11" cy="11" r="8"></circle>
-      <path d="m21 21-4.35-4.35"></path>
-    </svg>
-  );
-}
-
-function PackageIcon({ size = 24, className = "" }) {
-  return (
-    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line>
-      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-      <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-      <line x1="12" y1="22.08" x2="12" y2="12"></line>
-    </svg>
-  );
-}
-
-function XIcon({ size = 24, className = "" }) {
-  return (
-    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="m18 6-12 12"></path>
-      <path d="m6 6 12 12"></path>
-    </svg>
-  );
-}
-
-function ChevronDownIcon({ size = 24, className = "" }) {
-  return (
-    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="m6 9 6 6 6-6"></path>
-    </svg>
-  );
+interface FilterContentProps {
+  categories: Category[];
+  selectedCategory: string;
+  setSelectedCategory: (category: string) => void;
+  priceRange: [number, number];
+  setPriceRange: (range: [number, number]) => void;
+  sortBy: string;
+  setSortBy: (sort: string) => void;
+  router: ReturnType<typeof useRouter>;
 }
 
 export default function ListingsPage() {
@@ -94,23 +139,23 @@ export default function ListingsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>(categoryFromUrl);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
   const [sortBy, setSortBy] = useState<string>("newest");
-  const [products, setProducts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [indexError, setIndexError] = useState<string | null>(null);
-  const [fallbackMode, setFallbackMode] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-
-  // Update selected category when URL changes
+  const [fallbackMode, setFallbackMode] = useState<boolean>(false);
+  const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  
+  // URL'den kategoriyi güncelleme
   useEffect(() => {
     const urlCategory = searchParams.get('category');
     if (urlCategory && urlCategory !== selectedCategory) {
       setSelectedCategory(urlCategory);
     }
-  }, [searchParams]);
-
-  // Fetch listings from Firebase
+  }, [searchParams, selectedCategory]);
+  
+  // Firebase'den veri çekme
   useEffect(() => {
     setLoading(true);
     
@@ -123,10 +168,10 @@ export default function ListingsPage() {
         );
         
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
-          const listingsData: any[] = [];
+          const listingsData: Product[] = [];
           
           querySnapshot.forEach((doc) => {
-            const data = doc.data();
+            const data = doc.data() as DocumentData;
             
             if (!data.bundleItems || !Array.isArray(data.bundleItems)) {
               console.warn(`Listing ${doc.id} has invalid bundleItems:`, data.bundleItems);
@@ -151,11 +196,19 @@ export default function ListingsPage() {
             const dominantCondition = Object.entries(conditionCounts)
               .sort((a, b) => b[1] - a[1])[0]?.[0] || "good";
             
-            // İlk ürün fotoğrafı yoksa, fotoğraf olan ilk ürünü bul
-            let firstItemImage = null;
+            // İlk ürün fotoğrafını bulma
+            let firstItemImage: string | undefined;
             for (const item of data.bundleItems) {
               if (item.image) {
                 firstItemImage = item.image;
+                break;
+              }
+              if (item.imageUrl) {
+                firstItemImage = item.imageUrl;
+                break;
+              }
+              if (item.amazonData?.image) {
+                firstItemImage = item.amazonData.image;
                 break;
               }
             }
@@ -166,15 +219,16 @@ export default function ListingsPage() {
               price: data.totalValue || 0,
               category: dominantCategory,
               condition: dominantCondition,
-              imageUrl: firstItemImage, // Artık ilk fotoğraf olan ürünün resmi burada
+              imageUrl: firstItemImage,
+              image: firstItemImage,
               sellerName: data.vendorName || data.vendorId || "Anonymous Seller",
+              seller: data.vendorName || data.vendorId || "Anonymous Seller",
               createdAt: data.createdAt?.toDate() || new Date(),
               bundleItems: data.bundleItems,
               description: `Bundle of ${data.totalItems || data.bundleItems.length} items including various ${dominantCategory === "mix" ? "categories" : dominantCategory + "s"} in ${dominantCondition === "like-new" ? "Like New" : "Good"} condition.`,
               totalItems: data.totalItems || data.bundleItems.length,
               vendorId: data.vendorId,
               distinctCategories: Array.from(distinctCategories),
-              // Tüm liste bilgilerini ekliyoruz
               status: data.status,
               updatedAt: data.updatedAt?.toDate() || null,
               location: data.location || null,
@@ -217,10 +271,10 @@ export default function ListingsPage() {
         );
         
         const querySnapshot = await getDocs(q);
-        const listingsData: any[] = [];
+        const listingsData: Product[] = [];
         
         querySnapshot.forEach((doc) => {
-          const data = doc.data();
+          const data = doc.data() as DocumentData;
           
           if (!data.bundleItems || !Array.isArray(data.bundleItems)) {
             console.warn(`Listing ${doc.id} has invalid bundleItems:`, data.bundleItems);
@@ -245,11 +299,18 @@ export default function ListingsPage() {
           const dominantCondition = Object.entries(conditionCounts)
             .sort((a, b) => b[1] - a[1])[0]?.[0] || "good";
             
-          // İlk ürün fotoğrafı yoksa, fotoğraf olan ilk ürünü bul
-          let firstItemImage = null;
+          let firstItemImage: string | undefined;
           for (const item of data.bundleItems) {
             if (item.image) {
               firstItemImage = item.image;
+              break;
+            }
+            if (item.imageUrl) {
+              firstItemImage = item.imageUrl;
+              break;
+            }
+            if (item.amazonData?.image) {
+              firstItemImage = item.amazonData.image;
               break;
             }
           }
@@ -260,15 +321,16 @@ export default function ListingsPage() {
             price: data.totalValue || 0,
             category: dominantCategory,
             condition: dominantCondition,
-            imageUrl: firstItemImage, // Artık ilk fotoğraf olan ürünün resmi burada
+            imageUrl: firstItemImage,
+            image: firstItemImage,
             sellerName: data.vendorName || data.vendorId || "Anonymous Seller",
+            seller: data.vendorName || data.vendorId || "Anonymous Seller",
             createdAt: data.createdAt?.toDate() || new Date(),
             bundleItems: data.bundleItems,
             description: `Bundle of ${data.totalItems || data.bundleItems.length} items including various ${dominantCategory === "mix" ? "categories" : dominantCategory + "s"} in ${dominantCondition === "like-new" ? "Like New" : "Good"} condition.`,
             totalItems: data.totalItems || data.bundleItems.length,
             vendorId: data.vendorId,
             distinctCategories: Array.from(distinctCategories),
-            // Tüm liste bilgilerini ekliyoruz
             status: data.status,
             updatedAt: data.updatedAt?.toDate() || null,
             location: data.location || null,
@@ -278,7 +340,7 @@ export default function ListingsPage() {
         });
         
         listingsData.sort((a, b) => {
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          return new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime();
         });
         
         setProducts(listingsData);
@@ -291,26 +353,26 @@ export default function ListingsPage() {
     
     fetchListings();
   }, []);
-
+  
   // Filtreleme ve sıralama
   const filteredProducts = products
     .filter(product => {
       if (selectedCategory !== "all" && product.category !== selectedCategory) return false;
-      if (product.price < priceRange[0] || product.price > priceRange[1]) return false;
+      if (product.price! < priceRange[0] || product.price! > priceRange[1]) return false;
       if (searchTerm && !product.title.toLowerCase().includes(searchTerm.toLowerCase())) return false;
       return true;
     })
     .sort((a, b) => {
       switch (sortBy) {
-        case "price-low": return a.price - b.price;
-        case "price-high": return b.price - a.price;
-        case "newest": return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        case "oldest": return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case "price-low": return a.price! - b.price!;
+        case "price-high": return b.price! - a.price!;
+        case "newest": return new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime();
+        case "oldest": return new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime();
         default: return 0;
       }
     });
-
-  const categories = [
+    
+  const categories: Category[] = [
     { id: "all", name: "All Categories", count: products.length, icon: "🏪" },
     { id: "mix", name: "Mix Bundles", count: products.filter(p => p.category === "mix").length, icon: "🎁" },
     { id: "book", name: "Books", count: products.filter(p => p.category === "book").length, icon: "📚" },
@@ -318,31 +380,32 @@ export default function ListingsPage() {
     { id: "dvd", name: "DVDs/Blu-rays", count: products.filter(p => p.category === "dvd").length, icon: "📀" },
     { id: "game", name: "Games", count: products.filter(p => p.category === "game").length, icon: "🎮" },
   ];
-
-  const getCategoryIcon = (category: string) => {
-    const icons = {
+  
+  // Yardımcı fonksiyonlar
+  const getCategoryIcon = (category: string): string => {
+    const icons: Record<string, string> = {
       book: "📚",
       cd: "💿", 
       dvd: "📀",
       game: "🎮",
       mix: "📦"
     };
-    return icons[category as keyof typeof icons] || "📦";
+    return icons[category] || "📦";
   };
-
-  const getCategoryName = (category: string) => {
-    const names = {
+  
+  const getCategoryName = (category: string): string => {
+    const names: Record<string, string> = {
       book: "Book",
       cd: "CD", 
       dvd: "DVD",
       game: "Game",
       mix: "Mix Bundle"
     };
-    return names[category as keyof typeof names] || category;
+    return names[category] || category;
   };
-
-  const getCategoryDisplayName = (category: string) => {
-    const names = {
+  
+  const getCategoryDisplayName = (category: string): string => {
+    const names: Record<string, string> = {
       all: "All Categories",
       book: "Books",
       cd: "CDs", 
@@ -350,15 +413,15 @@ export default function ListingsPage() {
       game: "Games",
       mix: "Mix Bundles"
     };
-    return names[category as keyof typeof names] || "Browse Items";
+    return names[category] || "Browse Items";
   };
-
-  const getConditionColor = (condition: string) => {
+  
+  const getConditionColor = (condition: string): string => {
     return condition === 'like-new' 
       ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
       : 'bg-amber-50 text-amber-700 border border-amber-200';
   };
-
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Sticky Header */}
@@ -549,7 +612,7 @@ export default function ListingsPage() {
                 {viewMode === "grid" ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                     {filteredProducts.map(product => (
-                      <ProductCard key={product.id} product={product} onSelect={setSelectedProduct} />
+                      <ProductCard key={product.id} product={product} />
                     ))}
                   </div>
                 ) : (
@@ -606,10 +669,9 @@ export default function ListingsPage() {
 }
 
 // Filter Components
-function DesktopFilterContent({ categories, selectedCategory, setSelectedCategory, priceRange, setPriceRange, sortBy, setSortBy, router }: any) {
+function DesktopFilterContent({ categories, selectedCategory, setSelectedCategory, priceRange, setPriceRange, sortBy, setSortBy, router }: FilterContentProps) {
   const handleCategoryChange = (categoryId: string) => {
     setSelectedCategory(categoryId);
-    // Update URL when category changes
     const params = new URLSearchParams();
     if (categoryId !== 'all') {
       params.set('category', categoryId);
@@ -635,7 +697,7 @@ function DesktopFilterContent({ categories, selectedCategory, setSelectedCategor
       <div className="mb-8">
         <h3 className="font-semibold text-gray-900 mb-4">Categories</h3>
         <div className="space-y-3">
-          {categories.map((category: any) => (
+          {categories.map((category) => (
             <label key={category.id} className="group flex items-center justify-between cursor-pointer p-3 rounded-xl hover:bg-gray-50 transition-colors">
               <div className="flex items-center">
                 <input
@@ -713,10 +775,9 @@ function DesktopFilterContent({ categories, selectedCategory, setSelectedCategor
   );
 }
 
-function MobileFilterContent({ categories, selectedCategory, setSelectedCategory, priceRange, setPriceRange, sortBy, setSortBy, router }: any) {
+function MobileFilterContent({ categories, selectedCategory, setSelectedCategory, priceRange, setPriceRange, sortBy, setSortBy, router }: FilterContentProps) {
   const handleCategoryChange = (categoryId: string) => {
     setSelectedCategory(categoryId);
-    // Update URL when category changes
     const params = new URLSearchParams();
     if (categoryId !== 'all') {
       params.set('category', categoryId);
@@ -742,7 +803,7 @@ function MobileFilterContent({ categories, selectedCategory, setSelectedCategory
       <div className="mb-8">
         <h4 className="font-semibold text-gray-900 mb-4">Categories</h4>
         <div className="grid grid-cols-1 gap-2">
-          {categories.map((category: any) => (
+          {categories.map((category) => (
             <label key={category.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
               <div className="flex items-center">
                 <input
@@ -818,139 +879,91 @@ function MobileFilterContent({ categories, selectedCategory, setSelectedCategory
   );
 }
 
-// Product Components
-function ProductCard({ product, onSelect }: any) {
-  const [imageError, setImageError] = useState(false);
-  
-  const getCategoryIcon = (category: string) => {
-    const icons = { book: "📚", cd: "💿", dvd: "📀", game: "🎮", mix: "📦" };
-    return icons[category as keyof typeof icons] || "📦";
-  };
-  const getConditionColor = (condition: string) => {
-    return condition === 'like-new' 
-      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-      : 'bg-amber-50 text-amber-700 border border-amber-200';
-  };
-  const handleImageError = () => {
-    setImageError(true);
-  };
-  return (
-    <div className="group bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
-      <div className="relative h-56 bg-gradient-to-br from-gray-50 to-gray-100">
-        {product.imageUrl && !imageError ? (
-          <Image 
-            src={product.imageUrl} 
-            alt="Product image"
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-            onError={handleImageError}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <span className="text-6xl">{getCategoryIcon(product.category)}</span>
-          </div>
-        )}
-        
-        <div className="absolute top-4 left-4 flex flex-col space-y-2">
-          <div className="bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 shadow-sm">
-            <span className="text-sm font-medium text-gray-700">
-              {getCategoryIcon(product.category)} {product.totalItems} items
-            </span>
-          </div>
-        </div>
-        
-        <div className="absolute top-4 right-4">
-          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${getConditionColor(product.condition)}`}>
-            {product.condition === "like-new" ? "Like New" : "Good"}
-          </span>
-        </div>
-      </div>
-      
-      <div className="p-6">
-        <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
-          {product.title}
-        </h3>
-        
-        <p className="text-gray-600 text-sm mb-4">
-          by <span className="font-medium">{product.sellerName}</span>
-        </p>
-        
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex flex-col">
-            <span className="text-2xl font-bold text-gray-900">${product.price.toFixed(2)}</span>
-            <span className="text-xs text-gray-500">
-              {product.category === "mix" ? `${product.distinctCategories.length} categories` : product.category}
-            </span>
-          </div>
-          
-          <div className="text-right">
-            <div className="text-sm text-gray-500">Listed</div>
-            <div className="text-xs text-gray-400">
-              {new Date(product.createdAt).toLocaleDateString()}
-            </div>
-          </div>
-        </div>
-        
-        <button 
-          onClick={() => onSelect(product)}
-          className="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-2xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-        >
-          View Bundle Details
-        </button>
-      </div>
-    </div>
-  );
+// ProductListItem
+interface ProductListItemProps {
+  product: Product;
+  onSelect: (product: Product) => void;
 }
 
-function ProductListItem({ product, onSelect }: any) {
-  const [imageError, setImageError] = useState(false);
+function ProductListItem({ product, onSelect }: ProductListItemProps) {
+  const [imageError, setImageError] = useState<boolean>(false);
   
-  const getCategoryIcon = (category: string) => {
-    const icons = { book: "📚", cd: "💿", dvd: "📀", game: "🎮", mix: "📦" };
-    return icons[category as keyof typeof icons] || "📦";
+  const getCategoryIcon = (category: string): string => {
+    const icons: Record<string, string> = { book: "📚", cd: "💿", dvd: "📀", game: "🎮", mix: "📦" };
+    return icons[category] || "📦";
   };
-  const getConditionColor = (condition: string) => {
+  
+  const getConditionColor = (condition: string): string => {
     return condition === 'like-new' 
       ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
       : 'bg-amber-50 text-amber-700 border border-amber-200';
   };
+  
   const handleImageError = () => {
     setImageError(true);
   };
+  
+  const productImage = product.imageUrl || product.image;
+  const isAmazonImage = productImage && (
+    productImage.includes('amazon.com') || 
+    productImage.includes('ssl-images-amazon.com') ||
+    productImage.includes('m.media-amazon.com') ||
+    productImage.includes('images-na.ssl-images-amazon.com')
+  );
+  
   return (
     <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-all duration-300">
       <div className="flex items-center space-x-6">
         <div className="relative h-24 w-24 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl overflow-hidden flex-shrink-0">
-          {product.imageUrl && !imageError ? (
-            <Image 
-              src={product.imageUrl} 
-              alt="Product image"
-              fill
-              className="object-cover"
-              onError={handleImageError}
-            />
+          {productImage && !imageError ? (
+            <>
+              {isAmazonImage ? (
+                <img 
+                  src={productImage} 
+                  alt="Product image"
+                  className="w-full h-full object-cover"
+                  onError={handleImageError}
+                  loading="lazy"
+                />
+              ) : (
+                <Image 
+                  src={productImage} 
+                  alt="Product image"
+                  fill
+                  className="object-cover"
+                  onError={handleImageError}
+                  sizes="96px"
+                />
+              )}
+            </>
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <span className="text-3xl">{getCategoryIcon(product.category)}</span>
+              <span className="text-3xl">{getCategoryIcon(product.category || 'mix')}</span>
             </div>
           )}
         </div>
         
         <div className="flex-1 min-w-0">
           <h3 className="font-bold text-xl text-gray-900 mb-2 truncate">{product.title}</h3>
-          <p className="text-gray-600 text-sm mb-2">by {product.sellerName}</p>
+          <p className="text-gray-600 text-sm mb-2">by {product.sellerName || product.seller}</p>
           <div className="flex items-center space-x-4 text-sm text-gray-500">
-            <span>{getCategoryIcon(product.category)} {product.category === "mix" ? `${product.distinctCategories.length} categories` : product.category}</span>
+            <span>{getCategoryIcon(product.category || 'mix')} {product.category === "mix" ? `${product.distinctCategories?.length || 0} categories` : product.category}</span>
             <span>•</span>
-            <span>{product.totalItems} items</span>
+            <span>{product.totalItems || 0} items</span>
             <span>•</span>
-            <span>{new Date(product.createdAt).toLocaleDateString()}</span>
+            <span>{product.createdAt?.toLocaleDateString()}</span>
+            {isAmazonImage && (
+              <>
+                <span>•</span>
+                <span className="text-orange-600 font-medium">📦 Amazon</span>
+              </>
+            )}
           </div>
         </div>
         
         <div className="flex items-center space-x-4">
           <div className="text-right">
-            <div className="text-2xl font-bold text-gray-900">${product.price.toFixed(2)}</div>
+            <div className="text-2xl font-bold text-gray-900">${product.price?.toFixed(2)}</div>
             <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${getConditionColor(product.condition)}`}>
               {product.condition === "like-new" ? "Like New" : "Good"}
             </span>
@@ -968,27 +981,43 @@ function ProductListItem({ product, onSelect }: any) {
   );
 }
 
-/// Product Modal
-function ProductModal({ product, onClose }: any) {
-  const [imageError, setImageError] = useState(false);
-  const [activeTab, setActiveTab] = useState("details"); // Tab navigasyonu için
+// ProductModal
+interface ProductModalProps {
+  product: Product;
+  onClose: () => void;
+}
+
+function ProductModal({ product, onClose }: ProductModalProps) {
+  const [imageError, setImageError] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<string>("details");
   
-  const getCategoryIcon = (category: string) => {
-    const icons = { book: "📚", cd: "💿", dvd: "📀", game: "🎮", mix: "📦" };
-    return icons[category as keyof typeof icons] || "📦";
+  const getCategoryIcon = (category: string): string => {
+    const icons: Record<string, string> = { book: "📚", cd: "💿", dvd: "📀", game: "🎮", mix: "📦" };
+    return icons[category] || "📦";
   };
-  const getCategoryName = (category: string) => {
-    const names = { book: "Book", cd: "CD", dvd: "DVD", game: "Game", mix: "Mix Bundle" };
-    return names[category as keyof typeof names] || category;
+  
+  const getCategoryName = (category: string): string => {
+    const names: Record<string, string> = { book: "Book", cd: "CD", dvd: "DVD", game: "Game", mix: "Mix Bundle" };
+    return names[category] || category;
   };
-  const getConditionColor = (condition: string) => {
+  
+  const getConditionColor = (condition: string): string => {
     return condition === 'like-new' 
       ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
       : 'bg-amber-50 text-amber-700 border border-amber-200';
   };
+  
   const handleImageError = () => {
     setImageError(true);
   };
+  
+  const productImage = product.imageUrl || product.image;
+  const isAmazonImage = productImage && (
+    productImage.includes('amazon.com') || 
+    productImage.includes('ssl-images-amazon.com') ||
+    productImage.includes('m.media-amazon.com') ||
+    productImage.includes('images-na.ssl-images-amazon.com')
+  );
   
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -999,17 +1028,25 @@ function ProductModal({ product, onClose }: any) {
             <div className="flex-1">
               <h3 className="text-2xl font-bold mb-2">{product.title}</h3>
               <div className="flex flex-wrap items-center gap-3 text-blue-100">
-                <span>Listed on {new Date(product.createdAt).toLocaleDateString()}</span>
+                <span>Listed on {product.createdAt?.toLocaleDateString()}</span>
                 <span>•</span>
-                <span>{product.totalItems} items</span>
+                <span>{product.totalItems || 0} items</span>
                 <span>•</span>
                 <span className="inline-flex items-center">
-                  {getCategoryIcon(product.category)} {getCategoryName(product.category)}
+                  {getCategoryIcon(product.category || 'mix')} {getCategoryName(product.category || 'mix')}
                 </span>
+                {isAmazonImage && (
+                  <>
+                    <span>•</span>
+                    <span className="inline-flex items-center text-orange-200">
+                      📦 Amazon Images
+                    </span>
+                  </>
+                )}
                 {product.updatedAt && (
                   <>
                     <span>•</span>
-                    <span>Updated on {new Date(product.updatedAt).toLocaleDateString()}</span>
+                    <span>Updated on {product.updatedAt.toLocaleDateString()}</span>
                   </>
                 )}
               </div>
@@ -1053,17 +1090,36 @@ function ProductModal({ product, onClose }: any) {
                 {/* Left Column - Image */}
                 <div className="lg:col-span-1">
                   <div className="relative h-72 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl overflow-hidden mb-4">
-                    {product.imageUrl && !imageError ? (
-                      <Image 
-                        src={product.imageUrl} 
-                        alt="Product image"
-                        fill
-                        className="object-cover"
-                        onError={handleImageError}
-                      />
+                    {productImage && !imageError ? (
+                      <>
+                        {isAmazonImage ? (
+                          <img 
+                            src={productImage} 
+                            alt="Product image"
+                            className="w-full h-full object-cover"
+                            onError={handleImageError}
+                          />
+                        ) : (
+                          <Image 
+                            src={productImage} 
+                            alt="Product image"
+                            fill
+                            className="object-cover"
+                            onError={handleImageError}
+                          />
+                        )}
+                        
+                        {isAmazonImage && (
+                          <div className="absolute bottom-2 left-2">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200">
+                              📦 Amazon
+                            </span>
+                          </div>
+                        )}
+                      </>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <span className="text-8xl">{getCategoryIcon(product.category)}</span>
+                        <span className="text-8xl">{getCategoryIcon(product.category || 'mix')}</span>
                       </div>
                     )}
                   </div>
@@ -1071,11 +1127,11 @@ function ProductModal({ product, onClose }: any) {
                   {/* Quick Stats */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-blue-50 rounded-xl p-3 text-center border border-blue-200">
-                      <div className="text-xl font-bold text-blue-600">${product.price.toFixed(2)}</div>
+                      <div className="text-xl font-bold text-blue-600">${product.price?.toFixed(2)}</div>
                       <div className="text-xs text-blue-700">Total Value</div>
                     </div>
                     <div className="bg-purple-50 rounded-xl p-3 text-center border border-purple-200">
-                      <div className="text-xl font-bold text-purple-600">{product.totalItems}</div>
+                      <div className="text-xl font-bold text-purple-600">{product.totalItems || 0}</div>
                       <div className="text-xs text-purple-700">Items</div>
                     </div>
                   </div>
@@ -1088,7 +1144,7 @@ function ProductModal({ product, onClose }: any) {
                     <h4 className="font-semibold text-gray-900 mb-2">Categories</h4>
                     {product.category === "mix" ? (
                       <div className="flex flex-wrap gap-2">
-                        {product.distinctCategories.map((cat: string, index: number) => (
+                        {product.distinctCategories?.map((cat, index) => (
                           <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
                             {getCategoryIcon(cat)} {getCategoryName(cat)}
                           </span>
@@ -1097,7 +1153,7 @@ function ProductModal({ product, onClose }: any) {
                     ) : (
                       <div className="flex items-center">
                         <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                          {getCategoryIcon(product.category)} {getCategoryName(product.category)}
+                          {getCategoryIcon(product.category || 'mix')} {getCategoryName(product.category || 'mix')}
                         </span>
                       </div>
                     )}
@@ -1125,6 +1181,16 @@ function ProductModal({ product, onClose }: any) {
                     </div>
                   </div>
                   
+                  {/* Image Source Info */}
+                  {isAmazonImage && (
+                    <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
+                      <h4 className="font-semibold text-orange-900 mb-2">📦 Amazon Product</h4>
+                      <p className="text-orange-800 text-sm">
+                        This product features Amazon product images, indicating verified product information.
+                      </p>
+                    </div>
+                  )}
+                  
                   {/* Location */}
                   {product.location && (
                     <div className="bg-gray-50 rounded-xl p-4">
@@ -1138,7 +1204,7 @@ function ProductModal({ product, onClose }: any) {
                     <div className="bg-gray-50 rounded-xl p-4">
                       <h4 className="font-semibold text-gray-900 mb-2">Tags</h4>
                       <div className="flex flex-wrap gap-2">
-                        {product.tags.map((tag: string, index: number) => (
+                        {product.tags.map((tag, index) => (
                           <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
                             #{tag}
                           </span>
@@ -1152,7 +1218,7 @@ function ProductModal({ product, onClose }: any) {
                     <div className="bg-gray-50 rounded-xl p-4">
                       <h4 className="font-semibold text-gray-900 mb-2">Highlights</h4>
                       <ul className="space-y-1">
-                        {product.highlights.map((highlight: string, index: number) => (
+                        {product.highlights.map((highlight, index) => (
                           <li key={index} className="flex items-start">
                             <svg className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -1186,7 +1252,7 @@ function ProductModal({ product, onClose }: any) {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {product.bundleItems.map((item: any, index: number) => (
+                        {product.bundleItems.map((item, index) => (
                           <tr key={index} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
@@ -1210,7 +1276,7 @@ function ProductModal({ product, onClose }: any) {
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              ${item.price.toFixed(2)}
+                              ${item.price?.toFixed(2)}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {item.quantity}
@@ -1239,7 +1305,7 @@ function ProductModal({ product, onClose }: any) {
                     <div className="mx-auto h-24 w-24 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center mb-4">
                       <span className="text-3xl">👤</span>
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900">{product.sellerName}</h3>
+                    <h3 className="text-lg font-bold text-gray-900">{product.sellerName || product.seller}</h3>
                     <div className="mt-2 text-sm text-gray-500">Bundle Seller</div>
                     <div className="mt-4">
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
@@ -1408,8 +1474,8 @@ function ProductModal({ product, onClose }: any) {
         <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="text-center sm:text-left">
-              <div className="text-2xl font-bold text-gray-900">${product.price.toFixed(2)}</div>
-              <div className="text-sm text-gray-600">{product.totalItems} items total</div>
+              <div className="text-2xl font-bold text-gray-900">${product.price?.toFixed(2)}</div>
+              <div className="text-sm text-gray-600">{product.totalItems || 0} items total</div>
             </div>
             <div className="flex gap-3 w-full sm:w-auto">
               <button

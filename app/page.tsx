@@ -19,7 +19,6 @@ function SearchIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
-
 function CartIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -29,7 +28,6 @@ function CartIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
-
 function UserIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -38,7 +36,6 @@ function UserIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
-
 function MenuIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -48,7 +45,6 @@ function MenuIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
-
 function XIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -57,7 +53,6 @@ function XIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
-
 function PackageIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -68,7 +63,6 @@ function PackageIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
-
 function SparklesIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -76,7 +70,6 @@ function SparklesIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
-
 function ArrowRightIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -85,7 +78,6 @@ function ArrowRightIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
-
 function TrendingUpIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -94,7 +86,6 @@ function TrendingUpIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
-
 function ShieldCheckIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -106,7 +97,6 @@ function ShieldCheckIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
-
 function AdminIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -155,7 +145,7 @@ export default function HomePage() {
     checkUserRole();
   }, [user]);
 
-  // Fetch listings from Firebase
+  // Fetch listings from Firebase - GÜNCELLENMİŞ
   useEffect(() => {
     setProductsLoading(true);
     const fetchListings = async () => {
@@ -188,18 +178,23 @@ export default function HomePage() {
             const dominantCondition = Object.entries(conditionCounts)
               .sort((a, b) => b[1] - a[1])[0]?.[0] || "good";
             
+            // GÜNCELLENMİŞ: İlk item'dan resim URL'sini al - imageUrl öncelikli
             let firstItemImage = null;
             for (const item of data.bundleItems) {
+              // imageUrl alanını kontrol et (öncelikli)
+              if (item.imageUrl) {
+                firstItemImage = item.imageUrl;
+                break;
+              }
+              // Eğer imageUrl yoksa, amazonData.image alanını kontrol et
+              if (item.amazonData && item.amazonData.image) {
+                firstItemImage = item.amazonData.image;
+                break;
+              }
+              // Eğer hiçbiri yoksa, image alanını kontrol et (geriye dönük uyum)
               if (item.image) {
-                try {
-                  const url = new URL(item.image);
-                  if (url.hostname === 'firebasestorage.googleapis.com' && url.pathname.includes('/v0/b/')) {
-                    firstItemImage = item.image;
-                    break;
-                  }
-                } catch (e) {
-                  console.warn("Invalid image URL:", item.image);
-                }
+                firstItemImage = item.image;
+                break;
               }
             }
             
@@ -209,7 +204,7 @@ export default function HomePage() {
               price: data.totalValue || 0,
               category: dominantCategory,
               condition: dominantCondition,
-              imageUrl: firstItemImage,
+              imageUrl: firstItemImage, // GÜNCELLENMİŞ: imageUrl olarak kaydet
               sellerName: data.vendorName || data.vendorId || "Anonymous Seller",
               createdAt: data.createdAt?.toDate() || new Date(),
               bundleItems: data.bundleItems,
@@ -277,18 +272,23 @@ export default function HomePage() {
           const dominantCondition = Object.entries(conditionCounts)
             .sort((a, b) => b[1] - a[1])[0]?.[0] || "good";
           
+          // GÜNCELLENMİŞ: İlk item'dan resim URL'sini al - imageUrl öncelikli
           let firstItemImage = null;
           for (const item of data.bundleItems) {
+            // imageUrl alanını kontrol et (öncelikli)
+            if (item.imageUrl) {
+              firstItemImage = item.imageUrl;
+              break;
+            }
+            // Eğer imageUrl yoksa, amazonData.image alanını kontrol et
+            if (item.amazonData && item.amazonData.image) {
+              firstItemImage = item.amazonData.image;
+              break;
+            }
+            // Eğer hiçbiri yoksa, image alanını kontrol et (geriye dönük uyum)
             if (item.image) {
-              try {
-                const url = new URL(item.image);
-                if (url.hostname === 'firebasestorage.googleapis.com' && url.pathname.includes('/v0/b/')) {
-                  firstItemImage = item.image;
-                  break;
-                }
-              } catch (e) {
-                console.warn("Invalid image URL:", item.image);
-              }
+              firstItemImage = item.image;
+              break;
             }
           }
           
@@ -298,7 +298,7 @@ export default function HomePage() {
             price: data.totalValue || 0,
             category: dominantCategory,
             condition: dominantCondition,
-            imageUrl: firstItemImage,
+            imageUrl: firstItemImage, // GÜNCELLENMİŞ: imageUrl olarak kaydet
             sellerName: data.vendorName || data.vendorId || "Anonymous Seller",
             createdAt: data.createdAt?.toDate() || new Date(),
             bundleItems: data.bundleItems,
@@ -350,6 +350,9 @@ export default function HomePage() {
     router.push(`/listings?category=${category}`);
   };
 
+  // Sadece giriş yapmamış kullanıcılar için butonları göster
+  const shouldShowActionButtons = !user;
+
   // Custom ProductCard component for homepage - GÜNCELLENMİŞ
   const HomeProductCard = ({ product }: { product: any }) => {
     const { addToCart } = useCart();
@@ -392,7 +395,7 @@ export default function HomePage() {
           sellerId: product.vendorId,
           title: product.title,
           price: product.price,
-          image: product.imageUrl || ""
+          image: product.imageUrl || "" // GÜNCELLENMİŞ: imageUrl kullan
         });
       } catch (error) {
         console.error("Sepete eklenirken hata:", error);
@@ -401,9 +404,14 @@ export default function HomePage() {
       }
     };
     
-    const isValidImageUrl = product.imageUrl &&
-      (product.imageUrl.startsWith('https://firebasestorage.googleapis.com') ||
-      product.imageUrl.startsWith('https://storage.googleapis.com'));
+    // GÜNCELLENMİŞ: Resim URL doğrulaması - hem Firebase Storage hem Amazon URL'lerini kabul et
+    const isValidImageUrl = product.imageUrl && (
+      product.imageUrl.startsWith('https://firebasestorage.googleapis.com') ||
+      product.imageUrl.startsWith('https://storage.googleapis.com') ||
+      product.imageUrl.includes('amazon.com') ||
+      product.imageUrl.includes('ssl-images-amazon.com') ||
+      product.imageUrl.includes('m.media-amazon.com')
+    );
       
     return (
       <div className="group bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-2xl hover:-translate-y-2 transition-all duration-300">
@@ -417,13 +425,29 @@ export default function HomePage() {
               onLoad={handleImageLoad}
               onError={handleImageError}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              unoptimized={true}
+              unoptimized={true} // GÜNCELLENMİŞ: Amazon resimleri için önemli
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <span className="text-5xl">{getCategoryIcon(product.category)}</span>
             </div>
           )}
+          
+          {/* GÜNCELLENMİŞ: Resim kaynağı göstergesi */}
+          {isValidImageUrl && (
+            <div className="absolute bottom-2 left-2">
+              {product.imageUrl.includes('amazon.com') ? (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200">
+                  📦 Amazon
+                </span>
+              ) : (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                  📷 Custom
+                </span>
+              )}
+            </div>
+          )}
+          
           <div className="absolute top-3 right-3">
             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold ${getConditionColor(product.condition)}`}>
               {product.condition === "like-new" ? "Like New" : "Good"}
@@ -490,9 +514,6 @@ export default function HomePage() {
       </div>
     );
   };
-
-  // Sadece giriş yapmamış kullanıcılar için butonları göster
-  const shouldShowActionButtons = !user;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -626,7 +647,6 @@ export default function HomePage() {
               )}
               <div className="flex items-center space-x-3 ml-4">
                 <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors">
-                  <UserIcon size={20} />
                 </button>
                 <Link href="/cart" className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors relative">
                   <CartIcon size={20} />
@@ -710,8 +730,8 @@ export default function HomePage() {
               </span>
             </h1>
             <p className="text-xl sm:text-2xl text-blue-100 mb-8 leading-relaxed">
-              Discover amazing deals on gently used books, CDs, DVDs, games, and curated mix bundles.
-              Start earning from your collection today!
+            Discover amazing deals on gently used books, CDs, DVDs, games, and curated mix bundles. Start earning from your collection today!
+             Don’t forget to check out our condition guide before listing.!
             </p>
             <div className="grid grid-cols-3 gap-8 mt-16 max-w-2xl mx-auto">
               <div className="text-center">
@@ -951,9 +971,9 @@ export default function HomePage() {
               <h4 className="font-bold text-lg mb-6 text-white">For Sellers</h4>
               <ul className="space-y-3">
                 {shouldShowActionButtons ? (
-                  <li><Link href="/create-listing" className="text-gray-400 hover:text-white transition-colors">Create Bundle</Link></li>
+                  <li><Link href="/condition-guidelines" className="text-gray-400 hover:text-white transition-colors">Condition Guidelines</Link></li>
                 ) : (
-                  <li><Link href="/register" className="text-gray-400 hover:text-white transition-colors">Start Selling</Link></li>
+                  <li><Link href="/condition-guidelines" className="text-gray-400 hover:text-white transition-colors">Condition Guidelines</Link></li>
                 )}
                 <li><Link href="/fees" className="text-gray-400 hover:text-white transition-colors">Seller Fees</Link></li>
                 <li><Link href="/seller-protection" className="text-gray-400 hover:text-white transition-colors">Seller Protection</Link></li>

@@ -20,6 +20,7 @@ interface CartContextType {
   getTotalPrice: () => number;
   clearCart: () => void; // Added clear cart function
   getItemsBySeller: (sellerId: string) => CartItem[]; // Added to get items by seller
+  getUniqueItemCount: () => number; // Benzersiz ürün sayısı için yeni fonksiyon
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -48,7 +49,26 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(cartItems));
+    
+    // Sepet değiştiğinde event tetikle
+    if (typeof window !== 'undefined') {
+      const uniqueItemCount = getUniqueItemCountForItems(cartItems);
+      window.dispatchEvent(new CustomEvent('cartUpdated', {
+        detail: { uniqueItemCount }
+      }));
+    }
   }, [cartItems]);
+
+  // Benzersiz ürün sayısını hesaplayan yardımcı fonksiyon
+  const getUniqueItemCountForItems = (items: CartItem[]) => {
+    if (items.length === 0) return 0;
+    
+    const uniqueItems = new Set(
+      items.map(item => `${item.id}-${item.sellerId}`)
+    );
+    
+    return uniqueItems.size;
+  };
 
   const addToCart = (item: Omit<CartItem, 'quantity'>) => {
     setCartItems(prevItems => {
@@ -58,12 +78,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       );
       
       if (existingItem) {
-        return prevItems.map(cartItem =>
-          cartItem.id === item.id && cartItem.sellerId === item.sellerId
-            ? { ...cartItem, quantity: cartItem.quantity + 1 }
-            : cartItem
-        );
+        // Ürün zaten sepette, hiçbir şey yapma
+        return prevItems;
       } else {
+        // Yeni ürünü sepete ekle
         return [...prevItems, { ...item, quantity: 1 }];
       }
     });
@@ -106,6 +124,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return cartItems.filter(item => item.sellerId === sellerId);
   };
 
+  // Benzersiz ürün sayısını döndüren fonksiyon
+  const getUniqueItemCount = () => {
+    return getUniqueItemCountForItems(cartItems);
+  };
+
   return (
     <CartContext.Provider value={{
       cartItems,
@@ -115,7 +138,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       getTotalItems,
       getTotalPrice,
       clearCart,
-      getItemsBySeller
+      getItemsBySeller,
+      getUniqueItemCount
     }}>
       {children}
     </CartContext.Provider>

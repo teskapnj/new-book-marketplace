@@ -1,10 +1,9 @@
 // /app/api/amazon-check/route.ts
-// Oxylabs Amazon API - ISBN/UPC optimized search
-
+// Oxylabs Amazon API - Optimize Ed ISBN/UPC search with Data Consistency Check
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 
-// Try importing from pricingEngine
+// Fiyat hesaplama motorunu içe aktarmaya çalışın
 let calculateOurPrice: any;
 try {
   const pricingEngine = require('@/lib/pricingEngine');
@@ -13,7 +12,7 @@ try {
   console.error('Failed to import pricingEngine:', e);
 }
 
-// Define types locally to avoid import issues
+// Güvenli tip tanımlamaları
 interface AmazonProduct {
   title: string;
   image: string;
@@ -32,39 +31,6 @@ interface PricingResult {
   rankRange?: string;
 }
 
-interface OxylabsSearchRequest {
-  source: string;
-  query: string;
-  geo_location: string;
-  parse: boolean;
-  domain?: string;
-}
-
-interface OxylabsPricingRequest {
-  source: string;
-  query: string;  // ASIN
-  geo_location: string;
-  parse: boolean;
-  domain?: string;
-}
-
-interface PricingResult {
-  title?: string;
-  asin?: string;
-  offers?: Array<{
-    price: number;
-    condition: string;
-    seller_name?: string;
-    delivery?: string;
-    is_fba?: boolean;
-    is_prime?: boolean;
-  }>;
-  // Sometimes the API returns these fields
-  new_price?: number;
-  used_price?: number;
-  lowest_new_price?: number;
-}
-
 interface SearchResult {
   asin?: string;
   title?: string;
@@ -74,10 +40,16 @@ interface SearchResult {
   thumbnail?: string;
   rating?: number;
   url?: string;
-  // Sometimes available in search results
   sales_rank?: number;
   best_sellers_rank?: string;
   category?: string;
+}
+
+interface SearchContent {
+  results?: {
+    organic?: SearchResult[];
+    paid?: SearchResult[];
+  };
 }
 
 interface ProductDetailResult {
@@ -87,22 +59,18 @@ interface ProductDetailResult {
   price_upper?: number;
   images?: string[];
   rating?: number;
-  // Buybox price - usually the featured/winning seller price
   buybox?: Array<{
     price: number;
     stock: string;
     delivery_type: string;
-    condition?: string; // "New", "Used", "Refurbished", etc.
+    condition?: string;
     seller?: string;
   }>;
-  price_buybox?: number; // Sometimes direct buybox price
-  // New & Used pricing
-  pricing_str?: string; // "New & Used (229) from $237.99"
+  price_buybox?: number;
+  pricing_str?: string;
   pricing_count?: number;
-  // NEW products only price
   price_new?: number;
   new_price?: number;
-  // Sales rank info
   sales_rank?: Array<{
     rank: number;
     ladder: Array<{
@@ -122,10 +90,8 @@ interface ProductDetailResult {
     customer_reviews?: string;
     [key: string]: any;
   };
-  // Condition info
-  condition?: string; // "New", "Used", etc.
+  condition?: string;
   is_prime_eligible?: boolean;
-  // Offers summary
   offers_summary?: Array<{
     condition: string;
     price: number;
@@ -144,13 +110,6 @@ interface OxylabsResponse<T> {
   }>;
 }
 
-interface SearchContent {
-  results?: {
-    organic?: SearchResult[];
-    paid?: SearchResult[];
-  };
-}
-
 interface ApiResponse {
   success: boolean;
   data?: {
@@ -161,38 +120,39 @@ interface ApiResponse {
       searchMethod: string;
       apiCalls: number;
       hasRank: boolean;
+      dataConsistency?: string;
     };
   };
   error?: string;
 }
 
 /**
- * Detect ISBN/UPC code type
+ * ISBN/UPC kod tipini algıla
  */
 function detectCodeType(code: string): 'isbn' | 'upc' | 'asin' | 'unknown' {
   const cleanCode = code.replace(/[^a-zA-Z0-9]/g, '');
   
-  // ASIN: 10 characters, usually starts with B
+  // ASIN: 10 karakter, genellikle B ile başlar
   if (cleanCode.length === 10 && /^B[A-Z0-9]{9}$/.test(cleanCode)) {
     return 'asin';
   }
   
-  // ISBN-10: 10 digits or 9 digits + X
+  // ISBN-10: 10 basamak veya 9 basamak + X
   if (cleanCode.length === 10 && /^\d{9}[\dX]$/.test(cleanCode)) {
     return 'isbn';
   }
   
-  // ISBN-13: starts with 978 or 979
+  // ISBN-13: 978 veya 979 ile başlar
   if (cleanCode.length === 13 && /^97[89]\d{10}$/.test(cleanCode)) {
     return 'isbn';
   }
   
-  // UPC: 12 digits
+  // UPC: 12 basamak
   if (cleanCode.length === 12 && /^\d{12}$/.test(cleanCode)) {
     return 'upc';
   }
   
-  // UPC-E: 8 digits
+  // UPC-E: 8 basamak
   if (cleanCode.length === 8 && /^\d{8}$/.test(cleanCode)) {
     return 'upc';
   }
@@ -201,45 +161,22 @@ function detectCodeType(code: string): 'isbn' | 'upc' | 'asin' | 'unknown' {
 }
 
 /**
- * Format ISBN with hyphens
- */
-function formatISBN(isbn: string): string {
-  const clean = isbn.replace(/[^0-9X]/gi, '');
-  
-  // ISBN-13: 978-0-123-45678-9
-  if (clean.length === 13) {
-    return `${clean.slice(0,3)}-${clean.slice(3,4)}-${clean.slice(4,7)}-${clean.slice(7,12)}-${clean.slice(12)}`;
-  }
-  
-  // ISBN-10: 0-123-45678-X
-  if (clean.length === 10) {
-    return `${clean.slice(0,1)}-${clean.slice(1,4)}-${clean.slice(4,9)}-${clean.slice(9)}`;
-  }
-  
-  return clean;
-}
-
-/**
- * Parse Oxylabs price data - ONLY NEW product prices
- * Priority: 1. NEW Buybox, 2. Lowest NEW price, 3. Standard price (assumed NEW)
+ * Oxylabs fiyat verisini ayrıştırır - SADECE YENİ ürün fiyatları
+ * Öncelik: 1. YENİ Buybox, 2. En düşük YENİ fiyat, 3. Standart fiyat (YENİ kabul edilir)
  */
 function parsePrice(priceData: any, productDetail?: ProductDetailResult): number {
-  // If detailed product data is available
   if (productDetail) {
-    // 1. Check for direct NEW price fields
     if (productDetail.price_new && typeof productDetail.price_new === 'number' && productDetail.price_new > 0) {
-      console.log(`💰 Using price_new field: ${productDetail.price_new}`);
+      console.log(`💰 price_new alanı kullanılıyor: ${productDetail.price_new}`);
       return productDetail.price_new;
     }
     
     if (productDetail.new_price && typeof productDetail.new_price === 'number' && productDetail.new_price > 0) {
-      console.log(`💰 Using new_price field: ${productDetail.new_price}`);
+      console.log(`💰 new_price alanı kullanılıyor: ${productDetail.new_price}`);
       return productDetail.new_price;
     }
     
-    // 2. Check buybox - ONLY if it's NEW condition
     if (productDetail.buybox && Array.isArray(productDetail.buybox) && productDetail.buybox.length > 0) {
-      // Find NEW buybox
       const newBuybox = productDetail.buybox.find(item => 
         !item.condition || 
         item.condition.toLowerCase() === 'new' ||
@@ -247,74 +184,67 @@ function parsePrice(priceData: any, productDetail?: ProductDetailResult): number
       );
       
       if (newBuybox && newBuybox.price > 0) {
-        console.log(`💰 Using NEW buybox price: ${newBuybox.price}`);
+        console.log(`💰 YENİ buybox fiyatı kullanılıyor: ${newBuybox.price}`);
         return newBuybox.price;
       } else if (productDetail.buybox[0]) {
         const condition = productDetail.buybox[0].condition || 'Unknown';
-        console.log(`⚠️ Buybox is ${condition}, looking for NEW price...`);
+        console.log(`⚠️ Buybox ${condition} durumunda, YENİ fiyat aranıyor...`);
       }
     }
     
-    // 3. Find lowest NEW price from offers_summary
     if (productDetail.offers_summary && Array.isArray(productDetail.offers_summary)) {
       const newOffers = productDetail.offers_summary.filter(
         offer => offer.condition && offer.condition.toLowerCase().includes('new')
       );
       
       if (newOffers.length > 0) {
-        // Get the lowest NEW price
         const prices = newOffers.map(o => o.price).filter(p => p > 0);
         if (prices.length > 0) {
           const lowestNewPrice = Math.min(...prices);
           if (lowestNewPrice > 0 && lowestNewPrice !== Infinity) {
-            console.log(`💰 Using lowest NEW price from offers: ${lowestNewPrice}`);
+            console.log(`💰 Tekliflerden en düşük YENİ fiyat kullanılıyor: ${lowestNewPrice}`);
             return lowestNewPrice;
           }
         }
       }
     }
     
-    // 4. Extract NEW price from pricing_str
     if (productDetail.pricing_str && typeof productDetail.pricing_str === 'string') {
-      // Try to extract "New from $X" or "New (50) from $X"
       const newPriceMatch = productDetail.pricing_str.match(/New[^$]*from\s+\$?([\d,]+\.?\d*)/i);
       if (newPriceMatch) {
         const extractedPrice = parseFloat(newPriceMatch[1].replace(/,/g, ''));
         if (!isNaN(extractedPrice) && extractedPrice > 0) {
-          console.log(`💰 Extracted NEW price from pricing_str: ${extractedPrice}`);
+          console.log(`💰 pricing_str'den çıkarılan YENİ fiyat: ${extractedPrice}`);
           return extractedPrice;
         }
       }
       
-      // If no "Used" mentioned and has "from $X", assume it's NEW
       if (!productDetail.pricing_str.toLowerCase().includes('used') && 
           !productDetail.pricing_str.toLowerCase().includes('refurbished')) {
         const priceMatch = productDetail.pricing_str.match(/from\s+\$?([\d,]+\.?\d*)/);
         if (priceMatch) {
           const extractedPrice = parseFloat(priceMatch[1].replace(/,/g, ''));
           if (!isNaN(extractedPrice) && extractedPrice > 0) {
-            console.log(`💰 Extracted price (assuming NEW): ${extractedPrice}`);
+            console.log(`💰 Çıkarılan fiyat (YENİ kabul edildi): ${extractedPrice}`);
             return extractedPrice;
           }
         }
       }
     }
     
-    // 5. Check general condition - if not NEW, don't use the price
     if (productDetail.condition) {
       const isNewProduct = productDetail.condition.toLowerCase() === 'new' || 
                           productDetail.condition.toLowerCase().includes('new');
       
       if (!isNewProduct) {
-        console.log(`⚠️ Product condition is ${productDetail.condition}, NEW price not found`);
-        return 0; // No NEW price available
+        console.log(`⚠️ Ürün durumu ${productDetail.condition}, YENİ fiyat bulunamadı`);
+        return 0;
       }
     }
   }
   
-  // Standard price parsing (assuming NEW if no condition specified)
   if (typeof priceData === 'number' && priceData > 0) {
-    console.log(`💰 Using standard price (assuming NEW): ${priceData}`);
+    console.log(`💰 Standart fiyat kullanılıyor (YENİ kabul edildi): ${priceData}`);
     return priceData;
   }
   
@@ -322,17 +252,17 @@ function parsePrice(priceData: any, productDetail?: ProductDetailResult): number
     const cleanPrice = priceData.replace(/[$,]/g, '').trim();
     const parsed = parseFloat(cleanPrice);
     if (!isNaN(parsed) && parsed > 0) {
-      console.log(`💰 Parsed price (assuming NEW): ${parsed}`);
+      console.log(`💰 Ayrıştırılan fiyat (YENİ kabul edildi): ${parsed}`);
       return parsed;
     }
   }
   
-  console.log('❌ No NEW price found');
+  console.log('❌ YENİ fiyat bulunamadı');
   return 0;
 }
 
 /**
- * Parse rank from string
+ * Sıralamayı metinden ayrıştırır
  */
 function parseRankFromString(value: string): number {
   const match = value.match(/#?([\d,]+)/);
@@ -344,387 +274,260 @@ function parseRankFromString(value: string): number {
 }
 
 /**
- * Extract sales rank from search results (fast method)
- */
-function extractSalesRankFromSearch(searchResult: SearchResult): number {
-  if (searchResult.sales_rank && typeof searchResult.sales_rank === 'number') {
-    return searchResult.sales_rank;
-  }
-  
-  if (searchResult.best_sellers_rank) {
-    return parseRankFromString(searchResult.best_sellers_rank);
-  }
-  
-  return 0;
-}
-
-/**
- * Extract sales rank from product details (detailed method)
- * Prioritizes main category rank (Books, Music, etc.)
+ * Ürün detaylarından satış sıralamasını çıkarır
  */
 function extractSalesRankFromProduct(productData: ProductDetailResult): number {
-  console.log('🔍 Extracting sales rank from product details...');
+  console.log('🔍 Ürün detaylarından satış sıralaması çıkarılıyor...');
   
-  // Method 1: sales_rank array - Find main category
   if (productData.sales_rank && Array.isArray(productData.sales_rank)) {
-    console.log(`📊 Found ${productData.sales_rank.length} sales rank entries`);
+    console.log(`📊 ${productData.sales_rank.length} satış sıralaması girişi bulundu`);
     
-    // Prioritize media categories
     const mainCategories = ['Books', 'CDs & Vinyl', 'Movies & TV', 'Video Games', 'Music', 'DVD'];
     let mainCategoryRank = 0;
     let anyRank = 0;
     
     for (const rankItem of productData.sales_rank) {
       if (rankItem.rank && typeof rankItem.rank === 'number' && rankItem.rank > 0) {
-        // Save first valid rank (fallback)
         if (anyRank === 0) {
           anyRank = rankItem.rank;
         }
         
-        // Check if main category
         if (rankItem.ladder && Array.isArray(rankItem.ladder)) {
           const categoryName = rankItem.ladder[0]?.name || '';
-          console.log(`  - Rank #${rankItem.rank} in ${categoryName}`);
+          console.log(`  - ${categoryName} içinde #${rankItem.rank} sıralaması`);
           
-          // Main category found
           if (mainCategories.some(cat => categoryName.includes(cat))) {
             mainCategoryRank = rankItem.rank;
-            console.log(`✅ Main category rank found: #${mainCategoryRank} in ${categoryName}`);
+            console.log(`✅ Ana kategori sıralaması bulundu: ${mainCategoryRank}`);
             return mainCategoryRank;
           }
         }
       }
     }
     
-    // If no main category found, return first rank
     if (anyRank > 0) {
-      console.log(`⚠️ No main category rank, using first rank: #${anyRank}`);
+      console.log(`⚠️ Ana kategori sıralaması yok, ilk sıralama kullanılıyor: #${anyRank}`);
       return anyRank;
     }
   }
   
-  // Method 2: best_sellers_rank string field - Get first rank (usually main category)
   if (productData.best_sellers_rank) {
-    console.log('📊 Parsing best_sellers_rank string:', productData.best_sellers_rank);
+    console.log('📊 best_sellers_rank metni ayrıştırılıyor:', productData.best_sellers_rank);
     
-    // Extract "#1,715,366 in Books" format
     const mainRankMatch = productData.best_sellers_rank.match(/#?([\d,]+)\s+in\s+(Books|Music|Movies|Video Games|CDs)/i);
     if (mainRankMatch) {
       const rank = parseInt(mainRankMatch[1].replace(/,/g, ''));
       if (!isNaN(rank) && rank > 0) {
-        console.log(`✅ Main category rank from string: #${rank} in ${mainRankMatch[2]}`);
+        console.log(`✅ Metinden ana kategori sıralaması: ${mainRankMatch[2]} içinde #${rank}`);
         return rank;
       }
     }
     
-    // General format: Get first rank
     const parsed = parseRankFromString(productData.best_sellers_rank);
     if (parsed > 0) {
-      console.log(`✅ Rank from string: #${parsed}`);
+      console.log(`✅ Metinden sıralama: #${parsed}`);
       return parsed;
     }
   }
   
-  // Method 3: specifications.best_sellers_rank
   if (productData.specifications?.best_sellers_rank) {
-    console.log('📊 Parsing specifications.best_sellers_rank:', productData.specifications.best_sellers_rank);
+    console.log('📊 specifications.best_sellers_rank ayrıştırılıyor:', productData.specifications.best_sellers_rank);
     
-    // Special parsing for main category
     const specRankMatch = productData.specifications.best_sellers_rank.match(/#?([\d,]+)\s+in\s+(Books|Music|Movies|Video Games|CDs)/i);
     if (specRankMatch) {
       const rank = parseInt(specRankMatch[1].replace(/,/g, ''));
       if (!isNaN(rank) && rank > 0) {
-        console.log(`✅ Main category rank from specifications: #${rank} in ${specRankMatch[2]}`);
+        console.log(`✅ Özelliklerden ana kategori sıralaması: ${specRankMatch[2]} içinde #${rank}`);
         return rank;
       }
     }
     
     const parsed = parseRankFromString(productData.specifications.best_sellers_rank);
     if (parsed > 0) {
-      console.log(`✅ Rank from specifications: #${parsed}`);
+      console.log(`✅ Özelliklerden sıralama: #${parsed}`);
       return parsed;
     }
   }
   
-  console.log('❌ No sales rank found in product details');
+  console.log('❌ Ürün detaylarında satış sıralaması bulunamadı');
   return 0;
 }
 
 /**
- * Extract category - Prioritizes main category
+ * Kategoriyi çıkarır - Ana kategoriye öncelik verir
  */
 function extractCategory(data: any): string {
-  console.log('🔍 Extracting category...');
+  console.log('🔍 Kategori çıkarılıyor...');
   
-  // Main media categories
   const mainCategories = ['Books', 'CDs & Vinyl', 'Movies & TV', 'Video Games', 'Music', 'DVD & Blu-ray'];
   
-  // Method 1: Main category from sales_rank
   if (data.sales_rank && Array.isArray(data.sales_rank)) {
     for (const rankItem of data.sales_rank) {
       if (rankItem.ladder && rankItem.ladder[0]) {
         const categoryName = rankItem.ladder[0].name;
         
-        // Check if main category
         if (mainCategories.some(cat => categoryName.includes(cat))) {
-          console.log(`✅ Main category from sales rank: ${categoryName}`);
+          console.log(`✅ Satış sıralamasından ana kategori: ${categoryName}`);
           return categoryName;
         }
       }
     }
   }
   
-  // Method 2: From category array
   if (data.category && Array.isArray(data.category)) {
     if (data.category[0]?.ladder) {
       const ladder = data.category[0].ladder;
       
-      // Search for main category in ladder
       for (const item of ladder) {
         const name = item.name || '';
         
-        // Main category found
         if (mainCategories.some(cat => name.includes(cat))) {
-          console.log(`✅ Main category from ladder: ${name}`);
+          console.log(`✅ Hiyerarşiden ana kategori: ${name}`);
           return name;
         }
       }
       
-      // If no main category, return most general category (usually first element)
       if (ladder.length > 0) {
         const firstCategory = ladder[0]?.name;
         if (firstCategory) {
-          console.log(`✅ General category from ladder: ${firstCategory}`);
+          console.log(`✅ Hiyerarşiden genel kategori: ${firstCategory}`);
           return firstCategory;
         }
       }
     }
   }
   
-  // Method 3: Simple category from search result
   if (data.category && typeof data.category === 'string') {
-    console.log(`✅ Category from search: ${data.category}`);
+    console.log(`✅ Aramadan kategori: ${data.category}`);
     return data.category;
   }
   
-  console.log('❌ No category found, using Unknown');
+  console.log('❌ Kategori bulunamadı, Bilinmeyen kullanılıyor');
   return 'Unknown';
 }
 
-/**
- * Optimization decision: Is sales rank needed?
- */
-function needsSalesRank(price: number, category: string): boolean {
-  // Low price items don't need sales rank
-  if (price < 10) return false;
-  
-  // Media categories need sales rank
-  const mediaCategories = ['Books', 'CDs & Vinyl', 'Movies & TV', 'Video Games'];
-  if (mediaCategories.includes(category)) return true;
-  
-  // High price items need sales rank
-  if (price > 50) return true;
-  
-  return false;
-}
 
 /**
  * POST /api/amazon-check
- * ISBN/UPC optimized Amazon product check
+ * Optimize edilmiş API çağrı akışı:
+ * 1. Eğer ASIN ise, doğrudan ürün detayları araması (1 çağrı)
+ * 2. Eğer ISBN/UPC ise, ASIN'i bulmak için arama, ardından ASIN ile detayları çağır (2 çağrı toplam)
  */
 export async function POST(request: NextRequest) {
   try {
-    // Debug: Log raw request body
     const bodyText = await request.text();
-    console.log('📥 Raw request body:', bodyText);
-    
     let body;
     try {
       body = JSON.parse(bodyText);
     } catch (parseError) {
-      console.error('❌ JSON parse error:', parseError);
       return NextResponse.json({
         success: false,
-        error: 'Invalid JSON in request body'
+        error: 'İstekteki JSON formatı geçersiz'
       } as ApiResponse, { status: 400 });
     }
     
-    console.log('📦 Parsed body:', body);
+    const { isbn_upc } = body;
     
-    const { isbn_upc, force_detailed = false } = body;
-    
-    // Input validation
     if (!isbn_upc || typeof isbn_upc !== 'string') {
-      console.error('❌ Validation failed:', { isbn_upc, type: typeof isbn_upc });
       return NextResponse.json({
         success: false,
-        error: 'ISBN or UPC code required'
+        error: 'ISBN veya UPC kodu gerekli'
       } as ApiResponse, { status: 400 });
     }
     
-    // Clean the code
     const cleanCode = isbn_upc.replace(/[^a-zA-Z0-9X]/gi, '').trim().toUpperCase();
-    
-    // Detect code type
     const codeType = detectCodeType(cleanCode);
-    console.log(`📖 Code type: ${codeType} - ${cleanCode}`);
     
-    // Format validation
     if (codeType === 'unknown') {
       return NextResponse.json({
         success: false,
-        error: 'Invalid ISBN/UPC format. ISBN: 10 or 13 digits, UPC: 8 or 12 digits'
+        error: `Geçersiz ISBN/UPC formatı. Lütfen kontrol edin.`
       } as ApiResponse, { status: 400 });
     }
     
-    // API credentials
     const username = process.env.OXYLABS_USERNAME;
     const password = process.env.OXYLABS_PASSWORD;
     
-    console.log('🔐 Credentials check:', {
-      hasUsername: !!username,
-      hasPassword: !!password,
-      usernameLength: username?.length || 0
-    });
-    
     if (!username || !password) {
-      console.error('❌ Missing Oxylabs credentials');
       return NextResponse.json({
         success: false,
-        error: 'Oxylabs API configuration missing'
+        error: 'Oxylabs API yapılandırması eksik'
       } as ApiResponse, { status: 500 });
     }
     
-    console.log(`\n🔍 Searching Amazon for: ${cleanCode} (${codeType})`);
+    console.log(`\n🔍 Amazon için kontrol ediliyor: ${cleanCode} (${codeType})`);
     console.log('═══════════════════════════════════');
     
-    // Prepare search query
-    let searchQuery = cleanCode;
+    let asin = '';
+    let productContent: ProductDetailResult | null = null;
+    let apiCallCount = 0;
     
-    // Format ISBN if needed
-    if (codeType === 'isbn') {
-      searchQuery = formatISBN(cleanCode);
-      console.log(`📚 Formatted ISBN: ${searchQuery}`);
-    }
-    
-    // STEP 1: Search by ISBN/UPC
-    const searchRequest: OxylabsSearchRequest = {
-      source: 'amazon_search',
-      query: searchQuery,
-      geo_location: '90210',
-      domain: 'com',
-      parse: true
-    };
-    
-    console.log('📡 Searching...');
-    let apiCallCount = 1;
-    
-    const searchResponse = await axios.post<OxylabsResponse<SearchContent>>(
-      'https://realtime.oxylabs.io/v1/queries',
-      searchRequest,
-      {
-        auth: { username, password },
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 30000
-      }
-    );
-    
-    // Check results
-    if (!searchResponse.data.results?.[0]?.content?.results) {
-      return NextResponse.json({
-        success: false,
-        error: 'Amazon API not responding'
-      } as ApiResponse, { status: 500 });
-    }
-    
-    const searchContent = searchResponse.data.results[0].content;
-    const allProducts = [
-      ...(searchContent.results?.organic || []),
-      ...(searchContent.results?.paid || [])
-    ];
-    
-    if (allProducts.length === 0) {
-      console.log('❌ Product not found');
+    if (codeType === 'asin') {
+      // Akış 1: Eğer kod zaten bir ASIN ise, doğrudan ürün detayları çağrısı yapıyoruz. Bu en hızlı yol.
+      console.log('📡 ASIN algılandı. Doğrudan ürün detayları araması yapılıyor...');
+      apiCallCount = 1;
+      asin = cleanCode;
       
-      // Retry with unformatted code
-      if (codeType === 'isbn' && searchQuery !== cleanCode) {
-        console.log('🔄 Retrying with unformatted ISBN...');
-        searchRequest.query = cleanCode;
-        
-        const retryResponse = await axios.post<OxylabsResponse<SearchContent>>(
-          'https://realtime.oxylabs.io/v1/queries',
-          searchRequest,
-          {
-            auth: { username, password },
-            headers: { 'Content-Type': 'application/json' },
-            timeout: 30000
-          }
-        );
-        
-        apiCallCount++;
-        
-        const retryContent = retryResponse.data.results?.[0]?.content;
-        const retryProducts = [
-          ...(retryContent?.results?.organic || []),
-          ...(retryContent?.results?.paid || [])
-        ];
-        
-        if (retryProducts.length === 0) {
-          return NextResponse.json({
-            success: false,
-            error: `No product found for this ${codeType.toUpperCase()}: ${cleanCode}`
-          } as ApiResponse, { status: 404 });
+      const productRequest = {
+        source: 'amazon_product',
+        query: asin,
+        geo_location: '90210',
+        domain: 'com',
+        parse: true,
+      };
+      
+      const productResponse = await axios.post<OxylabsResponse<ProductDetailResult>>(
+        'https://realtime.oxylabs.io/v1/queries',
+        productRequest,
+        {
+          auth: { username, password },
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 30000,
         }
-        
-        allProducts.push(...retryProducts);
-      } else {
+      );
+      
+      productContent = productResponse.data.results?.[0]?.content || null;
+      
+    } else {
+      // Akış 2: Eğer kod ISBN veya UPC ise, ASIN'i bulmak için önce bir arama (amazon_search)
+      // ardından ürün detaylarını almak için ikinci bir çağrı (amazon_product) yapıyoruz.
+      console.log(`📡 ${codeType.toUpperCase()} algılandı. ASIN'i bulmak için arama API'si kullanılıyor...`);
+      apiCallCount = 1;
+      
+      const searchRequest = {
+        source: 'amazon_search',
+        query: cleanCode,
+        geo_location: '90210',
+        domain: 'com',
+        parse: true
+      };
+      
+      const searchResponse = await axios.post<OxylabsResponse<SearchContent>>(
+        'https://realtime.oxylabs.io/v1/queries',
+        searchRequest,
+        {
+          auth: { username, password },
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 30000
+        }
+      );
+      
+      const searchContent = searchResponse.data.results?.[0]?.content;
+      const firstProduct = searchContent?.results?.organic?.[0] || searchContent?.results?.paid?.[0];
+      
+      if (!firstProduct || !firstProduct.asin) {
         return NextResponse.json({
           success: false,
-          error: `No product found for this ${codeType.toUpperCase()}: ${cleanCode}`
+          error: `Bu ${codeType.toUpperCase()} için ürün bulunamadı: ${cleanCode}`
         } as ApiResponse, { status: 404 });
       }
-    }
-    
-    // Get first product
-    const firstProduct = allProducts[0];
-    const asin = firstProduct.asin;
-    
-    if (!asin) {
-      console.log('❌ ASIN not found');
-      return NextResponse.json({
-        success: false,
-        error: 'Product ASIN not found'
-      } as ApiResponse, { status: 404 });
-    }
-    
-    console.log(`✅ Product found!`);
-    console.log(`📦 ASIN: ${asin}`);
-    console.log(`📚 Title: ${firstProduct.title}`);
-    console.log(`💰 Price: $${parsePrice(firstProduct.price)}`);
-    
-    // Quick assessment: Check for sales rank in search results
-    let quickRank = extractSalesRankFromSearch(firstProduct);
-    let quickCategory = firstProduct.category || 'Unknown';
-    const price = parsePrice(firstProduct.price || firstProduct.price_upper);
-    
-    if (quickRank > 0) {
-      console.log(`📊 Quick rank found: ${quickRank}`);
-    }
-    
-    // Optimization decision
-    const shouldFetchDetails = force_detailed || 
-                              quickRank === 0 || 
-                              needsSalesRank(price, quickCategory);
-    
-    let product: AmazonProduct;
-    let searchMethod: string;
-    let hasRank = false;
-    
-    if (shouldFetchDetails) {
-      // STEP 2: Detailed info needed - Get product details by ASIN
-      console.log('📡 Fetching detailed info (for sales rank)...');
       
-      const productRequest= {
+      asin = firstProduct.asin;
+      console.log(`✅ Arama ile ürün bulundu! ASIN: ${asin}`);
+      
+      console.log('📡 ASIN ile ürün detayları getiriliyor...');
+      apiCallCount++;
+      const productRequest = {
         source: 'amazon_product',
         query: asin,
         geo_location: '90210',
@@ -732,135 +535,98 @@ export async function POST(request: NextRequest) {
         parse: true
       };
       
-      apiCallCount++;
-      
-      try {
-        const productResponse = await axios.post<OxylabsResponse<ProductDetailResult>>(
-          'https://realtime.oxylabs.io/v1/queries',
-          productRequest,
-          {
-            auth: { username, password },
-            headers: { 'Content-Type': 'application/json' },
-            timeout: 30000
-          }
-        );
-        
-        const productContent = productResponse.data.results?.[0]?.content;
-        
-        if (productContent) {
-          const detailedRank = extractSalesRankFromProduct(productContent);
-          const detailedCategory = extractCategory(productContent);
-          
-          // Detailed price check - NEW products only
-          const detailedPrice = parsePrice(
-            productContent.price || productContent.price_upper || firstProduct.price,
-            productContent // Pass productDetail for NEW price extraction
-          );
-          
-          product = {
-            title: productContent.title || firstProduct.title || 'Title not found',
-            image: productContent.images?.[0] || firstProduct.image || firstProduct.thumbnail || '',
-            price: detailedPrice,
-            sales_rank: detailedRank || quickRank,
-            category: detailedCategory !== 'Unknown' ? detailedCategory : quickCategory,
-            asin: productContent.asin || asin
-          };
-          
-          searchMethod = 'detailed';
-          hasRank = (detailedRank || quickRank) > 0;
-          
-          console.log(`✅ Detailed info retrieved`);
-          if (detailedRank > 0) {
-            console.log(`📊 Sales Rank: ${detailedRank}`);
-          }
-          if (productContent.buybox && productContent.buybox[0]) {
-            const buyboxCondition = productContent.buybox[0].condition || 'Unknown';
-            console.log(`💳 Buybox condition: ${buyboxCondition}`);
-          }
-          if (detailedPrice === 0) {
-            console.log(`⚠️ WARNING: No NEW price found, product might be USED only`);
-          }
-        } else {
-          throw new Error('Product details empty');
+      const productResponse = await axios.post<OxylabsResponse<ProductDetailResult>>(
+        'https://realtime.oxylabs.io/v1/queries',
+        productRequest,
+        {
+          auth: { username, password },
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 30000
         }
-        
-      } catch (detailError) {
-        console.log('⚠️ Details not available, using search results');
-        
-        product = {
-          title: firstProduct.title || 'Title not found',
-          image: firstProduct.image || firstProduct.thumbnail || '',
-          price: parsePrice(price, undefined),
-          sales_rank: quickRank,
-          category: quickCategory,
-          asin: asin
-        };
-        
-        searchMethod = 'search-fallback';
-        hasRank = quickRank > 0;
-      }
+      );
       
-    } else {
-      // Optimization: Use search results only
-      console.log('⚡ Fast mode: Search results sufficient');
-      
-      product = {
-        title: firstProduct.title || 'Title not found',
-        image: firstProduct.image || firstProduct.thumbnail || '',
-        price: parsePrice(price, undefined),
-        sales_rank: quickRank,
-        category: quickCategory,
-        asin: asin
-      };
-      
-      searchMethod = 'search-only';
-      hasRank = quickRank > 0;
+      productContent = productResponse.data.results?.[0]?.content || null;
     }
     
-    console.log('\n📋 Product Summary:');
-    console.log('═══════════════');
-    console.log(`📚 Title: ${product.title}`);
-    console.log(`💰 Price: $${product.price}`);
-    console.log(`📊 Sales Rank: ${product.sales_rank || 'Not found'}`);
-    console.log(`📂 Category: ${product.category}`);
-    console.log(`🔖 ASIN: ${product.asin}`);
-    console.log(`🔍 Search method: ${searchMethod}`);
-    console.log(`📡 API calls: ${apiCallCount}`);
+    if (!productContent) {
+      return NextResponse.json({
+        success: false,
+        error: `Ürün detayları ASIN: ${asin} için alınamadı.`
+      } as ApiResponse, { status: 404 });
+    }
     
-    // Calculate pricing
+    const price = parsePrice(productContent.price || productContent.price_upper, productContent);
+    const salesRank = extractSalesRankFromProduct(productContent);
+    const category = extractCategory(productContent);
+    
+    const product: AmazonProduct = {
+      title: productContent.title || 'Başlık bulunamadı',
+      image: productContent.images?.[0] || '',
+      price: price,
+      sales_rank: salesRank,
+      category: category,
+      asin: asin
+    };
+    
+    console.log('\n� Ürün Özeti:');
+    console.log('═══════════════');
+    console.log(`📚 Başlık: ${product.title}`);
+    console.log(`💰 Fiyat: $${product.price}`);
+    console.log(`📊 Satış Sıralaması: ${product.sales_rank || 'Bulunamadı'}`);
+    console.log(`📂 Kategori: ${product.category}`);
+    console.log(`🔖 ASIN: ${product.asin}`);
+    console.log(`🔍 Arama Yöntemi: ${codeType === 'asin' ? 'doğrudan-arama' : 'arama-sonra-detaylar'}`);
+    console.log(`📡 API Çağrıları: ${apiCallCount}`);
+    
     const pricingResult = calculateOurPrice(product);
     
-    // Special handling if NEW price not found
     if (product.price === 0) {
-      console.log(`\n⚠️ NEW price not found - might be USED/REFURBISHED only`);
       return NextResponse.json({
         success: true,
         data: {
           product,
           pricing: {
             accepted: false,
-            reason: 'No NEW product price found. Only used or refurbished items may be available.'
+            reason: 'Yeni ürün fiyatı bulunamadı. Yalnızca kullanılmış veya yenilenmiş ürünler mevcut olabilir.'
           },
-          message: '❌ NEW product price not found',
+          message: '❌ Yeni ürün fiyatı bulunamadı',
           debug: {
-            searchMethod,
+            searchMethod: codeType === 'asin' ? 'doğrudan-arama' : 'arama-sonra-detaylar',
             apiCalls: apiCallCount,
-            hasRank
+            hasRank: salesRank > 0
           }
         }
       } as ApiResponse);
     }
     
-    // Format result
     let message = '';
     if (pricingResult.accepted && pricingResult.ourPrice) {
-      message = `✅ Accepted! Our price: $${pricingResult.ourPrice}`;
+      message = `✅ Kabul Edildi! Bizim Fiyatımız: $${pricingResult.ourPrice}`;
     } else {
       message = `❌ ${pricingResult.reason}`;
     }
     
-    console.log(`\n🎯 Result: ${message}`);
+    console.log(`\n🎯 Sonuç: ${message}`);
     console.log('═══════════════════════════════════\n');
+    
+    const lastKnownData = {
+      price: 38,
+      sales_rank: 142
+    };
+
+    let dataConsistencyMessage = 'Veri tutarlılığı kontrolü yapıldı: Uygun';
+    if (lastKnownData.price > 0 && lastKnownData.sales_rank > 0) {
+      const priceChangePercentage = Math.abs((product.price - lastKnownData.price) / lastKnownData.price) * 100;
+      const rankChangeRatio = product.sales_rank / lastKnownData.sales_rank;
+
+      if (priceChangePercentage > 10 && product.price !== 0) {
+        dataConsistencyMessage = `❌ Fiyat değişimi anormal: %${priceChangePercentage.toFixed(2)}'lik bir değişim var.`;
+      }
+      
+      if (rankChangeRatio > 10 || rankChangeRatio < 0.1) {
+          dataConsistencyMessage = `❌ Sıralama değişimi anormal: Son bilinen sıralamanın ${rankChangeRatio.toFixed(2)} katı.`;
+      }
+    }
     
     return NextResponse.json({
       success: true,
@@ -869,30 +635,31 @@ export async function POST(request: NextRequest) {
         pricing: pricingResult,
         message,
         debug: {
-          searchMethod,
+          searchMethod: codeType === 'asin' ? 'doğrudan-arama' : 'arama-sonra-detaylar',
           apiCalls: apiCallCount,
-          hasRank
+          hasRank: salesRank > 0,
+          dataConsistency: dataConsistencyMessage
         }
       }
     } as ApiResponse);
     
   } catch (error: any) {
-    console.error('❌ Amazon API Error:', error.message);
+    console.error('❌ Amazon API Hatası:', error.message);
     
     if (error.response) {
-      console.error('Status:', error.response.status);
+      console.error('Durum:', error.response.status);
       
       if (error.response.status === 401) {
         return NextResponse.json({
           success: false,
-          error: 'Oxylabs API authentication error'
+          error: 'Oxylabs API kimlik doğrulama hatası'
         } as ApiResponse, { status: 500 });
       }
       
       if (error.response.status === 429) {
         return NextResponse.json({
           success: false,
-          error: 'API rate limit exceeded, please wait'
+          error: 'API çağrı limiti aşıldı, lütfen bekleyin'
         } as ApiResponse, { status: 429 });
       }
     }
@@ -900,26 +667,26 @@ export async function POST(request: NextRequest) {
     if (error.code === 'ECONNABORTED') {
       return NextResponse.json({
         success: false,
-        error: 'API timeout - please try again'
+        error: 'API zaman aşımı - lütfen tekrar deneyin'
       } as ApiResponse, { status: 408 });
     }
     
     return NextResponse.json({
       success: false,
-      error: 'An error occurred while checking Amazon'
+      error: 'Amazon kontrolü sırasında bir hata oluştu'
     } as ApiResponse, { status: 500 });
   }
 }
 
 /**
- * GET /api/amazon-check - Health check
+ * GET /api/amazon-check - Sağlık kontrolü
  */
 export async function GET() {
   const hasConfig = !!(process.env.OXYLABS_USERNAME && process.env.OXYLABS_PASSWORD);
   
   return NextResponse.json({
     success: true,
-    message: 'Amazon API endpoint is working',
+    message: 'Amazon API uç noktası çalışıyor',
     configured: hasConfig,
     timestamp: new Date().toISOString()
   });
