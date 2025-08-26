@@ -15,13 +15,16 @@ import {
   where
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+
 // Message Notification Component
 const MessageNotification = () => {
   const [user] = useAuthState(auth);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  
   useEffect(() => {
     if (!user) return;
+    
     // Listen to unread messages
     const messagesRef = collection(db, 'contact_messages');
     const q = query(messagesRef, where('status', '==', 'unread'));
@@ -32,8 +35,10 @@ const MessageNotification = () => {
       console.error('Error fetching unread messages:', error);
       setLoading(false);
     });
+    
     return () => unsubscribe();
   }, [user]);
+  
   if (loading) {
     return (
       <div className="relative">
@@ -41,6 +46,7 @@ const MessageNotification = () => {
       </div>
     );
   }
+  
   return (
     <Link
       href="/admin/messages"
@@ -71,6 +77,7 @@ const MessageNotification = () => {
     </Link>
   );
 };
+
 export default function AdminListingsPage() {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
@@ -132,12 +139,12 @@ export default function AdminListingsPage() {
                 title: data.title || "Untitled Bundle",
                 totalItems: data.totalItems || 0,
                 totalValue: data.totalValue || 0,
-                shippingPrice: data.shippingPrice || 0, // Added shipping price
+                shippingInfo: data.shippingInfo || null, // Added shipping info
                 status: data.status || "pending",
                 vendorId: data.vendorId,
                 vendorName: data.vendorName || "Unknown Seller",
                 bundleItems: data.bundleItems || [],
-                description: data.description || "", // Added description field
+                description: data.description || "",
                 createdAt: data.createdAt?.toDate() || new Date(),
                 submittedDate: data.createdAt?.toDate().toLocaleDateString() || new Date().toLocaleDateString(),
                 reviewedDate: data.reviewedDate,
@@ -170,12 +177,12 @@ export default function AdminListingsPage() {
                     title: data.title || "Untitled Bundle",
                     totalItems: data.totalItems || 0,
                     totalValue: data.totalValue || 0,
-                    shippingPrice: data.shippingPrice || 0, // Added shipping price
+                    shippingInfo: data.shippingInfo || null, // Added shipping info
                     status: data.status || "pending",
                     vendorId: data.vendorId,
                     vendorName: data.vendorName || "Unknown Seller",
                     bundleItems: data.bundleItems || [],
-                    description: data.description || "", // Added description field
+                    description: data.description || "",
                     createdAt: data.createdAt?.toDate() || new Date(),
                     submittedDate: data.createdAt?.toDate().toLocaleDateString() || new Date().toLocaleDateString(),
                     reviewedDate: data.reviewedDate,
@@ -583,10 +590,10 @@ export default function AdminListingsPage() {
                     
                     <td className="px-6 py-4">
                       <div className="text-sm text-gray-900">
-                        🚚 ${listing.shippingPrice.toFixed(2)}
+                        🚚 Shipping Info
                       </div>
                       <div className="text-sm text-gray-500">
-                        Shipping Price
+                        {listing.shippingInfo ? "Provided" : "Not provided"}
                       </div>
                     </td>
                     
@@ -723,14 +730,13 @@ export default function AdminListingsPage() {
                       <p><strong>Seller:</strong> {selectedListing.vendorName}</p>
                       <p><strong>Total Items:</strong> {selectedListing.totalItems}</p>
                       <p><strong>Total Value:</strong> ${selectedListing.totalValue.toFixed(2)}</p>
-                      <p><strong>Shipping Price:</strong> ${selectedListing.shippingPrice.toFixed(2)}</p>
                       <p><strong>Submitted:</strong> {selectedListing.submittedDate}</p>
                       <p><strong>Views:</strong> {selectedListing.views}</p>
                       <p><strong>Current Status:</strong> {getStatusBadge(selectedListing.status)}</p>
                     </div>
                   </div>
                   
-                  {/* Description Section - Added */}
+                  {/* Description Section */}
                   <div>
                     <h4 className="text-sm font-medium text-gray-900 mb-2">Description</h4>
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
@@ -741,6 +747,39 @@ export default function AdminListingsPage() {
                       ) : (
                         <p className="text-sm text-gray-500 italic">
                           No description provided by the seller.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Shipping Information Section - Added */}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-900 mb-2">Shipping Information</h4>
+                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
+                      {selectedListing.shippingInfo ? (
+                        <div className="space-y-3">
+                          <div>
+                            <h5 className="text-sm font-medium text-purple-800 mb-1">Return Address</h5>
+                            <p className="text-sm text-gray-700">
+                              {selectedListing.shippingInfo.address.street}<br />
+                              {selectedListing.shippingInfo.address.city}, {selectedListing.shippingInfo.address.state} {selectedListing.shippingInfo.address.zip}<br />
+                              {selectedListing.shippingInfo.address.country}
+                            </p>
+                          </div>
+                          
+                          <div>
+                            <h5 className="text-sm font-medium text-purple-800 mb-1">Package Dimensions</h5>
+                            <p className="text-sm text-gray-700">
+                              Length: {selectedListing.shippingInfo.packageDimensions.length} in<br />
+                              Width: {selectedListing.shippingInfo.packageDimensions.width} in<br />
+                              Height: {selectedListing.shippingInfo.packageDimensions.height} in<br />
+                              Weight: {selectedListing.shippingInfo.packageDimensions.weight} lb
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500 italic">
+                          No shipping information provided by the seller.
                         </p>
                       )}
                     </div>

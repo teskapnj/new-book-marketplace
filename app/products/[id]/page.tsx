@@ -226,8 +226,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       id: product.id,
       title: product.title,
       price: product.price,
-      image: product.images[0] || "/placeholder.png",
-      sellerId: ""
+      image: product.images[0],
+      sellerId: "",
+      shippingInfo: undefined,
+      weight: 0
     });
     
     setShowNotification(true);

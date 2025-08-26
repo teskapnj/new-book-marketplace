@@ -12,6 +12,7 @@ import axios from "axios";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { smartOptimizeImage, formatFileSize } from "@/utils/imageOptimization";
 import { AmazonProduct, PricingResult } from "@/lib/pricingEngine";
+
 interface BundleItem {
   id: string;
   isbn: string;
@@ -27,6 +28,22 @@ interface BundleItem {
   originalPrice?: number;
   imageUrl?: string | null;
 }
+
+interface Address {
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
+  country: string;
+}
+
+interface PackageDimensions {
+  length: number;
+  width: number;
+  height: number;
+  weight: number;
+}
+
 export default function CreateListingPage() {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
@@ -35,7 +52,7 @@ export default function CreateListingPage() {
   const [currentItem, setCurrentItem] = useState<BundleItem>({
     id: "",
     isbn: "",
-    condition: "like-new", // Default condition fixed to "like-new"
+    condition: "like-new",
     quantity: 1,
     price: 0,
     image: null,
@@ -48,15 +65,34 @@ export default function CreateListingPage() {
   const [description, setDescription] = useState<string>('');
   const [descriptionError, setDescriptionError] = useState<string>('');
   
-  // Shipping state
-  const [shippingPrice, setShippingPrice] = useState<number>(0);
+  // Shipping information state
+  const [address, setAddress] = useState<Address>({
+    street: "",
+    city: "",
+    state: "",
+    zip: "",
+    country: "US"
+  });
+  const [packageDimensions, setPackageDimensions] = useState<PackageDimensions>({
+    length: 0,
+    width: 0,
+    height: 0,
+    weight: 0
+  });
   const [shippingError, setShippingError] = useState<string>('');
+  
+  // Dimension validation errors
+  const [dimensionErrors, setDimensionErrors] = useState({
+    length: '',
+    width: '',
+    height: '',
+    weight: ''
+  });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [generatedTitle, setGeneratedTitle] = useState("");
-  const [storageWarning, setStorageWarning] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [uploadProgress, setUploadProgress] = useState("");
   const [imageProcessing, setImageProcessing] = useState(false);
@@ -77,21 +113,6 @@ export default function CreateListingPage() {
     return user ? `bundleListingDraft_${user.uid}` : 'bundleListingDraft_guest';
   }, [user]);
   
-  const {
-    isScanning,
-    isCameraReady,
-    error: cameraError,
-    startScanning,
-    stopScanning,
-    videoRef,
-    isMobile
-  } = useBarcodeScanner({
-    onScan: handleBarcodeScanned,
-    onError: (error) => setScannerError(error),
-    continuous: false,
-    timeout: 30000
-  });
-  
   const validateDescription = (text: string): boolean => {
     if (text.length > 500) {
       setDescriptionError("Description must be 500 characters or less");
@@ -101,15 +122,50 @@ export default function CreateListingPage() {
     return true;
   };
   
-  const validateShippingPrice = (price: number): boolean => {
-    if (price < 0) {
-      setShippingError("Shipping price cannot be negative");
+  const validateShippingInfo = (): boolean => {
+    // Reset dimension errors
+    setDimensionErrors({
+      length: '',
+      width: '',
+      height: '',
+      weight: ''
+    });
+    
+    if (!address.street || !address.city || !address.state || !address.zip) {
+      setShippingError("Please fill in all address fields");
       return false;
     }
-    if (price > 100) {
-      setShippingError("Shipping price seems too high. Please verify.");
+    
+    if (packageDimensions.length <= 0 || packageDimensions.width <= 0 || 
+        packageDimensions.height <= 0 || packageDimensions.weight <= 0) {
+      setShippingError("Please enter valid package dimensions and weight");
       return false;
     }
+    
+    // Yeni eklenen sınırlamalar
+    if (packageDimensions.weight > 50) {
+      setDimensionErrors(prev => ({ ...prev, weight: "Weight cannot exceed 50 pounds" }));
+      setShippingError("Package weight cannot exceed 50 pounds");
+      return false;
+    }
+    
+    if (packageDimensions.length > 18) {
+      setDimensionErrors(prev => ({ ...prev, length: "Length cannot exceed 18 inches" }));
+    }
+    
+    if (packageDimensions.width > 16) {
+      setDimensionErrors(prev => ({ ...prev, width: "Width cannot exceed 16 inches" }));
+    }
+    
+    if (packageDimensions.height > 16) {
+      setDimensionErrors(prev => ({ ...prev, height: "Height cannot exceed 16 inches" }));
+    }
+    
+    if (packageDimensions.length > 18 || packageDimensions.width > 16 || packageDimensions.height > 16) {
+      setShippingError("Package dimensions cannot exceed 18x16x16 inches");
+      return false;
+    }
+    
     setShippingError("");
     return true;
   };
@@ -120,13 +176,111 @@ export default function CreateListingPage() {
     validateDescription(text);
   };
   
-  const handleShippingPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const price = parseFloat(e.target.value) || 0;
-    setShippingPrice(price);
-    validateShippingPrice(price);
+  const handleAddressChange = (field: keyof Address, value: string) => {
+    setAddress(prev => ({ ...prev, [field]: value }));
   };
   
-  async function handleBarcodeScanned(code: string) {
+  const handlePackageDimensionsChange = (field: keyof PackageDimensions, value: number) => {
+    setPackageDimensions(prev => ({ ...prev, [field]: value }));
+    
+    // Validate the specific field
+    const newErrors = { ...dimensionErrors };
+    
+    switch (field) {
+      case 'weight':
+        if (value > 50) {
+          newErrors.weight = "Weight cannot exceed 50 pounds";
+        } else {
+          newErrors.weight = '';
+        }
+        break;
+      case 'length':
+        if (value > 18) {
+          newErrors.length = "Length cannot exceed 18 inches";
+        } else {
+          newErrors.length = '';
+        }
+        break;
+      case 'width':
+        if (value > 16) {
+          newErrors.width = "Width cannot exceed 16 inches";
+        } else {
+          newErrors.width = '';
+        }
+        break;
+      case 'height':
+        if (value > 16) {
+          newErrors.height = "Height cannot exceed 16 inches";
+        } else {
+          newErrors.height = '';
+        }
+        break;
+    }
+    
+    setDimensionErrors(newErrors);
+    
+    // If any error exists, set the general shipping error
+    if (newErrors.length || newErrors.width || newErrors.height || newErrors.weight) {
+      setShippingError("Package exceeds size or weight limits");
+    } else if (shippingError === "Package exceeds size or weight limits") {
+      // Clear the general error if all individual errors are resolved
+      setShippingError("");
+    }
+  };
+  
+  const getCategoryFromPricing = (pricingCategory: string): "book" | "cd" | "dvd" | "game" | "mix" => {
+    switch (pricingCategory) {
+      case 'books': return 'book';
+      case 'cds': return 'cd';
+      case 'dvds': return 'dvd';
+      case 'games': return 'game';
+      default: return 'book';
+    }
+  };
+  
+  const autoAddAcceptedItem = (isbn: string, product: AmazonProduct, pricing: PricingResult) => {
+    if (!pricing.accepted || !pricing.ourPrice) return;
+    
+    const newItem: BundleItem = {
+      id: Date.now().toString(),
+      isbn: isbn,
+      condition: "like-new",
+      quantity: 1,
+      price: pricing.ourPrice,
+      image: product.image || null,
+      imageUrl: product.image || null,
+      imageBlob: null,
+      category: getCategoryFromPricing(pricing.category),
+      amazonData: product,
+      ourPrice: pricing.ourPrice,
+      originalPrice: product.price
+    };
+    
+    setBundleItems(prev => [...prev, newItem]);
+    
+    setCurrentItem({
+      id: "",
+      isbn: "",
+      condition: "like-new",
+      quantity: 1,
+      price: 0,
+      image: null,
+      imageBlob: null,
+      category: "book",
+      imageUrl: null
+    });
+    
+    setAmazonResult(null);
+    setError("");
+    
+    console.log(`✅ Auto-added item with Amazon image: ${product.image}`);
+    
+    setTimeout(() => {
+      setError("");
+    }, 3000);
+  };
+  
+  const handleBarcodeScanned = useCallback(async (code: string) => {
     console.log('📱 Barcode scanned:', code);
     
     try {
@@ -187,59 +341,7 @@ export default function CreateListingPage() {
     } finally {
       setIsCheckingAmazon(false);
     }
-  }
-  
-  const autoAddAcceptedItem = (isbn: string, product: AmazonProduct, pricing: PricingResult) => {
-    if (!pricing.accepted || !pricing.ourPrice) return;
-    
-    const newItem: BundleItem = {
-      id: Date.now().toString(),
-      isbn: isbn,
-      condition: "like-new",
-      quantity: 1,
-      price: pricing.ourPrice,
-      image: product.image || null,
-      imageUrl: product.image || null,
-      imageBlob: null,
-      category: getCategoryFromPricing(pricing.category),
-      amazonData: product,
-      ourPrice: pricing.ourPrice,
-      originalPrice: product.price
-    };
-    
-    setBundleItems(prev => [...prev, newItem]);
-    
-    setCurrentItem({
-      id: "",
-      isbn: "",
-      condition: "like-new",
-      quantity: 1,
-      price: 0,
-      image: null,
-      imageBlob: null,
-      category: "book",
-      imageUrl: null
-    });
-    
-    setAmazonResult(null);
-    setError("");
-    
-    console.log(`✅ Auto-added item with Amazon image: ${product.image}`);
-    
-    setTimeout(() => {
-      setError("");
-    }, 3000);
-  };
-  
-  const getCategoryFromPricing = (pricingCategory: string): "book" | "cd" | "dvd" | "game" | "mix" => {
-    switch (pricingCategory) {
-      case 'books': return 'book';
-      case 'cds': return 'cd';
-      case 'dvds': return 'dvd';
-      case 'games': return 'game';
-      default: return 'book';
-    }
-  };
+  }, []);
   
   const handleScanBarcode = () => {
     if (!isMobile) {
@@ -260,6 +362,21 @@ export default function CreateListingPage() {
     setShowScanner(false);
     setScannerError("");
   };
+  
+  const {
+    isScanning,
+    isCameraReady,
+    error: cameraError,
+    startScanning,
+    stopScanning,
+    videoRef,
+    isMobile
+  } = useBarcodeScanner({
+    onScan: handleBarcodeScanned,
+    onError: (error) => setScannerError(error),
+    continuous: false,
+    timeout: 30000
+  });
   
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -315,18 +432,19 @@ export default function CreateListingPage() {
           imageStats: null
         },
         description: description,
-        shippingPrice: shippingPrice, // Save shipping price
+        address: address,
+        packageDimensions: packageDimensions,
         timestamp: Date.now()
       };
       
       const storageKey = getStorageKey();
       localStorage.setItem(storageKey, JSON.stringify(dataToSave));
-      console.log(`✅ Saved ${bundleItems.length} items, description and shipping price to localStorage`);
+      console.log(`✅ Saved ${bundleItems.length} items, description, and shipping info to localStorage`);
       
     } catch (e) {
       console.error("Failed to save to localStorage", e);
     }
-  }, [bundleItems, currentItem, description, shippingPrice, isMounted, isPrivateMode, isInitializing, getStorageKey]);
+  }, [bundleItems, currentItem, description, address, packageDimensions, isMounted, isPrivateMode, isInitializing, getStorageKey]);
   
   const loadFromStorage = useCallback(() => {
     if (!isMounted || isPrivateMode || isInitializing) return;
@@ -341,7 +459,19 @@ export default function CreateListingPage() {
         
         setBundleItems(parsed.bundleItems || []);
         setDescription(parsed.description || "");
-        setShippingPrice(parsed.shippingPrice || 0); // Load shipping price
+        setAddress(parsed.address || {
+          street: "",
+          city: "",
+          state: "",
+          zip: "",
+          country: "US"
+        });
+        setPackageDimensions(parsed.packageDimensions || {
+          length: 0,
+          width: 0,
+          height: 0,
+          weight: 0
+        });
         
         if (parsed.currentItem && parsed.currentItem.isbn) {
           setCurrentItem({
@@ -372,7 +502,7 @@ export default function CreateListingPage() {
     }, 1000);
     
     return () => clearTimeout(timeoutId);
-  }, [bundleItems, description, shippingPrice, saveToStorage, isMounted, isInitializing]);
+  }, [bundleItems, description, address, packageDimensions, saveToStorage, isMounted, isInitializing]);
   
   useEffect(() => {
     if (!loading && !user) {
@@ -381,9 +511,6 @@ export default function CreateListingPage() {
   }, [user, loading, router]);
   
   const handleCurrentItemChange = (field: keyof BundleItem, value: string | number) => {
-    // Skip condition changes since it's fixed to "like-new"
-    if (field === 'condition') return;
-    
     setCurrentItem(prev => ({
       ...prev,
       [field]: value
@@ -533,7 +660,7 @@ export default function CreateListingPage() {
         return;
       }
       
-      if (!validateShippingPrice(shippingPrice)) {
+      if (!validateShippingInfo()) {
         setIsSubmitting(false);
         return;
       }
@@ -598,11 +725,14 @@ export default function CreateListingPage() {
         description: description,
         totalItems: totalItems,
         totalValue: totalValue,
-        shippingPrice: shippingPrice, // Add shipping price
         status: "pending",
         vendorId: user?.uid || "",
         vendorName: user?.displayName || user?.email?.split('@')[0] || "Anonymous",
         bundleItems: uploadedItems,
+        shippingInfo: {
+          address: address,
+          packageDimensions: packageDimensions
+        },
         createdAt: serverTimestamp(),
         views: 0,
         hasAmazonImages: uploadedItems.some(item => 
@@ -654,7 +784,25 @@ export default function CreateListingPage() {
         imageUrl: null
       });
       setDescription("");
-      setShippingPrice(0); // Reset shipping price
+      setAddress({
+        street: "",
+        city: "",
+        state: "",
+        zip: "",
+        country: "US"
+      });
+      setPackageDimensions({
+        length: 0,
+        width: 0,
+        height: 0,
+        weight: 0
+      });
+      setDimensionErrors({
+        length: '',
+        width: '',
+        height: '',
+        weight: ''
+      });
       setAmazonResult(null);
       setError("");
       
@@ -1113,37 +1261,6 @@ export default function CreateListingPage() {
                         </div>
                       </div>
                       <div className="ml-4">
-                        {/* Photo upload button hidden for now */}
-                        {false && (
-                          <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={imageProcessing}
-                            className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50"
-                          >
-                            {imageProcessing ? (
-                              <>
-                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Processing...
-                              </>
-                            ) : (
-                              <>
-                                <FiUpload className="mr-1 h-4 w-4" />
-                                Upload
-                              </>
-                            )}
-                          </button>
-                        )}
-                        <input
-                          type="file"
-                          ref={fileInputRef}
-                          onChange={handleImageChange}
-                          className="hidden"
-                          accept="image/*"
-                        />
                         {currentItem.imageStats && (
                           <p className="text-xs text-green-600 mt-1">
                             ✅ {currentItem.imageStats.original.size} → {currentItem.imageStats.optimized.size}
@@ -1345,7 +1462,7 @@ export default function CreateListingPage() {
                 </div>
               </div>
               
-              {/* Shipping Section */}
+              {/* Shipping Information Section */}
               <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 shadow-sm">
                 <div className="flex items-center mb-4">
                   <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
@@ -1354,34 +1471,207 @@ export default function CreateListingPage() {
                   <h3 className="text-lg font-semibold text-gray-900">Shipping Information</h3>
                 </div>
                 
-                <div className="space-y-2">
-                  <label htmlFor="shippingPrice" className="block text-sm font-medium text-gray-700">
-                    Shipping Price ($)
-                  </label>
-                  <div className="flex rounded-lg shadow-sm overflow-hidden border border-gray-300 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all duration-200">
-                    <span className="inline-flex items-center px-4 bg-gray-50 text-gray-500 border-r border-gray-300">
-                      <FiDollarSign className="h-5 w-5" />
-                    </span>
-                    <input
-                      type="number"
-                      id="shippingPrice"
-                      value={shippingPrice}
-                      onChange={handleShippingPriceChange}
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      placeholder="0.00"
-                      className="flex-1 block w-full px-4 py-3 border-0 focus:ring-0 text-base"
-                    />
+                {shippingError && (
+                  <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <FiAlertCircle className="h-5 w-5 text-red-500" />
+                      </div>
+                      <div className="ml-3">
+                        <p className="text-sm text-red-700">{shippingError}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="text-md font-medium text-gray-900 mb-3">Shipping Address</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <label htmlFor="street" className="block text-sm font-medium text-gray-700 mb-1">
+                          Street Address
+                        </label>
+                        <input
+                          type="text"
+                          id="street"
+                          value={address.street}
+                          onChange={(e) => handleAddressChange('street', e.target.value)}
+                          placeholder="123 Main St"
+                          className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
+                          City
+                        </label>
+                        <input
+                          type="text"
+                          id="city"
+                          value={address.city}
+                          onChange={(e) => handleAddressChange('city', e.target.value)}
+                          placeholder="New York"
+                          className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
+                          State/Province
+                        </label>
+                        <input
+                          type="text"
+                          id="state"
+                          value={address.state}
+                          onChange={(e) => handleAddressChange('state', e.target.value)}
+                          placeholder="NY"
+                          className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="zip" className="block text-sm font-medium text-gray-700 mb-1">
+                          ZIP/Postal Code
+                        </label>
+                        <input
+                          type="text"
+                          id="zip"
+                          value={address.zip}
+                          onChange={(e) => handleAddressChange('zip', e.target.value)}
+                          placeholder="10001"
+                          className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
+                          Country
+                        </label>
+                        <div className="relative">
+                          <select
+                            id="country"
+                            value={address.country}
+                            onChange={(e) => handleAddressChange('country', e.target.value)}
+                            className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none bg-white"
+                          >
+                            <option value="US">United States</option>
+                            
+                          </select>
+                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                              <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   
-                  {shippingError && (
-                    <p className="text-sm text-red-600 mt-1">{shippingError}</p>
-                  )}
-                  
-                  <p className="text-xs text-gray-500">
-                    Set a shipping price for your bundle. This will be added to the total price at checkout.
-                  </p>
+                  <div>
+                    <h4 className="text-md font-medium text-gray-900 mb-3">Package Dimensions</h4>
+                    <div className="mb-3 bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded-lg shadow-sm">
+                      <div className="flex">
+                        <div className="flex-shrink-0">
+                          <FiAlertCircle className="h-5 w-5 text-yellow-400" />
+                        </div>
+                        <div className="ml-3">
+                          <p className="text-sm text-yellow-700">
+                            Package must not exceed 18x16x16 inches and 50 pounds in weight.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <label htmlFor="length" className="block text-sm font-medium text-gray-700 mb-1">
+                          Length (in)
+                        </label>
+                        <input
+                          type="number"
+                          id="length"
+                          value={packageDimensions.length || ''}
+                          onChange={(e) => handlePackageDimensionsChange('length', parseFloat(e.target.value) || 0)}
+                          min="0"
+                          max="18"
+                          step="0.1"
+                          placeholder="0.0"
+                          className={`block w-full px-4 py-3 text-base border ${
+                            dimensionErrors.length ? 'border-red-500' : 'border-gray-300'
+                          } rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200`}
+                        />
+                        {dimensionErrors.length && (
+                          <p className="text-xs text-red-600 mt-1">{dimensionErrors.length}</p>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="width" className="block text-sm font-medium text-gray-700 mb-1">
+                          Width (in)
+                        </label>
+                        <input
+                          type="number"
+                          id="width"
+                          value={packageDimensions.width || ''}
+                          onChange={(e) => handlePackageDimensionsChange('width', parseFloat(e.target.value) || 0)}
+                          min="0"
+                          max="16"
+                          step="0.1"
+                          placeholder="0.0"
+                          className={`block w-full px-4 py-3 text-base border ${
+                            dimensionErrors.width ? 'border-red-500' : 'border-gray-300'
+                          } rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200`}
+                        />
+                        {dimensionErrors.width && (
+                          <p className="text-xs text-red-600 mt-1">{dimensionErrors.width}</p>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="height" className="block text-sm font-medium text-gray-700 mb-1">
+                          Height (in)
+                        </label>
+                        <input
+                          type="number"
+                          id="height"
+                          value={packageDimensions.height || ''}
+                          onChange={(e) => handlePackageDimensionsChange('height', parseFloat(e.target.value) || 0)}
+                          min="0"
+                          max="16"
+                          step="0.1"
+                          placeholder="0.0"
+                          className={`block w-full px-4 py-3 text-base border ${
+                            dimensionErrors.height ? 'border-red-500' : 'border-gray-300'
+                          } rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200`}
+                        />
+                        {dimensionErrors.height && (
+                          <p className="text-xs text-red-600 mt-1">{dimensionErrors.height}</p>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="weight" className="block text-sm font-medium text-gray-700 mb-1">
+                          Weight (lb)
+                        </label>
+                        <input
+                          type="number"
+                          id="weight"
+                          value={packageDimensions.weight || ''}
+                          onChange={(e) => handlePackageDimensionsChange('weight', parseFloat(e.target.value) || 0)}
+                          min="0"
+                          max="50"
+                          step="0.1"
+                          placeholder="0.0"
+                          className={`block w-full px-4 py-3 text-base border ${
+                            dimensionErrors.weight ? 'border-red-500' : 'border-gray-300'
+                          } rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200`}
+                        />
+                        {dimensionErrors.weight && (
+                          <p className="text-xs text-red-600 mt-1">{dimensionErrors.weight}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
               
@@ -1435,9 +1725,11 @@ export default function CreateListingPage() {
           <div className="mt-4 bg-purple-50 rounded-lg p-4 border border-purple-200">
             <h3 className="text-sm font-medium text-purple-900 mb-2">🚚 Shipping Information</h3>
             <ul className="text-sm text-purple-700 space-y-1">
-              <li>• 📦 <strong>Shipping Price:</strong> Set a shipping price for your bundle</li>
-              <li>• 💰 <strong>Added at Checkout:</strong> Shipping price will be added to the total</li>
-              <li>• ✅ <strong>Visible to Buyers:</strong> Shipping price will be displayed on the product page</li>
+              <li>• 📦 <strong>Shipping Address:</strong> Enter your shipping address for shipping</li>
+              <li>• 📏 <strong>Package Dimensions:</strong> Enter length, width, height, and weight</li>
+              <li>• ⚠️ <strong>Size Limits:</strong> Package must not exceed 18x16x16 inches and 50 pounds</li>
+              <li>• 💰 <strong>Shipping Cost:</strong> Will be calculated at checkout using Shippo API</li>
+              <li>• ✅ <strong>Data Persistence:</strong> All shipping info is saved to localStorage</li>
             </ul>
           </div>
         </div>
