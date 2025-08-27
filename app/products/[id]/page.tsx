@@ -7,7 +7,6 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
-
 // SVG İkonlar
 function ArrowLeftIcon({ size = 24, className = "" }: { size?: number; className?: string }) {
   return (
@@ -86,7 +85,6 @@ function TruckIcon({ size = 24, className = "" }: { size?: number; className?: s
     </svg>
   );
 }
-
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const router = useRouter();
@@ -175,7 +173,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       fetchProduct();
     }
   }, [resolvedParams.id]);
-
   // NEW: Calculate pricing with shipping
   const calculatePricing = () => {
     const subtotal = product.price * quantity;
@@ -218,7 +215,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       </div>
     );
   }
-
   const { subtotal, shipping, total } = calculatePricing();
   
   const handleAddToCart = () => {
@@ -462,38 +458,19 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </div>
               
               {/* NEW: Shipping Information Display */}
-              {product.shippingPrice > 0 && (
-                <div className="bg-blue-50 rounded-2xl p-4 border border-blue-200 mb-6">
-                  <div className="flex items-center">
-                    <TruckIcon size={20} className="text-blue-600 mr-3" />
-                    <div>
-                      <p className="text-blue-900 font-medium">
-                        Shipping: ${product.shippingPrice.toFixed(2)}
-                      </p>
-                      <p className="text-blue-700 text-sm">
-                        Added at checkout
-                      </p>
-                    </div>
+              <div className="bg-blue-50 rounded-2xl p-4 border border-blue-200 mb-6">
+                <div className="flex items-center">
+                  <TruckIcon size={20} className="text-blue-600 mr-3" />
+                  <div>
+                    <p className="text-blue-900 font-medium">
+                      Shipping: Calculated at checkout
+                    </p>
+                    <p className="text-blue-700 text-sm">
+                      Based on your location
+                    </p>
                   </div>
                 </div>
-              )}
-              
-              {/* FREE SHIPPING indicator for orders over certain amount */}
-              {product.shippingPrice === 0 && (
-                <div className="bg-green-50 rounded-2xl p-4 border border-green-200 mb-6">
-                  <div className="flex items-center">
-                    <TruckIcon size={20} className="text-green-600 mr-3" />
-                    <div>
-                      <p className="text-green-900 font-medium">
-                        🚚 FREE SHIPPING
-                      </p>
-                      <p className="text-green-700 text-sm">
-                        This bundle includes free shipping
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+              </div>
               
               {/* Product Info Cards */}
               <div className="grid grid-cols-2 gap-4">
@@ -525,33 +502,22 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   <span className="font-semibold">${subtotal.toFixed(2)}</span>
                 </div>
                 
-                {shipping > 0 && (
-                  <div className="flex justify-between items-center py-2">
-                    <span className="text-gray-700 flex items-center">
-                      <TruckIcon size={16} className="mr-2" />
-                      Shipping
-                    </span>
-                    <span className="font-semibold">${shipping.toFixed(2)}</span>
-                  </div>
-                )}
-                
-                {shipping === 0 && (
-                  <div className="flex justify-between items-center py-2">
-                    <span className="text-green-700 flex items-center">
-                      <TruckIcon size={16} className="mr-2" />
-                      Shipping
-                    </span>
-                    <span className="font-semibold text-green-600">FREE</span>
-                  </div>
-                )}
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-gray-700 flex items-center">
+                    <TruckIcon size={16} className="mr-2" />
+                    Shipping
+                  </span>
+                  <span className="font-semibold text-blue-600">Calculated at checkout</span>
+                </div>
                 
                 <div className="border-t border-gray-200 pt-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-xl font-bold text-gray-900">Total</span>
+                    <span className="text-xl font-bold text-gray-900">Subtotal</span>
                     <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                      ${total.toFixed(2)}
+                      ${subtotal.toFixed(2)}
                     </span>
                   </div>
+                  <p className="text-sm text-gray-500 mt-2">Shipping will be calculated at checkout</p>
                 </div>
               </div>
             </div>
@@ -742,27 +708,24 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         </div>
                       </td>
                     </tr>
-                    {/* NEW: Show shipping in table footer */}
-                    {shipping > 0 && (
-                      <tr className="bg-blue-50">
-                        <td colSpan={5} className="px-6 py-3 text-right text-md font-medium text-blue-900 flex items-center justify-end">
-                          <TruckIcon size={16} className="mr-2" />
-                          Shipping:
-                        </td>
-                        <td className="px-6 py-3 text-right">
-                          <div className="text-lg font-bold text-blue-900">
-                            ${shipping.toFixed(2)}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
+                    <tr className="bg-blue-50">
+                      <td colSpan={5} className="px-6 py-3 text-right text-md font-medium text-blue-900 flex items-center justify-end">
+                        <TruckIcon size={16} className="mr-2" />
+                        Shipping:
+                      </td>
+                      <td className="px-6 py-3 text-right">
+                        <div className="text-lg font-bold text-blue-600">
+                          Calculated at checkout
+                        </div>
+                      </td>
+                    </tr>
                     <tr className="bg-gradient-to-r from-blue-600 to-purple-600">
                       <td colSpan={5} className="px-6 py-4 text-right text-xl font-bold text-white">
-                        Total with Shipping:
+                        Subtotal:
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="text-3xl font-bold text-white">
-                          ${total.toFixed(2)}
+                          ${subtotal.toFixed(2)}
                         </div>
                       </td>
                     </tr>
@@ -787,15 +750,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <TruckIcon size={24} className="text-blue-600" />
             </div>
-            <h4 className="font-bold text-gray-900 mb-2">
-              {shipping === 0 ? 'Free Shipping' : 'Fast Shipping'}
-            </h4>
-            <p className="text-gray-600 text-sm">
-              {shipping === 0 
-                ? 'This bundle includes free shipping'
-                : `Shipping cost: ${shipping.toFixed(2)}`
-              }
-            </p>
+            <h4 className="font-bold text-gray-900 mb-2">Fast Shipping</h4>
+            <p className="text-gray-600 text-sm">Your order will be shipped promptly</p>
           </div>
           
           <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 text-center">

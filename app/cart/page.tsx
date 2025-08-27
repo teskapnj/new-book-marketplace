@@ -117,10 +117,11 @@ interface ShippingAddress {
   country: string;
 }
 
-// Compact Shipping Address Form (unchanged)
-function CompactShippingAddressForm({ onAddressChange, address }: {
+// Compact Shipping Address Form (with clear functionality)
+function CompactShippingAddressForm({ onAddressChange, address, onClearAddress }: {
   onAddressChange: (address: ShippingAddress) => void;
   address: ShippingAddress;
+  onClearAddress?: () => void;
 }) {
   const [validationResults, setValidationResults] = useState<Record<string, string>>({});
   const [isValidating, setIsValidating] = useState(false);
@@ -226,15 +227,27 @@ function CompactShippingAddressForm({ onAddressChange, address }: {
   
   return (
     <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-      <div className="flex items-center mb-3">
-        <LocationIcon className="text-blue-600 mr-2" size={16} />
-        <h4 className="text-md font-medium text-gray-900">Delivery Address</h4>
-        {isValidating && (
-          <div className="ml-auto flex items-center">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-            <span className="text-xs text-blue-600">Validating...</span>
-          </div>
-        )}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center">
+          <LocationIcon className="text-blue-600 mr-2" size={16} />
+          <h4 className="text-md font-medium text-gray-900">Delivery Address</h4>
+        </div>
+        <div className="flex items-center space-x-2">
+          {isValidating && (
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+              <span className="text-xs text-blue-600">Validating...</span>
+            </div>
+          )}
+          {onClearAddress && (address.street1 || address.city || address.state || address.zip) && (
+            <button
+              onClick={onClearAddress}
+              className="text-xs text-red-600 hover:text-red-700 underline"
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -281,6 +294,18 @@ function CompactShippingAddressForm({ onAddressChange, address }: {
         />
       </div>
       
+      {/* Show saved address indicator */}
+      {address.street1 && address.zip.length >= 5 && (
+        <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center">
+            <svg className="w-4 h-4 text-green-600 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M20 6L9 17l-5-5"></path>
+            </svg>
+            <span className="text-green-700 text-sm">Address saved for future orders</span>
+          </div>
+        </div>
+      )}
+      
       {Object.entries(validationResults).map(([field, message]) => {
         if (field === 'zip' && address.zip.length < 5) {
           return null;
@@ -311,6 +336,26 @@ export default function CartPage() {
   });
   const [vendorShipping, setVendorShipping] = useState<Record<string, { shippingCost: number }>>({});
   const router = useRouter();
+  
+  // Load saved address from localStorage on component mount
+  useEffect(() => {
+    const savedAddress = localStorage.getItem('shippingAddress');
+    if (savedAddress) {
+      try {
+        const parsedAddress = JSON.parse(savedAddress);
+        setShippingAddress(parsedAddress);
+      } catch (error) {
+        console.error('Error parsing saved address:', error);
+      }
+    }
+  }, []);
+  
+  // Save address to localStorage whenever it changes
+  useEffect(() => {
+    if (shippingAddress.street1 || shippingAddress.city || shippingAddress.state || shippingAddress.zip) {
+      localStorage.setItem('shippingAddress', JSON.stringify(shippingAddress));
+    }
+  }, [shippingAddress]);
   
   // Memoize unique cart items
   const uniqueCartItems = useMemo(() => {
@@ -354,9 +399,10 @@ export default function CartPage() {
   }, [getTotalPrice, getTotalShipping]);
   
   const getTotalTax = useMemo(() => {
-    const taxableAmount = getTotalPrice + getTotalShipping + getMarketplaceFee;
-    return taxableAmount * 0.08;
-  }, [getTotalPrice, getTotalShipping, getMarketplaceFee]);
+    // Tax base: Only subtotal + shipping (marketplace fee excluded)
+    const taxableAmount = getTotalPrice + getTotalShipping;
+    return taxableAmount * 0.08; // %8 sales tax
+  }, [getTotalPrice, getTotalShipping]); // Removed getMarketplaceFee from dependency
   
   const getGrandTotal = useMemo(() => {
     return getTotalPrice + getTotalShipping + getMarketplaceFee + getTotalTax;
@@ -375,10 +421,10 @@ export default function CartPage() {
         const sellerItems = getSellerItems(sellerId);
         
         try {
-          // Calculate total weight for this seller's items
-          let totalWeight = 0;
+          // Calculate total shipping cost for this seller's items
+          let totalShippingCost = 0;
           
-          // Loop through all items to get their weights
+          // Loop through each item to calculate individual shipping cost
           for (const item of sellerItems) {
             try {
               // Fetch listing data from Firestore using the item ID
@@ -390,7 +436,13 @@ export default function CartPage() {
                 // Use package dimensions from listing
                 if (listingData.shippingInfo && listingData.shippingInfo.packageDimensions) {
                   const dimensions = listingData.shippingInfo.packageDimensions;
-                  totalWeight += parseFloat(dimensions.weight.toString());
+                  const itemWeight = parseFloat(dimensions.weight.toString());
+                  
+                  // Calculate shipping cost for this individual item (with 15% extra)
+                  const itemShippingCost = calculateShippingCost(itemWeight);
+                  
+                  // Add to total shipping cost for this seller
+                  totalShippingCost += itemShippingCost;
                 }
               }
             } catch (error) {
@@ -398,11 +450,8 @@ export default function CartPage() {
             }
           }
           
-          // Calculate shipping cost based on weight (15% extra is already included in calculateShippingCost)
-          const shippingCost = calculateShippingCost(totalWeight);
-          
           vendorShippingData[sellerId] = {
-            shippingCost
+            shippingCost: totalShippingCost
           };
           
         } catch (error) {
@@ -436,6 +485,48 @@ export default function CartPage() {
     e.preventDefault();
     e.stopPropagation();
     removeFromCart(itemId, sellerId);
+  };
+
+  // Clear saved address
+  const handleClearAddress = () => {
+    const emptyAddress = {
+      street1: '',
+      city: '',
+      state: '',
+      zip: '',
+      country: 'US'
+    };
+    setShippingAddress(emptyAddress);
+    localStorage.removeItem('shippingAddress');
+  };
+  // NEW: Checkout handler function
+  const handleProceedToCheckout = () => {
+    // Checkout verisini sessionStorage'a kaydet
+    const checkoutData = {
+      cartItems: uniqueCartItems,
+      shippingAddress,
+      vendorShipping,
+      totals: {
+        subtotal: getTotalPrice,
+        shipping: getTotalShipping,
+        marketplaceFee: getMarketplaceFee,
+        tax: getTotalTax,
+        grandTotal: getGrandTotal
+      },
+      vendorBreakdown: sellers.map(sellerId => ({
+        sellerId,
+        items: getSellerItems(sellerId),
+        subtotal: getSellerSubtotal(sellerId),
+        shippingCost: getSellerShipping(sellerId),
+        itemCount: getSellerItems(sellerId).length
+      }))
+    };
+    
+    // Session storage'a kaydet
+    sessionStorage.setItem('checkoutData', JSON.stringify(checkoutData));
+    
+    // Checkout sayfasına yönlendir
+    router.push('/checkout');
   };
   
   return (
@@ -573,6 +664,7 @@ export default function CartPage() {
               <CompactShippingAddressForm
                 address={shippingAddress}
                 onAddressChange={setShippingAddress}
+                onClearAddress={handleClearAddress}
               />
             </div>
             
@@ -627,9 +719,10 @@ export default function CartPage() {
                   </div>
                 )}
                 
-                {/* Checkout Button */}
+                {/* Checkout Button - UPDATED */}
                 <div className="space-y-3">
                   <button 
+                    onClick={handleProceedToCheckout}
                     className={`w-full py-3 font-bold rounded-lg transition-all duration-200 ${
                       getTotalShipping >= 0 && shippingAddress.street1 && shippingAddress.zip.length >= 5
                         ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg' 

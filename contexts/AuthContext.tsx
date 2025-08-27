@@ -2,18 +2,20 @@
 "use client";
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { auth } from "@/lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 
 interface AuthContextType {
   user: any;
   loading: boolean;
   error?: any;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  logout: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -37,12 +39,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error("Auth error:", error);
       }
     );
-
     return () => unsubscribe();
   }, []);
 
+  const logout = async () => {
+    try {
+      console.log("Logging out...");
+      setLoading(true);
+      
+      // Firebase'den çıkış yap
+      await signOut(auth);
+      
+      // Kullanıcı durumunu null yap
+      setUser(null);
+      
+      // LocalStorage'ı temizle
+      localStorage.clear();
+      
+      console.log("Logged out successfully");
+      
+      // Ana sayfaya yönlendir
+      router.push("/");
+      
+      // Sayfayı yenile (tüm listener'ların temizlenmesi için)
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
+    } catch (error) {
+      console.error("Logout error:", error);
+      setError(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, error }}>
+    <AuthContext.Provider value={{ user, loading, error, logout }}>
       {children}
     </AuthContext.Provider>
   );

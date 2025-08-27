@@ -12,7 +12,6 @@ import axios from "axios";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { smartOptimizeImage, formatFileSize } from "@/utils/imageOptimization";
 import { AmazonProduct, PricingResult } from "@/lib/pricingEngine";
-
 interface BundleItem {
   id: string;
   isbn: string;
@@ -28,7 +27,6 @@ interface BundleItem {
   originalPrice?: number;
   imageUrl?: string | null;
 }
-
 interface Address {
   street: string;
   city: string;
@@ -36,14 +34,12 @@ interface Address {
   zip: string;
   country: string;
 }
-
 interface PackageDimensions {
   length: number;
   width: number;
   height: number;
   weight: number;
 }
-
 export default function CreateListingPage() {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
@@ -665,8 +661,8 @@ export default function CreateListingPage() {
         return;
       }
       
-      if (bundleItems.length < 10) {
-        setError("Please add at least 10 items to create a bundle listing");
+      if (bundleItems.length < 5) {
+        setError("Please add at least 5 items to create a bundle listing");
         setIsSubmitting(false);
         return;
       }
@@ -1299,7 +1295,7 @@ export default function CreateListingPage() {
                   </div>
                 </div>
                 
-                {bundleItems.length < 10 && (
+                {bundleItems.length < 5 && (
                   <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-lg shadow-sm">
                     <div className="flex">
                       <div className="flex-shrink-0">
@@ -1307,7 +1303,7 @@ export default function CreateListingPage() {
                       </div>
                       <div className="ml-3">
                         <p className="text-sm text-yellow-700">
-                          You need to add at least 10 items to create a bundle listing. ({10 - bundleItems.length} more needed)
+                          You need to add at least 5 items to create a bundle listing. ({5 - bundleItems.length} more needed)
                         </p>
                       </div>
                     </div>
@@ -1678,7 +1674,7 @@ export default function CreateListingPage() {
               <div className="pt-5">
                 <button
                   type="submit"
-                  disabled={isSubmitting || bundleItems.length < 10}
+                  disabled={isSubmitting || bundleItems.length < 5}
                   className="w-full flex justify-center py-4 px-6 border border-transparent shadow-lg text-base font-medium rounded-xl text-white bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-all duration-200 transform hover:-translate-y-0.5"
                 >
                   {isSubmitting ? (
@@ -1692,7 +1688,7 @@ export default function CreateListingPage() {
                   ) : (
                     <div className="flex items-center">
                       <FiSave className="mr-2 h-5 w-5" />
-                      Create Bundle Listing ({bundleItems.length}/10 items)
+                      Create Bundle Listing ({bundleItems.length}/5 items)
                     </div>
                   )}
                 </button>

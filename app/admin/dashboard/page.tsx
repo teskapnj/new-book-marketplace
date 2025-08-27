@@ -12,32 +12,117 @@ import {
   serverTimestamp,
   query,
   orderBy,
-  where
+  where,
+  getDoc,
+  Timestamp,
+  getDocs
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+
+// Type definitions
+interface OrderItem {
+  id: string;
+  productId: string;
+  sellerId: string;
+  title: string;
+  price: number;
+  image?: string;
+  shippingCost: number;
+}
+
+interface VendorOrderBreakdown {
+  sellerId: string;
+  items: OrderItem[];
+  subtotal: number;
+  shippingCost: number;
+  itemCount: number;
+}
+
+interface Order {
+  id: string;
+  orderNumber: string;
+  totalAmount: number;
+  subtotal: number;
+  shippingTotal: number;
+  marketplaceFee: number;
+  taxTotal: number;
+  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  shippingAddress: {
+    street1: string;
+    city: string;
+    state: string;
+    zip: string;
+    country: string;
+  };
+  customerInfo: {
+    email: string;
+    fullName?: string;
+    phone?: string;
+  };
+  items: OrderItem[];
+  vendorBreakdown: VendorOrderBreakdown[];
+  createdAt: Timestamp | Date;
+  updatedAt: Timestamp | Date;
+  orderDate: string;
+  adminNotes?: string;
+}
 
 // Message Notification Component
 const MessageNotification = () => {
   const [user] = useAuthState(auth);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
     if (!user) return;
     
-    // Listen to unread messages
-    const messagesRef = collection(db, 'contact_messages');
-    const q = query(messagesRef, where('status', '==', 'unread'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setUnreadCount(snapshot.size);
-      setLoading(false);
-    }, (error) => {
-      console.error('Error fetching unread messages:', error);
-      setLoading(false);
-    });
+    // Check if user is admin
+    const checkAdminStatus = async () => {
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (!userDoc.exists() || userDoc.data()?.role !== 'admin') {
+          setError('Admin access required');
+          return;
+        }
+        
+        // Listen to unread messages
+        const messagesRef = collection(db, 'contact_messages');
+        const q = query(messagesRef, where('status', '==', 'unread'));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+          setUnreadCount(snapshot.size);
+          setLoading(false);
+        }, (error) => {
+          console.error('Error fetching unread messages:', error);
+          if (error.code === 'permission-denied') {
+            setError('Permission denied. Please contact administrator.');
+          }
+          setLoading(false);
+        });
+        
+        return () => unsubscribe();
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+        setError('Error verifying admin status');
+        setLoading(false);
+      }
+    };
     
-    return () => unsubscribe();
+    checkAdminStatus();
   }, [user]);
+  
+  if (error) {
+    return (
+      <div className="relative">
+        <div className="w-6 h-6 rounded-full bg-red-200 flex items-center justify-center">
+          <span className="text-red-600 text-xs">!</span>
+        </div>
+        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-red-600 text-white text-xs rounded whitespace-nowrap">
+          {error}
+        </div>
+      </div>
+    );
+  }
   
   if (loading) {
     return (
@@ -78,45 +163,353 @@ const MessageNotification = () => {
   );
 };
 
+// Orders Navigation Component
+const OrdersNavigation = () => {
+  const [orderCount, setOrderCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  useEffect(() => {
+    // Listen to orders count
+    const ordersRef = collection(db, 'orders');
+    const unsubscribe = onSnapshot(ordersRef, (snapshot) => {
+      setOrderCount(snapshot.size);
+      setLoading(false);
+    }, (error) => {
+      console.error('Error fetching orders count:', error);
+      if (error.code === 'permission-denied') {
+        setError('Permission denied');
+      }
+      setLoading(false);
+    });
+    
+    return () => unsubscribe();
+  }, []);
+  
+  if (error) {
+    return (
+      <div className="relative">
+        <div className="w-6 h-6 rounded-full bg-red-200 flex items-center justify-center">
+          <span className="text-red-600 text-xs">!</span>
+        </div>
+      </div>
+    );
+  }
+  
+  if (loading) {
+    return (
+      <div className="relative">
+        <div className="w-6 h-6 rounded-full bg-gray-200 animate-pulse"></div>
+      </div>
+    );
+  }
+  
+  return (
+    <Link
+      href="/admin/orders"
+      className="relative inline-flex items-center p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+      title={`${orderCount} orders`}
+    >
+      {/* Orders Icon */}
+      <svg 
+        className="w-6 h-6" 
+        fill="none" 
+        stroke="currentColor" 
+        viewBox="0 0 24 24"
+      >
+        <path 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          strokeWidth="2" 
+          d="M16 11V7a4 4 0 01-8 0v4M5 9h14l1 12M4 6h16M4 6h16" 
+        />
+      </svg>
+      
+      {/* Notification Badge */}
+      {orderCount > 0 && (
+        <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-blue-600 rounded-full min-w-[20px]">
+          {orderCount > 99 ? '99+' : orderCount}
+        </span>
+      )}
+    </Link>
+  );
+};
+
+// Order Detail Modal Component
+interface OrderDetailModalProps {
+  order: Order;
+  onClose: () => void;
+  onUpdateStatus: (orderId: string, status: string, notes: string) => Promise<void>;
+}
+
+const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onUpdateStatus }) => {
+  const [status, setStatus] = useState(order.status);
+  const [notes, setNotes] = useState(order.adminNotes || "");
+  const [isProcessing, setIsProcessing] = useState(false);
+  
+  const handleUpdateStatus = async () => {
+    setIsProcessing(true);
+    try {
+      await onUpdateStatus(order.id, status, notes);
+      onClose();
+    } catch (error: any) {
+      console.error("Error updating order:", error);
+      if (error.code === 'permission-denied') {
+        alert("You don't have permission to update this order. Please contact administrator.");
+      } else {
+        alert("Failed to update order status: " + error.message);
+      }
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+  
+  const formatDate = (timestamp: Timestamp | Date | undefined): string => {
+    if (!timestamp) return "N/A";
+    const date = timestamp instanceof Timestamp ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleDateString() + " " + date.toLocaleTimeString();
+  };
+  
+  return (
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-medium text-gray-900">
+            Order Details: {order.orderNumber}
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-2xl"
+          >
+            ✕
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left column - Order information */}
+          <div className="space-y-4">
+            <div>
+              <h4 className="text-sm font-medium text-gray-900 mb-2">Order Information</h4>
+              <div className="bg-gray-50 p-4 rounded-lg space-y-2 text-sm">
+                <p><strong>Order ID:</strong> {order.id}</p>
+                <p><strong>Order Number:</strong> {order.orderNumber}</p>
+                <p><strong>Customer:</strong> {order.customerInfo.fullName || "N/A"}</p>
+                <p><strong>Email:</strong> {order.customerInfo.email}</p>
+                <p><strong>Phone:</strong> {order.customerInfo.phone || "N/A"}</p>
+                <p><strong>Created:</strong> {formatDate(order.createdAt)}</p>
+                <p><strong>Last Updated:</strong> {formatDate(order.updatedAt)}</p>
+                <p><strong>Status:</strong> {getOrderStatusBadge(order.status)}</p>
+              </div>
+            </div>
+            
+            {/* Shipping Information */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-900 mb-2">Shipping Address</h4>
+              <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
+                <p className="text-sm text-gray-700">
+                  {order.shippingAddress.street1}<br />
+                  {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}<br />
+                  {order.shippingAddress.country}
+                </p>
+              </div>
+            </div>
+            
+            {/* Order Items */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-900 mb-2">
+                Order Items ({order.items.length})
+              </h4>
+              <div className="max-h-80 overflow-y-auto space-y-2">
+                {order.items.map((item: OrderItem, index: number) => (
+                  <div key={index} className="bg-gray-50 p-3 rounded-lg text-sm">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <span className="mr-2">📦</span>
+                        <span className="font-medium">{item.title}</span>
+                      </div>
+                      <span className="text-gray-600">${item.price.toFixed(2)}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      ID: {item.productId} • Seller: {item.sellerId}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          
+          {/* Right column - Admin actions */}
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Update Status
+              </label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as Order['status'])}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="pending">Pending</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="processing">Processing</option>
+                <option value="shipped">Shipped</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Admin Notes
+              </label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={4}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Add notes about this order..."
+              />
+            </div>
+            
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h4 className="text-sm font-medium text-gray-900 mb-2">Order Summary</h4>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span>Subtotal:</span>
+                  <span>${order.subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Shipping:</span>
+                  <span>${order.shippingTotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Marketplace Fee:</span>
+                  <span>${order.marketplaceFee.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Tax:</span>
+                  <span>${order.taxTotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-bold pt-2 border-t">
+                  <span>Total:</span>
+                  <span>${order.totalAmount.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-yellow-50 p-4 rounded-lg">
+              <h4 className="text-sm font-medium text-gray-900 mb-2">Vendor Breakdown</h4>
+              <div className="space-y-2 text-sm">
+                {order.vendorBreakdown.map((vendor: VendorOrderBreakdown, index: number) => (
+                  <div key={index} className="flex justify-between">
+                    <span>{vendor.sellerId} ({vendor.itemCount} items):</span>
+                    <span>${(vendor.subtotal + vendor.shippingCost).toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <button
+              onClick={handleUpdateStatus}
+              disabled={isProcessing}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isProcessing ? "Updating..." : "Update Order"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Helper function for order status badge
+const getOrderStatusBadge = (status: Order['status']) => {
+  const styles = {
+    pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    confirmed: "bg-blue-100 text-blue-800 border-blue-200",
+    processing: "bg-purple-100 text-purple-800 border-purple-200",
+    shipped: "bg-indigo-100 text-indigo-800 border-indigo-200",
+    delivered: "bg-green-100 text-green-800 border-green-200",
+    cancelled: "bg-red-100 text-red-800 border-red-200"
+  };
+  
+  const icons = { 
+    pending: "⏳", 
+    confirmed: "✅", 
+    processing: "🔄", 
+    shipped: "🚚", 
+    delivered: "✅", 
+    cancelled: "❌" 
+  };
+  
+  return (
+    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${styles[status]}`}>
+      {icons[status]} <span className="ml-1 capitalize">{status}</span>
+    </span>
+  );
+};
+
 export default function AdminListingsPage() {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [checkingAdmin, setCheckingAdmin] = useState(true);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
   
   // 📊 State management
   const [listings, setListings] = useState<any[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [selectedListing, setSelectedListing] = useState<any>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [orderFilterStatus, setOrderFilterStatus] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [orderSearchTerm, setOrderSearchTerm] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [adminNotes, setAdminNotes] = useState("");
   const [loadingListings, setLoadingListings] = useState(true);
+  const [loadingOrders, setLoadingOrders] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [activeTab, setActiveTab] = useState<"listings" | "orders">("listings");
   
   // 📄 Pagination states
   const [currentPage, setCurrentPage] = useState(1);
+  const [orderCurrentPage, setOrderCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   
   // 🔐 Admin Authentication Check
   useEffect(() => {
-    if (!loading && !user) {
-      router.push("/login");
-      return;
-    }
+    const checkAdminStatus = async () => {
+      if (!loading && !user) {
+        router.push("/login");
+        return;
+      }
+      
+      if (user) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists() && userDoc.data()?.role === 'admin') {
+            setIsAdmin(true);
+          } else {
+            setPermissionError("Admin access required. You don't have permission to access this page.");
+          }
+        } catch (error) {
+          console.error("Error checking admin status:", error);
+          setPermissionError("Error verifying admin permissions.");
+        } finally {
+          setCheckingAdmin(false);
+        }
+      }
+    };
     
-    // In a real app, you'd check user role from Firestore or custom claims
-    // For now, we'll assume authenticated users can access admin
-    if (user && !user.email?.includes("admin")) {
-      // You can uncomment this for stricter admin access
-      // alert("❌ Admin access required!");
-      // router.push("/");
-      // return;
-    }
+    checkAdminStatus();
   }, [user, loading, router]);
   
   // 🔥 Real-time Firebase listener for listings
   useEffect(() => {
-    if (!user) return;
+    if (!user || !isAdmin || activeTab !== "listings") return;
     
     let unsubscribe: () => void;
     
@@ -139,7 +532,7 @@ export default function AdminListingsPage() {
                 title: data.title || "Untitled Bundle",
                 totalItems: data.totalItems || 0,
                 totalValue: data.totalValue || 0,
-                shippingInfo: data.shippingInfo || null, // Added shipping info
+                shippingInfo: data.shippingInfo || null,
                 status: data.status || "pending",
                 vendorId: data.vendorId,
                 vendorName: data.vendorName || "Unknown Seller",
@@ -160,6 +553,9 @@ export default function AdminListingsPage() {
           },
           (error) => {
             console.error("Error fetching listings:", error);
+            if (error.code === 'permission-denied') {
+              setPermissionError("You don't have permission to access listings. Please contact administrator.");
+            }
             
             // Fallback: try without ordering
             if (error.code === 'failed-precondition') {
@@ -177,7 +573,7 @@ export default function AdminListingsPage() {
                     title: data.title || "Untitled Bundle",
                     totalItems: data.totalItems || 0,
                     totalValue: data.totalValue || 0,
-                    shippingInfo: data.shippingInfo || null, // Added shipping info
+                    shippingInfo: data.shippingInfo || null,
                     status: data.status || "pending",
                     vendorId: data.vendorId,
                     vendorName: data.vendorName || "Unknown Seller",
@@ -218,14 +614,135 @@ export default function AdminListingsPage() {
         unsubscribe();
       }
     };
-  }, [user]);
+  }, [user, isAdmin, activeTab]);
   
-  // 📈 Computed values
+  // 🔥 Real-time Firebase listener for orders
+  useEffect(() => {
+    if (!user || !isAdmin || activeTab !== "orders") return;
+    
+    let unsubscribe: () => void;
+    
+    const setupOrdersListener = () => {
+      try {
+        // Create query to get all orders ordered by creation date
+        const ordersRef = collection(db, "orders");
+        const q = query(ordersRef, orderBy("createdAt", "desc"));
+        
+        unsubscribe = onSnapshot(q, 
+          (querySnapshot) => {
+            const ordersData: Order[] = [];
+            
+            querySnapshot.forEach((docSnapshot) => {
+              const data = docSnapshot.data();
+              
+              // Process order data
+              ordersData.push({
+                id: docSnapshot.id,
+                orderNumber: data.orderNumber || "",
+                totalAmount: data.totalAmount || 0,
+                subtotal: data.subtotal || 0,
+                shippingTotal: data.shippingTotal || 0,
+                marketplaceFee: data.marketplaceFee || 0,
+                taxTotal: data.taxTotal || 0,
+                status: data.status || "pending",
+                shippingAddress: data.shippingAddress || {},
+                customerInfo: data.customerInfo || {},
+                items: data.items || [],
+                vendorBreakdown: data.vendorBreakdown || [],
+                createdAt: data.createdAt || new Date(),
+                updatedAt: data.updatedAt || new Date(),
+                orderDate: data.createdAt?.toDate?.().toLocaleDateString() || new Date().toLocaleDateString(),
+                adminNotes: data.adminNotes || ""
+              });
+            });
+            
+            setOrders(ordersData);
+            setLoadingOrders(false);
+            console.log(`✅ Loaded ${ordersData.length} orders from Firebase`);
+          },
+          (error) => {
+            console.error("Error fetching orders:", error);
+            if (error.code === 'permission-denied') {
+              setPermissionError("You don't have permission to access orders. Please contact administrator.");
+            }
+            
+            // Fallback: try without ordering
+            if (error.code === 'failed-precondition') {
+              console.log("Index not found, trying fallback query...");
+              const fallbackQuery = collection(db, "orders");
+              
+              unsubscribe = onSnapshot(fallbackQuery, (querySnapshot) => {
+                const ordersData: Order[] = [];
+                
+                querySnapshot.forEach((docSnapshot) => {
+                  const data = docSnapshot.data();
+                  
+                  ordersData.push({
+                    id: docSnapshot.id,
+                    orderNumber: data.orderNumber || "",
+                    totalAmount: data.totalAmount || 0,
+                    subtotal: data.subtotal || 0,
+                    shippingTotal: data.shippingTotal || 0,
+                    marketplaceFee: data.marketplaceFee || 0,
+                    taxTotal: data.taxTotal || 0,
+                    status: data.status || "pending",
+                    shippingAddress: data.shippingAddress || {},
+                    customerInfo: data.customerInfo || {},
+                    items: data.items || [],
+                    vendorBreakdown: data.vendorBreakdown || [],
+                    createdAt: data.createdAt || new Date(),
+                    updatedAt: data.updatedAt || new Date(),
+                    orderDate: data.createdAt?.toDate?.().toLocaleDateString() || new Date().toLocaleDateString(),
+                    adminNotes: data.adminNotes || ""
+                  });
+                });
+                
+                // Sort manually by creation date
+                ordersData.sort((a, b) => {
+                  const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toDate() : new Date(a.createdAt);
+                  const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toDate() : new Date(b.createdAt);
+                  return dateB.getTime() - dateA.getTime();
+                });
+                
+                setOrders(ordersData);
+                setLoadingOrders(false);
+                console.log(`✅ Loaded ${ordersData.length} orders (fallback mode)`);
+              });
+            } else {
+              setLoadingOrders(false);
+            }
+          }
+        );
+      } catch (error) {
+        console.error("Error setting up orders listener:", error);
+        setLoadingOrders(false);
+      }
+    };
+    
+    setupOrdersListener();
+    
+    // Cleanup listener on unmount
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [user, isAdmin, activeTab]);
+  
+  // 📈 Computed values for listings
   const pendingListings = listings.filter(l => l.status === "pending");
   const approvedListings = listings.filter(l => l.status === "approved");
   const rejectedListings = listings.filter(l => l.status === "rejected");
   
-  // 🔍 Filtering and search logic
+  // 📈 Computed values for orders
+  const pendingOrders = orders.filter(o => o.status === "pending");
+  const confirmedOrders = orders.filter(o => o.status === "confirmed");
+  const processingOrders = orders.filter(o => o.status === "processing");
+  const shippedOrders = orders.filter(o => o.status === "shipped");
+  const deliveredOrders = orders.filter(o => o.status === "delivered");
+  const cancelledOrders = orders.filter(o => o.status === "cancelled");
+  
+  // 🔍 Filtering and search logic for listings
   let filteredListings = listings;
   
   if (filterStatus !== "all") {
@@ -240,7 +757,23 @@ export default function AdminListingsPage() {
     );
   }
   
-  // 📄 Pagination calculations
+  // 🔍 Filtering and search logic for orders
+  let filteredOrders = orders;
+  
+  if (orderFilterStatus !== "all") {
+    filteredOrders = filteredOrders.filter(order => order.status === orderFilterStatus);
+  }
+  
+  if (orderSearchTerm) {
+    filteredOrders = filteredOrders.filter(order => 
+      order.orderNumber.toLowerCase().includes(orderSearchTerm.toLowerCase()) ||
+      order.id.toLowerCase().includes(orderSearchTerm.toLowerCase()) ||
+      order.customerInfo.email.toLowerCase().includes(orderSearchTerm.toLowerCase()) ||
+      (order.customerInfo.fullName && order.customerInfo.fullName.toLowerCase().includes(orderSearchTerm.toLowerCase()))
+    );
+  }
+  
+  // 📄 Pagination calculations for listings
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredListings.slice(indexOfFirstItem, indexOfLastItem);
@@ -248,6 +781,16 @@ export default function AdminListingsPage() {
   const pageNumbers = [];
   for (let i = 1; i <= Math.ceil(filteredListings.length / itemsPerPage); i++) {
     pageNumbers.push(i);
+  }
+  
+  // 📄 Pagination calculations for orders
+  const indexOfLastOrder = orderCurrentPage * itemsPerPage;
+  const indexOfFirstOrder = indexOfLastOrder - itemsPerPage;
+  const currentOrders = filteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
+  
+  const orderPageNumbers = [];
+  for (let i = 1; i <= Math.ceil(filteredOrders.length / itemsPerPage); i++) {
+    orderPageNumbers.push(i);
   }
   
   // ✅ Approve listing function - Updates Firebase
@@ -273,9 +816,13 @@ export default function AdminListingsPage() {
       // Show success message
       alert("✅ Listing approved successfully!");
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error approving listing:", error);
-      alert("❌ Error occurred while approving listing!");
+      if (error.code === 'permission-denied') {
+        alert("You don't have permission to approve listings. Please contact administrator.");
+      } else {
+        alert("❌ Error occurred while approving listing: " + error.message);
+      }
     }
     
     setIsProcessing(false);
@@ -310,9 +857,13 @@ export default function AdminListingsPage() {
       
       alert("❌ Listing rejected successfully!");
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error rejecting listing:", error);
-      alert("❌ Error occurred while rejecting listing!");
+      if (error.code === 'permission-denied') {
+        alert("You don't have permission to reject listings. Please contact administrator.");
+      } else {
+        alert("❌ Error occurred while rejecting listing: " + error.message);
+      }
     }
     
     setIsProcessing(false);
@@ -336,9 +887,45 @@ export default function AdminListingsPage() {
       // Show success message
       alert("🗑️ Listing deleted successfully!");
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting listing:", error);
-      alert("❌ Error occurred while deleting listing!");
+      if (error.code === 'permission-denied') {
+        alert("You don't have permission to delete listings. Please contact administrator.");
+      } else {
+        alert("❌ Error occurred while deleting listing: " + error.message);
+      }
+    }
+    
+    setIsProcessing(false);
+  };
+  
+  // 🔄 Update order status function - Updates Firebase
+  const updateOrderStatus = async (orderId: string, status: string, notes: string) => {
+    setIsProcessing(true);
+    
+    try {
+      const orderRef = doc(db, "orders", orderId);
+      
+      await updateDoc(orderRef, {
+        status: status,
+        updatedAt: serverTimestamp(),
+        updatedBy: user?.email || "admin",
+        adminNotes: notes
+      });
+      
+      console.log(`🔄 Order ${orderId} status updated to ${status} by ${user?.email}`);
+      
+      // Show success message
+      alert(`✅ Order status updated to ${status} successfully!`);
+      
+    } catch (error: any) {
+      console.error("Error updating order status:", error);
+      if (error.code === 'permission-denied') {
+        alert("You don't have permission to update orders. Please contact administrator.");
+      } else {
+        alert("❌ Error occurred while updating order status: " + error.message);
+      }
+      throw error;
     }
     
     setIsProcessing(false);
@@ -349,9 +936,10 @@ export default function AdminListingsPage() {
     const styles = {
       pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
       approved: "bg-green-100 text-green-800 border-green-200",
-      rejected: "bg-red-100 text-red-800 border-red-200"
+      rejected: "bg-red-100 text-red-800 border-red-200",
+      sold: "bg-purple-100 text-purple-800 border-purple-200"
     };
-    const icons = { pending: "⏳", approved: "✅", rejected: "❌" };
+    const icons = { pending: "⏳", approved: "✅", rejected: "❌", sold: "💰" };
     
     return (
       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${styles[status as keyof typeof styles]}`}>
@@ -366,7 +954,7 @@ export default function AdminListingsPage() {
   };
   
   // Loading state
-  if (loading || loadingListings) {
+  if (loading || checkingAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -377,14 +965,33 @@ export default function AdminListingsPage() {
     );
   }
   
-  // Unauthorized access
-  if (!user) {
+  // Permission error state
+  if (permissionError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="text-6xl mb-4">🔒</div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
-          <p className="text-gray-600">Please login to access admin panel.</p>
+          <p className="text-gray-600 mb-6">{permissionError}</p>
+          <button
+            onClick={() => router.push("/")}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Go to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+  
+  // Unauthorized access
+  if (!user || !isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="text-6xl mb-4">🔒</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+          <p className="text-gray-600">Please login with an admin account to access this page.</p>
         </div>
       </div>
     );
@@ -410,6 +1017,9 @@ export default function AdminListingsPage() {
             {/* Message Notification Bell */}
             <MessageNotification />
             
+            {/* Orders Notification */}
+            <OrdersNavigation />
+            
             {/* Admin info display */}
             <div className="text-sm text-gray-600">
               Logged in as: <span className="font-medium">{user?.email}</span>
@@ -419,286 +1029,617 @@ export default function AdminListingsPage() {
         
         {/* 📊 Page Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin - Listings Management</h1>
-          <p className="text-gray-600">Review and manage seller listings in real-time</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
+          <p className="text-gray-600">Manage listings and orders in real-time</p>
         </div>
         
-        {/* Quick Actions Bar */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
-              <Link
-                href="/admin/messages"
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+        {/* Tab Navigation */}
+        <div className="mb-6">
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveTab("listings")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "listings"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
               >
-                💬 Manage Messages
-              </Link>
-            </div>
-            <div className="flex items-center space-x-2 text-sm text-gray-500">
-              <span>Real-time updates enabled</span>
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            </div>
-          </div>
-        </div>
-        
-        {/* 🔍 Search and Filter Controls */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
-              <input
-                type="text"
-                placeholder="Search by title, ID, or seller..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
-              <select
-                value={filterStatus}
-                onChange={(e) => {
-                  setFilterStatus(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                Listings
+              </button>
+              <button
+                onClick={() => setActiveTab("orders")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "orders"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
               >
-                <option value="all">All Status ({listings.length})</option>
-                <option value="pending">⏳ Pending ({pendingListings.length})</option>
-                <option value="approved">✅ Approved ({approvedListings.length})</option>
-                <option value="rejected">❌ Rejected ({rejectedListings.length})</option>
-              </select>
-            </div>
+                Orders
+              </button>
+            </nav>
           </div>
         </div>
         
-        {/* 📈 Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-yellow-400">
-            <div className="flex items-center">
-              <div className="text-3xl mr-4">⏳</div>
-              <div>
-                <p className="text-2xl font-bold text-yellow-600">{pendingListings.length}</p>
-                <p className="text-sm text-gray-600">Pending Review</p>
+        {activeTab === "listings" ? (
+          <>
+            {/* Quick Actions Bar */}
+            <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
+                  <Link
+                    href="/admin/messages"
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    💬 Manage Messages
+                  </Link>
+                </div>
+                <div className="flex items-center space-x-2 text-sm text-gray-500">
+                  <span>Real-time updates enabled</span>
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                </div>
               </div>
             </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-400">
-            <div className="flex items-center">
-              <div className="text-3xl mr-4">✅</div>
-              <div>
-                <p className="text-2xl font-bold text-green-600">{approvedListings.length}</p>
-                <p className="text-sm text-gray-600">Approved</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-red-400">
-            <div className="flex items-center">
-              <div className="text-3xl mr-4">❌</div>
-              <div>
-                <p className="text-2xl font-bold text-red-600">{rejectedListings.length}</p>
-                <p className="text-sm text-gray-600">Rejected</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-400">
-            <div className="flex items-center">
-              <div className="text-3xl mr-4">📦</div>
-              <div>
-                <p className="text-2xl font-bold text-blue-600">{listings.length}</p>
-                <p className="text-sm text-gray-600">Total Listings</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* 📋 Listings Table */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-            <h3 className="text-lg font-medium text-gray-900">
-              Listings ({filteredListings.length})
-            </h3>
-            <div className="text-sm text-gray-500">
-              Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredListings.length)} of {filteredListings.length}
-            </div>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Listing Details
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Seller
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Items & Value
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Shipping
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              
-              <tbody className="bg-white divide-y divide-gray-200">
-                {currentItems.map((listing) => (
-                  <tr key={listing.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900 max-w-xs truncate">
-                          {listing.title}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          ID: {listing.id}
-                        </div>
-                      </div>
-                    </td>
-                    
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        {listing.vendorName}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {listing.vendorId}
-                      </div>
-                    </td>
-                    
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        📦 {listing.totalItems} items
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        💰 ${listing.totalValue.toFixed(2)}
-                      </div>
-                    </td>
-                    
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        🚚 Shipping Info
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {listing.shippingInfo ? "Provided" : "Not provided"}
-                      </div>
-                    </td>
-                    
-                    <td className="px-6 py-4">
-                      {getStatusBadge(listing.status)}
-                    </td>
-                    
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      {listing.submittedDate}
-                    </td>
-                    
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => setSelectedListing(listing)}
-                        className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-blue-600 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                      >
-                        👁️ Review
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          
-          {/* Empty state */}
-          {filteredListings.length === 0 && (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">📭</div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No listings found</h3>
-              <p className="text-gray-500">
-                {searchTerm || filterStatus !== "all" 
-                  ? "Try adjusting your search or filter criteria."
-                  : "No listings have been submitted yet."
-                }
-              </p>
-            </div>
-          )}
-          
-          {/* Pagination */}
-          {filteredListings.length > itemsPerPage && (
-            <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-              <div className="flex-1 flex justify-between sm:hidden">
-                <button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-                >
-                  Previous
-                </button>
-                <button
-                  onClick={() => setCurrentPage(Math.min(pageNumbers.length, currentPage + 1))}
-                  disabled={currentPage === pageNumbers.length}
-                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-                >
-                  Next
-                </button>
-              </div>
-              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            
+            {/* 🔍 Search and Filter Controls */}
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-gray-700">
-                    Showing <span className="font-medium">{indexOfFirstItem + 1}</span> to{' '}
-                    <span className="font-medium">
-                      {Math.min(indexOfLastItem, filteredListings.length)}
-                    </span>{' '}
-                    of <span className="font-medium">{filteredListings.length}</span> results
-                  </p>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                  <input
+                    type="text"
+                    placeholder="Search by title, ID, or seller..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
                 </div>
                 <div>
-                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => {
+                      setFilterStatus(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="all">All Status ({listings.length})</option>
+                    <option value="pending">⏳ Pending ({pendingListings.length})</option>
+                    <option value="approved">✅ Approved ({approvedListings.length})</option>
+                    <option value="rejected">❌ Rejected ({rejectedListings.length})</option>
+                    <option value="sold">💰 Sold ({listings.filter(l => l.status === "sold").length})</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            {/* 📈 Statistics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+              <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-yellow-400">
+                <div className="flex items-center">
+                  <div className="text-3xl mr-4">⏳</div>
+                  <div>
+                    <p className="text-2xl font-bold text-yellow-600">{pendingListings.length}</p>
+                    <p className="text-sm text-gray-600">Pending Review</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-400">
+                <div className="flex items-center">
+                  <div className="text-3xl mr-4">✅</div>
+                  <div>
+                    <p className="text-2xl font-bold text-green-600">{approvedListings.length}</p>
+                    <p className="text-sm text-gray-600">Approved</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-red-400">
+                <div className="flex items-center">
+                  <div className="text-3xl mr-4">❌</div>
+                  <div>
+                    <p className="text-2xl font-bold text-red-600">{rejectedListings.length}</p>
+                    <p className="text-sm text-gray-600">Rejected</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-purple-400">
+                <div className="flex items-center">
+                  <div className="text-3xl mr-4">💰</div>
+                  <div>
+                    <p className="text-2xl font-bold text-purple-600">{listings.filter(l => l.status === "sold").length}</p>
+                    <p className="text-sm text-gray-600">Sold</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-400">
+                <div className="flex items-center">
+                  <div className="text-3xl mr-4">📦</div>
+                  <div>
+                    <p className="text-2xl font-bold text-blue-600">{listings.length}</p>
+                    <p className="text-sm text-gray-600">Total Listings</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* 📋 Listings Table */}
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Listings ({filteredListings.length})
+                </h3>
+                <div className="text-sm text-gray-500">
+                  Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredListings.length)} of {filteredListings.length}
+                </div>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Listing Details
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Seller
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Items & Value
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Shipping
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {currentItems.map((listing) => (
+                      <tr key={listing.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900 max-w-xs truncate">
+                              {listing.title}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              ID: {listing.id}
+                            </div>
+                          </div>
+                        </td>
+                        
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900">
+                            {listing.vendorName}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {listing.vendorId}
+                          </div>
+                        </td>
+                        
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900">
+                            📦 {listing.totalItems} items
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            💰 ${listing.totalValue.toFixed(2)}
+                          </div>
+                        </td>
+                        
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900">
+                            🚚 Shipping Info
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {listing.shippingInfo ? "Provided" : "Not provided"}
+                          </div>
+                        </td>
+                        
+                        <td className="px-6 py-4">
+                          {getStatusBadge(listing.status)}
+                        </td>
+                        
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {listing.submittedDate}
+                        </td>
+                        
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() => setSelectedListing(listing)}
+                            className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-blue-600 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                          >
+                            👁️ Review
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Empty state */}
+              {filteredListings.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">📭</div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No listings found</h3>
+                  <p className="text-gray-500">
+                    {searchTerm || filterStatus !== "all" 
+                      ? "Try adjusting your search or filter criteria."
+                      : "No listings have been submitted yet."
+                    }
+                  </p>
+                </div>
+              )}
+              
+              {/* Pagination */}
+              {filteredListings.length > itemsPerPage && (
+                <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                  <div className="flex-1 flex justify-between sm:hidden">
                     <button
                       onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                       disabled={currentPage === 1}
-                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                      className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
                     >
-                      ←
+                      Previous
                     </button>
-                    {pageNumbers.map(number => (
-                      <button
-                        key={number}
-                        onClick={() => setCurrentPage(number)}
-                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                          currentPage === number
-                            ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                        }`}
-                      >
-                        {number}
-                      </button>
-                    ))}
                     <button
                       onClick={() => setCurrentPage(Math.min(pageNumbers.length, currentPage + 1))}
                       disabled={currentPage === pageNumbers.length}
-                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                      className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
                     >
-                      →
+                      Next
                     </button>
-                  </nav>
+                  </div>
+                  <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm text-gray-700">
+                        Showing <span className="font-medium">{indexOfFirstItem + 1}</span> to{' '}
+                        <span className="font-medium">
+                          {Math.min(indexOfLastItem, filteredListings.length)}
+                        </span>{' '}
+                        of <span className="font-medium">{filteredListings.length}</span> results
+                      </p>
+                    </div>
+                    <div>
+                      <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                        <button
+                          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                          disabled={currentPage === 1}
+                          className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                        >
+                          ←
+                        </button>
+                        {pageNumbers.map(number => (
+                          <button
+                            key={number}
+                            onClick={() => setCurrentPage(number)}
+                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                              currentPage === number
+                                ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                            }`}
+                          >
+                            {number}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => setCurrentPage(Math.min(pageNumbers.length, currentPage + 1))}
+                          disabled={currentPage === pageNumbers.length}
+                          className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                        >
+                          →
+                        </button>
+                      </nav>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Quick Actions Bar for Orders */}
+            <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <h3 className="text-lg font-medium text-gray-900">Order Management</h3>
+                  <Link
+                    href="/admin/messages"
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    💬 Manage Messages
+                  </Link>
+                </div>
+                <div className="flex items-center space-x-2 text-sm text-gray-500">
+                  <span>Real-time updates enabled</span>
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 </div>
               </div>
             </div>
-          )}
-        </div>
+            
+            {/* 🔍 Search and Filter Controls for Orders */}
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Search Orders</label>
+                  <input
+                    type="text"
+                    placeholder="Search by order number, ID, customer..."
+                    value={orderSearchTerm}
+                    onChange={(e) => setOrderSearchTerm(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
+                  <select
+                    value={orderFilterStatus}
+                    onChange={(e) => {
+                      setOrderFilterStatus(e.target.value);
+                      setOrderCurrentPage(1);
+                    }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="all">All Status ({orders.length})</option>
+                    <option value="pending">⏳ Pending ({pendingOrders.length})</option>
+                    <option value="confirmed">✅ Confirmed ({confirmedOrders.length})</option>
+                    <option value="processing">🔄 Processing ({processingOrders.length})</option>
+                    <option value="shipped">🚚 Shipped ({shippedOrders.length})</option>
+                    <option value="delivered">✅ Delivered ({deliveredOrders.length})</option>
+                    <option value="cancelled">❌ Cancelled ({cancelledOrders.length})</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            {/* 📈 Order Statistics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-6 mb-8">
+              <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-yellow-400">
+                <div className="flex items-center">
+                  <div className="text-3xl mr-4">⏳</div>
+                  <div>
+                    <p className="text-2xl font-bold text-yellow-600">{pendingOrders.length}</p>
+                    <p className="text-sm text-gray-600">Pending</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-400">
+                <div className="flex items-center">
+                  <div className="text-3xl mr-4">✅</div>
+                  <div>
+                    <p className="text-2xl font-bold text-blue-600">{confirmedOrders.length}</p>
+                    <p className="text-sm text-gray-600">Confirmed</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-purple-400">
+                <div className="flex items-center">
+                  <div className="text-3xl mr-4">🔄</div>
+                  <div>
+                    <p className="text-2xl font-bold text-purple-600">{processingOrders.length}</p>
+                    <p className="text-sm text-gray-600">Processing</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-indigo-400">
+                <div className="flex items-center">
+                  <div className="text-3xl mr-4">🚚</div>
+                  <div>
+                    <p className="text-2xl font-bold text-indigo-600">{shippedOrders.length}</p>
+                    <p className="text-sm text-gray-600">Shipped</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-400">
+                <div className="flex items-center">
+                  <div className="text-3xl mr-4">✅</div>
+                  <div>
+                    <p className="text-2xl font-bold text-green-600">{deliveredOrders.length}</p>
+                    <p className="text-sm text-gray-600">Delivered</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-red-400">
+                <div className="flex items-center">
+                  <div className="text-3xl mr-4">❌</div>
+                  <div>
+                    <p className="text-2xl font-bold text-red-600">{cancelledOrders.length}</p>
+                    <p className="text-sm text-gray-600">Cancelled</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* 📋 Orders Table */}
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Orders ({filteredOrders.length})
+                </h3>
+                <div className="text-sm text-gray-500">
+                  Showing {indexOfFirstOrder + 1}-{Math.min(indexOfLastOrder, filteredOrders.length)} of {filteredOrders.length}
+                </div>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Order Details
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Customer
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Items & Total
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {currentOrders.map((order) => (
+                      <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {order.orderNumber}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              ID: {order.id}
+                            </div>
+                          </div>
+                        </td>
+                        
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900">
+                            {order.customerInfo.fullName || "Guest User"}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {order.customerInfo.email}
+                          </div>
+                        </td>
+                        
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900">
+                            📦 {order.items.length} items
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            💰 ${order.totalAmount.toFixed(2)}
+                          </div>
+                        </td>
+                        
+                        <td className="px-6 py-4">
+                          {getOrderStatusBadge(order.status)}
+                        </td>
+                        
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {order.orderDate}
+                        </td>
+                        
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() => setSelectedOrder(order)}
+                            className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-blue-600 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                          >
+                            👁️ View Details
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Empty state */}
+              {filteredOrders.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">📭</div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No orders found</h3>
+                  <p className="text-gray-500">
+                    {orderSearchTerm || orderFilterStatus !== "all" 
+                      ? "Try adjusting your search or filter criteria."
+                      : "No orders have been placed yet."
+                    }
+                  </p>
+                </div>
+              )}
+              
+              {/* Pagination */}
+              {filteredOrders.length > itemsPerPage && (
+                <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                  <div className="flex-1 flex justify-between sm:hidden">
+                    <button
+                      onClick={() => setOrderCurrentPage(Math.max(1, orderCurrentPage - 1))}
+                      disabled={orderCurrentPage === 1}
+                      className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => setOrderCurrentPage(Math.min(orderPageNumbers.length, orderCurrentPage + 1))}
+                      disabled={orderCurrentPage === orderPageNumbers.length}
+                      className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      Next
+                    </button>
+                  </div>
+                  <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm text-gray-700">
+                        Showing <span className="font-medium">{indexOfFirstOrder + 1}</span> to{' '}
+                        <span className="font-medium">
+                          {Math.min(indexOfLastOrder, filteredOrders.length)}
+                        </span>{' '}
+                        of <span className="font-medium">{filteredOrders.length}</span> results
+                      </p>
+                    </div>
+                    <div>
+                      <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                        <button
+                          onClick={() => setOrderCurrentPage(Math.max(1, orderCurrentPage - 1))}
+                          disabled={orderCurrentPage === 1}
+                          className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                        >
+                          ←
+                        </button>
+                        {orderPageNumbers.map(number => (
+                          <button
+                            key={number}
+                            onClick={() => setOrderCurrentPage(number)}
+                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                              orderCurrentPage === number
+                                ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                            }`}
+                          >
+                            {number}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => setOrderCurrentPage(Math.min(orderPageNumbers.length, orderCurrentPage + 1))}
+                          disabled={orderCurrentPage === orderPageNumbers.length}
+                          className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                        >
+                          →
+                        </button>
+                      </nav>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        )}
         
-        {/* 🔍 Review Modal */}
+        {/* 🔍 Review Modal for Listings */}
         {selectedListing && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
             <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
@@ -752,7 +1693,7 @@ export default function AdminListingsPage() {
                     </div>
                   </div>
                   
-                  {/* Shipping Information Section - Added */}
+                  {/* Shipping Information Section */}
                   <div>
                     <h4 className="text-sm font-medium text-gray-900 mb-2">Shipping Information</h4>
                     <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
@@ -955,6 +1896,15 @@ export default function AdminListingsPage() {
               </div>
             </div>
           </div>
+        )}
+        
+        {/* Order Detail Modal */}
+        {selectedOrder && (
+          <OrderDetailModal 
+            order={selectedOrder} 
+            onClose={() => setSelectedOrder(null)} 
+            onUpdateStatus={updateOrderStatus} 
+          />
         )}
         
         {/* 📊 Real-time connection indicator */}

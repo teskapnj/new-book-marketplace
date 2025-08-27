@@ -5,11 +5,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 import { collection, query, where, onSnapshot, orderBy, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-
 // SVG Icons
 function SearchIcon({ size = 24, className = "" }) {
   return (
@@ -107,9 +104,17 @@ function AdminIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
-
+// Mix bundle icon component with multiple media types
+const MixBundleIcon = ({ size = 48 }) => (
+  <div className="relative inline-flex items-center justify-center" style={{ width: size * 1.2, height: size * 1.2 }}>
+    <span style={{ fontSize: size * 0.8, zIndex: 4 }} className="absolute top-0 left-0 transform -rotate-12">📚</span>
+    <span style={{ fontSize: size * 0.8, zIndex: 2 }} className="absolute top-0 right-0 transform rotate-12">💿</span>
+    <span style={{ fontSize: size * 0.8, zIndex: 3 }} className="absolute bottom-0 left-0 transform rotate-12">📀</span>
+    <span style={{ fontSize: size * 0.8, zIndex: 1 }} className="absolute bottom-0 right-0 transform -rotate-12">🎮</span>
+  </div>
+);
 export default function HomePage() {
-  const { user, loading, error } = useAuth();
+  const { user, loading, error, logout } = useAuth();
   const { getTotalItems } = useCart();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -119,7 +124,7 @@ export default function HomePage() {
   const [indexError, setIndexError] = useState<string | null>(null);
   const [fallbackMode, setFallbackMode] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
-
+  
   // Kullanıcı rolünü kontrol et
   useEffect(() => {
     const checkUserRole = async () => {
@@ -140,14 +145,17 @@ export default function HomePage() {
           console.error("Error checking user role:", error);
           setUserRole("user");
         }
+      } else {
+        setUserRole(null);
       }
     };
     checkUserRole();
   }, [user]);
-
+  
   // Fetch listings from Firebase - GÜNCELLENMİŞ
   useEffect(() => {
-    setProductsLoading(true);
+    let unsubscribe: (() => void) | null = null;
+    
     const fetchListings = async () => {
       try {
         const q = query(
@@ -155,7 +163,8 @@ export default function HomePage() {
           where("status", "==", "approved"),
           orderBy("createdAt", "desc")
         );
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        
+        unsubscribe = onSnapshot(q, (querySnapshot) => {
           const listingsData: any[] = [];
           querySnapshot.forEach((doc) => {
             const data = doc.data();
@@ -236,7 +245,6 @@ export default function HomePage() {
             setProductsLoading(false);
           }
         });
-        return unsubscribe;
       } catch (error) {
         console.error("Query setup error:", error);
         setProductsLoading(false);
@@ -324,35 +332,36 @@ export default function HomePage() {
       }
     };
     
-    fetchListings();
-  }, []);
-
+    // Sadece kullanıcı giriş yapmışsa veya herkese açık veri ise listener kur
+    if (!loading) {
+      fetchListings();
+    }
+    
+    // Cleanup function - bileşen unmount olduğunda listener'ı temizle
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [loading]); // Sadece loading değiştiğinde yeniden çalış
+  
   // Fixed category links to work with listings page filter
   const categories = [
     { name: "Books", icon: "📚", category: "book" },
     { name: "CDs", icon: "💿", category: "cd" },
     { name: "DVDs/Blu-rays", icon: "📀", category: "dvd" },
     { name: "Games", icon: "🎮", category: "game" },
-    { name: "Mix Bundles", icon: "🎁", category: "mix" },
+    { name: "Mix Bundles", icon: <MixBundleIcon size={48} />, category: "mix" },
   ];
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      console.log("User logged out successfully");
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-  };
-
+  
   const handleCategoryClick = (category: string) => {
     console.log(`Navigating to category: ${category}`);
     router.push(`/listings?category=${category}`);
   };
-
+  
   // Sadece giriş yapmamış kullanıcılar için butonları göster
   const shouldShowActionButtons = !user;
-
+  
   // Custom ProductCard component for homepage - GÜNCELLENMİŞ
   const HomeProductCard = ({ product }: { product: any }) => {
     const { addToCart } = useCart();
@@ -361,7 +370,7 @@ export default function HomePage() {
     const [isAdding, setIsAdding] = useState(false);
     
     const getCategoryIcon = (category: string) => {
-      const icons = { book: "📚", cd: "💿", dvd: "📀", game: "🎮", mix: "📦" };
+      const icons = { book: "📚", cd: "💿", dvd: "📀", game: "🎮", mix: <MixBundleIcon size={20} /> };
       return icons[category as keyof typeof icons] || "📦";
     };
     
@@ -395,7 +404,9 @@ export default function HomePage() {
           sellerId: product.vendorId,
           title: product.title,
           price: product.price,
-          image: product.imageUrl || "" // GÜNCELLENMİŞ: imageUrl kullan
+          image: product.imageUrl || "", // GÜNCELLENMİŞ: imageUrl kullan
+          shippingInfo: undefined,
+          weight: 0
         });
       } catch (error) {
         console.error("Sepete eklenirken hata:", error);
@@ -514,7 +525,7 @@ export default function HomePage() {
       </div>
     );
   };
-
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Index Error Message */}
@@ -552,7 +563,7 @@ export default function HomePage() {
           </div>
         </div>
       )}
-
+      
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -581,7 +592,7 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
-
+          
           {/* Desktop Header */}
           <div className="hidden md:flex items-center justify-between py-4">
             <div className="flex items-center space-x-8">
@@ -615,7 +626,7 @@ export default function HomePage() {
                         Admin Dashboard
                       </Link>
                       <button
-                        onClick={handleLogout}
+                        onClick={logout}
                         className="font-medium text-gray-700 hover:text-gray-900 transition-colors"
                       >
                         Logout
@@ -627,7 +638,7 @@ export default function HomePage() {
                         Dashboard
                       </Link>
                       <button
-                        onClick={handleLogout}
+                        onClick={logout}
                         className="font-medium text-gray-700 hover:text-gray-900 transition-colors"
                       >
                         Logout
@@ -660,7 +671,7 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-
+        
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-t border-gray-200 shadow-lg">
@@ -678,7 +689,7 @@ export default function HomePage() {
                         Admin Dashboard
                       </Link>
                       <button
-                        onClick={handleLogout}
+                        onClick={logout}
                         className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors text-left w-full"
                       >
                         Logout
@@ -690,7 +701,7 @@ export default function HomePage() {
                         Dashboard
                       </Link>
                       <button
-                        onClick={handleLogout}
+                        onClick={logout}
                         className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors text-left w-full"
                       >
                         Logout
@@ -712,7 +723,7 @@ export default function HomePage() {
           </div>
         )}
       </header>
-
+      
       {/* Hero Section */}
       <section className="relative py-16 sm:py-24 lg:py-32 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700"></div>
@@ -731,7 +742,7 @@ export default function HomePage() {
             </h1>
             <p className="text-xl sm:text-2xl text-blue-100 mb-8 leading-relaxed">
             Discover amazing deals on gently used books, CDs, DVDs, games, and curated mix bundles. Start earning from your collection today!
-             Don’t forget to check out our condition guide before listing.!
+             Don't forget to check out our condition guide before listing.!
             </p>
             <div className="grid grid-cols-3 gap-8 mt-16 max-w-2xl mx-auto">
               <div className="text-center">
@@ -750,7 +761,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
+      
       {/* Categories Section */}
       <section className="py-16 sm:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -771,7 +782,7 @@ export default function HomePage() {
               >
                 <div className="relative">
                   <div className="text-5xl sm:text-6xl mb-4 group-hover:scale-110 transition-transform duration-300">
-                    {category.icon}
+                    {typeof category.icon === 'string' ? category.icon : category.icon}
                   </div>
                   <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </div>
@@ -784,7 +795,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
+      
       {/* Featured Products */}
       <section className="py-16 sm:py-20 bg-gradient-to-br from-slate-50 to-blue-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -843,7 +854,7 @@ export default function HomePage() {
           )}
         </div>
       </section>
-
+      
       {/* How It Works */}
       <section className="py-16 sm:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -903,7 +914,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
+      
       {/* CTA Section */}
       <section className="py-16 sm:py-20 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 relative overflow-hidden">
         <div className="absolute inset-0 bg-black/20"></div>
@@ -933,7 +944,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
+      
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

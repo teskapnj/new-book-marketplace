@@ -1,44 +1,124 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "@/lib/firebase";
-import { doc, getDoc, collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, onSnapshot, DocumentData } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { User as FirebaseUser } from "firebase/auth";
+
+// TypeScript interfaces
+interface AppUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+}
+
+interface UserData {
+  uid: string;
+  email: string | null;
+  name: string;
+  role: string;
+  createdAt?: any;
+  lastLogin?: any;
+}
+
+interface Listing {
+  id: string;
+  title: string;
+  price: number;
+  imageUrl: string | null;
+  status: string;
+  views: number;
+  createdAt: Date;
+  totalItems: number;
+}
+
+interface OrderItem {
+  id: string;
+  productId: string;
+  sellerId: string;
+  title: string;
+  price: number;
+  image?: string;
+  shippingCost: number;
+}
+
+interface Order {
+  id: string;
+  userId: string;
+  orderNumber: string;
+  totalAmount: number;
+  subtotal: number;
+  shippingTotal: number;
+  marketplaceFee: number;
+  taxTotal: number;
+  status: string;
+  shippingAddress: {
+    street1: string;
+    city: string;
+    state: string;
+    zip: string;
+    country: string;
+  };
+  customerInfo: {
+    email: string;
+    fullName?: string;
+    phone?: string;
+  };
+  items: OrderItem[];
+  vendorBreakdown: any[];
+  sellerIds: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export default function DashboardPage() {
-  const [user, loading] = useAuthState(auth);
+  const [authUser, authLoading, authError] = useAuthState(auth);
   const router = useRouter();
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("");
   const [roleLoading, setRoleLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
-  const [userListings, setUserListings] = useState<any[]>([]);
+  const [userListings, setUserListings] = useState<Listing[]>([]);
   const [listingsLoading, setListingsLoading] = useState(true);
+  const [purchases, setPurchases] = useState<Order[]>([]);
+  const [sales, setSales] = useState<Order[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
+  const [debugInfo, setDebugInfo] = useState<string>("");
   
-  // 🔍 Check user role and redirect admin to admin panel
+  // Convert Firebase user to our AppUser format with useMemo to prevent recreation
+  const user = useMemo<AppUser | null>(() => {
+    return authUser ? {
+      uid: authUser.uid,
+      email: authUser.email,
+      displayName: authUser.displayName
+    } : null;
+  }, [authUser]);
+  
+  // Check user role and redirect admin to admin panel
   useEffect(() => {
     const checkUserRoleAndRedirect = async () => {
-      console.log("🔍 Dashboard: Checking user role...");
+      console.log("Dashboard: Checking user role...");
       
-      if (!loading && !user) {
-        console.log("❌ No user found, redirecting to login");
+      if (!authLoading && !user) {
+        console.log("No user found, redirecting to login");
         router.push("/login");
         return;
       }
       
       if (user) {
         try {
-          console.log("👤 Checking role for user:", user.uid);
+          console.log("Checking role for user:", user.uid);
           const userDoc = await getDoc(doc(db, "users", user.uid));
           
           if (userDoc.exists()) {
-            const userData = userDoc.data();
+            const userData = userDoc.data() as UserData;
             const role = userData.role || "seller";
             const name = userData.name || user.displayName || "User";
             
-            console.log("🔍 User role detected:", role);
+            console.log("User role detected:", role);
             setUserRole(role);
             setUserName(name);
             
@@ -48,9 +128,9 @@ export default function DashboardPage() {
             localStorage.setItem("userEmail", user.email || "");
             localStorage.setItem("userId", user.uid);
             
-            // 🎯 Redirect admin to admin panel
+            // Redirect admin to admin panel
             if (role === "admin") {
-              console.log("🔧 Admin detected, redirecting to admin panel...");
+              console.log("Admin detected, redirecting to admin panel...");
               setRedirecting(true);
               
               // Show message and redirect
@@ -60,10 +140,10 @@ export default function DashboardPage() {
               return;
             }
             
-            console.log("✅ Regular user, staying on dashboard");
+            console.log("Regular user, staying on dashboard");
           } else {
             // User document doesn't exist yet - create default user data
-            console.warn("⚠️ User document not found, creating default profile...");
+            console.warn("User document not found, creating default profile...");
             
             // Set default values
             const defaultRole = "seller";
@@ -89,13 +169,13 @@ export default function DashboardPage() {
                 createdAt: new Date(),
                 lastLogin: new Date()
               });
-              console.log("✅ User profile created successfully");
+              console.log("User profile created successfully");
             } catch (error) {
               console.error("Error creating user profile:", error);
             }
           }
         } catch (error) {
-          console.error("❌ Error checking user role:", error);
+          console.error("Error checking user role:", error);
           setUserRole("seller");
           setUserName(user.displayName || "User");
         }
@@ -105,9 +185,9 @@ export default function DashboardPage() {
     };
     
     checkUserRoleAndRedirect();
-  }, [user, loading, router]);
+  }, [authLoading, user]); // Removed router from dependencies
   
-  // 📦 Fetch user listings
+  // Fetch user listings
   useEffect(() => {
     if (!user || userRole !== "seller") return;
     
@@ -115,17 +195,17 @@ export default function DashboardPage() {
       try {
         setListingsLoading(true);
         
+        // orderBy olmadan sorgu yap
         const q = query(
           collection(db, "listings"),
-          where("vendorId", "==", user.uid),
-          orderBy("createdAt", "desc")
+          where("vendorId", "==", user.uid)
         );
         
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
-          const listingsData: any[] = [];
+          const listingsData: Listing[] = [];
           
           querySnapshot.forEach((doc) => {
-            const data = doc.data();
+            const data = doc.data() as DocumentData;
             
             // Get the first image from bundle items
             let firstItemImage = null;
@@ -161,7 +241,10 @@ export default function DashboardPage() {
             });
           });
           
-          console.log(`✅ Loaded ${listingsData.length} user listings`);
+          // İstemci tarafında sırala (en yeni ilk)
+          listingsData.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+          
+          console.log(`Loaded ${listingsData.length} user listings`);
           setUserListings(listingsData);
           setListingsLoading(false);
         }, (error) => {
@@ -177,16 +260,217 @@ export default function DashboardPage() {
     };
     
     fetchUserListings();
-  }, [user, userRole]);
+  }, [user, userRole]); // Fixed dependency array
+  
+  // Fetch user orders (both purchases and sales)
+  useEffect(() => {
+    if (!user) return;
+    
+    const fetchOrders = async () => {
+      try {
+        setOrdersLoading(true);
+        setDebugInfo(`Fetching orders for user ID: ${user.uid}`);
+        
+        // Fetch purchases (where user is buyer) - DOĞRU SORGU
+        const purchasesQuery = query(
+          collection(db, "orders"),
+          where("userId", "==", user.uid)
+        );
+        
+        const unsubscribePurchases = onSnapshot(purchasesQuery, (querySnapshot) => {
+          const purchasesData: Order[] = [];
+          
+          querySnapshot.forEach((doc) => {
+            const data = doc.data() as DocumentData;
+            
+            // Handle different date formats
+            let createdAtDate = new Date();
+            let updatedAtDate = new Date();
+            
+            if (data.createdAt) {
+              if (typeof data.createdAt === 'string') {
+                createdAtDate = new Date(data.createdAt);
+              } else if (data.createdAt.toDate && typeof data.createdAt.toDate === 'function') {
+                createdAtDate = data.createdAt.toDate();
+              } else if (data.createdAt.seconds) {
+                createdAtDate = new Date(data.createdAt.seconds * 1000);
+              }
+            }
+            
+            if (data.updatedAt) {
+              if (typeof data.updatedAt === 'string') {
+                updatedAtDate = new Date(data.updatedAt);
+              } else if (data.updatedAt.toDate && typeof data.updatedAt.toDate === 'function') {
+                updatedAtDate = data.updatedAt.toDate();
+              } else if (data.updatedAt.seconds) {
+                updatedAtDate = new Date(data.updatedAt.seconds * 1000);
+              }
+            }
+            
+            purchasesData.push({
+              id: doc.id,
+              userId: data.userId || '',
+              orderNumber: data.orderNumber || '',
+              totalAmount: data.totalAmount || 0,
+              subtotal: data.subtotal || 0,
+              shippingTotal: data.shippingTotal || 0,
+              marketplaceFee: data.marketplaceFee || 0,
+              taxTotal: data.taxTotal || 0,
+              status: data.status || 'pending',
+              shippingAddress: data.shippingAddress || {
+                street1: '',
+                city: '',
+                state: '',
+                zip: '',
+                country: ''
+              },
+              customerInfo: data.customerInfo || {
+                email: '',
+                fullName: '',
+                phone: ''
+              },
+              items: data.items || [],
+              vendorBreakdown: data.vendorBreakdown || [],
+              sellerIds: data.sellerIds || [],
+              createdAt: createdAtDate,
+              updatedAt: updatedAtDate
+            });
+          });
+          
+          // İstemci tarafında sırala (en yeni ilk)
+          purchasesData.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+          
+          console.log(`Loaded ${purchasesData.length} purchases for user ${user.uid}`);
+          setDebugInfo(prev => prev + `\nFound ${purchasesData.length} purchases`);
+          setPurchases(purchasesData);
+        }, (error) => {
+          console.error("Error fetching purchases:", error);
+          setDebugInfo(prev => prev + `\nError fetching purchases: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          setOrdersLoading(false);
+        });
+        
+        // Fetch sales (where user is seller) - BU KISIM DOĞRU
+        const salesQuery = query(
+          collection(db, "orders"),
+          where("sellerIds", "array-contains", user.uid)
+        );
+        
+        const unsubscribeSales = onSnapshot(salesQuery, (querySnapshot) => {
+          const salesData: Order[] = [];
+          
+          querySnapshot.forEach((doc) => {
+            const data = doc.data() as DocumentData;
+            
+            // Handle different date formats
+            let createdAtDate = new Date();
+            let updatedAtDate = new Date();
+            
+            if (data.createdAt) {
+              if (typeof data.createdAt === 'string') {
+                createdAtDate = new Date(data.createdAt);
+              } else if (data.createdAt.toDate && typeof data.createdAt.toDate === 'function') {
+                createdAtDate = data.createdAt.toDate();
+              } else if (data.createdAt.seconds) {
+                createdAtDate = new Date(data.createdAt.seconds * 1000);
+              }
+            }
+            
+            if (data.updatedAt) {
+              if (typeof data.updatedAt === 'string') {
+                updatedAtDate = new Date(data.updatedAt);
+              } else if (data.updatedAt.toDate && typeof data.updatedAt.toDate === 'function') {
+                updatedAtDate = data.updatedAt.toDate();
+              } else if (data.updatedAt.seconds) {
+                updatedAtDate = new Date(data.updatedAt.seconds * 1000);
+              }
+            }
+            
+            salesData.push({
+              id: doc.id,
+              userId: data.userId || '',
+              orderNumber: data.orderNumber || '',
+              totalAmount: data.totalAmount || 0,
+              subtotal: data.subtotal || 0,
+              shippingTotal: data.shippingTotal || 0,
+              marketplaceFee: data.marketplaceFee || 0,
+              taxTotal: data.taxTotal || 0,
+              status: data.status || 'pending',
+              shippingAddress: data.shippingAddress || {
+                street1: '',
+                city: '',
+                state: '',
+                zip: '',
+                country: ''
+              },
+              customerInfo: data.customerInfo || {
+                email: '',
+                fullName: '',
+                phone: ''
+              },
+              items: data.items || [],
+              vendorBreakdown: data.vendorBreakdown || [],
+              sellerIds: data.sellerIds || [],
+              createdAt: createdAtDate,
+              updatedAt: updatedAtDate
+            });
+          });
+          
+          // İstemci tarafında sırala (en yeni ilk)
+          salesData.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+          
+          console.log(`Loaded ${salesData.length} sales for user ${user.uid}`);
+          setDebugInfo(prev => prev + `\nFound ${salesData.length} sales`);
+          setSales(salesData);
+          setOrdersLoading(false);
+        }, (error) => {
+          console.error("Error fetching sales:", error);
+          setDebugInfo(prev => prev + `\nError fetching sales: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          setOrdersLoading(false);
+        });
+        
+        return () => {
+          unsubscribePurchases();
+          unsubscribeSales();
+        };
+      } catch (error) {
+        console.error("Error setting up orders query:", error);
+        setDebugInfo(prev => prev + `\nError setting up query: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        setOrdersLoading(false);
+      }
+    };
+    
+    fetchOrders();
+  }, [user]); // Fixed dependency array - only user
   
   // Loading state
-  if (loading || roleLoading) {
+  if (authLoading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading dashboard...</p>
           <p className="text-sm text-gray-500 mt-2">Checking user permissions...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Error state
+  if (authError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center max-w-md mx-auto p-8">
+          <div className="text-6xl mb-6">❌</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Authentication Error</h1>
+          <p className="text-gray-600 mb-6">
+            {authError.message || "An error occurred during authentication"}
+          </p>
+          <Link 
+            href="/login"
+            className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Try Again
+          </Link>
         </div>
       </div>
     );
@@ -214,7 +498,7 @@ export default function DashboardPage() {
               href="/admin/listings"
               className="block w-full bg-red-600 text-white py-3 px-6 rounded-lg hover:bg-red-700 transition-colors font-medium"
             >
-              🚀 Go to Admin Panel Now
+              Go to Admin Panel Now
             </Link>
             <Link 
               href="/listings"
@@ -249,13 +533,20 @@ export default function DashboardPage() {
   
   // Helper function to get category icon
   const getCategoryIcon = (category: string) => {
-    const icons = { book: "📚", cd: "💿", dvd: "📀", game: "🎮", mix: "📦" };
-    return icons[category as keyof typeof icons] || "📦";
+    const icons: Record<string, string> = { 
+      book: "📚", 
+      cd: "💿", 
+      dvd: "📀", 
+      game: "🎮", 
+      mix: "📦" 
+    };
+    return icons[category] || "📦";
   };
   
   // Helper function to validate image URL
-  const isValidImageUrl = (url: string) => {
-    return url && (
+  const isValidImageUrl = (url: string | undefined) => {
+    if (!url) return false;
+    return (
       url.startsWith('https://firebasestorage.googleapis.com') ||
       url.startsWith('https://storage.googleapis.com') ||
       url.includes('amazon.com') ||
@@ -263,6 +554,32 @@ export default function DashboardPage() {
       url.includes('m.media-amazon.com')
     );
   };
+  
+  // Helper function to safely format date
+  const formatDate = (date: Date) => {
+    if (!(date instanceof Date) || isNaN(date.getTime())) {
+      return "Invalid date";
+    }
+    return date.toLocaleDateString();
+  };
+  
+  // Helper function to get status badge class
+  const getStatusBadgeClass = (status: string) => {
+    switch (status) {
+      case 'delivered': return 'bg-green-100 text-green-800';
+      case 'shipped': return 'bg-purple-100 text-purple-800';
+      case 'processing': return 'bg-blue-100 text-blue-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+  
+  // Calculate statistics
+  const totalSalesAmount = sales.reduce((sum, sale) => sum + (sale.totalAmount || 0), 0);
+  const pendingOrdersCount = purchases.filter(order => order.status === 'pending').length;
+  const completedOrdersCount = purchases.filter(order => order.status === 'delivered').length;
+  const pendingSalesCount = sales.filter(order => order.status === 'pending').length;
+  const completedSalesCount = sales.filter(order => order.status === 'delivered').length;
   
   // Regular seller dashboard
   return (
@@ -274,7 +591,7 @@ export default function DashboardPage() {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                Welcome back, {userName}! 👋
+                Welcome back, {userName}!
               </h1>
               <p className="mt-2 text-gray-600">
                 Manage your listings and track your sales performance
@@ -293,13 +610,30 @@ export default function DashboardPage() {
           </div>
         </div>
         
+        {/* Debug Info - Only show in development */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg shadow-sm">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-blue-700 font-medium">Debug Information:</p>
+                <pre className="text-xs text-blue-600 mt-1 whitespace-pre-wrap">{debugInfo}</pre>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           
           {/* Create Listing Card */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow">
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full">
             <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
                 <span className="text-2xl">📝</span>
               </div>
               <div>
@@ -307,18 +641,20 @@ export default function DashboardPage() {
                 <p className="text-sm text-gray-600">Add items to your marketplace</p>
               </div>
             </div>
-            <Link 
-              href="/create-listing"
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium text-center block"
-            >
-              Create Listing
-            </Link>
+            <div className="mt-auto pt-4">
+              <Link 
+                href="/create-listing"
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium text-center block"
+              >
+                Create Listing
+              </Link>
+            </div>
           </div>
           
           {/* View Listings Card */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow">
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full">
             <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
                 <span className="text-2xl">📦</span>
               </div>
               <div>
@@ -326,191 +662,245 @@ export default function DashboardPage() {
                 <p className="text-sm text-gray-600">Manage your active listings</p>
               </div>
             </div>
-            <Link 
-              href="/my-listings"
-              className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium text-center block"
-            >
-              View My Listings
-            </Link>
+            <div className="mt-auto pt-4">
+              <Link 
+                href="/my-listings"
+                className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium text-center block"
+              >
+                View My Listings
+              </Link>
+            </div>
           </div>
           
-          {/* Browse Marketplace Card */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow">
+          {/* My Orders Card */}
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full">
             <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
                 <span className="text-2xl">🛒</span>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Browse Marketplace</h3>
-                <p className="text-sm text-gray-600">Discover items from other sellers</p>
+                <h3 className="text-lg font-semibold text-gray-900">My Orders</h3>
+                <p className="text-sm text-gray-600">Track your purchases</p>
               </div>
             </div>
-            <Link 
-              href="/listings"
-              className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors font-medium text-center block"
-            >
-              Browse Items
-            </Link>
-          </div>
-        </div>
-        
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <div className="flex items-center">
-              <div className="text-3xl mr-4">📊</div>
-              <div>
-                <p className="text-2xl font-bold text-blue-600">{userListings.length}</p>
-                <p className="text-sm text-gray-600">Active Listings</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <div className="flex items-center">
-              <div className="text-3xl mr-4">💰</div>
-              <div>
-                <p className="text-2xl font-bold text-green-600">
-                  ${userListings.reduce((sum, listing) => sum + (listing.price || 0), 0).toFixed(2)}
-                </p>
-                <p className="text-sm text-gray-600">Total Value</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <div className="flex items-center">
-              <div className="text-3xl mr-4">👁️</div>
-              <div>
-                <p className="text-2xl font-bold text-purple-600">
-                  {userListings.reduce((sum, listing) => sum + (listing.views || 0), 0)}
-                </p>
-                <p className="text-sm text-gray-600">Total Views</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <div className="flex items-center">
-              <div className="text-3xl mr-4">⭐</div>
-              <div>
-                <p className="text-2xl font-bold text-yellow-600">5.0</p>
-                <p className="text-sm text-gray-600">Seller Rating</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Recent Listings */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">📦 Your Recent Listings</h3>
-            <Link 
-              href="/my-listings"
-              className="text-blue-600 hover:text-blue-800 font-medium text-sm"
-            >
-              View All Listings →
-            </Link>
-          </div>
-          
-          {listingsLoading ? (
-            <div className="flex justify-center items-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
-              <span className="text-gray-600">Loading your listings...</span>
-            </div>
-          ) : userListings.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {userListings.slice(0, 6).map((listing) => (
-                <div key={listing.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-                  <div className="relative h-40 bg-gray-100">
-                    {listing.imageUrl && isValidImageUrl(listing.imageUrl) ? (
-                      <Image
-                        src={listing.imageUrl}
-                        alt={listing.title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        unoptimized={true} // Important for Amazon URLs
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <span className="text-4xl">{getCategoryIcon("mix")}</span>
-                      </div>
-                    )}
-                    
-                    {/* Status Badge */}
-                    <div className="absolute top-2 right-2">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        listing.status === "approved" 
-                          ? "bg-green-100 text-green-800" 
-                          : listing.status === "pending"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-red-100 text-red-800"
-                      }`}>
-                        {listing.status === "approved" ? "✅ Approved" : 
-                         listing.status === "pending" ? "⏳ Pending" : "❌ Rejected"}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="p-4">
-                    <h4 className="font-medium text-gray-900 mb-1 line-clamp-1">
-                      {listing.title}
-                    </h4>
-                    
-                    <div className="flex justify-between items-center mt-3">
-                      <span className="text-lg font-bold text-gray-900">
-                        ${listing.price.toFixed(2)}
-                      </span>
-                      <div className="text-xs text-gray-500">
-                        {listing.totalItems} items
-                      </div>
-                    </div>
-                    
-                    <div className="mt-3 flex space-x-2">
-                      <Link 
-                        href={`/products/${listing.id}`}
-                        className="text-xs text-blue-600 hover:text-blue-800"
-                      >
-                        View Details
-                      </Link>
-                      <Link 
-                        href={`/edit-listing/${listing.id}`}
-                        className="text-xs text-gray-600 hover:text-gray-800"
-                      >
-                        Edit
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <div className="text-6xl mb-4">📦</div>
-              <h4 className="text-lg font-medium text-gray-900 mb-2">No listings yet</h4>
-              <p className="text-gray-600 mb-4">
-                Create your first listing to start selling
-              </p>
+            <div className="mt-auto pt-4">
               <Link 
-                href="/create-listing"
-                className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                href="/dashboard/my-orders"
+                className="w-full bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors font-medium text-center block"
               >
-                Create Your First Listing
+                View Orders
               </Link>
             </div>
-          )}
+          </div>
+          
+          {/* My Sales Card */}
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full">
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
+                <span className="text-2xl">💰</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">My Sales</h3>
+                <p className="text-sm text-gray-600">Manage your sales</p>
+              </div>
+            </div>
+            <div className="mt-auto pt-4">
+              <Link 
+                href="/dashboard/my-sales"
+                className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors font-medium text-center block"
+              >
+                View Sales
+              </Link>
+            </div>
+          </div>
         </div>
         
-        {/* Recent Activity */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">📈 Recent Activity</h3>
-          <div className="text-center py-8">
-            <div className="text-6xl mb-4">📋</div>
-            <h4 className="text-lg font-medium text-gray-900 mb-2">No activity yet</h4>
-            <p className="text-gray-600 mb-4">
-              Start by creating your first listing to see activity here
-            </p>
+        {/* Statistics Cards - Extended */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-4 mb-8">
+          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+            <div className="flex flex-col items-center">
+              <div className="text-2xl mb-2">📊</div>
+              <p className="text-xl font-bold text-blue-600">{userListings.length}</p>
+              <p className="text-xs text-gray-600 text-center">Active Listings</p>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+            <div className="flex flex-col items-center">
+              <div className="text-2xl mb-2">💰</div>
+              <p className="text-xl font-bold text-green-600">
+                ${userListings.reduce((sum, listing) => sum + (listing.price || 0), 0).toFixed(2)}
+              </p>
+              <p className="text-xs text-gray-600 text-center">Total Value</p>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+            <div className="flex flex-col items-center">
+              <div className="text-2xl mb-2">👁️</div>
+              <p className="text-xl font-bold text-purple-600">
+                {userListings.reduce((sum, listing) => sum + (listing.views || 0), 0)}
+              </p>
+              <p className="text-xs text-gray-600 text-center">Total Views</p>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+            <div className="flex flex-col items-center">
+              <div className="text-2xl mb-2">⭐</div>
+              <p className="text-xl font-bold text-yellow-600">5.0</p>
+              <p className="text-xs text-gray-600 text-center">Seller Rating</p>
+            </div>
+          </div>
+          
+          {/* My Purchases Card */}
+          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+            <div className="flex flex-col items-center">
+              <div className="text-2xl mb-2">🛒</div>
+              <p className="text-xl font-bold text-orange-600">{purchases.length}</p>
+              <p className="text-xs text-gray-600 text-center">My Purchases</p>
+            </div>
+          </div>
+          
+          {/* My Sales Card */}
+          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+            <div className="flex flex-col items-center">
+              <div className="text-2xl mb-2">💰</div>
+              <p className="text-xl font-bold text-teal-600">{sales.length}</p>
+              <p className="text-xs text-gray-600 text-center">My Sales</p>
+            </div>
+          </div>
+          
+          {/* Sales Amount Card */}
+          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+            <div className="flex flex-col items-center">
+              <div className="text-2xl mb-2">💸</div>
+              <p className="text-xl font-bold text-indigo-600">${totalSalesAmount.toFixed(2)}</p>
+              <p className="text-xs text-gray-600 text-center">Sales Amount</p>
+            </div>
+          </div>
+          
+          {/* Messages Card */}
+          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+            <div className="flex flex-col items-center">
+              <div className="text-2xl mb-2">💬</div>
+              <p className="text-xl font-bold text-pink-600">0</p>
+              <p className="text-xs text-gray-600 text-center">Messages</p>
+            </div>
+          </div>
+        </div>
+        
+        {/* Orders and Sales Summary */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Recent Orders */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">🛒 Recent Orders</h3>
+              <Link 
+                href="/dashboard/my-orders"
+                className="text-orange-600 hover:text-orange-800 font-medium text-sm"
+              >
+                View All Orders →
+              </Link>
+            </div>
+            
+            {ordersLoading ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mr-3"></div>
+                <span className="text-gray-600">Loading your orders...</span>
+              </div>
+            ) : purchases.length > 0 ? (
+              <div className="space-y-4">
+                {purchases.slice(0, 3).map((order) => (
+                  <div key={order.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-medium text-gray-900">Order #{order.id ? order.id.slice(-8).toUpperCase() : 'UNKNOWN'}</h4>
+                        <p className="text-sm text-gray-600">
+                          {formatDate(order.createdAt)} • {order.items?.length || 0} items
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">User ID: {order.userId}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-gray-900">${(order.totalAmount || 0).toFixed(2)}</p>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(order.status || '')}`}>
+                          {order.status || 'Unknown'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-5xl mb-3">🛒</div>
+                <h4 className="text-lg font-medium text-gray-900 mb-2">No orders yet</h4>
+                <p className="text-gray-600 mb-4">
+                  You haven't made any purchases yet
+                </p>
+                <Link 
+                  href="/listings"
+                  className="inline-block bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors text-sm"
+                >
+                  Start Shopping
+                </Link>
+              </div>
+            )}
+          </div>
+          
+          {/* Recent Sales */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">💰 Recent Sales</h3>
+              <Link 
+                href="/dashboard/my-sales"
+                className="text-purple-600 hover:text-purple-800 font-medium text-sm"
+              >
+                View All Sales →
+              </Link>
+            </div>
+            
+            {ordersLoading ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mr-3"></div>
+                <span className="text-gray-600">Loading your sales...</span>
+              </div>
+            ) : sales.length > 0 ? (
+              <div className="space-y-4">
+                {sales.slice(0, 3).map((sale) => (
+                  <div key={sale.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-medium text-gray-900">Sale #{sale.id ? sale.id.slice(-8).toUpperCase() : 'UNKNOWN'}</h4>
+                        <p className="text-sm text-gray-600">
+                          {formatDate(sale.createdAt)} • {sale.items?.length || 0} items
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-gray-900">${(sale.totalAmount || 0).toFixed(2)}</p>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(sale.status || '')}`}>
+                          {sale.status || 'Unknown'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-5xl mb-3">💰</div>
+                <h4 className="text-lg font-medium text-gray-900 mb-2">No sales yet</h4>
+                <p className="text-gray-600 mb-4">
+                  You haven't made any sales yet
+                </p>
+                <Link 
+                  href="/create-listing"
+                  className="inline-block bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm"
+                >
+                  Create Listing
+                </Link>
+              </div>
+            )}
           </div>
         </div>
         
