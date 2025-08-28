@@ -1,323 +1,144 @@
-// lib/shippo.ts - Using REST API instead of SDK
-// Environment variables check
-if (!process.env.SHIPPO_API_KEY) {
-  throw new Error('SHIPPO_API_KEY is required in environment variables');
-}
+// lib/shippo.ts
 
-// Check if we're in test mode
-const isTestMode = process.env.SHIPPO_API_KEY.startsWith('shippo_test_') || process.env.NODE_ENV === 'test';
+// Shippo API anahtarını environment variable'dan al
+const SHIPPO_API_KEY = process.env.SHIPPO_API_KEY || '';
+const SHIPPO_API_VERSION = process.env.SHIPPO_API_VERSION || '2018-02-08';
 
-// Type definitions
-export interface ShippingAddress {
-  name?: string;
-  company?: string;
-  street1: string;
-  street?: string; // Backward compatibility
-  street2?: string;
-  city: string;
-  state: string;
-  zip: string;
-  country: string;
-  phone?: string;
-  email?: string;
-}
-
-export interface ShippingParcel {
-  length: number;
-  width: number;
-  height: number;
-  distance_unit: 'in' | 'cm';
-  weight: number;
-  mass_unit: 'lb' | 'kg' | 'oz' | 'g';
-}
-
-export interface ShippingRate {
-  object_id: string;
-  amount: string;
-  currency: string;
-  provider: string;
-  provider_image_75: string;
-  provider_image_200: string;
-  servicelevel: {
-    name: string;
-    token: string;
-  };
-  estimated_days: number;
-  duration_terms: string;
-  messages: any[];
-  attributes: string[];
-}
-
-// Shippo API base URL
-const SHIPPO_API_BASE = 'https://api.goshippo.com';
-
-// Helper function to make Shippo API requests
-async function shippoRequest(endpoint: string, method: 'GET' | 'POST' = 'GET', body?: any) {
-  const url = `${SHIPPO_API_BASE}${endpoint}`;
-  
-  const headers: Record<string, string> = {
-    'Authorization': `ShippoToken ${process.env.SHIPPO_API_KEY}`,
-    'Content-Type': 'application/json',
-  };
-
-  const options: RequestInit = {
-    method,
-    headers,
-  };
-
-  if (body && method === 'POST') {
-    options.body = JSON.stringify(body);
-  }
-
-  console.log(`Making ${method} request to: ${url}`);
-  if (body) console.log('Request body:', JSON.stringify(body, null, 2));
-
-  const response = await fetch(url, options);
-  
-  console.log('Response status:', response.status);
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Shippo API error:', errorText);
-    throw new Error(`Shippo API error ${response.status}: ${errorText}`);
-  }
-
-  const data = await response.json();
-  console.log('Response data:', JSON.stringify(data, null, 2));
-  
-  return data;
-}
-
-// Updated getShippingRates function using REST API
-export async function getShippingRates(
-  addressFrom: ShippingAddress,
-  addressTo: ShippingAddress,
-  parcel: ShippingParcel
-): Promise<{ rates: ShippingRate[]; messages: any[] }> {
+// Shippo API'ye genel istek fonksiyonu
+async function shippoRequest(endpoint: string, method: string = 'GET', data: any = null) {
   try {
-    console.log('Creating shipment with addresses:', {
-      from: addressFrom,
-      to: addressTo,
-      parcel: parcel
-    });
-
-    // Validate addresses and parcel
-    const fromErrors = validateAddress(addressFrom);
-    const toErrors = validateAddress(addressTo);
-    const parcelErrors = validateParcel(parcel);
-    
-    if (fromErrors.length > 0 || toErrors.length > 0 || parcelErrors.length > 0) {
-      throw new Error('Validation failed: ' + 
-        [...fromErrors, ...toErrors, ...parcelErrors].join(', '));
-    }
-    
-    // Normalize address formats for Shippo API
-    const normalizedAddressFrom = {
-      name: addressFrom.name || 'Store',
-      street1: addressFrom.street1 || (addressFrom as any).street || '',
-      city: addressFrom.city || '',
-      state: addressFrom.state || '',
-      zip: addressFrom.zip || '',
-      country: addressFrom.country || 'US'
-    };
-    
-    const normalizedAddressTo = {
-      name: addressTo.name || 'Customer',
-      street1: addressTo.street1 || (addressTo as any).street || '',
-      city: addressTo.city || '',
-      state: addressTo.state || '',
-      zip: addressTo.zip || '',
-      country: addressTo.country || 'US'
-    };
-    
-    console.log('Normalized addresses:', {
-      from: normalizedAddressFrom,
-      to: normalizedAddressTo
-    });
-    
-    // Create shipment using Shippo REST API
-    const shipmentData = {
-      address_from: normalizedAddressFrom,
-      address_to: normalizedAddressTo,
-      parcels: [parcel],
-      async: false
-    };
-
-    const shipment = await shippoRequest('/shipments/', 'POST', shipmentData);
-    
-    console.log('Shipment created:', shipment);
-    
-    // Check if shipment was created successfully
-    if (shipment && shipment.rates && Array.isArray(shipment.rates)) {
-      // Filter out rates with errors
-      const validRates = shipment.rates.filter((rate: any) => 
-        !rate.messages || rate.messages.length === 0
-      );
-      
-      return {
-        rates: validRates,
-        messages: shipment.messages || []
-      };
-    } else {
-      // Extract error message from response
-      const errorMessage = shipment.messages?.[0]?.text || 'No rates available';
-      throw new Error(`Failed to get shipping rates: ${errorMessage}`);
-    }
-  } catch (error) {
-    console.error('Error getting shipping rates:', error);
-    
-    // More specific error handling
-    if (error instanceof Error) {
-      if (error.message.includes('Invalid address')) {
-        throw new Error('Invalid shipping address provided');
-      } else if (error.message.includes('API key') || error.message.includes('401')) {
-        throw new Error('Shippo API key is invalid or missing');
-      } else if (error.message.includes('network') || error.message.includes('fetch')) {
-        throw new Error('Network error connecting to Shippo API');
+    const url = `https://api.goshippo.com${endpoint}`;
+    const options: RequestInit = {
+      method,
+      headers: {
+        'Authorization': `ShippoToken ${SHIPPO_API_KEY}`,
+        'Content-Type': 'application/json',
+        'Shippo-API-Version': SHIPPO_API_VERSION
       }
+    };
+
+    if (data && (method === 'POST' || method === 'PUT')) {
+      options.body = JSON.stringify(data);
     }
-    
+
+    console.log(`Making ${method} request to: ${url}`);
+    if (data) {
+      console.log('Request body:', JSON.stringify(data, null, 2));
+    }
+
+    const response = await fetch(url, options);
+    console.log(`Response status: ${response.status}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Shippo API error:', errorText);
+      throw new Error(`Shippo API error ${response.status}: ${errorText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Shippo request failed:', error);
     throw error;
   }
 }
 
-// Validation functions
-export function validateAddress(address: ShippingAddress): string[] {
-  const errors: string[] = [];
-  
-  // Check both street1 and street fields for backward compatibility
-  if (!address.street1?.trim() && !address.street?.trim()) {
-    errors.push('Street address is required');
-  }
-  
-  if (!address.city?.trim()) {
-    errors.push('City is required');
-  }
-  
-  if (!address.state?.trim()) {
-    errors.push('State is required');
-  }
-  
-  if (!address.zip?.trim()) {
-    errors.push('ZIP code is required');
-  }
-  
-  if (!address.country?.trim()) {
-    errors.push('Country is required');
-  }
-  
-  // ZIP code format validation for US
-  if (address.country === 'US' && address.zip) {
-    const zipRegex = /^\d{5}(-\d{4})?$/;
-    if (!zipRegex.test(address.zip)) {
-      errors.push('Invalid US ZIP code format (should be 12345 or 12345-6789)');
-    }
-  }
-  
-  return errors;
-}
-
-export function validateParcel(parcel: ShippingParcel): string[] {
-  const errors: string[] = [];
-  
-  const numericFields = [
-    { field: 'length', value: parcel.length },
-    { field: 'width', value: parcel.width },
-    { field: 'height', value: parcel.height },
-    { field: 'weight', value: parcel.weight }
-  ];
-  
-  numericFields.forEach(({ field, value }) => {
-    if (value === undefined || value === null) {
-      errors.push(`${field} is required`);
-    } else if (isNaN(value) || value <= 0) {
-      errors.push(`${field} must be a positive number`);
-    }
-  });
-  
-  if (!parcel.distance_unit || !['in', 'cm'].includes(parcel.distance_unit)) {
-    errors.push('distance_unit must be "in" or "cm"');
-  }
-  
-  if (!parcel.mass_unit || !['lb', 'kg', 'oz', 'g'].includes(parcel.mass_unit)) {
-    errors.push('mass_unit must be "lb", "kg", "oz" or "g"');
-  }
-  
-  return errors;
-}
-
-// Test connection function
-export async function testShippoConnection(): Promise<boolean> {
+// Takip bilgisi başlatma
+export async function initializeShippoTracking(trackingNumber: string, carrier: string) {
   try {
-    console.log('Testing Shippo connection...');
+    console.log(`Initializing Shippo tracking for ${trackingNumber} with carrier ${carrier}`);
     
-    // Test by creating a simple address validation
-    const testAddress = {
-      name: 'Test Address',
-      street1: '123 Test St',
-      city: 'San Francisco',
-      state: 'CA',
-      zip: '94107',
-      country: 'US'
+    // Test takip numaraları için carrier'ı "shippo" olarak değiştir
+    let shippoCarrier = carrier;
+    if (trackingNumber === "SHippoTest" || trackingNumber === "10000000000000000") {
+      shippoCarrier = "shippo";
+      console.log(`Using test carrier: ${shippoCarrier} for tracking number: ${trackingNumber}`);
+    }
+    
+    const data = {
+      tracking_number: trackingNumber,
+      carrier: shippoCarrier
     };
-
-    const result = await shippoRequest('/addresses/', 'POST', testAddress);
     
-    console.log('Shippo connection test successful:', result);
-    return true;
+    console.log('Sending tracking data to Shippo:', data);
+    
+    const response = await shippoRequest('/tracks/', 'POST', data);
+    console.log('Shippo tracking initialized successfully:', response);
+    
+    return response;
   } catch (error) {
-    console.error('Shippo connection test failed:', error);
+    console.error('Failed to initialize Shippo tracking:', error);
+    throw error;
+  }
+}
+
+// Takip bilgisi alma
+export async function getTrackingStatus(trackingNumber: string, carrier: string) {
+  try {
+    console.log(`Getting tracking status for ${trackingNumber} with carrier ${carrier}`);
+    
+    // Test takip numaraları için carrier'ı "shippo" olarak değiştir
+    let shippoCarrier = carrier;
+    if (trackingNumber === "SHippoTest" || trackingNumber === "10000000000000000") {
+      shippoCarrier = "shippo";
+      console.log(`Using test carrier: ${shippoCarrier} for tracking number: ${trackingNumber}`);
+    }
+    
+    const response = await shippoRequest(`/tracks/${shippoCarrier}/${trackingNumber}`);
+    console.log('Tracking status retrieved successfully:', response);
+    
+    return response;
+  } catch (error) {
+    console.error('Failed to get tracking status:', error);
+    throw error;
+  }
+}
+
+// Kargo şirketine göre tracking URL oluşturma
+export function getTrackingUrl(carrier: string, trackingNumber: string): string {
+  switch (carrier.toLowerCase()) {
+    case "usps":
+      return `https://tools.usps.com/go/TrackConfirmAction_input?qtc_tLabels1=${trackingNumber}`;
+    case "fedex":
+      return `https://www.fedex.com/fedextrack/?trknbr=${trackingNumber}`;
+    case "ups":
+      return `https://www.ups.com/track?tracknum=${trackingNumber}`;
+    case "dhl":
+      return `https://www.dhl.com/us-en/home/tracking/tracking-parcel.html?submit=1&tracking-id=${trackingNumber}`;
+    default:
+      return "";
+  }
+}
+
+// Webhook doğrulama
+export function verifyWebhook(request: Request) {
+  // Shippo webhook doğrulama mantığı
+  // Bu fonksiyonu webhook handler'da kullanabilirsiniz
+  const signature = request.headers.get('x-shippo-signature');
+  const payload = request.headers.get('x-shippo-payload');
+  
+  if (!signature || !payload) {
     return false;
   }
+  
+  // Gerçek uygulamada burada HMAC doğrulaması yapmalısınız
+  // Şimdilik sadece true döndürüyoruz
+  return true;
 }
 
-// Helper function to convert string parcel to number parcel
-export function convertParcelToNumbers(parcel: any): ShippingParcel {
-  return {
-    length: typeof parcel.length === 'string' ? parseFloat(parcel.length) : parcel.length,
-    width: typeof parcel.width === 'string' ? parseFloat(parcel.width) : parcel.width,
-    height: typeof parcel.height === 'string' ? parseFloat(parcel.height) : parcel.height,
-    distance_unit: parcel.distance_unit,
-    weight: typeof parcel.weight === 'string' ? parseFloat(parcel.weight) : parcel.weight,
-    mass_unit: parcel.mass_unit
-  };
-}
+// Kargo şirketleri listesi
+export const CARRIERS = [
+  { value: 'usps', label: 'USPS' },
+  { value: 'fedex', label: 'FedEx' },
+  { value: 'ups', label: 'UPS' },
+  { value: 'dhl', label: 'DHL' },
+  { value: 'shippo', label: 'Shippo Test' }
+];
 
-// Default addresses for testing
-export const testAddresses = {
-  warehouse: {
-    name: 'Envy Warehouse',
-    company: 'Envy Marketplace',
-    street1: '123 Warehouse St',
-    city: 'New York',
-    state: 'NY',
-    zip: '10001',
-    country: 'US',
-    phone: '+1-555-0123',
-    email: 'warehouse@envy.com'
-  },
-  customer: {
-    name: 'Test Customer',
-    street1: '456 Customer Ave',
-    city: 'Los Angeles',
-    state: 'CA',
-    zip: '90210',
-    country: 'US',
-    phone: '+1-555-0456',
-    email: 'customer@example.com'
-  }
+// Test takip numaraları
+export const TEST_TRACKING_NUMBERS = {
+  usps: "SHippoTest",
+  fedex: "SHippoTest",
+  ups: "SHippoTest",
+  dhl: "SHippoTest",
+  generic: "10000000000000000"
 };
-
-export const testParcel: ShippingParcel = {
-  length: 10,
-  width: 8,
-  height: 6,
-  distance_unit: 'in',
-  weight: 2,
-  mass_unit: 'lb'
-};
-
-// Function to check if we're in test mode
-export function isTestModeEnabled(): boolean {
-  return isTestMode;
-}

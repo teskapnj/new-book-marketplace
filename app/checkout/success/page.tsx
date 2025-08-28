@@ -10,18 +10,35 @@ export default function CheckoutSuccessPage() {
   
   const [countdown, setCountdown] = useState(10);
 
-  // Redirect to home after 10 seconds
+  const sendOrderConfirmation = async (orderIdParam: string) => {
+    try {
+      const response = await fetch(`/api/orders/${orderIdParam}/send-confirmation`, {
+        method: 'POST'
+      });
+      
+      if (response.ok) {
+        console.log('Order confirmation email sent');
+      }
+    } catch (error) {
+      console.error('Failed to send confirmation email:', error);
+    }
+  };
+
+  // Tek useEffect ile hem email hem redirect
   useEffect(() => {
     if (!orderId) {
       router.push('/');
       return;
     }
 
+    // Send order confirmation email
+    sendOrderConfirmation(orderId);
+
+    // Countdown timer
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          // Use setTimeout to avoid render cycle conflict
           setTimeout(() => {
             router.push('/');
           }, 0);
@@ -124,7 +141,7 @@ export default function CheckoutSuccessPage() {
             >
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
+                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012-2v1"></path>
               </svg>
               Copy Order ID
             </button>

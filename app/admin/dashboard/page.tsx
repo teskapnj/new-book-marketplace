@@ -65,6 +65,15 @@ interface Order {
   updatedAt: Timestamp | Date;
   orderDate: string;
   adminNotes?: string;
+  // Tracking alanları eklendi
+  trackingNumber?: string;
+  carrier?: string;
+  trackingUrl?: string;
+  shippedAt?: Timestamp | Date;
+  trackingStatus?: string;
+  statusDetails?: string;
+  trackingHistory?: any[];
+  lastTracked?: Timestamp | Date;
 }
 
 // Message Notification Component
@@ -77,7 +86,6 @@ const MessageNotification = () => {
   useEffect(() => {
     if (!user) return;
     
-    // Check if user is admin
     const checkAdminStatus = async () => {
       try {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
@@ -86,7 +94,6 @@ const MessageNotification = () => {
           return;
         }
         
-        // Listen to unread messages
         const messagesRef = collection(db, 'contact_messages');
         const q = query(messagesRef, where('status', '==', 'unread'));
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -138,22 +145,10 @@ const MessageNotification = () => {
       className="relative inline-flex items-center p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
       title={`${unreadCount} unread messages`}
     >
-      {/* Bell Icon */}
-      <svg 
-        className="w-6 h-6" 
-        fill="none" 
-        stroke="currentColor" 
-        viewBox="0 0 24 24"
-      >
-        <path 
-          strokeLinecap="round" 
-          strokeLinejoin="round" 
-          strokeWidth="2" 
-          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" 
-        />
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
       </svg>
       
-      {/* Notification Badge */}
       {unreadCount > 0 && (
         <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full min-w-[20px]">
           {unreadCount > 99 ? '99+' : unreadCount}
@@ -170,7 +165,6 @@ const OrdersNavigation = () => {
   const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
-    // Listen to orders count
     const ordersRef = collection(db, 'orders');
     const unsubscribe = onSnapshot(ordersRef, (snapshot) => {
       setOrderCount(snapshot.size);
@@ -210,22 +204,10 @@ const OrdersNavigation = () => {
       className="relative inline-flex items-center p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
       title={`${orderCount} orders`}
     >
-      {/* Orders Icon */}
-      <svg 
-        className="w-6 h-6" 
-        fill="none" 
-        stroke="currentColor" 
-        viewBox="0 0 24 24"
-      >
-        <path 
-          strokeLinecap="round" 
-          strokeLinejoin="round" 
-          strokeWidth="2" 
-          d="M16 11V7a4 4 0 01-8 0v4M5 9h14l1 12M4 6h16M4 6h16" 
-        />
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 01-8 0v4M5 9h14l1 12M4 6h16M4 6h16" />
       </svg>
       
-      {/* Notification Badge */}
       {orderCount > 0 && (
         <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-blue-600 rounded-full min-w-[20px]">
           {orderCount > 99 ? '99+' : orderCount}
@@ -247,6 +229,14 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
   const [notes, setNotes] = useState(order.adminNotes || "");
   const [isProcessing, setIsProcessing] = useState(false);
   
+  // Yeni state'ler tracking için
+  const [trackingNumber, setTrackingNumber] = useState("");
+  const [carrier, setCarrier] = useState("usps");
+  const [showTrackingForm, setShowTrackingForm] = useState(false);
+  const [trackingLoading, setTrackingLoading] = useState(false);
+  const [trackingError, setTrackingError] = useState("");
+  const [trackingSuccess, setTrackingSuccess] = useState("");
+  
   const handleUpdateStatus = async () => {
     setIsProcessing(true);
     try {
@@ -263,6 +253,70 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
       setIsProcessing(false);
     }
   };
+  
+  // Tracking ekleme fonksiyonu
+const handleAddTracking = async () => {
+  if (!trackingNumber.trim()) {
+    setTrackingError("Tracking number is required");
+    return;
+  }
+  
+  setTrackingLoading(true);
+  setTrackingError("");
+  setTrackingSuccess("");
+  
+  try {
+    // Kullanıcı kontrolü
+    const user = auth.currentUser;
+    if (!user) {
+      setTrackingError("You must be logged in to add tracking information");
+      return;
+    }
+    
+    console.log("Mevcut kullanıcı:", user.email);
+    
+    // Token'ı al
+    const token = await user.getIdToken();
+    console.log("Token alındı:", token.substring(0, 20) + "...");
+    
+    const response = await fetch(`/api/orders/${order.id}/add-tracking`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}` // Eksik olan header eklendi
+      },
+      body: JSON.stringify({
+        trackingNumber: trackingNumber,
+        carrier: carrier
+      })
+    });
+    
+    console.log("İstek gönderildi. Status:", response.status);
+    
+    const data = await response.json();
+    
+    if (response.ok) {
+      setTrackingSuccess("Tracking information added successfully!");
+      setTrackingNumber("");
+      setShowTrackingForm(false);
+      
+      // Sipariş durumunu "shipped" olarak güncelle
+      setStatus("shipped");
+      
+      // Modalı kapat
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+    } else {
+      setTrackingError(data.error || "Failed to add tracking information");
+    }
+  } catch (error: any) {
+    console.error("Takip ekleme hatası:", error);
+    setTrackingError("Network error. Please try again.");
+  } finally {
+    setTrackingLoading(false);
+  }
+};
   
   const formatDate = (timestamp: Timestamp | Date | undefined): string => {
     if (!timestamp) return "N/A";
@@ -299,6 +353,27 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                 <p><strong>Created:</strong> {formatDate(order.createdAt)}</p>
                 <p><strong>Last Updated:</strong> {formatDate(order.updatedAt)}</p>
                 <p><strong>Status:</strong> {getOrderStatusBadge(order.status)}</p>
+                
+                {/* Tracking bilgisi varsa göster */}
+                {order.trackingNumber && (
+                  <div className="mt-2 pt-2 border-t border-gray-200">
+                    <p><strong>Tracking Number:</strong> {order.trackingNumber}</p>
+                    <p><strong>Carrier:</strong> {order.carrier?.toUpperCase() || "N/A"}</p>
+                    {order.trackingUrl && (
+                      <p>
+                        <strong>Tracking URL:</strong> 
+                        <a 
+                          href={order.trackingUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 ml-1"
+                        >
+                          Track Package
+                        </a>
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
             
@@ -356,6 +431,104 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                 <option value="delivered">Delivered</option>
                 <option value="cancelled">Cancelled</option>
               </select>
+            </div>
+            
+            {/* Tracking Ekleme Bölümü */}
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="text-sm font-medium text-gray-900">Shipping Information</h4>
+                {!order.trackingNumber && (
+                  <button
+                    onClick={() => setShowTrackingForm(!showTrackingForm)}
+                    className="text-sm text-blue-600 hover:text-blue-800"
+                  >
+                    {showTrackingForm ? "Cancel" : "Add Tracking"}
+                  </button>
+                )}
+              </div>
+              
+              {order.trackingNumber ? (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Tracking Number:</span>
+                    <span className="text-sm">{order.trackingNumber}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Carrier:</span>
+                    <span className="text-sm">{order.carrier?.toUpperCase()}</span>
+                  </div>
+                  {order.trackingUrl && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Tracking URL:</span>
+                      <a 
+                        href={order.trackingUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 hover:text-blue-800"
+                      >
+                        View
+                      </a>
+                    </div>
+                  )}
+                </div>
+              ) : showTrackingForm ? (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Tracking Number
+                    </label>
+                    <input
+                      type="text"
+                      value={trackingNumber}
+                      onChange={(e) => setTrackingNumber(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded text-sm"
+                      placeholder="Enter tracking number"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Carrier
+                    </label>
+                    <select
+                      value={carrier}
+                      onChange={(e) => setCarrier(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded text-sm"
+                    >
+                      <option value="usps">USPS</option>
+                      <option value="fedex">FedEx</option>
+                      <option value="ups">UPS</option>
+                      <option value="dhl">DHL</option>
+                      <option value="shippo">Shippo Test</option>
+                    </select>
+                  </div>
+                  
+                  {/* Hata ve başarı mesajları */}
+                  {trackingError && (
+                    <div className="text-red-600 text-xs bg-red-50 p-2 rounded">
+                      {trackingError}
+                    </div>
+                  )}
+                  
+                  {trackingSuccess && (
+                    <div className="text-green-600 text-xs bg-green-50 p-2 rounded">
+                      {trackingSuccess}
+                    </div>
+                  )}
+                  
+                  <button
+                    onClick={handleAddTracking}
+                    disabled={trackingLoading}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded transition-colors disabled:opacity-50"
+                  >
+                    {trackingLoading ? "Adding..." : "Add Tracking"}
+                  </button>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">
+                  No tracking information added yet.
+                </p>
+              )}
             </div>
             
             <div>
@@ -515,7 +688,6 @@ export default function AdminListingsPage() {
     
     const setupListener = () => {
       try {
-        // Create query to get all listings ordered by creation date
         const listingsRef = collection(db, "listings");
         const q = query(listingsRef, orderBy("createdAt", "desc"));
         
@@ -526,7 +698,6 @@ export default function AdminListingsPage() {
             querySnapshot.forEach((docSnapshot) => {
               const data = docSnapshot.data();
               
-              // Process listing data
               listingsData.push({
                 id: docSnapshot.id,
                 title: data.title || "Untitled Bundle",
@@ -557,7 +728,6 @@ export default function AdminListingsPage() {
               setPermissionError("You don't have permission to access listings. Please contact administrator.");
             }
             
-            // Fallback: try without ordering
             if (error.code === 'failed-precondition') {
               console.log("Index not found, trying fallback query...");
               const fallbackQuery = collection(db, "listings");
@@ -588,7 +758,6 @@ export default function AdminListingsPage() {
                   });
                 });
                 
-                // Sort manually by creation date
                 listingsData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                 
                 setListings(listingsData);
@@ -608,7 +777,6 @@ export default function AdminListingsPage() {
     
     setupListener();
     
-    // Cleanup listener on unmount
     return () => {
       if (unsubscribe) {
         unsubscribe();
@@ -624,7 +792,6 @@ export default function AdminListingsPage() {
     
     const setupOrdersListener = () => {
       try {
-        // Create query to get all orders ordered by creation date
         const ordersRef = collection(db, "orders");
         const q = query(ordersRef, orderBy("createdAt", "desc"));
         
@@ -635,7 +802,6 @@ export default function AdminListingsPage() {
             querySnapshot.forEach((docSnapshot) => {
               const data = docSnapshot.data();
               
-              // Process order data
               ordersData.push({
                 id: docSnapshot.id,
                 orderNumber: data.orderNumber || "",
@@ -652,7 +818,16 @@ export default function AdminListingsPage() {
                 createdAt: data.createdAt || new Date(),
                 updatedAt: data.updatedAt || new Date(),
                 orderDate: data.createdAt?.toDate?.().toLocaleDateString() || new Date().toLocaleDateString(),
-                adminNotes: data.adminNotes || ""
+                adminNotes: data.adminNotes || "",
+                // Tracking alanları eklendi
+                trackingNumber: data.trackingNumber,
+                carrier: data.carrier,
+                trackingUrl: data.trackingUrl,
+                shippedAt: data.shippedAt,
+                trackingStatus: data.trackingStatus,
+                statusDetails: data.statusDetails,
+                trackingHistory: data.trackingHistory,
+                lastTracked: data.lastTracked
               });
             });
             
@@ -666,7 +841,6 @@ export default function AdminListingsPage() {
               setPermissionError("You don't have permission to access orders. Please contact administrator.");
             }
             
-            // Fallback: try without ordering
             if (error.code === 'failed-precondition') {
               console.log("Index not found, trying fallback query...");
               const fallbackQuery = collection(db, "orders");
@@ -693,11 +867,19 @@ export default function AdminListingsPage() {
                     createdAt: data.createdAt || new Date(),
                     updatedAt: data.updatedAt || new Date(),
                     orderDate: data.createdAt?.toDate?.().toLocaleDateString() || new Date().toLocaleDateString(),
-                    adminNotes: data.adminNotes || ""
+                    adminNotes: data.adminNotes || "",
+                    // Tracking alanları eklendi
+                    trackingNumber: data.trackingNumber,
+                    carrier: data.carrier,
+                    trackingUrl: data.trackingUrl,
+                    shippedAt: data.shippedAt,
+                    trackingStatus: data.trackingStatus,
+                    statusDetails: data.statusDetails,
+                    trackingHistory: data.trackingHistory,
+                    lastTracked: data.lastTracked
                   });
                 });
                 
-                // Sort manually by creation date
                 ordersData.sort((a, b) => {
                   const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toDate() : new Date(a.createdAt);
                   const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toDate() : new Date(b.createdAt);
@@ -721,7 +903,6 @@ export default function AdminListingsPage() {
     
     setupOrdersListener();
     
-    // Cleanup listener on unmount
     return () => {
       if (unsubscribe) {
         unsubscribe();
@@ -793,7 +974,7 @@ export default function AdminListingsPage() {
     orderPageNumbers.push(i);
   }
   
-  // ✅ Approve listing function - Updates Firebase
+  // ✅ Approve listing function
   const approveListing = async (listingId: string) => {
     setIsProcessing(true);
     
@@ -809,11 +990,9 @@ export default function AdminListingsPage() {
       
       console.log(`✅ Listing ${listingId} approved by ${user?.email}`);
       
-      // Reset modal state
       setSelectedListing(null);
       setAdminNotes("");
       
-      // Show success message
       alert("✅ Listing approved successfully!");
       
     } catch (error: any) {
@@ -828,7 +1007,7 @@ export default function AdminListingsPage() {
     setIsProcessing(false);
   };
   
-  // ❌ Reject listing function - Updates Firebase
+  // ❌ Reject listing function
   const rejectListing = async (listingId: string) => {
     if (!rejectionReason.trim()) {
       alert("⚠️ Please provide a rejection reason");
@@ -850,7 +1029,6 @@ export default function AdminListingsPage() {
       
       console.log(`❌ Listing ${listingId} rejected by ${user?.email}`);
       
-      // Reset modal state
       setSelectedListing(null);
       setRejectionReason("");
       setAdminNotes("");
@@ -869,7 +1047,7 @@ export default function AdminListingsPage() {
     setIsProcessing(false);
   };
   
-  // 🗑️ Delete listing function - Removes from Firebase
+  // 🗑️ Delete listing function
   const deleteListing = async (listingId: string) => {
     setIsProcessing(true);
     
@@ -880,11 +1058,9 @@ export default function AdminListingsPage() {
       
       console.log(`🗑️ Listing ${listingId} deleted by ${user?.email}`);
       
-      // Reset modal state
       setSelectedListing(null);
       setShowDeleteConfirm(false);
       
-      // Show success message
       alert("🗑️ Listing deleted successfully!");
       
     } catch (error: any) {
@@ -899,7 +1075,7 @@ export default function AdminListingsPage() {
     setIsProcessing(false);
   };
   
-  // 🔄 Update order status function - Updates Firebase
+  // 🔄 Update order status function
   const updateOrderStatus = async (orderId: string, status: string, notes: string) => {
     setIsProcessing(true);
     
@@ -915,7 +1091,6 @@ export default function AdminListingsPage() {
       
       console.log(`🔄 Order ${orderId} status updated to ${status} by ${user?.email}`);
       
-      // Show success message
       alert(`✅ Order status updated to ${status} successfully!`);
       
     } catch (error: any) {
@@ -1001,7 +1176,7 @@ export default function AdminListingsPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto py-6 px-4">
         
-        {/* 🏠 Navigation Header - Updated with Message Notification */}
+        {/* 🏠 Navigation Header */}
         <div className="mb-6 flex justify-between items-center">
           <div className="flex items-center space-x-4">
             <Link 
@@ -1014,13 +1189,8 @@ export default function AdminListingsPage() {
           
           {/* Admin Info & Notifications */}
           <div className="flex items-center space-x-4">
-            {/* Message Notification Bell */}
             <MessageNotification />
-            
-            {/* Orders Notification */}
             <OrdersNavigation />
-            
-            {/* Admin info display */}
             <div className="text-sm text-gray-600">
               Logged in as: <span className="font-medium">{user?.email}</span>
             </div>
@@ -1515,6 +1685,12 @@ export default function AdminListingsPage() {
                             <div className="text-sm text-gray-500">
                               ID: {order.id}
                             </div>
+                            {/* Tracking bilgisi varsa göster */}
+                            {order.trackingNumber && (
+                              <div className="text-xs text-blue-600 mt-1">
+                                📦 {order.trackingNumber} ({order.carrier})
+                              </div>
+                            )}
                           </div>
                         </td>
                         

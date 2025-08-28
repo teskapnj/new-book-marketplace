@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "@/lib/firebase";
-import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
+import { collection, query, where, onSnapshot, orderBy, doc, getDoc, updateDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -15,6 +15,9 @@ export default function MyOrdersPage() {
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'confirmed'>('all');
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [showTracking, setShowTracking] = useState(false);
+  const [trackingInfo, setTrackingInfo] = useState<any>(null);
+  const [trackingLoading, setTrackingLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch user orders
@@ -56,7 +59,8 @@ export default function MyOrdersPage() {
               status: data.status || 'pending',
               shippingAddress: data.shippingAddress || {},
               estimatedDelivery: data.estimatedDelivery || null,
-              trackingNumber: data.trackingNumber || null
+              trackingNumber: data.trackingNumber || null,
+              carrier: data.carrier || null
             });
           });
           console.log(`Loaded ${ordersData.length} orders for user ${user.uid}`);
@@ -79,12 +83,52 @@ export default function MyOrdersPage() {
     fetchOrders();
   }, [user, loading, router]);
 
+  // Fetch tracking info - GÜNCELLENMİŞ FONKSİYON
+// app/api/shippo/tracking/route.ts - Bu dosyayı sil
+
+// Customer dashboard'da fetchTrackingInfo fonksiyonunu değiştir:
+const fetchTrackingInfo = async (trackingNumber: string, carrier: string, order: any) => {
+  if (!order?.id || !trackingNumber || !carrier) {
+    setError("Order or tracking information not available");
+    setTrackingLoading(false);
+    return;
+  }
+  
+  setTrackingLoading(true);
+  try {
+    const orderRef = doc(db, "orders", order.id);
+    const orderSnap = await getDoc(orderRef);
+    
+    if (orderSnap.exists()) {
+      const orderData = orderSnap.data();
+      
+      setTrackingInfo({
+        tracking_number: orderData.trackingNumber || trackingNumber,
+        carrier: orderData.carrier || carrier,
+        tracking_status: {
+          status: orderData.trackingStatus || 'SHIPPED',
+          status_details: orderData.statusDetails || 'Package shipped and in transit',
+          status_date: orderData.lastTracked || orderData.shippedAt || new Date()
+        },
+        tracking_history: orderData.trackingHistory || []
+      });
+    } else {
+      setError("Order not found");
+    }
+  } catch (err) {
+    console.error("Error fetching tracking info:", err);
+    setError("Failed to fetch tracking information");
+  } finally {
+    setTrackingLoading(false);
+  }
+};
+
   // Filter orders by status
   const filteredOrders = activeTab === 'all'
     ? orders
     : orders.filter(order => order.status === activeTab);
 
-  // Get status color - now includes 'confirmed'
+  // Get status color
   const getStatusColor = (status: string) => {
     const colors = {
       pending: "bg-yellow-100 text-yellow-800",
@@ -97,7 +141,7 @@ export default function MyOrdersPage() {
     return colors[status as keyof typeof colors] || "bg-gray-100 text-gray-800";
   };
 
-  // Get status icon - now includes 'confirmed'
+  // Get status icon
   const getStatusIcon = (status: string) => {
     const icons = {
       pending: "⏳",
@@ -110,7 +154,7 @@ export default function MyOrdersPage() {
     return icons[status as keyof typeof icons] || "📋";
   };
 
-  // Calculate order stats - now includes 'confirmed'
+  // Calculate order stats
   const orderStats = {
     total: orders.length,
     pending: orders.filter(o => o.status === 'pending').length,
@@ -185,7 +229,7 @@ export default function MyOrdersPage() {
           </div>
         )}
 
-        {/* Statistics Cards - Now includes confirmed */}
+        {/* Statistics Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
           <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
             <div className="text-center">
@@ -238,7 +282,7 @@ export default function MyOrdersPage() {
           </div>
         </div>
 
-        {/* Filter Tabs - Now includes confirmed */}
+        {/* Filter Tabs */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
           <div className="flex overflow-x-auto">
             {['all', 'pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'].map((tab) => (
@@ -337,10 +381,17 @@ export default function MyOrdersPage() {
                           </button>
                         )}
                         {order.trackingNumber && (
-                          <button className="px-4 py-2 text-sm font-medium text-purple-600 hover:text-purple-700 border border-purple-300 rounded-lg hover:bg-purple-50">
-                            Track Package
-                          </button>
-                        )}
+  <button 
+    onClick={() => {
+      setSelectedOrder(order);
+      setShowTracking(true);
+      fetchTrackingInfo(order.trackingNumber, order.carrier, order);
+    }}
+    className="px-4 py-2 text-sm font-medium text-purple-600 hover:text-purple-700 border border-purple-300 rounded-lg hover:bg-purple-50"
+  >
+    Track Package
+  </button>
+)}
                       </div>
                     </div>
                   </div>
@@ -488,6 +539,141 @@ export default function MyOrdersPage() {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tracking Modal */}
+        {showTracking && selectedOrder && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-200 p-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">Package Tracking</h2>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Tracking #{selectedOrder.trackingNumber} • {selectedOrder.carrier?.toUpperCase()}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowTracking(false);
+                      setSelectedOrder(null);
+                      setTrackingInfo(null);
+                    }}
+                    className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+              
+              <div className="p-6">
+                {trackingLoading ? (
+                  <div className="flex justify-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+                  </div>
+                ) : trackingInfo ? (
+                  <>
+                    {/* Current Status */}
+                    <div className="mb-8">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Current Status</h3>
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="flex items-center">
+                          <div className={`w-12 h-12 rounded-full flex items-center justify-center mr-4 ${
+                            trackingInfo.tracking_status.status === 'DELIVERED' ? 'bg-green-100 text-green-800' :
+                            trackingInfo.tracking_status.status === 'TRANSIT' ? 'bg-blue-100 text-blue-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {trackingInfo.tracking_status.status === 'DELIVERED' ? '✓' : 
+                             trackingInfo.tracking_status.status === 'TRANSIT' ? '🚚' : '📦'}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900">
+                              {trackingInfo.tracking_status.status.replace('_', ' ')}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {trackingInfo.tracking_status.status_details}
+                            </p>
+                            {trackingInfo.tracking_status.status_date && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                {new Date(trackingInfo.tracking_status.status_date).toLocaleString()}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Tracking History */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Tracking History</h3>
+                      <div className="space-y-4">
+                        {trackingInfo.tracking_history && trackingInfo.tracking_history.length > 0 ? (
+                          [...trackingInfo.tracking_history].reverse().map((event: any, index: number) => (
+                            <div key={index} className="flex">
+                              <div className="flex flex-col items-center mr-4">
+                                <div className={`w-3 h-3 rounded-full ${
+                                  event.status === 'DELIVERED' ? 'bg-green-500' :
+                                  event.status === 'TRANSIT' ? 'bg-blue-500' :
+                                  'bg-yellow-500'
+                                }`}></div>
+                                {index < trackingInfo.tracking_history.length - 1 && (
+                                  <div className="h-full w-0.5 bg-gray-200 mt-1"></div>
+                                )}
+                              </div>
+                              <div className="pb-4">
+                                <p className="font-medium">{event.status.replace('_', ' ')}</p>
+                                <p className="text-sm text-gray-600">{event.message || event.status_details || event.status}</p>
+                                {event.location && (
+                                  <p className="text-sm text-gray-500">{event.location}</p>
+                                )}
+                                <p className="text-xs text-gray-400 mt-1">
+                                  {new Date(event.status_date || event.timestamp).toLocaleString()}
+                                </p>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-gray-500">No tracking history available</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* External Tracking Link */}
+                    <div className="mt-8 pt-6 border-t border-gray-200">
+                      <a
+                        href={`https://www.google.com/search?q=${selectedOrder.carrier}+tracking+${selectedOrder.trackingNumber}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center text-orange-600 hover:text-orange-800"
+                      >
+                        Track on carrier's website
+                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                        </svg>
+                      </a>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="text-5xl mb-4">📦</div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Tracking Information</h3>
+                    <p className="text-gray-600 mb-6">
+                      {error || "No tracking information available for this package."}
+                    </p>
+                    <button
+                      onClick={() => {
+                        setShowTracking(false);
+                        setSelectedOrder(null);
+                      }}
+                      className="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200"
+                    >
+                      Close
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
