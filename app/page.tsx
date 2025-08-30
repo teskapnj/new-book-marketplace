@@ -7,7 +7,6 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { collection, query, where, onSnapshot, orderBy, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-
 // SVG Icons (tüm icon component'leri aynı kalacak)
 function CartIcon({ size = 24, className = "" }) {
   return (
@@ -18,7 +17,6 @@ function CartIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
-
 function UserIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -27,7 +25,6 @@ function UserIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
-
 function MenuIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -37,7 +34,6 @@ function MenuIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
-
 function XIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -46,7 +42,6 @@ function XIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
-
 function PackageIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -57,7 +52,6 @@ function PackageIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
-
 function SparklesIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -65,7 +59,6 @@ function SparklesIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
-
 function ArrowRightIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -74,7 +67,6 @@ function ArrowRightIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
-
 function TrendingUpIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -83,7 +75,6 @@ function TrendingUpIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
-
 function ShieldCheckIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -95,7 +86,6 @@ function ShieldCheckIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
-
 function AdminIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -106,7 +96,6 @@ function AdminIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
-
 // Mix bundle icon component with multiple media types
 const MixBundleIcon = ({ size = 48 }) => (
   <div className="relative inline-flex items-center justify-center" style={{ width: size * 1.2, height: size * 1.2 }}>
@@ -116,7 +105,6 @@ const MixBundleIcon = ({ size = 48 }) => (
     <span style={{ fontSize: size * 0.8, zIndex: 1 }} className="absolute bottom-0 right-0 transform -rotate-12">🎮</span>
   </div>
 );
-
 export default function HomePage() {
   const { user, loading, error, logout } = useAuth();
   const { getTotalItems } = useCart();
@@ -589,6 +577,23 @@ export default function HomePage() {
               MarketPlace
             </Link>
             <div className="flex items-center space-x-2">
+              {/* Kullanıcı İkonu - Mobil */}
+              <button
+                onClick={() => {
+                  if (user) {
+                    if (userRole === "admin") {
+                      router.push('/admin/dashboard');
+                    } else {
+                      router.push('/dashboard');
+                    }
+                  } else {
+                    router.push('/login');
+                  }
+                }}
+                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"
+              >
+                <UserIcon size={20} />
+              </button>
               <Link href="/cart" className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors relative">
                 <CartIcon size={20} />
                 {getTotalItems() > 0 && (

@@ -109,10 +109,6 @@ export default function CreateListingPage() {
   } | null>(null);
   const [scannerError, setScannerError] = useState("");
   
-  // Yeni eklenen timeout ref'leri
-  const productInfoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const clearProductInfoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
   const getStorageKey = useCallback(() => {
     return user ? `bundleListingDraft_${user.uid}` : 'bundleListingDraft_guest';
   }, [user]);
@@ -242,21 +238,7 @@ export default function CreateListingPage() {
     }
   };
   
-  // Ürün bilgilerini temizleme fonksiyonu
-  const clearProductInfo = useCallback(() => {
-    setAmazonResult(null);
-    setCurrentItem(prev => ({
-      ...prev,
-      isbn: "",
-      image: null,
-      imageUrl: null,
-      amazonData: undefined,
-      ourPrice: undefined,
-      originalPrice: undefined
-    }));
-  }, []);
-  
-  const autoAddAcceptedItem = useCallback((isbn: string, product: AmazonProduct, pricing: PricingResult) => {
+  const autoAddAcceptedItem = (isbn: string, product: AmazonProduct, pricing: PricingResult) => {
     if (!pricing.accepted || !pricing.ourPrice) return;
     
     const newItem: BundleItem = {
@@ -276,32 +258,30 @@ export default function CreateListingPage() {
     
     setBundleItems(prev => [...prev, newItem]);
     
-    // Ürün eklendikten sonra bilgileri temizle
-    clearProductInfo();
+    setCurrentItem({
+      id: "",
+      isbn: "",
+      condition: "like-new",
+      quantity: 1,
+      price: 0,
+      image: null,
+      imageBlob: null,
+      category: "book",
+      imageUrl: null
+    });
+    
+    setAmazonResult(null);
+    setError("");
     
     console.log(`✅ Auto-added item with Amazon image: ${product.image}`);
     
     setTimeout(() => {
       setError("");
     }, 3000);
-  }, [clearProductInfo]);
+  };
   
   const handleBarcodeScanned = useCallback(async (code: string) => {
     console.log('📱 Barcode scanned:', code);
-    
-    // Önceki timeout'ları temizle
-    if (productInfoTimeoutRef.current) {
-      clearTimeout(productInfoTimeoutRef.current);
-    }
-    if (clearProductInfoTimeoutRef.current) {
-      clearTimeout(clearProductInfoTimeoutRef.current);
-    }
-    
-    // ISBN'i hemen kutucuga yaz
-    setCurrentItem(prev => ({
-      ...prev,
-      isbn: code
-    }));
     
     try {
       setIsCheckingAmazon(true);
@@ -312,6 +292,13 @@ export default function CreateListingPage() {
       stopScanning();
       setShowScanner(false);
       
+      // First update the input field with the scanned barcode
+      setCurrentItem(prev => ({
+        ...prev,
+        isbn: code
+      }));
+      
+      // Then proceed with Amazon check
       const response = await axios.post('/api/amazon-check', {
         isbn_upc: code
       });
@@ -323,6 +310,7 @@ export default function CreateListingPage() {
         
         setCurrentItem(prev => ({
           ...prev,
+          isbn: code,
           amazonData: product,
           image: product.image || null,
           imageUrl: product.image || null,
@@ -344,37 +332,23 @@ export default function CreateListingPage() {
           }));
         }
         
-        // Ürün kabul edildiyse 1.5 saniye sonra ekle
         if (pricing.accepted && pricing.ourPrice) {
-          productInfoTimeoutRef.current = setTimeout(() => {
+          setTimeout(() => {
             autoAddAcceptedItem(code, product, pricing);
-          }, 1500);
+          }, 2000);
         }
-        
-        // 5 saniye sonra ürün bilgilerini temizle
-        clearProductInfoTimeoutRef.current = setTimeout(() => {
-          clearProductInfo();
-        }, 5000);
         
       } else {
         setError(response.data.error || 'Amazon check failed');
-        // Hata durumunda da 5 saniye sonra temizle
-        clearProductInfoTimeoutRef.current = setTimeout(() => {
-          clearProductInfo();
-        }, 5000);
       }
       
     } catch (err: any) {
       console.error('Amazon API error:', err);
       setError(err.response?.data?.error || 'Error occurred during Amazon check');
-      // Hata durumunda da 5 saniye sonra temizle
-      clearProductInfoTimeoutRef.current = setTimeout(() => {
-        clearProductInfo();
-      }, 5000);
     } finally {
       setIsCheckingAmazon(false);
     }
-  }, [autoAddAcceptedItem, clearProductInfo]);
+  }, []);
   
   const handleScanBarcode = () => {
     if (!isMobile) {
@@ -386,9 +360,6 @@ export default function CreateListingPage() {
     setScannerError("");
     setError("");
     setAmazonResult(null);
-    
-    // Taramadan önce bilgileri temizle
-    clearProductInfo();
     
     startScanning();
   };
@@ -413,18 +384,6 @@ export default function CreateListingPage() {
     continuous: false,
     timeout: 30000
   });
-  
-  // Component unmount olduğunda timeout'ları temizle
-  useEffect(() => {
-    return () => {
-      if (productInfoTimeoutRef.current) {
-        clearTimeout(productInfoTimeoutRef.current);
-      }
-      if (clearProductInfoTimeoutRef.current) {
-        clearTimeout(clearProductInfoTimeoutRef.current);
-      }
-    };
-  }, []);
   
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -475,7 +434,6 @@ export default function CreateListingPage() {
         })),
         currentItem: {
           ...currentItem,
-          isbn: "", // ISBN bilgisini localStorage'a kaydetme
           image: null,
           imageBlob: null,
           imageStats: null
@@ -488,7 +446,7 @@ export default function CreateListingPage() {
       
       const storageKey = getStorageKey();
       localStorage.setItem(storageKey, JSON.stringify(dataToSave));
-      console.log(`✅ Saved ${bundleItems.length} items, description, and shipping info to localStorage (ISBN cleared)`);
+      console.log(`✅ Saved ${bundleItems.length} items, description, and shipping info to localStorage`);
       
     } catch (e) {
       console.error("Failed to save to localStorage", e);
@@ -525,7 +483,6 @@ export default function CreateListingPage() {
         if (parsed.currentItem && parsed.currentItem.isbn) {
           setCurrentItem({
             ...parsed.currentItem,
-            isbn: "", // ISBN'i temizle
             image: null,
             imageBlob: null,
             imageStats: null,
@@ -565,16 +522,6 @@ export default function CreateListingPage() {
       ...prev,
       [field]: value
     }));
-    
-    // ISBN değiştiğinde localStorage'a kaydetmemek için temizle
-    if (field === 'isbn') {
-      setTimeout(() => {
-        setCurrentItem(prev => ({
-          ...prev,
-          isbn: "" // ISBN'i temizle
-        }));
-      }, 100);
-    }
   };
   
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -898,19 +845,19 @@ export default function CreateListingPage() {
       <main className="font-sans antialiased">
         <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
           
-          <div className="mb-8 flex justify-between items-center">
-            <Link 
-              href="/dashboard" 
-              className="inline-flex items-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-blue-600 hover:text-blue-700 hover:shadow-md transition-all duration-200"
-            >
-              <FiHome className="mr-2 h-4 w-4" />
-              Back to Dashboard
-            </Link>
-            
-            <div className="flex space-x-3">
+          <div className="mb-8">
+            <div className="grid grid-cols-3 gap-3 max-w-4xl mx-auto">
+              <Link 
+                href="/dashboard" 
+                className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-blue-600 hover:text-blue-700 hover:shadow-md transition-all duration-200"
+              >
+                <FiHome className="mr-2 h-4 w-4" />
+                Back to Dashboard
+              </Link>
+              
               <Link 
                 href="/condition-guidelines" 
-                className="inline-flex items-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-purple-600 hover:text-purple-700 hover:shadow-md transition-all duration-200"
+                className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-purple-600 hover:text-purple-700 hover:shadow-md transition-all duration-200"
               >
                 <FiBookOpen className="mr-2 h-4 w-4" />
                 Condition Guidelines
@@ -919,7 +866,7 @@ export default function CreateListingPage() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="inline-flex items-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-red-600 hover:text-red-700 hover:shadow-md transition-all duration-200"
+                className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-red-600 hover:text-red-700 hover:shadow-md transition-all duration-200"
               >
                 <FiX className="mr-2 h-4 w-4" />
                 Reset All
@@ -1003,7 +950,7 @@ export default function CreateListingPage() {
                 <div>
                   <h2 className="text-2xl font-bold text-white">Create New Bundle Listing</h2>
                   <p className="mt-1 text-blue-100 max-w-2xl">
-                    Scan barcode to automatically check Amazon pricing and add items to your bundle.
+                    Scan barcode to automatically check Our pricing and add items to your bundle.
                   </p>
                 </div>
                 <div className="hidden md:block">
@@ -1105,7 +1052,7 @@ export default function CreateListingPage() {
                           
                           {amazonResult.pricing.accepted && (
                             <div className="mt-3 text-xs text-green-600">
-                              ⏱️ This product will be automatically added to the list in 1.5 seconds...
+                              ⏱️ This product will be automatically added to the list in 2 seconds...
                             </div>
                           )}
                         </div>
@@ -1212,99 +1159,6 @@ export default function CreateListingPage() {
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Category
-                      {currentItem.amazonData && (
-                        <span className="ml-2 text-xs text-green-600">📡 from Amazon</span>
-                      )}
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={currentItem.category}
-                        onChange={(e) => handleCurrentItemChange('category', e.target.value)}
-                        className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none bg-white"
-                      >
-                        <option value="book">Book</option>
-                        <option value="cd">CD</option>
-                        <option value="dvd">DVD</option>
-                        <option value="game">Game</option>
-                      </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                          <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Condition
-                    </label>
-                    <div className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm bg-gray-100">
-                      Like New
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Quantity
-                    </label>
-                    <div className="flex rounded-lg shadow-sm overflow-hidden border border-gray-300 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all duration-200">
-                      <button
-                        type="button"
-                        onClick={() => handleCurrentItemChange('quantity', Math.max(1, currentItem.quantity - 1))}
-                        className="px-4 py-3 bg-gray-50 text-gray-600 hover:bg-gray-100 border-r border-gray-300"
-                      >
-                        <FiMinus className="h-4 w-4" />
-                      </button>
-                      <input
-                        type="number"
-                        value={currentItem.quantity}
-                        onChange={(e) => handleCurrentItemChange('quantity', parseInt(e.target.value) || 1)}
-                        min="1"
-                        className="flex-1 block w-full px-4 py-3 text-center border-0 focus:ring-0 text-base"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleCurrentItemChange('quantity', currentItem.quantity + 1)}
-                        className="px-4 py-3 bg-gray-50 text-gray-600 hover:bg-gray-100 border-l border-gray-300"
-                      >
-                        <FiPlus className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Our Price ($)
-                      {currentItem.ourPrice && (
-                        <span className="ml-2 text-xs text-green-600">🤖 Auto-calculated</span>
-                      )}
-                    </label>
-                    <div className="flex rounded-lg shadow-sm overflow-hidden border border-gray-300 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all duration-200">
-                      <span className="inline-flex items-center px-4 bg-gray-50 text-gray-500 border-r border-gray-300">
-                        <FiDollarSign className="h-5 w-5" />
-                      </span>
-                      <input
-                        type="number"
-                        value={currentItem.price}
-                        onChange={(e) => handleCurrentItemChange('price', parseFloat(e.target.value) || 0)}
-                        min="0"
-                        max="10"
-                        step="1"
-                        placeholder="0"
-                        className="flex-1 block w-full px-4 py-3 border-0 focus:ring-0 text-base"
-                      />
-                    </div>
-                    {currentItem.originalPrice && (
-                      <p className="text-xs text-gray-600 mt-1">
-                        Amazon price: ${currentItem.originalPrice}
-                      </p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Image
                       {currentItem.amazonData?.image && (
                         <span className="ml-2 text-xs text-green-600">📡 from Amazon</span>
@@ -1329,18 +1183,6 @@ export default function CreateListingPage() {
                       </div>
                     </div>
                   </div>
-                </div>
-                
-                <div className="mt-6">
-                  <button
-                    type="button"
-                    onClick={addNewItem}
-                    disabled={isCheckingAmazon}
-                    className="w-full flex justify-center py-3 px-4 border border-transparent shadow-sm text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50"
-                  >
-                    <FiPlus className="mr-2 h-5 w-5" />
-                    Add Item Manually
-                  </button>
                 </div>
               </div>
               
@@ -1375,12 +1217,16 @@ export default function CreateListingPage() {
                 )}
                 
                 {bundleItems.length > 0 ? (
-                  <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                  <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
                     {bundleItems.map((item) => (
-                      <div key={item.id} className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm transition-all duration-200 hover:shadow-md">
-                        <div className="flex justify-between items-start">
-                          <div className="flex items-center">
-                            <div className="w-16 h-16 rounded-md overflow-hidden mr-4 flex-shrink-0 border border-gray-200 relative">
+                      <div key={item.id} className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm transition-all duration-200 hover:shadow-md">
+                        {/* Mobile: Dikey layout, Desktop: Yatay layout */}
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-3 sm:space-y-0">
+                          
+                          {/* Ana içerik */}
+                          <div className="flex items-start space-x-3 flex-1 min-w-0">
+                            {/* Image */}
+                            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-md overflow-hidden flex-shrink-0 border border-gray-200 relative">
                               {item.imageUrl ? (
                                 <>
                                   <img 
@@ -1393,17 +1239,17 @@ export default function CreateListingPage() {
                                       target.src = '/placeholder-image.png';
                                     }}
                                   />
-                                  <div className="absolute bottom-0 right-0">
+                                  <div className="absolute -bottom-1 -right-1">
                                     {item.amazonData?.image === item.imageUrl ? (
-                                      <span className="inline-block w-3 h-3 bg-orange-500 rounded-full border border-white" title="Amazon Image"></span>
+                                      <span className="inline-block w-2 h-2 sm:w-3 sm:h-3 bg-orange-500 rounded-full border border-white" title="Amazon Image"></span>
                                     ) : (
-                                      <span className="inline-block w-3 h-3 bg-blue-500 rounded-full border border-white" title="Custom Image"></span>
+                                      <span className="inline-block w-2 h-2 sm:w-3 sm:h-3 bg-blue-500 rounded-full border border-white" title="Custom Image"></span>
                                     )}
                                   </div>
                                 </>
                               ) : (
                                 <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                  <span className="text-xl">
+                                  <span className="text-sm sm:text-xl">
                                     {item.category === "book" ? "📚" : 
                                      item.category === "cd" ? "💿" : 
                                      item.category === "dvd" ? "📀" : 
@@ -1413,61 +1259,75 @@ export default function CreateListingPage() {
                               )}
                             </div>
                             
-                            <div>
-                              <h4 className="text-md font-medium text-gray-900">
+                            {/* Content */}
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-sm sm:text-md font-medium text-gray-900 truncate pr-2">
                                 {item.amazonData?.title || `ISBN: ${item.isbn}`}
                               </h4>
-                              <p className="text-sm text-gray-600">
-                                {item.category.charAt(0).toUpperCase() + item.category.slice(1)} • 
-                                {item.condition === "like-new" ? "Like New" : "Good"} • 
-                                Qty: {item.quantity} • 
-                                Our Price: ${item.price.toFixed(2)}
-                              </p>
                               
-                              {item.amazonData && (
-                                <div className="flex items-center space-x-4 mt-1">
-                                  <span className="text-xs text-blue-600 flex items-center">
-                                    <FiDollarSign className="h-3 w-3 mr-1" />
-                                    Amazon: ${item.originalPrice}
+                              <div className="mt-1 space-y-1">
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                    {item.category}
                                   </span>
-                                  {item.amazonData.sales_rank && (
-                                    <span className="text-xs text-green-600 flex items-center">
-                                      <FiTrendingUp className="h-3 w-3 mr-1" />
-                                      Rank: #{item.amazonData.sales_rank.toLocaleString()}
-                                    </span>
-                                  )}
-                                  <span className="text-xs text-purple-600 flex items-center">
-                                    <FiStar className="h-3 w-3 mr-1" />
-                                    Auto-added
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                    {item.condition === "like-new" ? "Like New" : "Good"}
+                                  </span>
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                    Qty: {item.quantity}
                                   </span>
                                 </div>
-                              )}
-                              
-                              <div className="mt-1">
-                                {item.amazonData?.image === item.imageUrl && (
-                                  <span className="text-xs text-orange-600">
-                                    📦 Amazon image (saved to database)
-                                  </span>
+                                
+                                <div className="flex items-center justify-between">
+                                  <p className="text-sm font-medium text-gray-900">
+                                    Our Price: ${item.price.toFixed(2)}
+                                  </p>
+                                  
+                                  {item.amazonData && (
+                                    <div className="flex items-center text-xs text-blue-600">
+                                      <FiDollarSign className="h-3 w-3 mr-0.5" />
+                                      <span>${item.originalPrice}</span>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {item.amazonData && (
+                                  <div className="flex flex-wrap gap-2 text-xs">
+                                    {item.amazonData.sales_rank && (
+                                      <span className="inline-flex items-center text-green-600">
+                                        <FiTrendingUp className="h-3 w-3 mr-0.5" />
+                                        #{item.amazonData.sales_rank.toLocaleString()}
+                                      </span>
+                                    )}
+                                    <span className="inline-flex items-center text-purple-600">
+                                      <FiStar className="h-3 w-3 mr-0.5" />
+                                      Auto
+                                    </span>
+                                  </div>
                                 )}
-                                {item.imageUrl && item.imageUrl.includes('firebasestorage.googleapis.com') && (
-                                  <span className="text-xs text-blue-600">
-                                    📷 Custom image (uploaded to Firebase)
-                                  </span>
-                                )}
-                                {!item.imageUrl && (
-                                  <span className="text-xs text-orange-600">
-                                    ⚠️ No image available
-                                  </span>
-                                )}
+                                
+                                <div className="text-xs text-gray-500">
+                                  {item.amazonData?.image === item.imageUrl && (
+                                    <span>📦 Amazon image</span>
+                                  )}
+                                  {item.imageUrl && item.imageUrl.includes('firebasestorage.googleapis.com') && (
+                                    <span>📷 Custom image</span>
+                                  )}
+                                  {!item.imageUrl && (
+                                    <span className="text-orange-600">⚠️ No image</span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
+                          
+                          {/* Remove button */}
                           <button
                             type="button"
                             onClick={() => removeItem(item.id)}
-                            className="p-1.5 rounded-full text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-200"
+                            className="flex-shrink-0 p-1.5 rounded-full text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-200 self-start sm:self-center"
                           >
-                            <FiX className="h-5 w-5" />
+                            <FiX className="h-4 w-4 sm:h-5 sm:w-5" />
                           </button>
                         </div>
                       </div>
@@ -1616,6 +1476,7 @@ export default function CreateListingPage() {
                             className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none bg-white"
                           >
                             <option value="US">United States</option>
+                            
                           </select>
                           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
                             <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
@@ -1757,39 +1618,6 @@ export default function CreateListingPage() {
                 </button>
               </div>
             </form>
-          </div>
-          
-          <div className="mt-8 bg-blue-50 rounded-lg p-4 border border-blue-200">
-            <h3 className="text-sm font-medium text-blue-900 mb-2">📱 How it works</h3>
-            <ul className="text-sm text-blue-700 space-y-1">
-              <li>• Scan barcode on your mobile device to automatically check Amazon pricing</li>
-              <li>• Items meeting our criteria are automatically added with calculated pricing</li>
-              <li>• Rejected items show detailed reason (price range, sales rank, etc.)</li>
-              <li>• ✅ Amazon images are automatically saved to Firestore (no upload needed)</li>
-              <li>• Custom uploaded images are optimized and stored in Firebase Storage</li>
-              <li>• Manual entry is still available for items without barcodes</li>
-            </ul>
-          </div>
-          
-          <div className="mt-4 bg-green-50 rounded-lg p-4 border border-green-200">
-            <h3 className="text-sm font-medium text-green-900 mb-2">🖼️ Image Persistence</h3>
-            <ul className="text-sm text-green-700 space-y-1">
-              <li>• 📦 <strong>Amazon Images:</strong> Saved directly to Firestore (persistent URLs)</li>
-              <li>• 📷 <strong>Custom Images:</strong> Uploaded to Firebase Storage (optimized)</li>
-              <li>• ✅ <strong>Product Cards:</strong> Display both Amazon and custom images</li>
-              <li>• 🔄 <strong>Page Refresh:</strong> Images will no longer disappear</li>
-            </ul>
-          </div>
-          
-          <div className="mt-4 bg-purple-50 rounded-lg p-4 border border-purple-200">
-            <h3 className="text-sm font-medium text-purple-900 mb-2">🚚 Shipping Information</h3>
-            <ul className="text-sm text-purple-700 space-y-1">
-              <li>• 📦 <strong>Shipping Address:</strong> Enter your shipping address for shipping</li>
-              <li>• 📏 <strong>Package Dimensions:</strong> Enter length, width, height, and weight</li>
-              <li>• ⚠️ <strong>Size Limits:</strong> Package must not exceed 18x16x16 inches and 50 pounds</li>
-              <li>• 💰 <strong>Shipping Cost:</strong> Will be calculated at checkout using Shippo API</li>
-              <li>• ✅ <strong>Data Persistence:</strong> All shipping info is saved to localStorage</li>
-            </ul>
           </div>
         </div>
       </main>

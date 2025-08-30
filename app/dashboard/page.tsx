@@ -7,14 +7,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { User as FirebaseUser } from "firebase/auth";
-
 // TypeScript interfaces
 interface AppUser {
   uid: string;
   email: string | null;
   displayName: string | null;
 }
-
 interface UserData {
   uid: string;
   email: string | null;
@@ -23,7 +21,6 @@ interface UserData {
   createdAt?: any;
   lastLogin?: any;
 }
-
 interface Listing {
   id: string;
   title: string;
@@ -34,7 +31,6 @@ interface Listing {
   createdAt: Date;
   totalItems: number;
 }
-
 interface OrderItem {
   id: string;
   productId: string;
@@ -44,7 +40,6 @@ interface OrderItem {
   image?: string;
   shippingCost: number;
 }
-
 interface Order {
   id: string;
   userId: string;
@@ -73,7 +68,6 @@ interface Order {
   createdAt: Date;
   updatedAt: Date;
 }
-
 export default function DashboardPage() {
   const [authUser, authLoading, authError] = useAuthState(auth);
   const router = useRouter();
@@ -87,6 +81,7 @@ export default function DashboardPage() {
   const [sales, setSales] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [debugInfo, setDebugInfo] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<'orders' | 'sales'>('orders'); // Tab state for mobile
   
   // Convert Firebase user to our AppUser format with useMemo to prevent recreation
   const user = useMemo<AppUser | null>(() => {
@@ -593,314 +588,579 @@ export default function DashboardPage() {
               <h1 className="text-3xl font-bold text-gray-900">
                 Welcome back, {userName}!
               </h1>
-              <p className="mt-2 text-gray-600">
-                Manage your listings and track your sales performance
-              </p>
+              {/* Removed subtitle here */}
             </div>
             
-            {/* Navigation Links */}
+            {/* Navigation Links - Better styled */}
             <div className="flex space-x-4">
               <Link 
                 href="/"
-                className="text-blue-600 hover:text-blue-800 font-medium"
+                className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
               >
-                ← Home Page
-              </Link>
-            </div>
-          </div>
-        </div>
-        
-        {/* Debug Info - Only show in development */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg shadow-sm">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                 </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-blue-700 font-medium">Debug Information:</p>
-                <pre className="text-xs text-blue-600 mt-1 whitespace-pre-wrap">{debugInfo}</pre>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          
-          {/* Create Listing Card */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full">
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
-                <span className="text-2xl">📝</span>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Create New Listing</h3>
-                <p className="text-sm text-gray-600">Add items to your marketplace</p>
-              </div>
-            </div>
-            <div className="mt-auto pt-4">
-              <Link 
-                href="/create-listing"
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium text-center block"
-              >
-                Create Listing
-              </Link>
-            </div>
-          </div>
-          
-          {/* View Listings Card */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full">
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
-                <span className="text-2xl">📦</span>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">My Listings</h3>
-                <p className="text-sm text-gray-600">Manage your active listings</p>
-              </div>
-            </div>
-            <div className="mt-auto pt-4">
-              <Link 
-                href="/my-listings"
-                className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium text-center block"
-              >
-                View My Listings
-              </Link>
-            </div>
-          </div>
-          
-          {/* My Orders Card */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full">
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
-                <span className="text-2xl">🛒</span>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">My Orders</h3>
-                <p className="text-sm text-gray-600">Track your purchases</p>
-              </div>
-            </div>
-            <div className="mt-auto pt-4">
-              <Link 
-                href="/dashboard/my-orders"
-                className="w-full bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors font-medium text-center block"
-              >
-                View Orders
-              </Link>
-            </div>
-          </div>
-          
-          {/* My Sales Card */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full">
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
-                <span className="text-2xl">💰</span>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">My Sales</h3>
-                <p className="text-sm text-gray-600">Manage your sales</p>
-              </div>
-            </div>
-            <div className="mt-auto pt-4">
-              <Link 
-                href="/dashboard/my-sales"
-                className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors font-medium text-center block"
-              >
-                View Sales
+                Home Page
               </Link>
             </div>
           </div>
         </div>
         
-        {/* Statistics Cards - Extended */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-4 mb-8">
-          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-            <div className="flex flex-col items-center">
-              <div className="text-2xl mb-2">📊</div>
-              <p className="text-xl font-bold text-blue-600">{userListings.length}</p>
-              <p className="text-xs text-gray-600 text-center">Active Listings</p>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-            <div className="flex flex-col items-center">
-              <div className="text-2xl mb-2">💰</div>
-              <p className="text-xl font-bold text-green-600">
-                ${userListings.reduce((sum, listing) => sum + (listing.price || 0), 0).toFixed(2)}
-              </p>
-              <p className="text-xs text-gray-600 text-center">Total Value</p>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-            <div className="flex flex-col items-center">
-              <div className="text-2xl mb-2">👁️</div>
-              <p className="text-xl font-bold text-purple-600">
-                {userListings.reduce((sum, listing) => sum + (listing.views || 0), 0)}
-              </p>
-              <p className="text-xs text-gray-600 text-center">Total Views</p>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-            <div className="flex flex-col items-center">
-              <div className="text-2xl mb-2">⭐</div>
-              <p className="text-xl font-bold text-yellow-600">5.0</p>
-              <p className="text-xs text-gray-600 text-center">Seller Rating</p>
-            </div>
-          </div>
-          
-          {/* My Purchases Card */}
-          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-            <div className="flex flex-col items-center">
-              <div className="text-2xl mb-2">🛒</div>
-              <p className="text-xl font-bold text-orange-600">{purchases.length}</p>
-              <p className="text-xs text-gray-600 text-center">My Purchases</p>
-            </div>
-          </div>
-          
-          {/* My Sales Card */}
-          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-            <div className="flex flex-col items-center">
-              <div className="text-2xl mb-2">💰</div>
-              <p className="text-xl font-bold text-teal-600">{sales.length}</p>
-              <p className="text-xs text-gray-600 text-center">My Sales</p>
-            </div>
-          </div>
-          
-          {/* Sales Amount Card */}
-          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-            <div className="flex flex-col items-center">
-              <div className="text-2xl mb-2">💸</div>
-              <p className="text-xl font-bold text-indigo-600">${totalSalesAmount.toFixed(2)}</p>
-              <p className="text-xs text-gray-600 text-center">Sales Amount</p>
-            </div>
-          </div>
-          
-          {/* Messages Card */}
-          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-            <div className="flex flex-col items-center">
-              <div className="text-2xl mb-2">💬</div>
-              <p className="text-xl font-bold text-pink-600">0</p>
-              <p className="text-xs text-gray-600 text-center">Messages</p>
-            </div>
-          </div>
-        </div>
-        
-        {/* Orders and Sales Summary */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Recent Orders */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">🛒 Recent Orders</h3>
-              <Link 
-                href="/dashboard/my-orders"
-                className="text-orange-600 hover:text-orange-800 font-medium text-sm"
-              >
-                View All Orders →
-              </Link>
+        {/* Mobile View */}
+        <div className="md:hidden">
+          {/* Mobile Statistics Cards - All 8 but smaller */}
+          <div className="grid grid-cols-4 gap-2 mb-6">
+            <div className="bg-white rounded-lg shadow-sm p-2 border border-gray-200">
+              <div className="flex flex-col items-center">
+                <div className="text-lg mb-1">📊</div>
+                <p className="text-sm font-bold text-blue-600">{userListings.length}</p>
+                <p className="text-[9px] text-gray-600 text-center">Listings</p>
+              </div>
             </div>
             
-            {ordersLoading ? (
-              <div className="flex justify-center items-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mr-3"></div>
-                <span className="text-gray-600">Loading your orders...</span>
-              </div>
-            ) : purchases.length > 0 ? (
-              <div className="space-y-4">
-                {purchases.slice(0, 3).map((order) => (
-                  <div key={order.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-medium text-gray-900">Order #{order.id ? order.id.slice(-8).toUpperCase() : 'UNKNOWN'}</h4>
-                        <p className="text-sm text-gray-600">
-                          {formatDate(order.createdAt)} • {order.items?.length || 0} items
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">User ID: {order.userId}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-gray-900">${(order.totalAmount || 0).toFixed(2)}</p>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(order.status || '')}`}>
-                          {order.status || 'Unknown'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <div className="text-5xl mb-3">🛒</div>
-                <h4 className="text-lg font-medium text-gray-900 mb-2">No orders yet</h4>
-                <p className="text-gray-600 mb-4">
-                  You haven't made any purchases yet
+            <div className="bg-white rounded-lg shadow-sm p-2 border border-gray-200">
+              <div className="flex flex-col items-center">
+                <div className="text-lg mb-1">💰</div>
+                <p className="text-sm font-bold text-green-600">
+                  ${userListings.reduce((sum, listing) => sum + (listing.price || 0), 0).toFixed(0)}
                 </p>
+                <p className="text-[9px] text-gray-600 text-center">Listings Value</p>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm p-2 border border-gray-200">
+              <div className="flex flex-col items-center">
+                <div className="text-lg mb-1">👁️</div>
+                <p className="text-sm font-bold text-purple-600">
+                  {userListings.reduce((sum, listing) => sum + (listing.views || 0), 0)}
+                </p>
+                <p className="text-[9px] text-gray-600 text-center">Views</p>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm p-2 border border-gray-200">
+              <div className="flex flex-col items-center">
+                <div className="text-lg mb-1">⭐</div>
+                <p className="text-sm font-bold text-yellow-600">5.0</p>
+                <p className="text-[9px] text-gray-600 text-center">Rating</p>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm p-2 border border-gray-200">
+              <div className="flex flex-col items-center">
+                <div className="text-lg mb-1">🛒</div>
+                <p className="text-sm font-bold text-orange-600">{purchases.length}</p>
+                <p className="text-[9px] text-gray-600 text-center">Purchases</p>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm p-2 border border-gray-200">
+              <div className="flex flex-col items-center">
+                <div className="text-lg mb-1">💰</div>
+                <p className="text-sm font-bold text-teal-600">{sales.length}</p>
+                <p className="text-[9px] text-gray-600 text-center">Sales</p>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm p-2 border border-gray-200">
+              <div className="flex flex-col items-center">
+                <div className="text-lg mb-1">💸</div>
+                <p className="text-sm font-bold text-indigo-600">${totalSalesAmount.toFixed(0)}</p>
+                <p className="text-[9px] text-gray-600 text-center">Amount</p>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm p-2 border border-gray-200">
+              <div className="flex flex-col items-center">
+                <div className="text-lg mb-1">💬</div>
+                <p className="text-sm font-bold text-pink-600">0</p>
+                <p className="text-[9px] text-gray-600 text-center">Messages</p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Mobile Quick Actions - 2x2 Grid */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            {/* My Orders Card - Moved to top */}
+            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full">
+              <div className="flex flex-col items-center mb-2">
+                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center mb-2">
+                  <span className="text-xl">🛒</span>
+                </div>
+                <h3 className="text-sm font-semibold text-gray-900 text-center">My Orders</h3>
+              </div>
+              <div className="mt-auto">
                 <Link 
-                  href="/listings"
-                  className="inline-block bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors text-sm"
+                  href="/dashboard/my-orders"
+                  className="w-full bg-orange-600 text-white py-2 px-3 rounded-lg hover:bg-orange-700 transition-colors text-xs font-medium text-center block"
                 >
-                  Start Shopping
+                  View
                 </Link>
               </div>
-            )}
-          </div>
-          
-          {/* Recent Sales */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">💰 Recent Sales</h3>
-              <Link 
-                href="/dashboard/my-sales"
-                className="text-purple-600 hover:text-purple-800 font-medium text-sm"
-              >
-                View All Sales →
-              </Link>
             </div>
             
-            {ordersLoading ? (
-              <div className="flex justify-center items-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mr-3"></div>
-                <span className="text-gray-600">Loading your sales...</span>
+            {/* My Sales Card - Moved to top */}
+            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full">
+              <div className="flex flex-col items-center mb-2">
+                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mb-2">
+                  <span className="text-xl">💰</span>
+                </div>
+                <h3 className="text-sm font-semibold text-gray-900 text-center">My Sales</h3>
               </div>
-            ) : sales.length > 0 ? (
-              <div className="space-y-4">
-                {sales.slice(0, 3).map((sale) => (
-                  <div key={sale.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-medium text-gray-900">Sale #{sale.id ? sale.id.slice(-8).toUpperCase() : 'UNKNOWN'}</h4>
-                        <p className="text-sm text-gray-600">
-                          {formatDate(sale.createdAt)} • {sale.items?.length || 0} items
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-gray-900">${(sale.totalAmount || 0).toFixed(2)}</p>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(sale.status || '')}`}>
-                          {sale.status || 'Unknown'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="mt-auto">
+                <Link 
+                  href="/dashboard/my-sales"
+                  className="w-full bg-purple-600 text-white py-2 px-3 rounded-lg hover:bg-purple-700 transition-colors text-xs font-medium text-center block"
+                >
+                  View
+                </Link>
               </div>
-            ) : (
-              <div className="text-center py-8">
-                <div className="text-5xl mb-3">💰</div>
-                <h4 className="text-lg font-medium text-gray-900 mb-2">No sales yet</h4>
-                <p className="text-gray-600 mb-4">
-                  You haven't made any sales yet
-                </p>
+            </div>
+            
+            {/* Create Listing Card */}
+            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full">
+              <div className="flex flex-col items-center mb-2">
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-2">
+                  <span className="text-xl">📝</span>
+                </div>
+                <h3 className="text-sm font-semibold text-gray-900 text-center">Create Listing</h3>
+              </div>
+              <div className="mt-auto">
                 <Link 
                   href="/create-listing"
-                  className="inline-block bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm"
+                  className="w-full bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium text-center block"
+                >
+                  Create
+                </Link>
+              </div>
+            </div>
+            
+            {/* View Listings Card */}
+            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full">
+              <div className="flex flex-col items-center mb-2">
+                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mb-2">
+                  <span className="text-xl">📦</span>
+                </div>
+                <h3 className="text-sm font-semibold text-gray-900 text-center">My Listings</h3>
+              </div>
+              <div className="mt-auto">
+                <Link 
+                  href="/my-listings"
+                  className="w-full bg-green-600 text-white py-2 px-3 rounded-lg hover:bg-green-700 transition-colors text-xs font-medium text-center block"
+                >
+                  View
+                </Link>
+              </div>
+            </div>
+          </div>
+          
+          {/* Mobile Tabs */}
+          <div className="flex border-b border-gray-200 mb-4">
+            <button
+              className={`flex-1 py-3 px-4 text-center font-medium text-sm ${activeTab === 'orders' ? 'text-orange-600 border-b-2 border-orange-600' : 'text-gray-500'}`}
+              onClick={() => setActiveTab('orders')}
+            >
+              Orders
+            </button>
+            <button
+              className={`flex-1 py-3 px-4 text-center font-medium text-sm ${activeTab === 'sales' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-gray-500'}`}
+              onClick={() => setActiveTab('sales')}
+            >
+              Sales
+            </button>
+          </div>
+          
+          {/* Mobile Tab Content */}
+          {activeTab === 'orders' && (
+            <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-md font-semibold text-gray-900">🛒 Recent Orders</h3>
+                <Link 
+                  href="/dashboard/my-orders"
+                  className="text-orange-600 hover:text-orange-800 font-medium text-xs"
+                >
+                  View All →
+                </Link>
+              </div>
+              
+              {ordersLoading ? (
+                <div className="flex justify-center items-center py-6">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600 mr-2"></div>
+                  <span className="text-gray-600 text-sm">Loading...</span>
+                </div>
+              ) : purchases.length > 0 ? (
+                <div className="space-y-3">
+                  {purchases.slice(0, 2).map((order) => (
+                    <div key={order.id} className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium text-gray-900 text-sm">Order #{order.id ? order.id.slice(-6).toUpperCase() : 'UNKNOWN'}</h4>
+                          <p className="text-xs text-gray-600">
+                            {formatDate(order.createdAt)} • {order.items?.length || 0} items
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-gray-900 text-sm">${(order.totalAmount || 0).toFixed(2)}</p>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(order.status || '')}`}>
+                            {order.status || 'Unknown'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <div className="text-4xl mb-2">🛒</div>
+                  <h4 className="text-md font-medium text-gray-900 mb-2">No orders yet</h4>
+                  <p className="text-gray-600 text-sm mb-3">
+                    You haven't made any purchases yet
+                  </p>
+                  <Link 
+                    href="/listings"
+                    className="inline-block bg-orange-600 text-white px-3 py-1 rounded-lg hover:bg-orange-700 transition-colors text-xs"
+                  >
+                    Start Shopping
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {activeTab === 'sales' && (
+            <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-md font-semibold text-gray-900">💰 Recent Sales</h3>
+                <Link 
+                  href="/dashboard/my-sales"
+                  className="text-purple-600 hover:text-purple-800 font-medium text-xs"
+                >
+                  View All →
+                </Link>
+              </div>
+              
+              {ordersLoading ? (
+                <div className="flex justify-center items-center py-6">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mr-2"></div>
+                  <span className="text-gray-600 text-sm">Loading...</span>
+                </div>
+              ) : sales.length > 0 ? (
+                <div className="space-y-3">
+                  {sales.slice(0, 2).map((sale) => (
+                    <div key={sale.id} className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium text-gray-900 text-sm">Sale #{sale.id ? sale.id.slice(-6).toUpperCase() : 'UNKNOWN'}</h4>
+                          <p className="text-xs text-gray-600">
+                            {formatDate(sale.createdAt)} • {sale.items?.length || 0} items
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-gray-900 text-sm">${(sale.totalAmount || 0).toFixed(2)}</p>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(sale.status || '')}`}>
+                            {sale.status || 'Unknown'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <div className="text-4xl mb-2">💰</div>
+                  <h4 className="text-md font-medium text-gray-900 mb-2">No sales yet</h4>
+                  <p className="text-gray-600 text-sm mb-3">
+                    You haven't made any sales yet
+                  </p>
+                  <Link 
+                    href="/create-listing"
+                    className="inline-block bg-purple-600 text-white px-3 py-1 rounded-lg hover:bg-purple-700 transition-colors text-xs"
+                  >
+                    Create Listing
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        
+        {/* Desktop View - Unchanged */}
+        <div className="hidden md:block">
+          {/* Quick Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            
+            {/* Create Listing Card */}
+            <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
+                  <span className="text-2xl">📝</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Create New Listing</h3>
+                  <p className="text-sm text-gray-600">Add items to your marketplace</p>
+                </div>
+              </div>
+              <div className="mt-auto pt-4">
+                <Link 
+                  href="/create-listing"
+                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium text-center block"
                 >
                   Create Listing
                 </Link>
               </div>
-            )}
+            </div>
+            
+            {/* View Listings Card */}
+            <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
+                  <span className="text-2xl">📦</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">My Listings</h3>
+                  <p className="text-sm text-gray-600">Manage your active listings</p>
+                </div>
+              </div>
+              <div className="mt-auto pt-4">
+                <Link 
+                  href="/my-listings"
+                  className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium text-center block"
+                >
+                  View My Listings
+                </Link>
+              </div>
+            </div>
+            
+            {/* My Orders Card */}
+            <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
+                  <span className="text-2xl">🛒</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">My Orders</h3>
+                  <p className="text-sm text-gray-600">Track your purchases</p>
+                </div>
+              </div>
+              <div className="mt-auto pt-4">
+                <Link 
+                  href="/dashboard/my-orders"
+                  className="w-full bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors font-medium text-center block"
+                >
+                  View Orders
+                </Link>
+              </div>
+            </div>
+            
+            {/* My Sales Card */}
+            <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
+                  <span className="text-2xl">💰</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">My Sales</h3>
+                  <p className="text-sm text-gray-600">Manage your sales</p>
+                </div>
+              </div>
+              <div className="mt-auto pt-4">
+                <Link 
+                  href="/dashboard/my-sales"
+                  className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors font-medium text-center block"
+                >
+                  View Sales
+                </Link>
+              </div>
+            </div>
+          </div>
+          
+          {/* Statistics Cards - Extended */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-4 mb-8">
+            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+              <div className="flex flex-col items-center">
+                <div className="text-2xl mb-2">📊</div>
+                <p className="text-xl font-bold text-blue-600">{userListings.length}</p>
+                <p className="text-xs text-gray-600 text-center">Active Listings</p>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+              <div className="flex flex-col items-center">
+                <div className="text-2xl mb-2">💰</div>
+                <p className="text-xl font-bold text-green-600">
+                  ${userListings.reduce((sum, listing) => sum + (listing.price || 0), 0).toFixed(2)}
+                </p>
+                <p className="text-xs text-gray-600 text-center">Listings Value</p>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+              <div className="flex flex-col items-center">
+                <div className="text-2xl mb-2">👁️</div>
+                <p className="text-xl font-bold text-purple-600">
+                  {userListings.reduce((sum, listing) => sum + (listing.views || 0), 0)}
+                </p>
+                <p className="text-xs text-gray-600 text-center">Total Views</p>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+              <div className="flex flex-col items-center">
+                <div className="text-2xl mb-2">⭐</div>
+                <p className="text-xl font-bold text-yellow-600">5.0</p>
+                <p className="text-xs text-gray-600 text-center">Seller Rating</p>
+              </div>
+            </div>
+            
+            {/* My Purchases Card */}
+            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+              <div className="flex flex-col items-center">
+                <div className="text-2xl mb-2">🛒</div>
+                <p className="text-xl font-bold text-orange-600">{purchases.length}</p>
+                <p className="text-xs text-gray-600 text-center">My Purchases</p>
+              </div>
+            </div>
+            
+            {/* My Sales Card */}
+            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+              <div className="flex flex-col items-center">
+                <div className="text-2xl mb-2">💰</div>
+                <p className="text-xl font-bold text-teal-600">{sales.length}</p>
+                <p className="text-xs text-gray-600 text-center">My Sales</p>
+              </div>
+            </div>
+            
+            {/* Sales Amount Card */}
+            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+              <div className="flex flex-col items-center">
+                <div className="text-2xl mb-2">💸</div>
+                <p className="text-xl font-bold text-indigo-600">${totalSalesAmount.toFixed(2)}</p>
+                <p className="text-xs text-gray-600 text-center">Sales Amount</p>
+              </div>
+            </div>
+            
+            {/* Messages Card */}
+            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+              <div className="flex flex-col items-center">
+                <div className="text-2xl mb-2">💬</div>
+                <p className="text-xl font-bold text-pink-600">0</p>
+                <p className="text-xs text-gray-600 text-center">Messages</p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Orders and Sales Summary */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {/* Recent Orders */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-semibold text-gray-900">🛒 Recent Orders</h3>
+                <Link 
+                  href="/dashboard/my-orders"
+                  className="text-orange-600 hover:text-orange-800 font-medium text-sm"
+                >
+                  View All Orders →
+                </Link>
+              </div>
+              
+              {ordersLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mr-3"></div>
+                  <span className="text-gray-600">Loading your orders...</span>
+                </div>
+              ) : purchases.length > 0 ? (
+                <div className="space-y-4">
+                  {purchases.slice(0, 3).map((order) => (
+                    <div key={order.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium text-gray-900">Order #{order.id ? order.id.slice(-8).toUpperCase() : 'UNKNOWN'}</h4>
+                          <p className="text-sm text-gray-600">
+                            {formatDate(order.createdAt)} • {order.items?.length || 0} items
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">User ID: {order.userId}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-gray-900">${(order.totalAmount || 0).toFixed(2)}</p>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(order.status || '')}`}>
+                            {order.status || 'Unknown'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-5xl mb-3">🛒</div>
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">No orders yet</h4>
+                  <p className="text-gray-600 mb-4">
+                    You haven't made any purchases yet
+                  </p>
+                  <Link 
+                    href="/listings"
+                    className="inline-block bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors text-sm"
+                  >
+                    Start Shopping
+                  </Link>
+                </div>
+              )}
+            </div>
+            
+            {/* Recent Sales */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-semibold text-gray-900">💰 Recent Sales</h3>
+                <Link 
+                  href="/dashboard/my-sales"
+                  className="text-purple-600 hover:text-purple-800 font-medium text-sm"
+                >
+                  View All Sales →
+                </Link>
+              </div>
+              
+              {ordersLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mr-3"></div>
+                  <span className="text-gray-600">Loading your sales...</span>
+                </div>
+              ) : sales.length > 0 ? (
+                <div className="space-y-4">
+                  {sales.slice(0, 3).map((sale) => (
+                    <div key={sale.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium text-gray-900">Sale #{sale.id ? sale.id.slice(-8).toUpperCase() : 'UNKNOWN'}</h4>
+                          <p className="text-sm text-gray-600">
+                            {formatDate(sale.createdAt)} • {sale.items?.length || 0} items
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-gray-900">${(sale.totalAmount || 0).toFixed(2)}</p>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(sale.status || '')}`}>
+                            {sale.status || 'Unknown'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-5xl mb-3">💰</div>
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">No sales yet</h4>
+                  <p className="text-gray-600 mb-4">
+                    You haven't made any sales yet
+                  </p>
+                  <Link 
+                    href="/create-listing"
+                    className="inline-block bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm"
+                  >
+                    Create Listing
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         </div>
         

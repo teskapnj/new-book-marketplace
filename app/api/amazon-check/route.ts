@@ -1,7 +1,8 @@
 // /app/api/amazon-check/route.ts
-// Oxylabs Amazon API - Optimize Ed ISBN/UPC search with Data Consistency Check
+// Oxylabs Amazon API - Optimize Ed ISBN/UPC search with Data Consistency Check + Cache
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
+import { productCache } from '@/lib/productCache'; // YENİ: Cache servisi
 
 // Fiyat hesaplama motorunu içe aktarmaya çalışın
 let calculateOurPrice: any;
@@ -121,6 +122,7 @@ interface ApiResponse {
       apiCalls: number;
       hasRank: boolean;
       dataConsistency?: string;
+      cacheHit?: boolean; // YENİ: Cache hit bilgisi
     };
   };
   error?: string;
@@ -409,9 +411,10 @@ function extractCategory(data: any): string {
 
 /**
  * POST /api/amazon-check
- * Optimize edilmiş API çağrı akışı:
- * 1. Eğer ASIN ise, doğrudan ürün detayları araması (1 çağrı)
- * 2. Eğer ISBN/UPC ise, ASIN'i bulmak için arama, ardından ASIN ile detayları çağır (2 çağrı toplam)
+ * Optimize edilmiş API çağrı akışı + Cache:
+ * 1. Önce cache'den kontrol et
+ * 2. Cache yoksa mevcut Oxylabs API akışını kullan
+ * 3. Sonucu cache'e kaydet
  */
 export async function POST(request: NextRequest) {
   try {
@@ -445,6 +448,31 @@ export async function POST(request: NextRequest) {
       } as ApiResponse, { status: 400 });
     }
     
+    console.log(`\n🔍 Amazon için kontrol ediliyor: ${cleanCode} (${codeType})`);
+    console.log('═══════════════════════════════════');
+    
+    // YENİ: Önce cache'den kontrol et
+    const cachedResult = await productCache.getFromCache(cleanCode);
+    
+    if (cachedResult) {
+      console.log(`🎯 Cache'den bulundu: ${cleanCode}`);
+      
+      // Cache'den gelen veriyi API response formatına çevir
+      return NextResponse.json({
+        success: true,
+        data: {
+          product: cachedResult.product,
+          pricing: cachedResult.pricing,
+          message: cachedResult.message + ' (Cache)',
+          debug: {
+            ...cachedResult.debug,
+            cacheHit: true
+          }
+        }
+      } as ApiResponse);
+    }
+    
+    // Cache'de yoksa mevcut Oxylabs API akışını kullan
     const username = process.env.OXYLABS_USERNAME;
     const password = process.env.OXYLABS_PASSWORD;
     
@@ -455,18 +483,17 @@ export async function POST(request: NextRequest) {
       } as ApiResponse, { status: 500 });
     }
     
-    console.log(`\n🔍 Amazon için kontrol ediliyor: ${cleanCode} (${codeType})`);
-    console.log('═══════════════════════════════════');
-    
     let asin = '';
     let productContent: ProductDetailResult | null = null;
     let apiCallCount = 0;
+    let searchMethod = '';
     
     if (codeType === 'asin') {
-      // Akış 1: Eğer kod zaten bir ASIN ise, doğrudan ürün detayları çağrısı yapıyoruz. Bu en hızlı yol.
+      // Akış 1: Eğer kod zaten bir ASIN ise, doğrudan ürün detayları çağrısı yapıyoruz
       console.log('📡 ASIN algılandı. Doğrudan ürün detayları araması yapılıyor...');
       apiCallCount = 1;
       asin = cleanCode;
+      searchMethod = 'doğrudan-arama';
       
       const productRequest = {
         source: 'amazon_product',
@@ -489,10 +516,10 @@ export async function POST(request: NextRequest) {
       productContent = productResponse.data.results?.[0]?.content || null;
       
     } else {
-      // Akış 2: Eğer kod ISBN veya UPC ise, ASIN'i bulmak için önce bir arama (amazon_search)
-      // ardından ürün detaylarını almak için ikinci bir çağrı (amazon_product) yapıyoruz.
+      // Akış 2: Eğer kod ISBN veya UPC ise, ASIN'i bulmak için önce arama yapıyoruz
       console.log(`📡 ${codeType.toUpperCase()} algılandı. ASIN'i bulmak için arama API'si kullanılıyor...`);
       apiCallCount = 1;
+      searchMethod = 'arama-sonra-detaylar';
       
       const searchRequest = {
         source: 'amazon_search',
@@ -568,19 +595,41 @@ export async function POST(request: NextRequest) {
       asin: asin
     };
     
-    console.log('\n� Ürün Özeti:');
+    console.log('\n📋 Ürün Özeti:');
     console.log('═══════════════');
     console.log(`📚 Başlık: ${product.title}`);
     console.log(`💰 Fiyat: $${product.price}`);
     console.log(`📊 Satış Sıralaması: ${product.sales_rank || 'Bulunamadı'}`);
     console.log(`📂 Kategori: ${product.category}`);
     console.log(`🔖 ASIN: ${product.asin}`);
-    console.log(`🔍 Arama Yöntemi: ${codeType === 'asin' ? 'doğrudan-arama' : 'arama-sonra-detaylar'}`);
+    console.log(`🔍 Arama Yöntemi: ${searchMethod}`);
     console.log(`📡 API Çağrıları: ${apiCallCount}`);
     
     const pricingResult = calculateOurPrice(product);
     
     if (product.price === 0) {
+      const message = '❌ Yeni ürün fiyatı bulunamadı';
+      const debugInfo = {
+        searchMethod,
+        apiCalls: apiCallCount,
+        hasRank: salesRank > 0,
+        cacheHit: false
+      };
+      
+      // YENİ: Başarısız sonucu da cache'e kaydet (gereksiz API çağrılarını önlemek için)
+      await productCache.saveToCache(
+        cleanCode,
+        codeType,
+        product,
+        {
+          accepted: false,
+          reason: 'Yeni ürün fiyatı bulunamadı. Yalnızca kullanılmış veya yenilenmiş ürünler mevcut olabilir.',
+          category: 'unknown'
+        },
+        message,
+        debugInfo
+      );
+      
       return NextResponse.json({
         success: true,
         data: {
@@ -589,12 +638,8 @@ export async function POST(request: NextRequest) {
             accepted: false,
             reason: 'Yeni ürün fiyatı bulunamadı. Yalnızca kullanılmış veya yenilenmiş ürünler mevcut olabilir.'
           },
-          message: '❌ Yeni ürün fiyatı bulunamadı',
-          debug: {
-            searchMethod: codeType === 'asin' ? 'doğrudan-arama' : 'arama-sonra-detaylar',
-            apiCalls: apiCallCount,
-            hasRank: salesRank > 0
-          }
+          message,
+          debug: debugInfo
         }
       } as ApiResponse);
     }
@@ -628,18 +673,31 @@ export async function POST(request: NextRequest) {
       }
     }
     
+    const debugInfo = {
+      searchMethod,
+      apiCalls: apiCallCount,
+      hasRank: salesRank > 0,
+      dataConsistency: dataConsistencyMessage,
+      cacheHit: false
+    };
+    
+    // YENİ: Başarılı sonucu cache'e kaydet
+    await productCache.saveToCache(
+      cleanCode,
+      codeType,
+      product,
+      pricingResult,
+      message,
+      debugInfo
+    );
+    
     return NextResponse.json({
       success: true,
       data: {
         product,
         pricing: pricingResult,
         message,
-        debug: {
-          searchMethod: codeType === 'asin' ? 'doğrudan-arama' : 'arama-sonra-detaylar',
-          apiCalls: apiCallCount,
-          hasRank: salesRank > 0,
-          dataConsistency: dataConsistencyMessage
-        }
+        debug: debugInfo
       }
     } as ApiResponse);
     
