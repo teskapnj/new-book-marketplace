@@ -1,19 +1,24 @@
 // lib/firebaseAdmin.ts
 import admin from 'firebase-admin';
-import serviceAccount from './firebase/serviceAccountKey.json'; // Yolu güncelledik
 
-// Firebase Admin SDK'yı başlat
 if (!admin.apps.length) {
   try {
+    const serviceAccount = {
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    };
+
     admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount as any),
+      credential: admin.credential.cert(serviceAccount),
     });
     console.log('Firebase Admin initialized successfully');
   } catch (error) {
     console.error('Firebase Admin initialization error:', error);
+    process.exit(1);
   }
 }
 
-// Gerekli modülleri export et
 export const auth = admin.auth();
 export const db = admin.firestore();
+export const FieldValue = admin.firestore.FieldValue;

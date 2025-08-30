@@ -95,14 +95,6 @@ export function useBarcodeScanner(options: BarcodeScannerOptions) {
   // Kamera stream'ini başlat
   const startCamera = useCallback(async (deviceId?: string) => {
     try {
-      // Mobil cihaz kontrolü
-      if (!isMobile()) {
-        const error = 'Bu özellik sadece mobil cihazlarda çalışır';
-        setState(prev => ({ ...prev, error }));
-        onError(error);
-        return false;
-      }
-
       // MediaDevices API desteği kontrolü
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         const error = 'Bu tarayıcı kamera erişimini desteklemiyor';
@@ -133,25 +125,59 @@ export function useBarcodeScanner(options: BarcodeScannerOptions) {
         ? devices.find(d => d.deviceId === deviceId) || devices[0]
         : devices[0]; // İlk cihaz (genelde arka kamera)
 
-      // Kamera ayarları
-      const constraints: MediaStreamConstraints = {
-        video: {
-          deviceId: selectedDevice.deviceId ? { exact: selectedDevice.deviceId } : undefined,
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          facingMode: isMobile() ? { ideal: 'environment' } : undefined // Arka kamera
+      // Kamera ayarları - progressive fallback
+      const constraints: MediaStreamConstraints[] = [
+        {
+          video: {
+            deviceId: selectedDevice.deviceId ? { exact: selectedDevice.deviceId } : undefined,
+            width: { ideal: 1920, min: 1280 },
+            height: { ideal: 1080, min: 720 },
+            facingMode: { ideal: 'environment' }
+          },
+          audio: false
         },
-        audio: false
-      };
+        {
+          video: {
+            deviceId: selectedDevice.deviceId ? { exact: selectedDevice.deviceId } : undefined,
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: { ideal: 'environment' }
+          },
+          audio: false
+        },
+        {
+          video: {
+            width: { ideal: 640 },
+            height: { ideal: 480 },
+            facingMode: { ideal: 'environment' }
+          },
+          audio: false
+        },
+        {
+          video: true,
+          audio: false
+        }
+      ];
 
       console.log('🎥 Kamera başlatılıyor...', selectedDevice.label || 'Bilinmeyen cihaz');
 
-      // Kamera stream'ini al
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      let stream = null;
+      for (let i = 0; i < constraints.length; i++) {
+        try {
+          console.log(`📷 Kamera ayarı ${i + 1}/${constraints.length} deneniyor...`);
+          stream = await navigator.mediaDevices.getUserMedia(constraints[i]);
+          break;
+        } catch (err: any) {
+          console.warn(`❌ Kamera ayarı ${i + 1} başarısız:`, err.name);
+          if (i === constraints.length - 1) throw err;
+        }
+      }
       
-      if (!mountedRef.current) {
+      if (!mountedRef.current || !stream) {
         // Component unmount olduysa stream'i kapat
-        stream.getTracks().forEach(track => track.stop());
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+        }
         return false;
       }
 
@@ -161,21 +187,58 @@ export function useBarcodeScanner(options: BarcodeScannerOptions) {
         streamRef.current = stream;
         
         // Video yüklendiğinde state'i güncelle
-        videoRef.current.onloadedmetadata = () => {
-          if (mountedRef.current) {
-            setState(prev => ({
-              ...prev,
-              isCameraReady: true,
-              error: null,
-              supportedDevices: devices,
-              selectedDeviceId: selectedDevice.deviceId
-            }));
-            console.log('✅ Kamera hazır');
+        await new Promise<void>((resolve, reject) => {
+          if (!videoRef.current) {
+            reject(new Error('Video element kayboldu'));
+            return;
           }
-        };
 
-        // Video'yu oynat
-        await videoRef.current.play();
+          const video = videoRef.current;
+          let resolved = false;
+
+          const handleSuccess = () => {
+            if (resolved) return;
+            resolved = true;
+            
+            if (mountedRef.current) {
+              setState(prev => ({
+                ...prev,
+                isCameraReady: true,
+                error: null,
+                supportedDevices: devices,
+                selectedDeviceId: selectedDevice.deviceId
+              }));
+              console.log('✅ Kamera hazır');
+            }
+            resolve();
+          };
+
+          const handleError = (error: any) => {
+            if (resolved) return;
+            resolved = true;
+            console.error('Video setup hatası:', error);
+            reject(error);
+          };
+
+          video.addEventListener('loadedmetadata', handleSuccess);
+          video.addEventListener('canplay', handleSuccess);
+          video.addEventListener('playing', handleSuccess);
+          video.addEventListener('error', handleError);
+
+          // Video'yu oynat
+          video.play().then(handleSuccess).catch((playError) => {
+            console.warn('Autoplay başarısız:', playError);
+            setTimeout(handleSuccess, 1000);
+          });
+
+          // Timeout fallback
+          setTimeout(() => {
+            if (!resolved) {
+              console.log('⚠️ Video timeout, devam ediyor...');
+              handleSuccess();
+            }
+          }, 3000);
+        });
       }
 
       return true;
@@ -202,7 +265,7 @@ export function useBarcodeScanner(options: BarcodeScannerOptions) {
       
       return false;
     }
-  }, [isMobile, getCameraDevices, checkCameraPermission, onError]);
+  }, [getCameraDevices, checkCameraPermission, onError]);
 
   // Barcode taramayı başlat
   const startScanning = useCallback(async (deviceId?: string) => {
@@ -239,14 +302,21 @@ export function useBarcodeScanner(options: BarcodeScannerOptions) {
         }, timeout);
       }
 
-      // Tarama döngüsü
+      // Sürekli tarama için interval
+      let scanInterval: NodeJS.Timeout | null = null;
+
       const scanFromVideo = async () => {
         try {
-          if (!videoRef.current || !mountedRef.current || !state.isScanning) {
+          if (!videoRef.current || !mountedRef.current || !readerRef.current) {
             return;
           }
 
-          const result = await reader.decodeOnceFromVideoDevice(undefined, videoRef.current);
+          // Video hazır mı kontrol et
+          if (videoRef.current.readyState < 2) {
+            return;
+          }
+
+          const result = await reader.decodeFromVideo(videoRef.current);
           
           if (result && result.getText()) {
             const scannedCode = result.getText();
@@ -261,30 +331,32 @@ export function useBarcodeScanner(options: BarcodeScannerOptions) {
               // Sürekli tarama modunda değilse durdur
               if (!continuous) {
                 stopScanning();
+                return;
               }
             }
           }
           
         } catch (error: any) {
           // NotFoundException normal - kod bulunamadı anlamında
-          if (!(error instanceof NotFoundException)) {
+          if (!(error instanceof NotFoundException) && error.name !== 'NotFoundException') {
             console.error('Barcode okuma hatası:', error);
-            
-            if (mountedRef.current) {
-              stopScanning();
-              onError('Barcode okuma hatası');
-            }
-          }
-          
-          // Sürekli tarama modunda tekrar dene
-          if (continuous && mountedRef.current && state.isScanning) {
-            setTimeout(scanFromVideo, 100);
           }
         }
       };
 
-      // Taramayı başlat
-      scanFromVideo();
+      // Sürekli tarama için interval başlat
+      if (continuous) {
+        scanInterval = setInterval(scanFromVideo, 100);
+      } else {
+        scanFromVideo();
+      }
+
+      // Cleanup function
+      return () => {
+        if (scanInterval) {
+          clearInterval(scanInterval);
+        }
+      };
 
     } catch (error: any) {
       console.error('Tarama başlatma hatası:', error);
@@ -294,7 +366,7 @@ export function useBarcodeScanner(options: BarcodeScannerOptions) {
         onError('Tarama başlatılamadı');
       }
     }
-  }, [startCamera, onScan, onError, continuous, timeout, state.isScanning]);
+  }, [startCamera, onScan, onError, continuous, timeout]);
 
   // Taramayı durdur
   const stopScanning = useCallback(() => {

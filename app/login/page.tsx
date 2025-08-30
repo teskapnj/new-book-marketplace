@@ -5,10 +5,88 @@ import Link from "next/link";
 import { signInWithEmailAndPassword, setPersistence, browserLocalPersistence, browserSessionPersistence } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-import PasswordInput from "@/components/PasswordInput";
 import SocialLogin from "@/components/SocialLogin";
-import { FiHome } from "react-icons/fi";
+import { FiHome, FiEye, FiEyeOff } from "react-icons/fi";
 import { useAuth } from "@/contexts/AuthContext";
+
+// Custom Password Input Component with Hold-to-Show functionality
+const PasswordInputHold = ({ 
+  id, 
+  name, 
+  value, 
+  onChange, 
+  placeholder, 
+  required, 
+  autoComplete,
+  className 
+}: {
+  id: string;
+  name: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder?: string;
+  required?: boolean;
+  autoComplete?: string;
+  className?: string;
+}) => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [isHolding, setIsHolding] = useState(false);
+
+  const handleMouseDown = () => {
+    setIsHolding(true);
+    setShowPassword(true);
+  };
+
+  const handleMouseUp = () => {
+    setIsHolding(false);
+    setShowPassword(false);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault(); // Prevent scrolling on touch devices
+    setIsHolding(true);
+    setShowPassword(true);
+  };
+
+  const handleTouchEnd = () => {
+    setIsHolding(false);
+    setShowPassword(false);
+  };
+
+  return (
+    <div className={`relative ${className}`}>
+      <input
+        id={id}
+        name={name}
+        type={showPassword ? "text" : "password"}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        required={required}
+        autoComplete={autoComplete}
+        className="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+      />
+      <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+        <button
+          type="button"
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          className="text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
+          aria-label={showPassword ? "Hide password" : "Show password"}
+        >
+          {showPassword ? (
+            <FiEye className="h-5 w-5" />
+          ) : (
+            <FiEyeOff className="h-5 w-5" />
+          )}
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export default function LoginPage() {
   const { user, loading: authLoading } = useAuth();
@@ -50,7 +128,7 @@ export default function LoginPage() {
         // 🎯 Force redirect based on role (use window.location for hard redirect)
         if (userRole === "admin") {
           console.log("✅ Admin user detected, redirecting to admin panel");
-          window.location.href = "/admin/dashboard"; // YÖNLENDİRME GÜNCELLENDİ
+          window.location.href = "/admin/dashboard";
         } else {
           console.log("✅ Regular user detected, redirecting to dashboard");
           window.location.href = "/dashboard";
@@ -148,7 +226,7 @@ export default function LoginPage() {
         // 🎯 Force redirect based on user role
         if (userRole === "admin") {
           console.log("🔧 Redirecting admin to admin panel");
-          window.location.href = "/admin/dashboard"; // YÖNLENDİRME GÜNCELLENDİ
+          window.location.href = "/admin/dashboard";
         } else {
           console.log("👤 Redirecting user to dashboard");
           window.location.href = "/dashboard";
@@ -221,7 +299,7 @@ export default function LoginPage() {
       
       // 🎯 Force redirect based on role
       if (userRole === "admin") {
-        window.location.href = "/admin/dashboard"; // YÖNLENDİRME GÜNCELLENDİ
+        window.location.href = "/admin/dashboard";
       } else {
         window.location.href = "/dashboard";
       }
@@ -314,12 +392,12 @@ export default function LoginPage() {
               </div>
             </div>
             
-            {/* 🔒 Password Input */}
+            {/* 🔒 Password Input - Using our custom PasswordInputHold component */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Password
               </label>
-              <PasswordInput
+              <PasswordInputHold
                 id="password"
                 name="password"
                 value={formData.password}
@@ -329,6 +407,9 @@ export default function LoginPage() {
                 autoComplete="current-password"
                 className="w-full"
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Hold the eye icon to reveal your password
+              </p>
             </div>
             
             {/* ⚙️ Remember Me & Forgot Password */}
@@ -378,12 +459,12 @@ export default function LoginPage() {
             </button>
           </form>
           
-          {/* 🌐 Social Login Component */}
+          {/* 🌐 Social Login Component 
           <SocialLogin 
             isLogin={true}
             onSuccess={handleSocialLoginSuccess}
             onError={handleSocialLoginError}
-          />
+          />*/}
         </div>
         
         {/* 📝 Sign Up Link */}

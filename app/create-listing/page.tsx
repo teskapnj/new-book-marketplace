@@ -12,6 +12,7 @@ import axios from "axios";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { smartOptimizeImage, formatFileSize } from "@/utils/imageOptimization";
 import { AmazonProduct, PricingResult } from "@/lib/pricingEngine";
+
 interface BundleItem {
   id: string;
   isbn: string;
@@ -27,6 +28,7 @@ interface BundleItem {
   originalPrice?: number;
   imageUrl?: string | null;
 }
+
 interface Address {
   street: string;
   city: string;
@@ -34,12 +36,14 @@ interface Address {
   zip: string;
   country: string;
 }
+
 interface PackageDimensions {
   length: number;
   width: number;
   height: number;
   weight: number;
 }
+
 export default function CreateListingPage() {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
@@ -104,6 +108,10 @@ export default function CreateListingPage() {
     message: string;
   } | null>(null);
   const [scannerError, setScannerError] = useState("");
+  
+  // Yeni eklenen timeout ref'leri
+  const productInfoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const clearProductInfoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const getStorageKey = useCallback(() => {
     return user ? `bundleListingDraft_${user.uid}` : 'bundleListingDraft_guest';
@@ -234,7 +242,21 @@ export default function CreateListingPage() {
     }
   };
   
-  const autoAddAcceptedItem = (isbn: string, product: AmazonProduct, pricing: PricingResult) => {
+  // Ürün bilgilerini temizleme fonksiyonu
+  const clearProductInfo = useCallback(() => {
+    setAmazonResult(null);
+    setCurrentItem(prev => ({
+      ...prev,
+      isbn: "",
+      image: null,
+      imageUrl: null,
+      amazonData: undefined,
+      ourPrice: undefined,
+      originalPrice: undefined
+    }));
+  }, []);
+  
+  const autoAddAcceptedItem = useCallback((isbn: string, product: AmazonProduct, pricing: PricingResult) => {
     if (!pricing.accepted || !pricing.ourPrice) return;
     
     const newItem: BundleItem = {
@@ -254,30 +276,32 @@ export default function CreateListingPage() {
     
     setBundleItems(prev => [...prev, newItem]);
     
-    setCurrentItem({
-      id: "",
-      isbn: "",
-      condition: "like-new",
-      quantity: 1,
-      price: 0,
-      image: null,
-      imageBlob: null,
-      category: "book",
-      imageUrl: null
-    });
-    
-    setAmazonResult(null);
-    setError("");
+    // Ürün eklendikten sonra bilgileri temizle
+    clearProductInfo();
     
     console.log(`✅ Auto-added item with Amazon image: ${product.image}`);
     
     setTimeout(() => {
       setError("");
     }, 3000);
-  };
+  }, [clearProductInfo]);
   
   const handleBarcodeScanned = useCallback(async (code: string) => {
     console.log('📱 Barcode scanned:', code);
+    
+    // Önceki timeout'ları temizle
+    if (productInfoTimeoutRef.current) {
+      clearTimeout(productInfoTimeoutRef.current);
+    }
+    if (clearProductInfoTimeoutRef.current) {
+      clearTimeout(clearProductInfoTimeoutRef.current);
+    }
+    
+    // ISBN'i hemen kutucuga yaz
+    setCurrentItem(prev => ({
+      ...prev,
+      isbn: code
+    }));
     
     try {
       setIsCheckingAmazon(true);
@@ -299,7 +323,6 @@ export default function CreateListingPage() {
         
         setCurrentItem(prev => ({
           ...prev,
-          isbn: code,
           amazonData: product,
           image: product.image || null,
           imageUrl: product.image || null,
@@ -321,23 +344,37 @@ export default function CreateListingPage() {
           }));
         }
         
+        // Ürün kabul edildiyse 1.5 saniye sonra ekle
         if (pricing.accepted && pricing.ourPrice) {
-          setTimeout(() => {
+          productInfoTimeoutRef.current = setTimeout(() => {
             autoAddAcceptedItem(code, product, pricing);
-          }, 2000);
+          }, 1500);
         }
+        
+        // 5 saniye sonra ürün bilgilerini temizle
+        clearProductInfoTimeoutRef.current = setTimeout(() => {
+          clearProductInfo();
+        }, 5000);
         
       } else {
         setError(response.data.error || 'Amazon check failed');
+        // Hata durumunda da 5 saniye sonra temizle
+        clearProductInfoTimeoutRef.current = setTimeout(() => {
+          clearProductInfo();
+        }, 5000);
       }
       
     } catch (err: any) {
       console.error('Amazon API error:', err);
       setError(err.response?.data?.error || 'Error occurred during Amazon check');
+      // Hata durumunda da 5 saniye sonra temizle
+      clearProductInfoTimeoutRef.current = setTimeout(() => {
+        clearProductInfo();
+      }, 5000);
     } finally {
       setIsCheckingAmazon(false);
     }
-  }, []);
+  }, [autoAddAcceptedItem, clearProductInfo]);
   
   const handleScanBarcode = () => {
     if (!isMobile) {
@@ -349,6 +386,9 @@ export default function CreateListingPage() {
     setScannerError("");
     setError("");
     setAmazonResult(null);
+    
+    // Taramadan önce bilgileri temizle
+    clearProductInfo();
     
     startScanning();
   };
@@ -373,6 +413,18 @@ export default function CreateListingPage() {
     continuous: false,
     timeout: 30000
   });
+  
+  // Component unmount olduğunda timeout'ları temizle
+  useEffect(() => {
+    return () => {
+      if (productInfoTimeoutRef.current) {
+        clearTimeout(productInfoTimeoutRef.current);
+      }
+      if (clearProductInfoTimeoutRef.current) {
+        clearTimeout(clearProductInfoTimeoutRef.current);
+      }
+    };
+  }, []);
   
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -423,6 +475,7 @@ export default function CreateListingPage() {
         })),
         currentItem: {
           ...currentItem,
+          isbn: "", // ISBN bilgisini localStorage'a kaydetme
           image: null,
           imageBlob: null,
           imageStats: null
@@ -435,7 +488,7 @@ export default function CreateListingPage() {
       
       const storageKey = getStorageKey();
       localStorage.setItem(storageKey, JSON.stringify(dataToSave));
-      console.log(`✅ Saved ${bundleItems.length} items, description, and shipping info to localStorage`);
+      console.log(`✅ Saved ${bundleItems.length} items, description, and shipping info to localStorage (ISBN cleared)`);
       
     } catch (e) {
       console.error("Failed to save to localStorage", e);
@@ -472,6 +525,7 @@ export default function CreateListingPage() {
         if (parsed.currentItem && parsed.currentItem.isbn) {
           setCurrentItem({
             ...parsed.currentItem,
+            isbn: "", // ISBN'i temizle
             image: null,
             imageBlob: null,
             imageStats: null,
@@ -511,6 +565,16 @@ export default function CreateListingPage() {
       ...prev,
       [field]: value
     }));
+    
+    // ISBN değiştiğinde localStorage'a kaydetmemek için temizle
+    if (field === 'isbn') {
+      setTimeout(() => {
+        setCurrentItem(prev => ({
+          ...prev,
+          isbn: "" // ISBN'i temizle
+        }));
+      }, 100);
+    }
   };
   
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1041,7 +1105,7 @@ export default function CreateListingPage() {
                           
                           {amazonResult.pricing.accepted && (
                             <div className="mt-3 text-xs text-green-600">
-                              ⏱️ This product will be automatically added to the list in 2 seconds...
+                              ⏱️ This product will be automatically added to the list in 1.5 seconds...
                             </div>
                           )}
                         </div>
@@ -1552,7 +1616,6 @@ export default function CreateListingPage() {
                             className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none bg-white"
                           >
                             <option value="US">United States</option>
-                            
                           </select>
                           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
                             <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">

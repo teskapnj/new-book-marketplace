@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -9,30 +9,54 @@ export default function CheckoutSuccessPage() {
   const orderId = searchParams.get('orderId');
   
   const [countdown, setCountdown] = useState(10);
+  
+  // Email gönderiminin tek seferde yapılması için ref kullan
+  const emailSentRef = useRef(false);
 
-  const sendOrderConfirmation = async (orderIdParam: string) => {
+  const sendOrderConfirmation = useCallback(async (orderIdParam: string) => {
+    // Email daha önce gönderildiyse tekrar gönderme
+    if (emailSentRef.current) {
+      console.log('Email already sent, skipping...');
+      return;
+    }
+
     try {
+      console.log('Sending order confirmation email for:', orderIdParam);
+      emailSentRef.current = true; // Email gönderilmeye başladığını işaretle
+      
       const response = await fetch(`/api/orders/${orderIdParam}/send-confirmation`, {
         method: 'POST'
       });
       
       if (response.ok) {
-        console.log('Order confirmation email sent');
+        console.log('Order confirmation email sent successfully');
+      } else {
+        // Hata durumunda tekrar deneme imkanı için reset
+        emailSentRef.current = false;
+        console.error('Failed to send confirmation email:', response.status);
       }
     } catch (error) {
+      // Hata durumunda tekrar deneme imkanı için reset
+      emailSentRef.current = false;
       console.error('Failed to send confirmation email:', error);
     }
-  };
+  }, []);
 
-  // Tek useEffect ile hem email hem redirect
+  // Email gönderimi için ayrı useEffect
+  useEffect(() => {
+    if (!orderId || emailSentRef.current) {
+      return;
+    }
+
+    sendOrderConfirmation(orderId);
+  }, [orderId, sendOrderConfirmation]); // sendOrderConfirmation useCallback olduğu için stable
+
+  // Countdown ve redirect için ayrı useEffect
   useEffect(() => {
     if (!orderId) {
       router.push('/');
       return;
     }
-
-    // Send order confirmation email
-    sendOrderConfirmation(orderId);
 
     // Countdown timer
     const timer = setInterval(() => {
@@ -49,7 +73,7 @@ export default function CheckoutSuccessPage() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [orderId, router]);
+  }, [orderId, router]); // Router stable olduğu için sorun yok
 
   if (!orderId) {
     return null;
@@ -96,6 +120,18 @@ export default function CheckoutSuccessPage() {
                 <span className="font-medium text-gray-700">Payment:</span>
                 <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
                   Completed (Demo)
+                </span>
+              </div>
+              
+              {/* Email durumu gösterici (opsiyonel) */}
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                <span className="font-medium text-gray-700">Confirmation Email:</span>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  emailSentRef.current 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {emailSentRef.current ? 'Sent' : 'Sending...'}
                 </span>
               </div>
             </div>

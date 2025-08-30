@@ -255,68 +255,63 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
   };
   
   // Tracking ekleme fonksiyonu
-const handleAddTracking = async () => {
-  if (!trackingNumber.trim()) {
-    setTrackingError("Tracking number is required");
-    return;
-  }
-  
-  setTrackingLoading(true);
-  setTrackingError("");
-  setTrackingSuccess("");
-  
-  try {
-    // Kullanıcı kontrolü
-    const user = auth.currentUser;
-    if (!user) {
-      setTrackingError("You must be logged in to add tracking information");
+  const handleAddTracking = async () => {
+    if (!trackingNumber.trim()) {
+      setTrackingError("Tracking number is required");
       return;
     }
     
-    console.log("Mevcut kullanıcı:", user.email);
+    setTrackingLoading(true);
+    setTrackingError("");
+    setTrackingSuccess("");
     
-    // Token'ı al
-    const token = await user.getIdToken();
-    console.log("Token alındı:", token.substring(0, 20) + "...");
-    
-    const response = await fetch(`/api/orders/${order.id}/add-tracking`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}` // Eksik olan header eklendi
-      },
-      body: JSON.stringify({
-        trackingNumber: trackingNumber,
-        carrier: carrier
-      })
-    });
-    
-    console.log("İstek gönderildi. Status:", response.status);
-    
-    const data = await response.json();
-    
-    if (response.ok) {
-      setTrackingSuccess("Tracking information added successfully!");
-      setTrackingNumber("");
-      setShowTrackingForm(false);
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        setTrackingError("You must be logged in to add tracking information");
+        return;
+      }
       
-      // Sipariş durumunu "shipped" olarak güncelle
-      setStatus("shipped");
+      console.log("Mevcut kullanıcı:", user.email);
       
-      // Modalı kapat
-      setTimeout(() => {
-        onClose();
-      }, 1500);
-    } else {
-      setTrackingError(data.error || "Failed to add tracking information");
+      const token = await user.getIdToken();
+      console.log("Token alındı:", token.substring(0, 20) + "...");
+      
+      const response = await fetch(`/api/orders/${order.id}/add-tracking`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          trackingNumber: trackingNumber,
+          carrier: carrier
+        })
+      });
+      
+      console.log("İstek gönderildi. Status:", response.status);
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setTrackingSuccess(`Tracking added successfully! ${data.emailSent ? 'Email sent.' : ''}`);
+        setTrackingNumber("");
+        setShowTrackingForm(false);
+        
+        // Modal'ı kapat - real-time listener güncel data'yı alacak
+        setTimeout(() => {
+          onClose();
+        }, 1000);
+      } else {
+        setTrackingError(data.error || "Failed to add tracking information");
+      }
+    } catch (error) {
+      console.error("Takip ekleme hatası:", error);
+      setTrackingError("Network error. Please try again.");
+    } finally {
+      setTrackingLoading(false);
     }
-  } catch (error: any) {
-    console.error("Takip ekleme hatası:", error);
-    setTrackingError("Network error. Please try again.");
-  } finally {
-    setTrackingLoading(false);
-  }
-};
+  };
   
   const formatDate = (timestamp: Timestamp | Date | undefined): string => {
     if (!timestamp) return "N/A";
@@ -423,12 +418,8 @@ const handleAddTracking = async () => {
                 value={status}
                 onChange={(e) => setStatus(e.target.value as Order['status'])}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="pending">Pending</option>
+              >             
                 <option value="confirmed">Confirmed</option>
-                <option value="processing">Processing</option>
-                <option value="shipped">Shipped</option>
-                <option value="delivered">Delivered</option>
                 <option value="cancelled">Cancelled</option>
               </select>
             </div>
