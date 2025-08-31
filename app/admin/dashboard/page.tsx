@@ -15,10 +15,10 @@ import {
   where,
   getDoc,
   Timestamp,
-  getDocs
+  getDocs,
+  addDoc
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-
 // Type definitions
 interface OrderItem {
   id: string;
@@ -29,7 +29,6 @@ interface OrderItem {
   image?: string;
   shippingCost: number;
 }
-
 interface VendorOrderBreakdown {
   sellerId: string;
   items: OrderItem[];
@@ -37,7 +36,6 @@ interface VendorOrderBreakdown {
   shippingCost: number;
   itemCount: number;
 }
-
 interface Order {
   id: string;
   orderNumber: string;
@@ -75,7 +73,6 @@ interface Order {
   trackingHistory?: any[];
   lastTracked?: Timestamp | Date;
 }
-
 // Message Notification Component
 const MessageNotification = () => {
   const [user] = useAuthState(auth);
@@ -157,7 +154,6 @@ const MessageNotification = () => {
     </Link>
   );
 };
-
 // Orders Navigation Component
 const OrdersNavigation = () => {
   const [orderCount, setOrderCount] = useState(0);
@@ -216,14 +212,12 @@ const OrdersNavigation = () => {
     </Link>
   );
 };
-
 // Order Detail Modal Component
 interface OrderDetailModalProps {
   order: Order;
   onClose: () => void;
   onUpdateStatus: (orderId: string, status: string, notes: string) => Promise<void>;
 }
-
 const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onUpdateStatus }) => {
   const [status, setStatus] = useState(order.status);
   const [notes, setNotes] = useState(order.adminNotes || "");
@@ -586,7 +580,6 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
     </div>
   );
 };
-
 // Helper function for order status badge
 const getOrderStatusBadge = (status: Order['status']) => {
   const styles = {
@@ -613,7 +606,8 @@ const getOrderStatusBadge = (status: Order['status']) => {
     </span>
   );
 };
-
+// Import SellerManagement component
+import SellerManagement from '@/components/SellerManagement';
 export default function AdminListingsPage() {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
@@ -636,7 +630,7 @@ export default function AdminListingsPage() {
   const [loadingListings, setLoadingListings] = useState(true);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [activeTab, setActiveTab] = useState<"listings" | "orders">("listings");
+  const [activeTab, setActiveTab] = useState<"listings" | "orders" | "sellers">("listings");
   
   // 📄 Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -1191,7 +1185,7 @@ export default function AdminListingsPage() {
         {/* 📊 Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-          <p className="text-gray-600">Manage listings and orders in real-time</p>
+          <p className="text-gray-600">Manage listings, orders and sellers in real-time</p>
         </div>
         
         {/* Tab Navigation */}
@@ -1218,11 +1212,21 @@ export default function AdminListingsPage() {
               >
                 Orders
               </button>
+              <button
+                onClick={() => setActiveTab("sellers")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "sellers"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Sellers
+              </button>
             </nav>
           </div>
         </div>
         
-        {activeTab === "listings" ? (
+        {activeTab === "listings" && (
           <>
             {/* Quick Actions Bar */}
             <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
@@ -1510,7 +1514,9 @@ export default function AdminListingsPage() {
               )}
             </div>
           </>
-        ) : (
+        )}
+        
+        {activeTab === "orders" && (
           <>
             {/* Quick Actions Bar for Orders */}
             <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
@@ -1804,6 +1810,10 @@ export default function AdminListingsPage() {
               )}
             </div>
           </>
+        )}
+        
+        {activeTab === "sellers" && (
+          <SellerManagement />
         )}
         
         {/* 🔍 Review Modal for Listings */}

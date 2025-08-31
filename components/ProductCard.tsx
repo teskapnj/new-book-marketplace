@@ -84,7 +84,9 @@ export default function ProductCard({ product }: { product: Product }) {
       sellerId: product.vendorId || sellerName,
       title: product.title,
       price: product.price,
-      image: safeImage
+      image: safeImage,
+      shippingInfo: undefined,
+      weight: 0
     });
     
     setAddedToCart(true);
