@@ -43,3 +43,7 @@ next-env.d.ts
 # Firebase private key file
 /lib/firebase/serviceAccountKey.json
 certificates
+
+# Firebase Service Account Keys
+lib/firebase/*firebase-adminsdk*.json
+lib/firebase/serviceAccountKey.json
