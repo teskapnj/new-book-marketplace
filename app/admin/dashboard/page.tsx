@@ -16,7 +16,8 @@ import {
   getDoc,
   Timestamp,
   getDocs,
-  addDoc
+  addDoc,
+  writeBatch
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 // Type definitions
@@ -637,6 +638,12 @@ export default function AdminListingsPage() {
   const [orderCurrentPage, setOrderCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   
+  // 🆕 Yeni state'ler - toplu seçim ve silme için
+  const [selectedListings, setSelectedListings] = useState<Set<string>>(new Set());
+  const [selectAll, setSelectAll] = useState(false);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  
   // 🔐 Admin Authentication Check
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -958,6 +965,101 @@ export default function AdminListingsPage() {
   for (let i = 1; i <= Math.ceil(filteredOrders.length / itemsPerPage); i++) {
     orderPageNumbers.push(i);
   }
+  
+  // 🆕 Yeni fonksiyonlar - toplu seçim ve silme için
+  
+  // Tümünü seç / seçimi kaldır
+  const toggleSelectAll = () => {
+    if (selectAll) {
+      // Tüm seçimleri kaldır
+      setSelectedListings(new Set());
+    } else {
+      // Tümünü seç
+      const allIds = new Set(currentItems.map(item => item.id));
+      setSelectedListings(allIds);
+    }
+    setSelectAll(!selectAll);
+  };
+  
+  // Tekil seçim toggle
+  const toggleListingSelection = (listingId: string) => {
+    const newSelected = new Set(selectedListings);
+    if (newSelected.has(listingId)) {
+      newSelected.delete(listingId);
+    } else {
+      newSelected.add(listingId);
+    }
+    setSelectedListings(newSelected);
+    
+    // Tümü seçili mi kontrol et
+    const allCurrentSelected = currentItems.every(item => newSelected.has(item.id));
+    setSelectAll(allCurrentSelected && newSelected.size > 0);
+  };
+  
+  // Toplu silme
+  const bulkDeleteListings = async () => {
+    if (selectedListings.size === 0) {
+      alert("No listings selected for deletion");
+      return;
+    }
+    
+    setIsBulkDeleting(true);
+    
+    try {
+      // Batch işlemi başlat
+      const batch = writeBatch(db);
+      
+      // Seçilen her listing için silme işlemi ekle
+      selectedListings.forEach(listingId => {
+        const listingRef = doc(db, "listings", listingId);
+        batch.delete(listingRef);
+      });
+      
+      // Batch işlemini uygula
+      await batch.commit();
+      
+      console.log(`🗑️ Deleted ${selectedListings.size} listings in bulk`);
+      
+      // State'i temizle
+      setSelectedListings(new Set());
+      setSelectAll(false);
+      setShowBulkDeleteConfirm(false);
+      
+      alert(`✅ Successfully deleted ${selectedListings.size} listings!`);
+    } catch (error: any) {
+      console.error("Error bulk deleting listings:", error);
+      if (error.code === 'permission-denied') {
+        alert("You don't have permission to delete listings. Please contact administrator.");
+      } else {
+        alert(`❌ Error occurred while deleting listings: ${error.message}`);
+      }
+    }
+    
+    setIsBulkDeleting(false);
+  };
+  
+  // Tekil silme
+  const deleteSingleListing = async (listingId: string) => {
+    if (!confirm("Are you sure you want to delete this listing? This action cannot be undone.")) {
+      return;
+    }
+    
+    try {
+      const listingRef = doc(db, "listings", listingId);
+      await deleteDoc(listingRef);
+      
+      console.log(`🗑️ Listing ${listingId} deleted`);
+      
+      alert("✅ Listing deleted successfully!");
+    } catch (error: any) {
+      console.error("Error deleting listing:", error);
+      if (error.code === 'permission-denied') {
+        alert("You don't have permission to delete listings. Please contact administrator.");
+      } else {
+        alert(`❌ Error occurred while deleting listing: ${error.message}`);
+      }
+    }
+  };
   
   // ✅ Approve listing function
   const approveListing = async (listingId: string) => {
@@ -1333,6 +1435,34 @@ export default function AdminListingsPage() {
               </div>
             </div>
             
+            {/* 🆕 Toplu İşlem Butonları */}
+            {selectedListings.size > 0 && (
+              <div className="bg-blue-50 rounded-lg shadow-sm p-4 mb-6 flex justify-between items-center">
+                <div className="flex items-center">
+                  <span className="text-blue-800 font-medium">
+                    {selectedListings.size} listing{selectedListings.size !== 1 ? 's' : ''} selected
+                  </span>
+                </div>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => {
+                      setSelectedListings(new Set());
+                      setSelectAll(false);
+                    }}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Clear Selection
+                  </button>
+                  <button
+                    onClick={() => setShowBulkDeleteConfirm(true)}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    🗑️ Delete Selected
+                  </button>
+                </div>
+              </div>
+            )}
+            
             {/* 📋 Listings Table */}
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
@@ -1348,6 +1478,15 @@ export default function AdminListingsPage() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
+                      {/* 🆕 Checkbox sütunu eklendi */}
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                        <input
+                          type="checkbox"
+                          checked={selectAll}
+                          onChange={toggleSelectAll}
+                          className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                        />
+                      </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Listing Details
                       </th>
@@ -1375,6 +1514,16 @@ export default function AdminListingsPage() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {currentItems.map((listing) => (
                       <tr key={listing.id} className="hover:bg-gray-50 transition-colors">
+                        {/* 🆕 Checkbox eklendi */}
+                        <td className="px-6 py-4">
+                          <input
+                            type="checkbox"
+                            checked={selectedListings.has(listing.id)}
+                            onChange={() => toggleListingSelection(listing.id)}
+                            className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                          />
+                        </td>
+                        
                         <td className="px-6 py-4">
                           <div>
                             <div className="text-sm font-medium text-gray-900 max-w-xs truncate">
@@ -1422,12 +1571,21 @@ export default function AdminListingsPage() {
                         </td>
                         
                         <td className="px-6 py-4">
-                          <button
-                            onClick={() => setSelectedListing(listing)}
-                            className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-blue-600 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                          >
-                            👁️ Review
-                          </button>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => setSelectedListing(listing)}
+                              className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-blue-600 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                            >
+                              👁️ Review
+                            </button>
+                            {/* 🆕 Tekil silme butonu eklendi */}
+                            <button
+                              onClick={() => deleteSingleListing(listing.id)}
+                              className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-red-600 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                            >
+                              🗑️ Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1513,6 +1671,50 @@ export default function AdminListingsPage() {
                 </div>
               )}
             </div>
+            
+            {/* 🆕 Toplu Silme Onay Modalı */}
+            {showBulkDeleteConfirm && (
+              <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+                <div className="relative mx-auto p-5 border w-11/12 max-w-md shadow-lg rounded-md bg-white">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-medium text-gray-900">Confirm Bulk Deletion</h3>
+                    <button 
+                      onClick={() => setShowBulkDeleteConfirm(false)}
+                      className="text-gray-400 hover:text-gray-600 text-2xl"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600 mb-2">
+                      Are you sure you want to delete <strong>{selectedListings.size}</strong> listing{selectedListings.size !== 1 ? 's' : ''}?
+                    </p>
+                    <div className="bg-red-50 border border-red-200 rounded p-3">
+                      <p className="text-red-800 text-sm">
+                        This action cannot be undone. All selected listings will be permanently deleted.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end space-x-3">
+                    <button
+                      onClick={() => setShowBulkDeleteConfirm(false)}
+                      className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={bulkDeleteListings}
+                      disabled={isBulkDeleting}
+                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      {isBulkDeleting ? "Deleting..." : "Delete Listings"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
         

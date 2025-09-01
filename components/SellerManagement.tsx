@@ -1,6 +1,6 @@
 // File: /components/SellerManagement.tsx
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "@/lib/firebase";
 import { 
@@ -12,9 +12,14 @@ import {
   serverTimestamp,
   query,
   where,
-  getDoc
+  getDoc,
+  getDocs,
+  addDoc,
+  setDoc,
+  writeBatch,
+  orderBy
 } from "firebase/firestore";
-import { FiHome, FiMail, FiPhone, FiMapPin, FiDollarSign, FiPackage, FiEye, FiEdit, FiTrash2, FiLock, FiUnlock, FiUserCheck, FiUserX } from "react-icons/fi";
+import { FiHome, FiMail, FiPhone, FiMapPin, FiDollarSign, FiPackage, FiEye, FiEdit, FiTrash2, FiLock, FiUnlock, FiUserCheck, FiUserX, FiMessageSquare, FiX, FiRefreshCw } from "react-icons/fi";
 import Link from "next/link";
 
 // Seller Interface
@@ -62,12 +67,10 @@ const DeleteConfirmModal = ({
   onDelete: () => void;
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
-
   const handleDelete = () => {
     setIsProcessing(true);
     onDelete();
   };
-
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
       <div className="relative mx-auto p-5 border w-11/12 max-w-md shadow-lg rounded-md bg-white">
@@ -109,6 +112,347 @@ const DeleteConfirmModal = ({
   );
 };
 
+// Seller Message Indicator Component
+const SellerMessageIndicator = ({ sellerId, onOpenChat }: { 
+  sellerId: string; 
+  onOpenChat: () => void;
+}) => {
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const conversationsRef = collection(db, 'conversations');
+    const q = query(conversationsRef, where('participants', 'array-contains', sellerId));
+    
+    const unsubscribe = onSnapshot(q, async (querySnapshot) => {
+      if (querySnapshot.empty) {
+        setUnreadCount(0);
+        setLoading(false);
+        return;
+      }
+      
+      // For each conversation, check for unread messages
+      let totalUnread = 0;
+      
+      for (const docSnapshot of querySnapshot.docs) {
+        const conversationId = docSnapshot.id;
+        const conversationData = docSnapshot.data();
+        const messagesRef = collection(db, 'conversations', conversationId, 'messages');
+        const messagesQuery = query(
+          messagesRef, 
+          where('senderRole', '==', 'seller'),
+          where('senderId', '==', sellerId)
+        );
+        
+        const messagesSnapshot = await getDocs(messagesQuery);
+        
+        // Count unread messages (messages without admin replies)
+        messagesSnapshot.forEach(messageDoc => {
+          const messageData = messageDoc.data();
+          // Check if there's an admin reply after this message
+          const nextMessagesQuery = query(
+            messagesRef,
+            where('createdAt', '>', messageData.createdAt),
+            where('senderRole', '==', 'admin')
+          );
+          
+          // This is a simplified approach - in a real app you might want to track read status
+          // For now, we'll count all seller messages as unread until there's an admin reply
+          totalUnread += 1;
+        });
+      }
+      
+      setUnreadCount(totalUnread);
+      setLoading(false);
+    });
+    
+    return () => unsubscribe();
+  }, [sellerId]);
+
+  if (loading) {
+    return <div className="w-6 h-6 rounded-full bg-gray-200 animate-pulse"></div>;
+  }
+
+  return (
+    <button
+      onClick={onOpenChat}
+      className="relative inline-flex items-center p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+      title={`${unreadCount} unread messages`}
+    >
+      <FiMessageSquare className="w-5 h-5" />
+      
+      {unreadCount > 0 && (
+        <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full min-w-[18px]">
+          {unreadCount > 99 ? '99+' : unreadCount}
+        </span>
+      )}
+    </button>
+  );
+};
+
+// Seller Chat Modal Component
+const SellerChatModal = ({ 
+  seller, 
+  onClose,
+  onMarkAsRead
+}: { 
+  seller: Seller; 
+  onClose: () => void;
+  onMarkAsRead: () => void;
+}) => {
+  const [user] = useAuthState(auth);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [isLoadingConversation, setIsLoadingConversation] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Find or create conversation
+  useEffect(() => {
+    if (!user || !seller) return;
+    
+    const findOrCreateConversation = async () => {
+      setIsLoadingConversation(true);
+      try {
+        // Check if conversation exists
+        const conversationsRef = collection(db, 'conversations');
+        const q = query(
+          conversationsRef, 
+          where('participants', 'array-contains', seller.id)
+        );
+        const querySnapshot = await getDocs(q);
+        
+        let currentConversationId: string | null = null;
+        
+        if (!querySnapshot.empty) {
+          // Conversation found
+          currentConversationId = querySnapshot.docs[0].id;
+        } else {
+          // Create new conversation
+          const newConversationRef = doc(conversationsRef);
+          await setDoc(newConversationRef, {
+            participants: [seller.id, 'admin'],
+            lastMessage: '',
+            lastUpdated: serverTimestamp(),
+          });
+          currentConversationId = newConversationRef.id;
+        }
+        
+        setConversationId(currentConversationId);
+        
+        // Mark conversation as read when opened
+        if (currentConversationId) {
+          onMarkAsRead();
+        }
+      } catch (err) {
+        console.error('Error finding/creating conversation:', err);
+      } finally {
+        setIsLoadingConversation(false);
+      }
+    };
+    
+    findOrCreateConversation();
+  }, [user, seller, onMarkAsRead]);
+
+  // Load messages
+  useEffect(() => {
+    if (!conversationId) return;
+    
+    const messagesRef = collection(db, 'conversations', conversationId, 'messages');
+    const q = query(messagesRef, orderBy('createdAt', 'asc'));
+    
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const fetchedMessages: any[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        fetchedMessages.push({
+          id: doc.id,
+          text: data.text,
+          senderId: data.senderId,
+          senderRole: data.senderRole,
+          createdAt: data.createdAt,
+        });
+      });
+      setMessages(fetchedMessages);
+    });
+    
+    return () => unsubscribe();
+  }, [conversationId]);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !conversationId || !newMessage.trim() || isSending) return;
+    
+    setIsSending(true);
+    try {
+      const messagesRef = collection(db, 'conversations', conversationId, 'messages');
+      
+      // Add new message
+      await addDoc(messagesRef, {
+        text: newMessage,
+        senderId: user.uid,
+        senderRole: 'admin',
+        createdAt: serverTimestamp(),
+      });
+      
+      // Update conversation document
+      const conversationRef = doc(db, 'conversations', conversationId);
+      await updateDoc(conversationRef, {
+        lastMessage: newMessage,
+        lastUpdated: serverTimestamp(),
+      });
+      
+      setNewMessage('');
+    } catch (err) {
+      console.error('Error sending message:', err);
+      alert('Failed to send message.');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleClearChat = async () => {
+    if (!conversationId) return;
+    
+    setIsClearing(true);
+    
+    try {
+      const messagesRef = collection(db, 'conversations', conversationId, 'messages');
+      const messagesQuery = query(messagesRef);
+      const querySnapshot = await getDocs(messagesQuery);
+      
+      if (querySnapshot.empty) {
+        setMessages([]);
+        setIsClearing(false);
+        return;
+      }
+      
+      // Create a batch to delete all messages
+      const batch = writeBatch(db);
+      
+      // Add all message documents to the batch for deletion
+      querySnapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+      
+      // Update the conversation document to clear last message
+      const conversationRef = doc(db, 'conversations', conversationId);
+      batch.update(conversationRef, {
+        lastMessage: '',
+        lastUpdated: serverTimestamp()
+      });
+      
+      // Commit the batch
+      await batch.commit();
+      
+      // Clear local state
+      setMessages([]);
+      
+      console.log('Chat cleared successfully from Firestore');
+    } catch (error) {
+      console.error('Error clearing chat:', error);
+      alert('Failed to clear chat. Please try again.');
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center z-50">
+      <div className="relative mx-auto p-5 border w-11/12 max-w-3xl shadow-2xl rounded-lg bg-white flex flex-col max-h-[90vh]">
+        <div className="flex items-center justify-between mb-4 pb-3 border-b">
+          <div>
+            <h3 className="text-lg font-medium text-gray-900">
+              Chat with {seller.name || seller.businessName}
+            </h3>
+            <p className="text-sm text-gray-500">{seller.email}</p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleClearChat}
+              disabled={isClearing || messages.length === 0}
+              className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Clear all messages from chat"
+            >
+              {isClearing ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-1 h-4 w-4 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Clearing...
+                </>
+              ) : (
+                <>
+                  <FiRefreshCw className="w-4 h-4 mr-1" />
+                  Clear
+                </>
+              )}
+            </button>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">
+              <FiX />
+            </button>
+          </div>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-4 bg-gray-50 mb-4">
+          {isLoadingConversation ? (
+            <div className="flex justify-center items-center h-full">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+          ) : messages.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500">No messages yet. Start the conversation!</p>
+            </div>
+          ) : (
+            messages.map((msg) => (
+              <div 
+                key={msg.id} 
+                className={`mb-4 flex ${msg.senderRole === 'admin' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div 
+                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${msg.senderRole === 'admin' ? 'bg-blue-500 text-white rounded-br-none' : 'bg-white border border-gray-300 text-gray-800 rounded-bl-none'}`}
+                >
+                  <div className="text-sm">{msg.text}</div>
+                  <div className={`text-xs mt-1 ${msg.senderRole === 'admin' ? 'text-blue-100' : 'text-gray-500'}`}>
+                    {msg.createdAt?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+        
+        <form onSubmit={handleSendMessage} className="flex">
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Type your message..."
+            className="flex-1 border border-gray-300 rounded-l-lg px-4 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            disabled={isSending || isLoadingConversation}
+          />
+          <button
+            type="submit"
+            disabled={isSending || !newMessage.trim() || isLoadingConversation}
+            className="bg-blue-600 text-white px-4 py-2 rounded-r-lg font-medium disabled:bg-blue-400 hover:bg-blue-700 transition-colors"
+          >
+            {isSending ? 'Sending...' : 'Send'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 const SellerManagement = () => {
   const [user] = useAuthState(auth);
   const [sellers, setSellers] = useState<Seller[]>([]);
@@ -121,7 +465,9 @@ const SellerManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
-
+  const [chatSeller, setChatSeller] = useState<Seller | null>(null);
+  const [messageIndicators, setMessageIndicators] = useState<{[key: string]: number}>({});
+  
   // Mevcut kullanıcının rolünü kontrol et
   useEffect(() => {
     if (user) {
@@ -136,7 +482,7 @@ const SellerManagement = () => {
       setCurrentUserRole(null);
     }
   }, [user]);
-
+  
   // Fetch sellers data
   useEffect(() => {
     const usersRef = collection(db, "users");
@@ -191,12 +537,12 @@ const SellerManagement = () => {
     
     return () => unsubscribe();
   }, []);
-
+  
   // İzin kontrolü için yardımcı fonksiyon
   const hasAdminPermission = () => {
     return currentUserRole === "admin";
   };
-
+  
   // Filter sellers
   let filteredSellers = sellers;
   
@@ -212,7 +558,7 @@ const SellerManagement = () => {
       seller.id.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }
-
+  
   // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -222,7 +568,7 @@ const SellerManagement = () => {
   for (let i = 1; i <= Math.ceil(filteredSellers.length / itemsPerPage); i++) {
     pageNumbers.push(i);
   }
-
+  
   // Seller actions
   const toggleSellerStatus = async (sellerId: string, currentStatus: string) => {
     if (!hasAdminPermission()) {
@@ -248,7 +594,7 @@ const SellerManagement = () => {
     }
     setIsProcessing(false);
   };
-
+  
   const deleteSeller = async () => {
     if (!hasAdminPermission()) {
       alert("You don't have permission to perform this action");
@@ -274,6 +620,32 @@ const SellerManagement = () => {
     setIsProcessing(false);
   };
 
+  // Mark conversation as read
+  const markConversationAsRead = async (sellerId: string) => {
+    try {
+      const conversationsRef = collection(db, 'conversations');
+      const q = query(conversationsRef, where('participants', 'array-contains', sellerId));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const conversationId = querySnapshot.docs[0].id;
+        const conversationRef = doc(db, 'conversations', conversationId);
+        await updateDoc(conversationRef, {
+          readByAdmin: true,
+          readAt: serverTimestamp()
+        });
+        
+        // Update message indicators
+        setMessageIndicators(prev => ({
+          ...prev,
+          [sellerId]: 0
+        }));
+      }
+    } catch (error) {
+      console.error('Error marking conversation as read:', error);
+    }
+  };
+  
   const getStatusBadge = (status: string) => {
     const styles = {
       active: "bg-green-100 text-green-800 border-green-200",
@@ -294,7 +666,7 @@ const SellerManagement = () => {
       </span>
     );
   };
-
+  
   // Seller Detail Modal
   const SellerDetailModal = ({ seller, onClose }: { seller: Seller; onClose: () => void }) => {
     const [activeTab, setActiveTab] = useState<"info" | "financial" | "documents">("info");
@@ -537,7 +909,7 @@ const SellerManagement = () => {
       </div>
     );
   };
-
+  
   return (
     <div className="space-y-6">
       {/* Yetki kontrolü */}
@@ -589,7 +961,7 @@ const SellerManagement = () => {
           </div>
         </div>
       </div>
-
+      
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-400">
@@ -636,7 +1008,7 @@ const SellerManagement = () => {
           </div>
         </div>
       </div>
-
+      
       {/* Sellers Table */}
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
@@ -668,9 +1040,14 @@ const SellerManagement = () => {
                   Balance
                 </th>
                 {hasAdminPermission() && (
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Messages
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </>
                 )}
               </tr>
             </thead>
@@ -733,33 +1110,41 @@ const SellerManagement = () => {
                   </td>
                   
                   {hasAdminPermission() && (
-                    <td className="px-6 py-4">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => setSelectedSeller(seller)}
-                          className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-blue-600 bg-blue-50 hover:bg-blue-100"
-                        >
-                          <FiEye className="w-3 h-3 mr-1" />
-                          View
-                        </button>
-                        
-                        <button
-                          onClick={() => toggleSellerStatus(seller.id, seller.status)}
-                          className={`inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md ${
-                            seller.status === "active"
-                              ? "text-red-600 bg-red-50 hover:bg-red-100"
-                              : "text-green-600 bg-green-50 hover:bg-green-100"
-                          }`}
-                        >
-                          {seller.status === "active" ? (
-                            <FiUserX className="w-3 h-3 mr-1" />
-                          ) : (
-                            <FiUserCheck className="w-3 h-3 mr-1" />
-                          )}
-                          {seller.status === "active" ? "Suspend" : "Activate"}
-                        </button>
-                      </div>
-                    </td>
+                    <>
+                      <td className="px-6 py-4">
+                        <SellerMessageIndicator 
+                          sellerId={seller.id} 
+                          onOpenChat={() => setChatSeller(seller)} 
+                        />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => setSelectedSeller(seller)}
+                            className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-blue-600 bg-blue-50 hover:bg-blue-100"
+                          >
+                            <FiEye className="w-3 h-3 mr-1" />
+                            View
+                          </button>
+                          
+                          <button
+                            onClick={() => toggleSellerStatus(seller.id, seller.status)}
+                            className={`inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md ${
+                              seller.status === "active"
+                                ? "text-red-600 bg-red-50 hover:bg-red-100"
+                                : "text-green-600 bg-green-50 hover:bg-green-100"
+                            }`}
+                          >
+                            {seller.status === "active" ? (
+                              <FiUserX className="w-3 h-3 mr-1" />
+                            ) : (
+                              <FiUserCheck className="w-3 h-3 mr-1" />
+                            )}
+                            {seller.status === "active" ? "Suspend" : "Activate"}
+                          </button>
+                        </div>
+                      </td>
+                    </>
                   )}
                 </tr>
               ))}
@@ -862,6 +1247,14 @@ const SellerManagement = () => {
             setSelectedSeller(null);
           }}
           onDelete={deleteSeller}
+        />
+      )}
+      
+      {chatSeller && (
+        <SellerChatModal 
+          seller={chatSeller} 
+          onClose={() => setChatSeller(null)} 
+          onMarkAsRead={() => markConversationAsRead(chatSeller.id)}
         />
       )}
     </div>

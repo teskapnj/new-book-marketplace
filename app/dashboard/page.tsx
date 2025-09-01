@@ -2,11 +2,14 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "@/lib/firebase";
-import { doc, getDoc, collection, query, where, onSnapshot, DocumentData } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, onSnapshot, DocumentData, setDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { User as FirebaseUser } from "firebase/auth";
+// !!! YENİ EKLENEN İMPORT: Mesajlaşma widget bileşenini sayfaya dahil ediyoruz. !!!
+import SellerMessageWidget from '@/components/SellerMessageWidget';
+
 // TypeScript interfaces
 interface AppUser {
   uid: string;
@@ -155,7 +158,6 @@ export default function DashboardPage() {
             
             // Create user document in Firestore
             try {
-              const { setDoc } = await import("firebase/firestore");
               await setDoc(doc(db, "users", user.uid), {
                 uid: user.uid,
                 email: user.email,
@@ -164,9 +166,18 @@ export default function DashboardPage() {
                 createdAt: new Date(),
                 lastLogin: new Date()
               });
-              console.log("User profile created successfully");
+
+              // >>>>>>>>>>>>>> KONUŞMAYI OTOMATİK OLUŞTURAN KOD <<<<<<<<<<<<<<
+              // Yeni satıcı için admin ile bir konuşma başlat
+              await setDoc(doc(db, 'conversations', user.uid), {
+                participants: [user.uid, 'admin'],
+                lastMessage: 'Hoş geldiniz! Sorularınızı buradan iletebilirsiniz.',
+                lastUpdated: serverTimestamp()
+              }, { merge: true }); // merge: true, eğer konuşma zaten varsa hata vermez
+              console.log("User profile and conversation created successfully");
+
             } catch (error) {
-              console.error("Error creating user profile:", error);
+              console.error("Error creating user profile or conversation:", error);
             }
           }
         } catch (error) {
@@ -601,6 +612,18 @@ export default function DashboardPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                 </svg>
                 Home Page
+              </Link>
+              
+              {/* Account Settings Button */}
+              <Link 
+                href="/dashboard/settings"
+                className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              >
+                <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Account Settings
               </Link>
             </div>
           </div>
@@ -1166,19 +1189,14 @@ export default function DashboardPage() {
         
         {/* Account Info */}
         <div className="mt-8 bg-gray-100 rounded-lg p-4">
-          <div className="flex justify-between items-center text-sm text-gray-600">
-            <div>
-              📧 Account: {user?.email} • 🕒 Last login: {new Date().toLocaleString()}
-            </div>
-            <Link 
-              href="/settings"
-              className="text-blue-600 hover:text-blue-800 font-medium"
-            >
-              Account Settings
-            </Link>
+          <div className="text-sm text-gray-600">
+            📧 Account: {user?.email} • 🕒 Last login: {new Date().toLocaleString()}
           </div>
         </div>
       </div>
+      {/* !!! EN SONA, ANNA DIV'İN İÇİNE EKLEDİK !!! */}
+      {/* Bu bileşen, sayfanın sağ alt köşesinde sabitlenen mesajlaşma ikonunu ve widget'ını içerir. */}
+      <SellerMessageWidget />
     </div>
   );
 }

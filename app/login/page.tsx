@@ -3,12 +3,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signInWithEmailAndPassword, setPersistence, browserLocalPersistence, browserSessionPersistence } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import SocialLogin from "@/components/SocialLogin";
 import { FiHome, FiEye, FiEyeOff } from "react-icons/fi";
 import { useAuth } from "@/contexts/AuthContext";
-
 // Custom Password Input Component with Hold-to-Show functionality
 const PasswordInputHold = ({ 
   id, 
@@ -31,28 +30,23 @@ const PasswordInputHold = ({
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isHolding, setIsHolding] = useState(false);
-
   const handleMouseDown = () => {
     setIsHolding(true);
     setShowPassword(true);
   };
-
   const handleMouseUp = () => {
     setIsHolding(false);
     setShowPassword(false);
   };
-
   const handleTouchStart = (e: React.TouchEvent) => {
     e.preventDefault(); // Prevent scrolling on touch devices
     setIsHolding(true);
     setShowPassword(true);
   };
-
   const handleTouchEnd = () => {
     setIsHolding(false);
     setShowPassword(false);
   };
-
   return (
     <div className={`relative ${className}`}>
       <input
@@ -87,7 +81,6 @@ const PasswordInputHold = ({
     </div>
   );
 };
-
 export default function LoginPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -99,46 +92,77 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   
-  // 🔄 Redirect to appropriate dashboard if user is already logged in
+  // Redirect to appropriate dashboard if user is already logged in
   useEffect(() => {
     if (user && !authLoading) {
       checkUserRoleAndRedirect(user.uid);
     }
   }, [user, authLoading]);
   
-  // 🔍 Check user role from Firestore and redirect accordingly
+  // Check user role from Firestore and redirect accordingly
   const checkUserRoleAndRedirect = async (userId: string) => {
     try {
-      console.log("🔍 Checking user role for:", userId);
+      console.log("Checking user role for:", userId);
       const userDoc = await getDoc(doc(db, "users", userId));
       
       if (userDoc.exists()) {
         const userData = userDoc.data();
         const userRole = userData.role || "seller";
+        const userStatus = userData.status || "active"; // Get user status
         
-        console.log("👤 User role detected:", userRole);
+        // Check if user account is active
+        if (userStatus !== "active") {
+          console.log("User account is not active:", userStatus);
+          setError("Your account is not active. Please contact the administrator to activate your account.");
+          setLoading(false);
+          return;
+        }
         
-        // 💾 Store user role and info in localStorage
+        console.log("User role detected:", userRole);
+        
+        // Store user role and info in localStorage
         localStorage.setItem("userRole", userRole);
         localStorage.setItem("userEmail", user?.email || "");
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("userName", userData.name || "User");
         localStorage.setItem("userId", userId);
         
-        // 🎯 Force redirect based on role (use window.location for hard redirect)
+        // Force redirect based on role
         if (userRole === "admin") {
-          console.log("✅ Admin user detected, redirecting to admin panel");
+          console.log("Admin user detected, redirecting to admin panel");
           window.location.href = "/admin/dashboard";
         } else {
-          console.log("✅ Regular user detected, redirecting to dashboard");
+          console.log("Regular user detected, redirecting to dashboard");
           window.location.href = "/dashboard";
         }
       } else {
-        console.warn("⚠️ User document not found, defaulting to seller role");
+        console.warn("User document not found, creating default profile");
+        
+        // Create default user profile in Firestore
+        const defaultUserData = {
+          uid: userId,
+          email: user?.email || "",
+          name: user?.displayName || "User",
+          role: "seller",
+          status: "active",
+          createdAt: new Date(),
+          emailVerified: user?.emailVerified || false,
+          totalSales: 0,
+          totalOrders: 0,
+          totalListings: 0,
+          balance: 0,
+          commissionRate: 10,
+          lastLogin: new Date()
+        };
+        
+        await setDoc(doc(db, "users", userId), defaultUserData);
+        console.log("Default user profile created");
+        
         localStorage.setItem("userRole", "seller");
         localStorage.setItem("userEmail", user?.email || "");
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("userId", userId);
+        localStorage.setItem("userName", user?.displayName || "User");
         window.location.href = "/dashboard";
       }
     } catch (error) {
@@ -187,32 +211,47 @@ export default function LoginPage() {
     setLoading(true);
     
     try {
-      // 🔥 Set Firebase persistence based on remember me checkbox
+      // Set Firebase persistence based on remember me checkbox
       if (formData.rememberMe) {
         await setPersistence(auth, browserLocalPersistence);
       } else {
         await setPersistence(auth, browserSessionPersistence);
       }
       
-      // 🚀 Firebase authentication
+      // Firebase authentication
       const userCredential = await signInWithEmailAndPassword(
         auth,
         formData.email,
         formData.password
       );
       
-      console.log("🔐 Firebase login successful:", userCredential.user.email);
+      console.log("Firebase login successful:", userCredential.user.email);
       
-      // 🔍 Get user role from Firestore
+      // Get user role from Firestore
       const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
       
       if (userDoc.exists()) {
         const userData = userDoc.data();
         const userRole = userData.role || "seller";
+        const userStatus = userData.status || "active"; // Get user status
         
-        console.log(`👤 User role detected: ${userRole}`);
+        // Check if user account is active
+        if (userStatus !== "active") {
+          console.log("User account is not active:", userStatus);
+          setError("Your account is not active. Please contact the administrator to activate your account.");
+          setLoading(false);
+          return;
+        }
         
-        // 💾 Store user session data
+        console.log(`User role detected: ${userRole}`);
+        
+        // Update last login time
+        await setDoc(doc(db, "users", userCredential.user.uid), {
+          ...userData,
+          lastLogin: new Date()
+        });
+        
+        // Store user session data
         localStorage.setItem("userRole", userRole);
         localStorage.setItem("userEmail", formData.email);
         localStorage.setItem("isLoggedIn", "true");
@@ -223,17 +262,38 @@ export default function LoginPage() {
           localStorage.setItem("rememberMe", "true");
         }
         
-        // 🎯 Force redirect based on user role
+        // Force redirect based on user role
         if (userRole === "admin") {
-          console.log("🔧 Redirecting admin to admin panel");
+          console.log("Redirecting admin to admin panel");
           window.location.href = "/admin/dashboard";
         } else {
-          console.log("👤 Redirecting user to dashboard");
+          console.log("Redirecting user to dashboard");
           window.location.href = "/dashboard";
         }
       } else {
-        // 📝 User document doesn't exist, create default seller role
-        console.warn("⚠️ User document not found, treating as seller");
+        // User document doesn't exist, create default profile in Firestore
+        console.warn("User document not found, creating default profile");
+        
+        const defaultUserData = {
+          uid: userCredential.user.uid,
+          email: formData.email,
+          name: userCredential.user.displayName || "User",
+          role: "seller",
+          status: "active",
+          createdAt: new Date(),
+          emailVerified: userCredential.user.emailVerified,
+          totalSales: 0,
+          totalOrders: 0,
+          totalListings: 0,
+          balance: 0,
+          commissionRate: 10,
+          lastLogin: new Date()
+        };
+        
+        // Create user profile in Firestore
+        await setDoc(doc(db, "users", userCredential.user.uid), defaultUserData);
+        console.log("Default user profile created in Firestore");
+        
         localStorage.setItem("userRole", "seller");
         localStorage.setItem("userEmail", formData.email);
         localStorage.setItem("isLoggedIn", "true");
@@ -243,9 +303,9 @@ export default function LoginPage() {
       }
       
     } catch (error: any) {
-      console.error("❌ Login error:", error);
+      console.error("Login error:", error);
       
-      // 🛡️ Firebase error handling with user-friendly messages
+      // Firebase error handling with user-friendly messages
       switch (error.code) {
         case "auth/user-not-found":
           setError("No account found with this email address. Please register first.");
@@ -278,26 +338,62 @@ export default function LoginPage() {
   
   const handleSocialLoginSuccess = async (socialUser: any) => {
     try {
-      // 🔍 Check if user exists in Firestore for social login
+      // Check if user exists in Firestore for social login
       const userDoc = await getDoc(doc(db, "users", socialUser.uid));
       
       let userRole = "seller"; // Default role for social login
       let userName = socialUser.displayName || "User";
+      let userStatus = "active"; // Default status
       
       if (userDoc.exists()) {
         const userData = userDoc.data();
         userRole = userData.role || "seller";
         userName = userData.name || userData.displayName || socialUser.displayName || "User";
+        userStatus = userData.status || "active";
+        
+        // Check if user account is active
+        if (userStatus !== "active") {
+          console.log("Social login user account is not active:", userStatus);
+          setError("Your account is not active. Please contact the administrator to activate your account.");
+          setLoading(false);
+          return;
+        }
+        
+        // Update last login
+        await setDoc(doc(db, "users", socialUser.uid), {
+          ...userData,
+          lastLogin: new Date()
+        });
+      } else {
+        // Create profile for social login user
+        const defaultUserData = {
+          uid: socialUser.uid,
+          email: socialUser.email || "",
+          name: socialUser.displayName || "User",
+          role: "seller",
+          status: "active",
+          createdAt: new Date(),
+          emailVerified: socialUser.emailVerified || false,
+          totalSales: 0,
+          totalOrders: 0,
+          totalListings: 0,
+          balance: 0,
+          commissionRate: 10,
+          lastLogin: new Date()
+        };
+        
+        await setDoc(doc(db, "users", socialUser.uid), defaultUserData);
+        console.log("Social login user profile created");
       }
       
-      // 💾 Store session data for social login
+      // Store session data for social login
       localStorage.setItem("userRole", userRole);
       localStorage.setItem("userEmail", socialUser.email || "");
       localStorage.setItem("isLoggedIn", "true");
       localStorage.setItem("userId", socialUser.uid);
       localStorage.setItem("userName", userName);
       
-      // 🎯 Force redirect based on role
+      // Force redirect based on role
       if (userRole === "admin") {
         window.location.href = "/admin/dashboard";
       } else {
@@ -318,14 +414,14 @@ export default function LoginPage() {
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
-      {/* 🏠 Back to Home Button */}
+      {/* Back to Home Button */}
       <Link href="/" className="fixed top-4 left-4 flex items-center text-blue-600 hover:text-blue-800 transition-colors duration-200">
         <FiHome className="h-5 w-5 mr-1" />
         <span className="font-medium">Back to Home</span>
       </Link>
       
       <div className="max-w-md w-full space-y-8">
-        {/* 🏢 Logo and Title */}
+        {/* Logo and Title */}
         <div className="text-center">
           <div className="mx-auto h-16 w-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center">
             <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -340,9 +436,9 @@ export default function LoginPage() {
           </p>
         </div>
         
-        {/* 📋 Login Form */}
+        {/* Login Form */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
-          {/* ❌ Error Message Display */}
+          {/* Error Message Display */}
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex items-center">
@@ -354,22 +450,22 @@ export default function LoginPage() {
             </div>
           )}
           
-          {/* ℹ️ Info Message */}
+          {/* Info Message */}
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-start">
               <svg className="h-5 w-5 text-blue-400 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
               </svg>
               <div className="text-sm text-blue-800">
-                <strong>🔐 Automatic Role Detection:</strong>
+                <strong>Automatic Role Detection:</strong>
                 <p className="mt-1">Enter your credentials and you'll be redirected to the appropriate dashboard based on your account type.</p>
               </div>
             </div>
           </div>
           
-          {/* 📝 Login Form */}
+          {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* 📧 Email Input */}
+            {/* Email Input */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 Email Address
@@ -392,7 +488,7 @@ export default function LoginPage() {
               </div>
             </div>
             
-            {/* 🔒 Password Input - Using our custom PasswordInputHold component */}
+            {/* Password Input */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Password
@@ -412,7 +508,7 @@ export default function LoginPage() {
               </p>
             </div>
             
-            {/* ⚙️ Remember Me & Forgot Password */}
+            {/* Remember Me & Forgot Password */}
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input
@@ -434,7 +530,7 @@ export default function LoginPage() {
               </div>
             </div>
             
-            {/* 🚀 Submit Button */}
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
@@ -459,7 +555,7 @@ export default function LoginPage() {
             </button>
           </form>
           
-          {/* 🌐 Social Login Component 
+          {/* Social Login Component 
           <SocialLogin 
             isLogin={true}
             onSuccess={handleSocialLoginSuccess}
@@ -467,7 +563,7 @@ export default function LoginPage() {
           />*/}
         </div>
         
-        {/* 📝 Sign Up Link */}
+        {/* Sign Up Link */}
         <p className="text-center text-sm text-gray-600">
           Don't have an account?{' '}
           <Link href="/register" className="font-medium text-blue-600 hover:text-blue-500">
@@ -475,17 +571,17 @@ export default function LoginPage() {
           </Link>
         </p>
         
-        {/* ℹ️ Account Types Info */}
+        {/* Account Types Info */}
         <div className="bg-white rounded-lg p-4 text-center border border-gray-200">
-          <h4 className="text-sm font-medium text-gray-900 mb-2">🎯 Account Types</h4>
+          <h4 className="text-sm font-medium text-gray-900 mb-2">Account Types</h4>
           <div className="text-xs text-gray-600 space-y-1">
-            <p><strong>🔧 Admin:</strong> Access admin panel to manage listings and users</p>
-            <p><strong>👤 Seller:</strong> Create and manage your product listings</p>
-            <p><strong>🛒 Buyer:</strong> Browse and purchase items from the marketplace</p>
+            <p><strong>Admin:</strong> Access admin panel to manage listings and users</p>
+            <p><strong>Seller:</strong> Create and manage your product listings</p>
+            <p><strong>Buyer:</strong> Browse and purchase items from the marketplace</p>
           </div>
         </div>
         
-        {/* 📄 Footer */}
+        {/* Footer */}
         <div className="mt-8 text-center text-xs text-gray-500">
           <p>© 2024 MarketPlace. All rights reserved.</p>
           <div className="mt-2 space-x-4">
