@@ -1,3 +1,4 @@
+// app/create-listing/page.tsx
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -5,7 +6,7 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db, storage } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { FiHome, FiSave, FiCamera, FiDollarSign, FiPackage, FiPlus, FiMinus, FiX, FiCheck, FiAlertCircle, FiUpload, FiSearch, FiStar, FiTrendingUp, FiFileText, FiTruck, FiBookOpen } from "react-icons/fi";
+import { FiHome, FiSave, FiCamera, FiDollarSign, FiPackage, FiPlus, FiMinus, FiX, FiCheck, FiAlertCircle, FiUpload, FiSearch, FiStar, FiTrendingUp, FiFileText, FiTruck, FiBookOpen, FiUser, FiLogIn, FiSettings, FiMessageSquare } from "react-icons/fi";
 import Link from "next/link";
 import Head from "next/head";
 import axios from "axios";
@@ -44,6 +45,13 @@ interface PackageDimensions {
   weight: number;
 }
 
+interface ShippingInfo {
+  firstName: string;
+  lastName: string;
+  address: Address;
+  packageDimensions: PackageDimensions;
+}
+
 export default function CreateListingPage() {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
@@ -65,20 +73,25 @@ export default function CreateListingPage() {
   const [description, setDescription] = useState<string>('');
   const [descriptionError, setDescriptionError] = useState<string>('');
   
-  // Shipping information state
-  const [address, setAddress] = useState<Address>({
-    street: "",
-    city: "",
-    state: "",
-    zip: "",
-    country: "US"
+  // Shipping information state - güncellendi
+  const [shippingInfo, setShippingInfo] = useState<ShippingInfo>({
+    firstName: "",
+    lastName: "",
+    address: {
+      street: "",
+      city: "",
+      state: "",
+      zip: "",
+      country: "US"
+    },
+    packageDimensions: {
+      length: 0,
+      width: 0,
+      height: 0,
+      weight: 0
+    }
   });
-  const [packageDimensions, setPackageDimensions] = useState<PackageDimensions>({
-    length: 0,
-    width: 0,
-    height: 0,
-    weight: 0
-  });
+  
   const [shippingError, setShippingError] = useState<string>('');
   
   // Dimension validation errors
@@ -109,6 +122,11 @@ export default function CreateListingPage() {
   } | null>(null);
   const [scannerError, setScannerError] = useState("");
   
+  // Calculate total our price
+  const totalOurPrice = bundleItems.reduce((total, item) => {
+    return total + (item.price * item.quantity);
+  }, 0);
+  
   const getStorageKey = useCallback(() => {
     return user ? `bundleListingDraft_${user.uid}` : 'bundleListingDraft_guest';
   }, [user]);
@@ -131,37 +149,44 @@ export default function CreateListingPage() {
       weight: ''
     });
     
-    if (!address.street || !address.city || !address.state || !address.zip) {
+    // Ad/soyad kontrolü eklendi
+    if (!shippingInfo.firstName.trim() || !shippingInfo.lastName.trim()) {
+      setShippingError("Please enter your first and last name");
+      return false;
+    }
+    
+    if (!shippingInfo.address.street || !shippingInfo.address.city || 
+        !shippingInfo.address.state || !shippingInfo.address.zip) {
       setShippingError("Please fill in all address fields");
       return false;
     }
     
-    if (packageDimensions.length <= 0 || packageDimensions.width <= 0 || 
-        packageDimensions.height <= 0 || packageDimensions.weight <= 0) {
+    if (shippingInfo.packageDimensions.length <= 0 || shippingInfo.packageDimensions.width <= 0 || 
+        shippingInfo.packageDimensions.height <= 0 || shippingInfo.packageDimensions.weight <= 0) {
       setShippingError("Please enter valid package dimensions and weight");
       return false;
     }
     
     // Yeni eklenen sınırlamalar
-    if (packageDimensions.weight > 50) {
+    if (shippingInfo.packageDimensions.weight > 50) {
       setDimensionErrors(prev => ({ ...prev, weight: "Weight cannot exceed 50 pounds" }));
       setShippingError("Package weight cannot exceed 50 pounds");
       return false;
     }
     
-    if (packageDimensions.length > 18) {
+    if (shippingInfo.packageDimensions.length > 18) {
       setDimensionErrors(prev => ({ ...prev, length: "Length cannot exceed 18 inches" }));
     }
     
-    if (packageDimensions.width > 16) {
+    if (shippingInfo.packageDimensions.width > 16) {
       setDimensionErrors(prev => ({ ...prev, width: "Width cannot exceed 16 inches" }));
     }
     
-    if (packageDimensions.height > 16) {
+    if (shippingInfo.packageDimensions.height > 16) {
       setDimensionErrors(prev => ({ ...prev, height: "Height cannot exceed 16 inches" }));
     }
     
-    if (packageDimensions.length > 18 || packageDimensions.width > 16 || packageDimensions.height > 16) {
+    if (shippingInfo.packageDimensions.length > 18 || shippingInfo.packageDimensions.width > 16 || shippingInfo.packageDimensions.height > 16) {
       setShippingError("Package dimensions cannot exceed 18x16x16 inches");
       return false;
     }
@@ -176,12 +201,32 @@ export default function CreateListingPage() {
     validateDescription(text);
   };
   
+  // Ad/soyad handle fonksiyonları eklendi
+  const handleNameChange = (field: keyof Pick<ShippingInfo, 'firstName' | 'lastName'>, value: string) => {
+    setShippingInfo(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+  
   const handleAddressChange = (field: keyof Address, value: string) => {
-    setAddress(prev => ({ ...prev, [field]: value }));
+    setShippingInfo(prev => ({
+      ...prev,
+      address: {
+        ...prev.address,
+        [field]: value
+      }
+    }));
   };
   
   const handlePackageDimensionsChange = (field: keyof PackageDimensions, value: number) => {
-    setPackageDimensions(prev => ({ ...prev, [field]: value }));
+    setShippingInfo(prev => ({
+      ...prev,
+      packageDimensions: {
+        ...prev.packageDimensions,
+        [field]: value
+      }
+    }));
     
     // Validate the specific field
     const newErrors = { ...dimensionErrors };
@@ -439,8 +484,7 @@ export default function CreateListingPage() {
           imageStats: null
         },
         description: description,
-        address: address,
-        packageDimensions: packageDimensions,
+        shippingInfo: shippingInfo,
         timestamp: Date.now()
       };
       
@@ -451,7 +495,7 @@ export default function CreateListingPage() {
     } catch (e) {
       console.error("Failed to save to localStorage", e);
     }
-  }, [bundleItems, currentItem, description, address, packageDimensions, isMounted, isPrivateMode, isInitializing, getStorageKey]);
+  }, [bundleItems, currentItem, description, shippingInfo, isMounted, isPrivateMode, isInitializing, getStorageKey]);
   
   const loadFromStorage = useCallback(() => {
     if (!isMounted || isPrivateMode || isInitializing) return;
@@ -466,19 +510,10 @@ export default function CreateListingPage() {
         
         setBundleItems(parsed.bundleItems || []);
         setDescription(parsed.description || "");
-        setAddress(parsed.address || {
-          street: "",
-          city: "",
-          state: "",
-          zip: "",
-          country: "US"
-        });
-        setPackageDimensions(parsed.packageDimensions || {
-          length: 0,
-          width: 0,
-          height: 0,
-          weight: 0
-        });
+        
+        if (parsed.shippingInfo) {
+          setShippingInfo(parsed.shippingInfo);
+        }
         
         if (parsed.currentItem && parsed.currentItem.isbn) {
           setCurrentItem({
@@ -509,13 +544,9 @@ export default function CreateListingPage() {
     }, 1000);
     
     return () => clearTimeout(timeoutId);
-  }, [bundleItems, description, address, packageDimensions, saveToStorage, isMounted, isInitializing]);
+  }, [bundleItems, description, shippingInfo, saveToStorage, isMounted, isInitializing]);
   
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/login");
-    }
-  }, [user, loading, router]);
+  // Kullanıcı giriş kontrolünü kaldırdık - sayfa herkese açık olacak
   
   const handleCurrentItemChange = (field: keyof BundleItem, value: string | number) => {
     setCurrentItem(prev => ({
@@ -657,6 +688,13 @@ export default function CreateListingPage() {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Kullanıcı giriş yapmış mı kontrol et
+    if (!user) {
+      setError("Please login or sign up to create a listing");
+      return;
+    }
+    
     setIsSubmitting(true);
     setError("");
     setUploadProgress("");
@@ -736,10 +774,7 @@ export default function CreateListingPage() {
         vendorId: user?.uid || "",
         vendorName: user?.displayName || user?.email?.split('@')[0] || "Anonymous",
         bundleItems: uploadedItems,
-        shippingInfo: {
-          address: address,
-          packageDimensions: packageDimensions
-        },
+        shippingInfo: shippingInfo,
         createdAt: serverTimestamp(),
         views: 0,
         hasAmazonImages: uploadedItems.some(item => 
@@ -791,18 +826,22 @@ export default function CreateListingPage() {
         imageUrl: null
       });
       setDescription("");
-      setAddress({
-        street: "",
-        city: "",
-        state: "",
-        zip: "",
-        country: "US"
-      });
-      setPackageDimensions({
-        length: 0,
-        width: 0,
-        height: 0,
-        weight: 0
+      setShippingInfo({
+        firstName: "",
+        lastName: "",
+        address: {
+          street: "",
+          city: "",
+          state: "",
+          zip: "",
+          country: "US"
+        },
+        packageDimensions: {
+          length: 0,
+          width: 0,
+          height: 0,
+          weight: 0
+        }
       });
       setDimensionErrors({
         length: '',
@@ -831,10 +870,6 @@ export default function CreateListingPage() {
     );
   }
   
-  if (!user) {
-    return null;
-  }
-  
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Head>
@@ -846,13 +881,13 @@ export default function CreateListingPage() {
         <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
           
           <div className="mb-8">
-            <div className="grid grid-cols-3 gap-3 max-w-4xl mx-auto">
+            <div className={`grid gap-3 max-w-4xl mx-auto ${user ? 'grid-cols-5' : 'grid-cols-4'}`}>
               <Link 
-                href="/dashboard" 
+                href="/" 
                 className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-blue-600 hover:text-blue-700 hover:shadow-md transition-all duration-200"
               >
                 <FiHome className="mr-2 h-4 w-4" />
-                Back to Dashboard
+                Back to Home
               </Link>
               
               <Link 
@@ -862,6 +897,25 @@ export default function CreateListingPage() {
                 <FiBookOpen className="mr-2 h-4 w-4" />
                 Condition Guidelines
               </Link>
+              
+              {/* Contact Us Button - Always visible */}
+              <Link 
+                href="/contact" 
+                className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-green-600 hover:text-green-700 hover:shadow-md transition-all duration-200"
+              >
+                <FiMessageSquare className="mr-2 h-4 w-4" />
+                Contact Us
+              </Link>
+              
+              {user && (
+                <Link 
+                  href="/dashboard/settings" 
+                  className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-gray-600 hover:text-gray-700 hover:shadow-md transition-all duration-200"
+                >
+                  <FiSettings className="mr-2 h-4 w-4" />
+                  Settings
+                </Link>
+              )}
               
               <button
                 type="button"
@@ -1344,278 +1398,376 @@ export default function CreateListingPage() {
                 )}
               </div>
               
-              <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 shadow-sm">
-                <div className="flex items-center mb-4">
-                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
-                    <FiFileText className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900">Bundle Description</h3>
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                    Description <span className="text-gray-500">(Optional)</span>
-                  </label>
-                  <div className="relative">
-                    <textarea
-                      id="description"
-                      name="description"
-                      rows={4}
-                      value={description}
-                      onChange={handleDescriptionChange}
-                      maxLength={500}
-                      placeholder="Describe your bundle... Mention any special features, condition details, or other relevant information."
-                      className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
-                    />
-                    <div className="absolute bottom-2 right-2 text-xs text-gray-500 bg-white/80 px-2 py-1 rounded">
-                      {description.length}/500
+              {/* Total Our Price Section - Herkese açık */}
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center mr-3">
+                      <FiDollarSign className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">Total Our Price</h3>
+                      <p className="text-sm text-gray-600">Sum of all items in your bundle</p>
                     </div>
                   </div>
-                  
-                  {descriptionError && (
-                    <p className="text-sm text-red-600 mt-1">{descriptionError}</p>
-                  )}
-                  
-                  <p className="text-xs text-gray-500">
-                    Tip: A good description helps buyers understand what they're getting. Mention the condition, any special features, or why this bundle is valuable.
-                  </p>
-                </div>
-              </div>
-              
-              {/* Shipping Information Section */}
-              <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 shadow-sm">
-                <div className="flex items-center mb-4">
-                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
-                    <FiTruck className="h-5 w-5 text-blue-600" />
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-green-600">
+                      ${totalOurPrice.toFixed(2)}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {bundleItems.reduce((total, item) => total + item.quantity, 0)} items
+                    </div>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900">Shipping Information</h3>
                 </div>
                 
-                {shippingError && (
-                  <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm">
-                    <div className="flex">
-                      <div className="flex-shrink-0">
-                        <FiAlertCircle className="h-5 w-5 text-red-500" />
-                      </div>
-                      <div className="ml-3">
-                        <p className="text-sm text-red-700">{shippingError}</p>
-                      </div>
+                {bundleItems.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-green-100">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Average price per item:</span>
+                      <span className="font-medium text-gray-900">
+                        ${(totalOurPrice / bundleItems.reduce((total, item) => total + item.quantity, 0)).toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 )}
-                
-                <div className="space-y-6">
-                  <div>
-                    <h4 className="text-md font-medium text-gray-900 mb-3">Shipping Address</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="md:col-span-2">
-                        <label htmlFor="street" className="block text-sm font-medium text-gray-700 mb-1">
-                          Street Address
-                        </label>
-                        <input
-                          type="text"
-                          id="street"
-                          value={address.street}
-                          onChange={(e) => handleAddressChange('street', e.target.value)}
-                          placeholder="123 Main St"
-                          className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                        />
+              </div>
+              
+              {/* Bundle Description - sadece giriş yapmış kullanıcılara gösterilecek */}
+              {user && (
+                <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 shadow-sm">
+                  <div className="flex items-center mb-4">
+                    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
+                      <FiFileText className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900">Bundle Description</h3>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                      Description <span className="text-gray-500">(Optional)</span>
+                    </label>
+                    <div className="relative">
+                      <textarea
+                        id="description"
+                        name="description"
+                        rows={4}
+                        value={description}
+                        onChange={handleDescriptionChange}
+                        maxLength={500}
+                        placeholder="Describe your bundle... Mention any special features, condition details, or other relevant information."
+                        className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
+                      />
+                      <div className="absolute bottom-2 right-2 text-xs text-gray-500 bg-white/80 px-2 py-1 rounded">
+                        {description.length}/500
                       </div>
-                      
-                      <div>
-                        <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
-                          City
-                        </label>
-                        <input
-                          type="text"
-                          id="city"
-                          value={address.city}
-                          onChange={(e) => handleAddressChange('city', e.target.value)}
-                          placeholder="New York"
-                          className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                        />
+                    </div>
+                    
+                    {descriptionError && (
+                      <p className="text-sm text-red-600 mt-1">{descriptionError}</p>
+                    )}
+                    
+                    <p className="text-xs text-gray-500">
+                      Tip: A good description helps buyers understand what they're getting. Mention the condition, any special features, or why this bundle is valuable.
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Shipping Information - sadece giriş yapmış kullanıcılara gösterilecek */}
+              {user && (
+                <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 shadow-sm">
+                  <div className="flex items-center mb-4">
+                    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
+                      <FiTruck className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900">Shipping Information</h3>
+                  </div>
+                  
+                  {shippingError && (
+                    <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm">
+                      <div className="flex">
+                        <div className="flex-shrink-0">
+                          <FiAlertCircle className="h-5 w-5 text-red-500" />
+                        </div>
+                        <div className="ml-3">
+                          <p className="text-sm text-red-700">{shippingError}</p>
+                        </div>
                       </div>
-                      
-                      <div>
-                        <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
-                          State/Province
-                        </label>
-                        <input
-                          type="text"
-                          id="state"
-                          value={address.state}
-                          onChange={(e) => handleAddressChange('state', e.target.value)}
-                          placeholder="NY"
-                          className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                        />
+                    </div>
+                  )}
+                  
+                  <div className="space-y-6">
+                    {/* Ad/Soyad Alanları - YENİ EKLENDİ */}
+                    <div>
+                      <h4 className="text-md font-medium text-gray-900 mb-3">Contact Information</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                            First Name
+                          </label>
+                          <input
+                            type="text"
+                            id="firstName"
+                            value={shippingInfo.firstName}
+                            onChange={(e) => handleNameChange('firstName', e.target.value)}
+                            placeholder="John"
+                            className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                            Last Name
+                          </label>
+                          <input
+                            type="text"
+                            id="lastName"
+                            value={shippingInfo.lastName}
+                            onChange={(e) => handleNameChange('lastName', e.target.value)}
+                            placeholder="Doe"
+                            className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                          />
+                        </div>
                       </div>
-                      
-                      <div>
-                        <label htmlFor="zip" className="block text-sm font-medium text-gray-700 mb-1">
-                          ZIP/Postal Code
-                        </label>
-                        <input
-                          type="text"
-                          id="zip"
-                          value={address.zip}
-                          onChange={(e) => handleAddressChange('zip', e.target.value)}
-                          placeholder="10001"
-                          className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
-                          Country
-                        </label>
-                        <div className="relative">
-                          <select
-                            id="country"
-                            value={address.country}
-                            onChange={(e) => handleAddressChange('country', e.target.value)}
-                            className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none bg-white"
-                          >
-                            <option value="US">United States</option>
-                            
-                          </select>
-                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                              <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                            </svg>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-md font-medium text-gray-900 mb-3">Shipping Address</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="md:col-span-2">
+                          <label htmlFor="street" className="block text-sm font-medium text-gray-700 mb-1">
+                            Street Address
+                          </label>
+                          <input
+                            type="text"
+                            id="street"
+                            value={shippingInfo.address.street}
+                            onChange={(e) => handleAddressChange('street', e.target.value)}
+                            placeholder="123 Main St"
+                            className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
+                            City
+                          </label>
+                          <input
+                            type="text"
+                            id="city"
+                            value={shippingInfo.address.city}
+                            onChange={(e) => handleAddressChange('city', e.target.value)}
+                            placeholder="New York"
+                            className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
+                            State/Province
+                          </label>
+                          <input
+                            type="text"
+                            id="state"
+                            value={shippingInfo.address.state}
+                            onChange={(e) => handleAddressChange('state', e.target.value)}
+                            placeholder="NY"
+                            className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label htmlFor="zip" className="block text-sm font-medium text-gray-700 mb-1">
+                            ZIP/Postal Code
+                          </label>
+                          <input
+                            type="text"
+                            id="zip"
+                            value={shippingInfo.address.zip}
+                            onChange={(e) => handleAddressChange('zip', e.target.value)}
+                            placeholder="10001"
+                            className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
+                            Country
+                          </label>
+                          <div className="relative">
+                            <select
+                              id="country"
+                              value={shippingInfo.address.country}
+                              onChange={(e) => handleAddressChange('country', e.target.value)}
+                              className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none bg-white"
+                            >
+                              <option value="US">United States</option>
+                              
+                            </select>
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                              </svg>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                  
-                  <div>
-                    <h4 className="text-md font-medium text-gray-900 mb-3">Package Dimensions</h4>
-                    <div className="mb-3 bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded-lg shadow-sm">
-                      <div className="flex">
-                        <div className="flex-shrink-0">
-                          <FiAlertCircle className="h-5 w-5 text-yellow-400" />
+                    
+                    <div>
+                      <h4 className="text-md font-medium text-gray-900 mb-3">Package Dimensions</h4>
+                      <div className="mb-3 bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded-lg shadow-sm">
+                        <div className="flex">
+                          <div className="flex-shrink-0">
+                            <FiAlertCircle className="h-5 w-5 text-yellow-400" />
+                          </div>
+                          <div className="ml-3">
+                            <p className="text-sm text-yellow-700">
+                              Package must not exceed 18x16x16 inches and 50 pounds in weight.
+                            </p>
+                          </div>
                         </div>
-                        <div className="ml-3">
-                          <p className="text-sm text-yellow-700">
-                            Package must not exceed 18x16x16 inches and 50 pounds in weight.
-                          </p>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                          <label htmlFor="length" className="block text-sm font-medium text-gray-700 mb-1">
+                            Length (in)
+                          </label>
+                          <input
+                            type="number"
+                            id="length"
+                            value={shippingInfo.packageDimensions.length || ''}
+                            onChange={(e) => handlePackageDimensionsChange('length', parseFloat(e.target.value) || 0)}
+                            min="0"
+                            max="18"
+                            step="0.1"
+                            placeholder="0.0"
+                            className={`block w-full px-4 py-3 text-base border ${
+                              dimensionErrors.length ? 'border-red-500' : 'border-gray-300'
+                            } rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200`}
+                          />
+                          {dimensionErrors.length && (
+                            <p className="text-xs text-red-600 mt-1">{dimensionErrors.length}</p>
+                          )}
                         </div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <div>
-                        <label htmlFor="length" className="block text-sm font-medium text-gray-700 mb-1">
-                          Length (in)
-                        </label>
-                        <input
-                          type="number"
-                          id="length"
-                          value={packageDimensions.length || ''}
-                          onChange={(e) => handlePackageDimensionsChange('length', parseFloat(e.target.value) || 0)}
-                          min="0"
-                          max="18"
-                          step="0.1"
-                          placeholder="0.0"
-                          className={`block w-full px-4 py-3 text-base border ${
-                            dimensionErrors.length ? 'border-red-500' : 'border-gray-300'
-                          } rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200`}
-                        />
-                        {dimensionErrors.length && (
-                          <p className="text-xs text-red-600 mt-1">{dimensionErrors.length}</p>
-                        )}
-                      </div>
-                      
-                      <div>
-                        <label htmlFor="width" className="block text-sm font-medium text-gray-700 mb-1">
-                          Width (in)
-                        </label>
-                        <input
-                          type="number"
-                          id="width"
-                          value={packageDimensions.width || ''}
-                          onChange={(e) => handlePackageDimensionsChange('width', parseFloat(e.target.value) || 0)}
-                          min="0"
-                          max="16"
-                          step="0.1"
-                          placeholder="0.0"
-                          className={`block w-full px-4 py-3 text-base border ${
-                            dimensionErrors.width ? 'border-red-500' : 'border-gray-300'
-                          } rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200`}
-                        />
-                        {dimensionErrors.width && (
-                          <p className="text-xs text-red-600 mt-1">{dimensionErrors.width}</p>
-                        )}
-                      </div>
-                      
-                      <div>
-                        <label htmlFor="height" className="block text-sm font-medium text-gray-700 mb-1">
-                          Height (in)
-                        </label>
-                        <input
-                          type="number"
-                          id="height"
-                          value={packageDimensions.height || ''}
-                          onChange={(e) => handlePackageDimensionsChange('height', parseFloat(e.target.value) || 0)}
-                          min="0"
-                          max="16"
-                          step="0.1"
-                          placeholder="0.0"
-                          className={`block w-full px-4 py-3 text-base border ${
-                            dimensionErrors.height ? 'border-red-500' : 'border-gray-300'
-                          } rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200`}
-                        />
-                        {dimensionErrors.height && (
-                          <p className="text-xs text-red-600 mt-1">{dimensionErrors.height}</p>
-                        )}
-                      </div>
-                      
-                      <div>
-                        <label htmlFor="weight" className="block text-sm font-medium text-gray-700 mb-1">
-                          Weight (lb)
-                        </label>
-                        <input
-                          type="number"
-                          id="weight"
-                          value={packageDimensions.weight || ''}
-                          onChange={(e) => handlePackageDimensionsChange('weight', parseFloat(e.target.value) || 0)}
-                          min="0"
-                          max="50"
-                          step="0.1"
-                          placeholder="0.0"
-                          className={`block w-full px-4 py-3 text-base border ${
-                            dimensionErrors.weight ? 'border-red-500' : 'border-gray-300'
-                          } rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200`}
-                        />
-                        {dimensionErrors.weight && (
-                          <p className="text-xs text-red-600 mt-1">{dimensionErrors.weight}</p>
-                        )}
+                        
+                        <div>
+                          <label htmlFor="width" className="block text-sm font-medium text-gray-700 mb-1">
+                            Width (in)
+                          </label>
+                          <input
+                            type="number"
+                            id="width"
+                            value={shippingInfo.packageDimensions.width || ''}
+                            onChange={(e) => handlePackageDimensionsChange('width', parseFloat(e.target.value) || 0)}
+                            min="0"
+                            max="16"
+                            step="0.1"
+                            placeholder="0.0"
+                            className={`block w-full px-4 py-3 text-base border ${
+                              dimensionErrors.width ? 'border-red-500' : 'border-gray-300'
+                            } rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200`}
+                          />
+                          {dimensionErrors.width && (
+                            <p className="text-xs text-red-600 mt-1">{dimensionErrors.width}</p>
+                          )}
+                        </div>
+                        
+                        <div>
+                          <label htmlFor="height" className="block text-sm font-medium text-gray-700 mb-1">
+                            Height (in)
+                          </label>
+                          <input
+                            type="number"
+                            id="height"
+                            value={shippingInfo.packageDimensions.height || ''}
+                            onChange={(e) => handlePackageDimensionsChange('height', parseFloat(e.target.value) || 0)}
+                            min="0"
+                            max="16"
+                            step="0.1"
+                            placeholder="0.0"
+                            className={`block w-full px-4 py-3 text-base border ${
+                              dimensionErrors.height ? 'border-red-500' : 'border-gray-300'
+                            } rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200`}
+                          />
+                          {dimensionErrors.height && (
+                            <p className="text-xs text-red-600 mt-1">{dimensionErrors.height}</p>
+                          )}
+                        </div>
+                        
+                        <div>
+                          <label htmlFor="weight" className="block text-sm font-medium text-gray-700 mb-1">
+                            Weight (lb)
+                          </label>
+                          <input
+                            type="number"
+                            id="weight"
+                            value={shippingInfo.packageDimensions.weight || ''}
+                            onChange={(e) => handlePackageDimensionsChange('weight', parseFloat(e.target.value) || 0)}
+                            min="0"
+                            max="50"
+                            step="0.1"
+                            placeholder="0.0"
+                            className={`block w-full px-4 py-3 text-base border ${
+                              dimensionErrors.weight ? 'border-red-500' : 'border-gray-300'
+                            } rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200`}
+                          />
+                          {dimensionErrors.weight && (
+                            <p className="text-xs text-red-600 mt-1">{dimensionErrors.weight}</p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
               
               <div className="pt-5">
-                <button
-                  type="submit"
-                  disabled={isSubmitting || bundleItems.length < 5}
-                  className="w-full flex justify-center py-4 px-6 border border-transparent shadow-lg text-base font-medium rounded-xl text-white bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-all duration-200 transform hover:-translate-y-0.5"
-                >
-                  {isSubmitting ? (
-                    <div className="flex items-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Creating Bundle...
+                {/* GÜNCELLENMİŞ BUTON ALANI */}
+                {!user ? (
+                  <div className="space-y-4">
+                    <p className="text-center text-gray-600">
+                      Please login or sign up to create a bundle listing
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                      <Link
+                        href="/login"
+                        className="flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                      >
+                        <FiLogIn className="mr-2 h-5 w-5" />
+                        Login to Create Listing
+                      </Link>
+                      <Link
+                        href="/register"
+                        className="flex items-center justify-center px-6 py-3 border border-gray-300 text-base font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                      >
+                        <FiUser className="mr-2 h-5 w-5" />
+                        Sign Up to Sell Items
+                      </Link>
                     </div>
-                  ) : (
-                    <div className="flex items-center">
-                      <FiSave className="mr-2 h-5 w-5" />
-                      Create Bundle Listing ({bundleItems.length}/5 items)
-                    </div>
-                  )}
-                </button>
+                  </div>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={isSubmitting || bundleItems.length < 5}
+                    className="w-full flex justify-center py-4 px-6 border border-transparent shadow-lg text-base font-medium rounded-xl text-white bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-all duration-200 transform hover:-translate-y-0.5"
+                  >
+                    {isSubmitting ? (
+                      <div className="flex items-center">
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Creating Bundle...
+                      </div>
+                    ) : (
+                      <div className="flex items-center">
+                        <FiSave className="mr-2 h-5 w-5" />
+                        Create Bundle Listing ({bundleItems.length}/5 items)
+                      </div>
+                    )}
+                  </button>
+                )}
               </div>
             </form>
           </div>

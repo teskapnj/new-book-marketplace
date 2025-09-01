@@ -4,15 +4,15 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase"; // Firestore import'u düzeltildi: db olarak import ettik
 import { FiHome } from "react-icons/fi";
 import SocialLogin from "@/components/SocialLogin";
 
-// PasswordInput bileşenini RegisterPage dışına taşıyoruz
+// PasswordInput bileşeni RegisterPage dışına taşıyoruz
 interface PasswordInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
 }
-
 function PasswordInput({
   label,
   id,
@@ -75,6 +75,7 @@ export default function RegisterPage() {
     confirmPassword: "",
     firstName: "",
     lastName: ""
+    // role alanı kaldırıldı
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -123,6 +124,18 @@ export default function RegisterPage() {
       );
       
       console.log("User created:", userCredential.user);
+      
+      // Firestore'a kullanıcı dokümanını ekle (UID ile)
+      await setDoc(doc(db, "users", userCredential.user.uid), {
+        email: formData.email,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        role: "seller", // Sabit olarak seller rolü atanıyor
+        emailVerified: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      console.log("User document created in Firestore");
       
       // Doğrulama e-postası gönder
       await sendEmailVerification(userCredential.user);
@@ -275,7 +288,7 @@ export default function RegisterPage() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Create Account
+            Create Seller Account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Already have an account?{' '}
@@ -394,7 +407,7 @@ export default function RegisterPage() {
                   Creating Account...
                 </span>
               ) : (
-                <span>Create Account</span>
+                <span>Create Seller Account</span>
               )}
             </button>
           </div>

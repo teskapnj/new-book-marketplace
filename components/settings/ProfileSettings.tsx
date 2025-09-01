@@ -8,7 +8,6 @@ export default function ProfileSettings({ userData, userId }) {
   const [name, setName] = useState(userData?.name || "");
   const [phone, setPhone] = useState(userData?.profile?.phone || "");
   const [address, setAddress] = useState(userData?.profile?.address || "");
-  const [bio, setBio] = useState(userData?.profile?.bio || "");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: "", type: "" });
   const [isEditing, setIsEditing] = useState(false);
@@ -29,7 +28,6 @@ export default function ProfileSettings({ userData, userId }) {
         profile: {
           phone: phone,
           address: address,
-          bio: bio,
           updatedAt: new Date()
         }
       });
@@ -49,7 +47,6 @@ export default function ProfileSettings({ userData, userId }) {
     setName(userData?.name || "");
     setPhone(userData?.profile?.phone || "");
     setAddress(userData?.profile?.address || "");
-    setBio(userData?.profile?.bio || "");
     setIsEditing(false);
     setMessage({ text: "", type: "" });
   };
@@ -223,33 +220,6 @@ export default function ProfileSettings({ userData, userId }) {
                       !isEditing ? "bg-gray-50 text-gray-600" : ""
                     }`}
                   />
-                </div>
-              </div>
-              
-              {/* Bio Alanı */}
-              <div className="sm:col-span-2">
-                <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">
-                  Bio
-                </label>
-                <textarea
-                  id="bio"
-                  name="bio"
-                  rows={4}
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  disabled={!isEditing}
-                  className={`block w-full px-3 py-2.5 border ${
-                    isEditing ? 'border-gray-300' : 'border-gray-200'
-                  } rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
-                    !isEditing ? "bg-gray-50 text-gray-600" : ""
-                  }`}
-                  placeholder="Tell us a little about yourself..."
-                />
-                <div className="mt-1.5 flex items-start">
-                  <FiInfo className="flex-shrink-0 h-4 w-4 text-gray-400 mt-0.5 mr-1.5" />
-                  <p className="text-xs text-gray-500">
-                    Brief description about yourself. This will be displayed on your public profile.
-                  </p>
                 </div>
               </div>
             </div>

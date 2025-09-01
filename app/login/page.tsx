@@ -8,6 +8,7 @@ import { auth, db } from "@/lib/firebase";
 import SocialLogin from "@/components/SocialLogin";
 import { FiHome, FiEye, FiEyeOff } from "react-icons/fi";
 import { useAuth } from "@/contexts/AuthContext";
+
 // Custom Password Input Component with Hold-to-Show functionality
 const PasswordInputHold = ({ 
   id, 
@@ -30,23 +31,28 @@ const PasswordInputHold = ({
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isHolding, setIsHolding] = useState(false);
+  
   const handleMouseDown = () => {
     setIsHolding(true);
     setShowPassword(true);
   };
+  
   const handleMouseUp = () => {
     setIsHolding(false);
     setShowPassword(false);
   };
+  
   const handleTouchStart = (e: React.TouchEvent) => {
     e.preventDefault(); // Prevent scrolling on touch devices
     setIsHolding(true);
     setShowPassword(true);
   };
+  
   const handleTouchEnd = () => {
     setIsHolding(false);
     setShowPassword(false);
   };
+  
   return (
     <div className={`relative ${className}`}>
       <input
@@ -81,6 +87,7 @@ const PasswordInputHold = ({
     </div>
   );
 };
+
 export default function LoginPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -92,7 +99,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   
-  // Redirect to appropriate dashboard if user is already logged in
+  // Redirect to create listing if user is already logged in
   useEffect(() => {
     if (user && !authLoading) {
       checkUserRoleAndRedirect(user.uid);
@@ -127,14 +134,10 @@ export default function LoginPage() {
         localStorage.setItem("userName", userData.name || "User");
         localStorage.setItem("userId", userId);
         
-        // Force redirect based on role
-        if (userRole === "admin") {
-          console.log("Admin user detected, redirecting to admin panel");
-          window.location.href = "/admin/dashboard";
-        } else {
-          console.log("Regular user detected, redirecting to dashboard");
-          window.location.href = "/dashboard";
-        }
+        // Force redirect to create listing page for all users
+        console.log("Redirecting to create listing page");
+        window.location.href = "/create-listing";
+        
       } else {
         console.warn("User document not found, creating default profile");
         
@@ -163,7 +166,10 @@ export default function LoginPage() {
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("userId", userId);
         localStorage.setItem("userName", user?.displayName || "User");
-        window.location.href = "/dashboard";
+        
+        // Redirect to create listing page
+        console.log("Redirecting to create listing page");
+        window.location.href = "/create-listing";
       }
     } catch (error) {
       console.error("Error checking user role:", error);
@@ -172,7 +178,10 @@ export default function LoginPage() {
       localStorage.setItem("userEmail", user?.email || "");
       localStorage.setItem("isLoggedIn", "true");
       localStorage.setItem("userId", userId);
-      window.location.href = "/dashboard";
+      
+      // Redirect to create listing page
+      console.log("Redirecting to create listing page");
+      window.location.href = "/create-listing";
     }
   };
   
@@ -262,14 +271,10 @@ export default function LoginPage() {
           localStorage.setItem("rememberMe", "true");
         }
         
-        // Force redirect based on user role
-        if (userRole === "admin") {
-          console.log("Redirecting admin to admin panel");
-          window.location.href = "/admin/dashboard";
-        } else {
-          console.log("Redirecting user to dashboard");
-          window.location.href = "/dashboard";
-        }
+        // Force redirect to create listing page for all users
+        console.log("Redirecting to create listing page");
+        window.location.href = "/create-listing";
+        
       } else {
         // User document doesn't exist, create default profile in Firestore
         console.warn("User document not found, creating default profile");
@@ -299,7 +304,10 @@ export default function LoginPage() {
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("userId", userCredential.user.uid);
         localStorage.setItem("userName", userCredential.user.displayName || "User");
-        window.location.href = "/dashboard";
+        
+        // Redirect to create listing page
+        console.log("Redirecting to create listing page");
+        window.location.href = "/create-listing";
       }
       
     } catch (error: any) {
@@ -393,18 +401,19 @@ export default function LoginPage() {
       localStorage.setItem("userId", socialUser.uid);
       localStorage.setItem("userName", userName);
       
-      // Force redirect based on role
-      if (userRole === "admin") {
-        window.location.href = "/admin/dashboard";
-      } else {
-        window.location.href = "/dashboard";
-      }
+      // Force redirect to create listing page for all users
+      console.log("Redirecting to create listing page");
+      window.location.href = "/create-listing";
+      
     } catch (error) {
       console.error("Social login role check error:", error);
       // Default to seller on error
       localStorage.setItem("userRole", "seller");
       localStorage.setItem("isLoggedIn", "true");
-      window.location.href = "/dashboard";
+      
+      // Redirect to create listing page
+      console.log("Redirecting to create listing page");
+      window.location.href = "/create-listing";
     }
   };
   
@@ -457,8 +466,8 @@ export default function LoginPage() {
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
               </svg>
               <div className="text-sm text-blue-800">
-                <strong>Automatic Role Detection:</strong>
-                <p className="mt-1">Enter your credentials and you'll be redirected to the appropriate dashboard based on your account type.</p>
+                <strong>Direct to Create Listing:</strong>
+                <p className="mt-1">After signing in, you'll be redirected directly to the create listing page to start selling your items.</p>
               </div>
             </div>
           </div>
@@ -555,12 +564,12 @@ export default function LoginPage() {
             </button>
           </form>
           
-          {/* Social Login Component 
-          <SocialLogin 
+          {/* Social Login Component */}
+          {/* <SocialLogin 
             isLogin={true}
             onSuccess={handleSocialLoginSuccess}
             onError={handleSocialLoginError}
-          />*/}
+          /> */}
         </div>
         
         {/* Sign Up Link */}

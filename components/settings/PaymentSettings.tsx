@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { FiDollarSign, FiSave, FiInfo, FiEdit2, FiX, FiCheck, FiCreditCard, FiShield, FiTrendingUp, FiPackage } from "react-icons/fi";
+import { FiDollarSign, FiSave, FiInfo, FiEdit2, FiX, FiCheck, FiCreditCard, FiShield, FiTrendingUp, FiPackage, FiShoppingBag } from "react-icons/fi";
 import { FaPaypal } from "react-icons/fa";
 
 export default function PaymentSettings({ userData, userId }) {
@@ -200,50 +200,7 @@ export default function PaymentSettings({ userData, userId }) {
         </div>
       </div>
       
-      {/* Hesap Özeti Kartları */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Bakiye Kartı */}
-        <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-200">
-          <div className="px-5 py-4 bg-gray-50 border-b border-gray-200">
-            <div className="flex items-center">
-              <div className="p-2 rounded-lg bg-green-100 mr-3">
-                <FiDollarSign className="h-5 w-5 text-green-600" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900">Account Balance</h3>
-            </div>
-          </div>
-          <div className="p-5">
-            <div className="text-3xl font-bold text-gray-900">
-              ${userData?.balance?.toFixed(2) || "0.00"}
-            </div>
-            <p className="mt-1 text-sm text-gray-500">
-              Available for withdrawal
-            </p>
-          </div>
-        </div>
-        
-        {/* Komisyon Oranı Kartı */}
-        <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-200">
-          <div className="px-5 py-4 bg-gray-50 border-b border-gray-200">
-            <div className="flex items-center">
-              <div className="p-2 rounded-lg bg-purple-100 mr-3">
-                <FiCreditCard className="h-5 w-5 text-purple-600" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900">Commission Rate</h3>
-            </div>
-          </div>
-          <div className="p-5">
-            <div className="text-3xl font-bold text-gray-900">
-              {userData?.commissionRate || "8.5"}%
-            </div>
-            <p className="mt-1 text-sm text-gray-500">
-              Applied to all sales
-            </p>
-          </div>
-        </div>
-      </div>
-      
-      {/* İstatistikler Kartı */}
+      {/* Sales Statistics Card */}
       <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-200">
         <div className="px-5 py-4 bg-gray-50 border-b border-gray-200">
           <div className="flex items-center">
@@ -254,7 +211,7 @@ export default function PaymentSettings({ userData, userId }) {
           </div>
         </div>
         <div className="p-5">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="text-sm font-medium text-gray-500">Total Sales</div>
               <div className="text-xl font-bold text-gray-900 mt-1">
@@ -262,15 +219,9 @@ export default function PaymentSettings({ userData, userId }) {
               </div>
             </div>
             <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="text-sm font-medium text-gray-500">Total Orders</div>
+              <div className="text-sm font-medium text-gray-500">Number of Sales</div>
               <div className="text-xl font-bold text-gray-900 mt-1">
-                {userData?.totalOrders || "0"}
-              </div>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="text-sm font-medium text-gray-500">Total Listings</div>
-              <div className="text-xl font-bold text-gray-900 mt-1">
-                {userData?.totalListings || "0"}
+                {userData?.numberOfSales || "0"}
               </div>
             </div>
           </div>

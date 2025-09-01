@@ -14,7 +14,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("profile");
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
-
+  
   // Kullanıcı verilerini getir
   useEffect(() => {
     const fetchUserData = async () => {
@@ -73,7 +73,7 @@ export default function SettingsPage() {
         <div className="mb-6">
           <div className="flex items-center">
             <Link 
-              href="/dashboard"
+              href="/create-listing"  // Changed from "/dashboard" to "/create-listing"
               className="mr-4 p-2 rounded-lg bg-white shadow-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
             >
               <FiArrowLeft className="w-5 h-5" />
@@ -84,7 +84,6 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sol Navigasyon Paneli */}
           <div className="lg:col-span-1">
@@ -151,7 +150,6 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
-
           {/* Sağ İçerik Alanı */}
           <div className="lg:col-span-3">
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
