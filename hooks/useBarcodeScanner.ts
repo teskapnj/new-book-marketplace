@@ -7,8 +7,8 @@ import { BrowserMultiFormatReader, Result, NotFoundException } from '@zxing/libr
 interface BarcodeScannerOptions {
   onScan: (code: string) => void;
   onError: (error: string) => void;
-  continuous?: boolean; // Sürekli tarama modu
-  timeout?: number; // Tarama timeout (ms)
+  continuous?: boolean;
+  timeout?: number;
 }
 
 interface BarcodeScannerState {
@@ -20,12 +20,26 @@ interface BarcodeScannerState {
   selectedDeviceId: string | null;
 }
 
-export function useBarcodeScanner(options: BarcodeScannerOptions) {
+export interface BarcodeScannerReturn {
+  isScanning: boolean;
+  isCameraReady: boolean;
+  error: string | null;
+  lastScannedCode: string | null;
+  supportedDevices: MediaDeviceInfo[];
+  selectedDeviceId: string | null;
+  startScanning: (deviceId?: string) => Promise<void>;
+  stopScanning: () => void;
+  switchCamera: (deviceId: string) => Promise<void>;
+  videoRef: React.RefObject<HTMLVideoElement>;
+  isMobile: boolean;
+}
+
+export function useBarcodeScanner(options: BarcodeScannerOptions): BarcodeScannerReturn {
   const {
     onScan,
     onError,
     continuous = false,
-    timeout = 30000 // 30 saniye default timeout
+    timeout = 30000
   } = options;
 
   // State
@@ -44,11 +58,12 @@ export function useBarcodeScanner(options: BarcodeScannerOptions) {
   const readerRef = useRef<BrowserMultiFormatReader | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const mountedRef = useRef(true);
+  const scanningIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Mobil cihaz kontrolü
-  const isMobile = useCallback(() => {
+  const checkIsMobile = useCallback((): boolean => {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-      navigator.userAgent
+      navigator.userAgent || ''
     );
   }, []);
 
@@ -59,7 +74,7 @@ export function useBarcodeScanner(options: BarcodeScannerOptions) {
       const videoDevices = devices.filter(device => device.kind === 'videoinput');
       
       // Mobil'de arka kamerayı tercih et
-      if (isMobile()) {
+      if (checkIsMobile()) {
         videoDevices.sort((a, b) => {
           const aIsBack = a.label.toLowerCase().includes('back') || 
                          a.label.toLowerCase().includes('rear') ||
@@ -79,7 +94,7 @@ export function useBarcodeScanner(options: BarcodeScannerOptions) {
       console.error('Kamera cihazları alınamadı:', error);
       return [];
     }
-  }, [isMobile]);
+  }, [checkIsMobile]);
 
   // Kamera izinlerini kontrol et
   const checkCameraPermission = useCallback(async (): Promise<boolean> => {
@@ -87,15 +102,13 @@ export function useBarcodeScanner(options: BarcodeScannerOptions) {
       const permission = await navigator.permissions.query({ name: 'camera' as PermissionName });
       return permission.state === 'granted';
     } catch (error) {
-      // Eski browser'larda permissions API olmayabilir
       return true;
     }
   }, []);
 
   // Kamera stream'ini başlat
-  const startCamera = useCallback(async (deviceId?: string) => {
+  const startCamera = useCallback(async (deviceId?: string): Promise<boolean> => {
     try {
-      // MediaDevices API desteği kontrolü
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         const error = 'Bu tarayıcı kamera erişimini desteklemiyor';
         setState(prev => ({ ...prev, error }));
@@ -103,14 +116,11 @@ export function useBarcodeScanner(options: BarcodeScannerOptions) {
         return false;
       }
 
-      // Kamera izinlerini kontrol et
       const hasPermission = await checkCameraPermission();
       if (!hasPermission) {
-        // İzin olmasa bile getUserMedia ile deneyebiliriz
         console.log('Kamera izni belirsiz, denemeye devam ediyor...');
       }
 
-      // Cihaz listesini al
       const devices = await getCameraDevices();
       
       if (devices.length === 0) {
@@ -120,12 +130,10 @@ export function useBarcodeScanner(options: BarcodeScannerOptions) {
         return false;
       }
 
-      // Kullanılacak cihazı seç
       const selectedDevice = deviceId 
         ? devices.find(d => d.deviceId === deviceId) || devices[0]
-        : devices[0]; // İlk cihaz (genelde arka kamera)
+        : devices[0];
 
-      // Kamera ayarları - progressive fallback
       const constraints: MediaStreamConstraints[] = [
         {
           video: {
@@ -159,34 +167,31 @@ export function useBarcodeScanner(options: BarcodeScannerOptions) {
         }
       ];
 
-      console.log('🎥 Kamera başlatılıyor...', selectedDevice.label || 'Bilinmeyen cihaz');
+      console.log('Kamera başlatılıyor...', selectedDevice.label || 'Bilinmeyen cihaz');
 
       let stream = null;
       for (let i = 0; i < constraints.length; i++) {
         try {
-          console.log(`📷 Kamera ayarı ${i + 1}/${constraints.length} deneniyor...`);
+          console.log(`Kamera ayarı ${i + 1}/${constraints.length} deneniyor...`);
           stream = await navigator.mediaDevices.getUserMedia(constraints[i]);
           break;
         } catch (err: any) {
-          console.warn(`❌ Kamera ayarı ${i + 1} başarısız:`, err.name);
+          console.warn(`Kamera ayarı ${i + 1} başarısız:`, err.name);
           if (i === constraints.length - 1) throw err;
         }
       }
       
       if (!mountedRef.current || !stream) {
-        // Component unmount olduysa stream'i kapat
         if (stream) {
           stream.getTracks().forEach(track => track.stop());
         }
         return false;
       }
 
-      // Video element'ine stream'i ata
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         streamRef.current = stream;
         
-        // Video yüklendiğinde state'i güncelle
         await new Promise<void>((resolve, reject) => {
           if (!videoRef.current) {
             reject(new Error('Video element kayboldu'));
@@ -208,7 +213,7 @@ export function useBarcodeScanner(options: BarcodeScannerOptions) {
                 supportedDevices: devices,
                 selectedDeviceId: selectedDevice.deviceId
               }));
-              console.log('✅ Kamera hazır');
+              console.log('Kamera hazır');
             }
             resolve();
           };
@@ -220,21 +225,19 @@ export function useBarcodeScanner(options: BarcodeScannerOptions) {
             reject(error);
           };
 
-          video.addEventListener('loadedmetadata', handleSuccess);
-          video.addEventListener('canplay', handleSuccess);
-          video.addEventListener('playing', handleSuccess);
-          video.addEventListener('error', handleError);
+          video.addEventListener('loadedmetadata', handleSuccess, { once: true });
+          video.addEventListener('canplay', handleSuccess, { once: true });
+          video.addEventListener('playing', handleSuccess, { once: true });
+          video.addEventListener('error', handleError, { once: true });
 
-          // Video'yu oynat
           video.play().then(handleSuccess).catch((playError) => {
             console.warn('Autoplay başarısız:', playError);
             setTimeout(handleSuccess, 1000);
           });
 
-          // Timeout fallback
           setTimeout(() => {
             if (!resolved) {
-              console.log('⚠️ Video timeout, devam ediyor...');
+              console.log('Video timeout, devam ediyor...');
               handleSuccess();
             }
           }, 3000);
@@ -267,115 +270,20 @@ export function useBarcodeScanner(options: BarcodeScannerOptions) {
     }
   }, [getCameraDevices, checkCameraPermission, onError]);
 
-  // Barcode taramayı başlat
-  const startScanning = useCallback(async (deviceId?: string) => {
-    try {
-      if (!mountedRef.current) return;
-
-      setState(prev => ({ 
-        ...prev, 
-        isScanning: true, 
-        error: null, 
-        lastScannedCode: null 
-      }));
-
-      // Kamerayı başlat
-      const cameraStarted = await startCamera(deviceId);
-      if (!cameraStarted) {
-        setState(prev => ({ ...prev, isScanning: false }));
-        return;
-      }
-
-      // ZXing code reader'ı başlat
-      const reader = new BrowserMultiFormatReader();
-      readerRef.current = reader;
-
-      console.log('🔍 Barcode tarama başlatıldı');
-
-      // Timeout ayarla
-      if (timeout > 0) {
-        timeoutRef.current = setTimeout(() => {
-          if (mountedRef.current) {
-            stopScanning();
-            onError('Tarama zaman aşımına uğradı');
-          }
-        }, timeout);
-      }
-
-      // Sürekli tarama için interval
-      let scanInterval: NodeJS.Timeout | null = null;
-
-      const scanFromVideo = async () => {
-        try {
-          if (!videoRef.current || !mountedRef.current || !readerRef.current) {
-            return;
-          }
-
-          // Video hazır mı kontrol et
-          if (videoRef.current.readyState < 2) {
-            return;
-          }
-
-          const result = await reader.decodeFromVideo(videoRef.current);
-          
-          if (result && result.getText()) {
-            const scannedCode = result.getText();
-            console.log('📱 Barcode okundu:', scannedCode);
-            
-            if (mountedRef.current) {
-              setState(prev => ({ ...prev, lastScannedCode: scannedCode }));
-              
-              // Callback'i çağır
-              onScan(scannedCode);
-              
-              // Sürekli tarama modunda değilse durdur
-              if (!continuous) {
-                stopScanning();
-                return;
-              }
-            }
-          }
-          
-        } catch (error: any) {
-          // NotFoundException normal - kod bulunamadı anlamında
-          if (!(error instanceof NotFoundException) && error.name !== 'NotFoundException') {
-            console.error('Barcode okuma hatası:', error);
-          }
-        }
-      };
-
-      // Sürekli tarama için interval başlat
-      if (continuous) {
-        scanInterval = setInterval(scanFromVideo, 100);
-      } else {
-        scanFromVideo();
-      }
-
-      // Cleanup function
-      return () => {
-        if (scanInterval) {
-          clearInterval(scanInterval);
-        }
-      };
-
-    } catch (error: any) {
-      console.error('Tarama başlatma hatası:', error);
-      
-      if (mountedRef.current) {
-        setState(prev => ({ ...prev, isScanning: false }));
-        onError('Tarama başlatılamadı');
-      }
-    }
-  }, [startCamera, onScan, onError, continuous, timeout]);
-
   // Taramayı durdur
   const stopScanning = useCallback(() => {
-    console.log('🛑 Barcode tarama durduruluyor');
+    console.log('Barcode tarama durduruluyor');
     
     // Timeout'u temizle
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
+    }
+
+    // Scanning interval'ını temizle
+    if (scanningIntervalRef.current) {
+      clearInterval(scanningIntervalRef.current);
+      scanningIntervalRef.current = null;
     }
 
     // Reader'ı durdur
@@ -410,14 +318,97 @@ export function useBarcodeScanner(options: BarcodeScannerOptions) {
     }
   }, []);
 
+  // Barcode taramayı başlat
+  const startScanning = useCallback(async (deviceId?: string): Promise<void> => {
+    try {
+      if (!mountedRef.current) return;
+
+      setState(prev => ({ 
+        ...prev, 
+        isScanning: true, 
+        error: null, 
+        lastScannedCode: null 
+      }));
+
+      const cameraStarted = await startCamera(deviceId);
+      if (!cameraStarted) {
+        setState(prev => ({ ...prev, isScanning: false }));
+        return;
+      }
+
+      const reader = new BrowserMultiFormatReader();
+      readerRef.current = reader;
+
+      console.log('Barcode tarama başlatıldı');
+
+      if (timeout > 0) {
+        timeoutRef.current = setTimeout(() => {
+          if (mountedRef.current) {
+            stopScanning();
+            onError('Tarama zaman aşımına uğradı');
+          }
+        }, timeout);
+      }
+
+      const scanFromVideo = async () => {
+        try {
+          if (!videoRef.current || !mountedRef.current || !readerRef.current) {
+            return;
+          }
+
+          if (videoRef.current.readyState < 2) {
+            return;
+          }
+
+          const result = await reader.decodeFromVideo(videoRef.current);
+          
+          if (result && result.getText()) {
+            const scannedCode = result.getText();
+            console.log('Barcode okundu:', scannedCode);
+            
+            if (mountedRef.current) {
+              setState(prev => ({ ...prev, lastScannedCode: scannedCode }));
+              
+              onScan(scannedCode);
+              
+              if (!continuous) {
+                stopScanning();
+                return;
+              }
+            }
+          }
+          
+        } catch (error: any) {
+          if (!(error instanceof NotFoundException) && error.name !== 'NotFoundException') {
+            console.error('Barcode okuma hatası:', error);
+          }
+        }
+      };
+
+      if (continuous) {
+        scanningIntervalRef.current = setInterval(scanFromVideo, 100);
+      } else {
+        scanFromVideo();
+      }
+
+    } catch (error: any) {
+      console.error('Tarama başlatma hatası:', error);
+      
+      if (mountedRef.current) {
+        setState(prev => ({ ...prev, isScanning: false }));
+        onError('Tarama başlatılamadı');
+      }
+    }
+  }, [startCamera, onScan, onError, continuous, timeout, stopScanning]);
+
   // Kamera cihazını değiştir
-  const switchCamera = useCallback(async (deviceId: string) => {
+  const switchCamera = useCallback(async (deviceId: string): Promise<void> => {
     if (state.isScanning) {
       stopScanning();
-      await new Promise(resolve => setTimeout(resolve, 500)); // Kısa bekleme
-      startScanning(deviceId);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await startScanning(deviceId);
     } else {
-      startCamera(deviceId);
+      await startCamera(deviceId);
     }
   }, [state.isScanning, stopScanning, startScanning, startCamera]);
 
@@ -442,7 +433,12 @@ export function useBarcodeScanner(options: BarcodeScannerOptions) {
 
   return {
     // State
-    ...state,
+    isScanning: state.isScanning,
+    isCameraReady: state.isCameraReady,
+    error: state.error,
+    lastScannedCode: state.lastScannedCode,
+    supportedDevices: state.supportedDevices,
+    selectedDeviceId: state.selectedDeviceId,
     
     // Actions
     startScanning,
@@ -453,6 +449,6 @@ export function useBarcodeScanner(options: BarcodeScannerOptions) {
     videoRef,
     
     // Utils
-    isMobile: isMobile()
+    isMobile: checkIsMobile()
   };
 }

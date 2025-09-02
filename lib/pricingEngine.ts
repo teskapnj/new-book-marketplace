@@ -62,7 +62,7 @@ function calculateBookPrice(price: number, salesRank: number): PricingResult {
   
   // 1 milyon ve altı sıralama
   if (salesRank <= 1000000) {
-    if (price >= 24 && price < 31) {  // < 31 olarak değiştirdim
+    if (price > 23 && price < 31) {  // < 31 olarak değiştirdim
       return { accepted: true, ourPrice: 1, category: 'books', priceRange: "$24-30.99", rankRange: "≤ 1M" };
     }
     if (price >= 31 && price < 41) {  // < 41 olarak değiştirdim
@@ -138,7 +138,7 @@ function calculateCDPrice(price: number, salesRank: number): PricingResult {
   
   // 100k ve altı sıralama
   if (salesRank <= 100000) {
-    if (price >= 25 && price < 35) {  // < 35 olarak değiştirdim
+    if (price > 23 && price < 35) {  // < 35 olarak değiştirdim
       return { accepted: true, ourPrice: 1, category: 'cds', priceRange: "$25-34.99", rankRange: "≤ 100k" };
     }
     if (price >= 35 && price < 46) {  // < 46 olarak değiştirdim
@@ -161,7 +161,7 @@ function calculateCDPrice(price: number, salesRank: number): PricingResult {
   
   // 100k-200k arası sıralama
   if (salesRank <= 200000) {
-    if (price >= 25 && price < 46) {  // < 46 olarak değiştirdim
+    if (price > 23 && price < 46) {  // < 46 olarak değiştirdim
       return { accepted: true, ourPrice: 1, category: 'cds', priceRange: "$25-45.99", rankRange: "100k-200k" };
     }
     if (price >= 46 && price < 57) {  // < 57 olarak değiştirdim
