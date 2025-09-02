@@ -13,7 +13,6 @@ import axios from "axios";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { smartOptimizeImage, formatFileSize } from "@/utils/imageOptimization";
 import { AmazonProduct, PricingResult } from "@/lib/pricingEngine";
-
 interface BundleItem {
   id: string;
   isbn: string;
@@ -29,7 +28,6 @@ interface BundleItem {
   originalPrice?: number;
   imageUrl?: string | null;
 }
-
 interface Address {
   street: string;
   city: string;
@@ -37,21 +35,18 @@ interface Address {
   zip: string;
   country: string;
 }
-
 interface PackageDimensions {
   length: number;
   width: number;
   height: number;
   weight: number;
 }
-
 interface ShippingInfo {
   firstName: string;
   lastName: string;
   address: Address;
   packageDimensions: PackageDimensions;
 }
-
 export default function CreateListingPage() {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
@@ -968,91 +963,6 @@ export default function CreateListingPage() {
               </div>
             )}
             
-            {amazonResult && (
-              <div className="mx-6 mt-6">
-                <div className={`border-l-4 p-4 rounded-lg shadow-sm ${
-                  amazonResult.pricing.accepted 
-                    ? 'bg-green-50 border-green-500' 
-                    : 'bg-red-50 border-red-500'
-                }`}>
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0">
-                      {amazonResult.pricing.accepted ? (
-                        <FiCheck className="h-5 w-5 text-green-500" />
-                      ) : (
-                        <FiX className="h-5 w-5 text-red-500" />
-                      )}
-                    </div>
-                    <div className="ml-3 flex-1">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className={`text-sm font-medium ${
-                            amazonResult.pricing.accepted ? 'text-green-800' : 'text-red-800'
-                          }`}>
-                            {amazonResult.product.title}
-                          </h4>
-                          <p className={`text-sm mt-1 ${
-                            amazonResult.pricing.accepted ? 'text-green-700' : 'text-red-700'
-                          }`}>
-                            {amazonResult.message}
-                          </p>
-                          
-                          <div className="mt-3 grid grid-cols-2 gap-4 text-xs">
-                            <div>
-                              <span className="font-medium">Amazon Price:</span>
-                              <br />
-                              ${amazonResult.product.price}
-                            </div>
-                            <div>
-                              <span className="font-medium">Sales Rank:</span>
-                              <br />
-                              #{amazonResult.product.sales_rank?.toLocaleString() || 'N/A'}
-                            </div>
-                            <div>
-                              <span className="font-medium">Category:</span>
-                              <br />
-                              {amazonResult.pricing.category}
-                            </div>
-                            {amazonResult.pricing.accepted && (
-                              <div>
-                                <span className="font-medium">Our Price:</span>
-                                <br />
-                                <span className="text-lg font-bold text-green-600">
-                                  ${amazonResult.pricing.ourPrice}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                          
-                          {amazonResult.pricing.accepted && (
-                            <div className="mt-3 text-xs text-green-600">
-                              ⏱️ This product will be automatically added to the list in 2 seconds...
-                            </div>
-                          )}
-                          
-                          {!amazonResult.pricing.accepted && (
-                            <div className="mt-3 text-xs text-red-600">
-                              ❌ This result will disappear in 3 seconds...
-                            </div>
-                          )}
-                        </div>
-                        
-                        {amazonResult.product.image && (
-                          <div className="ml-4 flex-shrink-0">
-                            <img
-                              src={amazonResult.product.image}
-                              alt={amazonResult.product.title}
-                              className="w-16 h-16 object-cover rounded-lg border border-gray-200"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            
             {error && (
               <div className="mx-6 mt-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm">
                 <div className="flex items-start">
@@ -1137,23 +1047,108 @@ export default function CreateListingPage() {
                     </div>
                   </div>
                   
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Image Preview
-                      {currentItem.amazonData?.image && (
-                        <span className="ml-2 text-xs text-green-600">📡 from Amazon</span>
-                      )}
-                    </label>
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0">
-                        <div className="w-16 h-16 rounded-lg bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden shadow-sm">
-                          {currentItem.image ? (
-                            <img src={currentItem.image} alt="Preview" className="w-full h-full object-cover" />
-                          ) : (
-                            <FiPackage className="h-6 w-6 text-gray-400" />
+                  {/* YENİ: Amazon Ürün Bilgileri Bölümü - Image Preview yerine */}
+                  <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+                    <div className="p-4 h-full">
+                      {amazonResult ? (
+                        <div className="flex flex-col h-full">
+                          <div className="flex items-start justify-between mb-3">
+                            <h4 className="text-sm font-medium text-gray-900 line-clamp-2">
+                              {amazonResult.product.title || "Product Title"}
+                            </h4>
+                            {amazonResult.pricing.accepted && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <FiCheck className="mr-1 h-3 w-3" />
+                                Accepted
+                              </span>
+                            )}
+                          </div>
+                          
+                          <div className="flex flex-col sm:flex-row gap-3 flex-1">
+                            <div className="flex-shrink-0">
+                              <div className="w-16 h-20 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                                {amazonResult.product.image ? (
+                                  <img 
+                                    src={amazonResult.product.image} 
+                                    alt={amazonResult.product.title || "Product"}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <FiPackage className="h-6 w-6 text-gray-400" />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="flex-1 min-w-0">
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="bg-gray-50 rounded p-2">
+                                  <p className="text-xs text-gray-500">Amazon Price</p>
+                                  <p className="text-sm font-medium text-gray-900">${amazonResult.product.price}</p>
+                                </div>
+                                
+                                <div className="bg-gray-50 rounded p-2">
+                                  <p className="text-xs text-gray-500">Sales Rank</p>
+                                  <p className="text-sm font-medium text-gray-900">
+                                    #{amazonResult.product.sales_rank?.toLocaleString() || 'N/A'}
+                                  </p>
+                                </div>
+                                
+                                <div className="bg-gray-50 rounded p-2">
+                                  <p className="text-xs text-gray-500">Category</p>
+                                  <p className="text-sm font-medium text-gray-900 capitalize">
+                                    {getCategoryFromPricing(amazonResult.pricing.category)}
+                                  </p>
+                                </div>
+                                
+                                <div className="bg-gray-50 rounded p-2">
+                                  <p className="text-xs text-gray-500">Our Price</p>
+                                  <p className="text-lg font-bold text-green-600">
+                                    ${amazonResult.pricing.ourPrice || '0.00'}
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              <div className="mt-2">
+                                <div className={`text-xs inline-flex items-center px-2 py-1 rounded-full font-medium ${
+                                  amazonResult.pricing.accepted 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {amazonResult.pricing.accepted ? (
+                                    amazonResult.message
+                                  ) : (
+                                    amazonResult.message
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {amazonResult.pricing.accepted && (
+                            <div className="mt-2 text-xs text-green-600">
+                              ⏱️ This product will be automatically added to the list in 2 seconds...
+                            </div>
+                          )}
+                          
+                          {!amazonResult.pricing.accepted && (
+                            <div className="mt-2 text-xs text-red-600">
+                              ❌ This result will disappear in 3 seconds...
+                            </div>
                           )}
                         </div>
-                      </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-center py-4">
+                          <FiPackage className="h-10 w-10 text-gray-400 mb-2" />
+                          <p className="text-sm text-gray-500">
+                            {isCheckingAmazon 
+                              ? "Checking Amazon..." 
+                              : "Enter ISBN/UPC and click Check to see product details"
+                            }
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
