@@ -8,7 +8,6 @@ import { auth, db } from "@/lib/firebase";
 import SocialLogin from "@/components/SocialLogin";
 import { FiHome, FiEye, FiEyeOff } from "react-icons/fi";
 import { useAuth } from "@/contexts/AuthContext";
-
 // Custom Password Input Component with Hold-to-Show functionality
 const PasswordInputHold = ({ 
   id, 
@@ -87,7 +86,6 @@ const PasswordInputHold = ({
     </div>
   );
 };
-
 export default function LoginPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -99,7 +97,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   
-  // Redirect to create listing if user is already logged in
+  // Redirect to appropriate page if user is already logged in
   useEffect(() => {
     if (user && !authLoading) {
       checkUserRoleAndRedirect(user.uid);
@@ -134,9 +132,14 @@ export default function LoginPage() {
         localStorage.setItem("userName", userData.name || "User");
         localStorage.setItem("userId", userId);
         
-        // Force redirect to create listing page for all users
-        console.log("Redirecting to create listing page");
-        window.location.href = "/create-listing";
+        // Redirect based on user role
+        if (userRole === "admin") {
+          console.log("Redirecting to admin dashboard");
+          window.location.href = "/admin/dashboard";
+        } else {
+          console.log("Redirecting to create listing page");
+          window.location.href = "/create-listing";
+        }
         
       } else {
         console.warn("User document not found, creating default profile");
@@ -271,9 +274,14 @@ export default function LoginPage() {
           localStorage.setItem("rememberMe", "true");
         }
         
-        // Force redirect to create listing page for all users
-        console.log("Redirecting to create listing page");
-        window.location.href = "/create-listing";
+        // Redirect based on user role
+        if (userRole === "admin") {
+          console.log("Redirecting to admin dashboard");
+          window.location.href = "/admin/dashboard";
+        } else {
+          console.log("Redirecting to create listing page");
+          window.location.href = "/create-listing";
+        }
         
       } else {
         // User document doesn't exist, create default profile in Firestore
@@ -401,9 +409,14 @@ export default function LoginPage() {
       localStorage.setItem("userId", socialUser.uid);
       localStorage.setItem("userName", userName);
       
-      // Force redirect to create listing page for all users
-      console.log("Redirecting to create listing page");
-      window.location.href = "/create-listing";
+      // Redirect based on user role
+      if (userRole === "admin") {
+        console.log("Redirecting to admin dashboard");
+        window.location.href = "/admin/dashboard";
+      } else {
+        console.log("Redirecting to create listing page");
+        window.location.href = "/create-listing";
+      }
       
     } catch (error) {
       console.error("Social login role check error:", error);
@@ -466,8 +479,12 @@ export default function LoginPage() {
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
               </svg>
               <div className="text-sm text-blue-800">
-                <strong>Direct to Create Listing:</strong>
-                <p className="mt-1">After signing in, you'll be redirected directly to the create listing page to start selling your items.</p>
+                <strong>Redirect Information:</strong>
+                <p className="mt-1">After signing in, you'll be redirected based on your account type:</p>
+                <ul className="list-disc pl-5 mt-1">
+                  <li>Admin users will be redirected to the Admin Dashboard</li>
+                  <li>Seller users will be redirected to the Create Listing page</li>
+                </ul>
               </div>
             </div>
           </div>
@@ -592,7 +609,7 @@ export default function LoginPage() {
         
         {/* Footer */}
         <div className="mt-8 text-center text-xs text-gray-500">
-          <p>© 2024 MarketPlace. All rights reserved.</p>
+          <p>© 2024 SecondLife Media. All rights reserved.</p>
           <div className="mt-2 space-x-4">
             <Link href="/terms" className="hover:text-gray-700">Terms</Link>
             <Link href="/privacy" className="hover:text-gray-700">Privacy</Link>

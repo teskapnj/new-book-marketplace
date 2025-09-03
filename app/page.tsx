@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-
 // SVG Icons (tüm icon component'leri aynı kalacak)
 function UserIcon({ size = 24, className = "" }) {
   return (
@@ -87,7 +86,6 @@ function AdminIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
-
 export default function HomePage() {
   const { user, loading, error, logout } = useAuth();
   const router = useRouter();
@@ -106,7 +104,8 @@ export default function HomePage() {
     const checkUserRole = async () => {
       if (user) {
         try {
-          if (user.email === "admin@marketplace.com") {
+          // Admin email kontrolü - burayı admin@secondlife.com olarak güncelledim
+          if (user.email === "admin@secondlife.com") {
             setUserRole("admin");
             return;
           }
@@ -149,7 +148,8 @@ export default function HomePage() {
               <button
                 onClick={() => {
                   if (user) {
-                    router.push('/create-listing');
+                    // Admin için dashboard, normal kullanıcı için create-listing
+                    router.push(userRole === "admin" ? '/admin/dashboard' : '/create-listing');
                   } else {
                     router.push('/login');
                   }
@@ -176,10 +176,17 @@ export default function HomePage() {
                 <span className="text-red-500 font-medium">Auth Error</span>
               ) : user ? (
                 <>
-                  {/* GÜNCELLENMİŞ BUTON - Desktop Header (Giriş yapmış kullanıcılar için) */}
-                  <Link href="/create-listing" className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-2 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl font-medium">
-                    Start Selling
-                  </Link>
+                  {/* Admin için Dashboard, normal kullanıcı için Start Selling */}
+                  {userRole === "admin" ? (
+                    <Link href="/admin/dashboard" className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-2 rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-200 shadow-lg hover:shadow-xl font-medium flex items-center">
+                      <AdminIcon size={20} className="mr-2" />
+                      Admin Dashboard
+                    </Link>
+                  ) : (
+                    <Link href="/create-listing" className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-2 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl font-medium">
+                      Start Selling
+                    </Link>
+                  )}
                   <button
                     onClick={logout}
                     className="font-medium text-gray-700 hover:text-gray-900 transition-colors"
@@ -189,7 +196,7 @@ export default function HomePage() {
                 </>
               ) : (
                 <>
-                  {/* GÜNCELLENMİŞ BUTON - Desktop Header (Giriş yapmamış kullanıcılar için) */}
+                  {/* Giriş yapmamış kullanıcılar için Start Selling */}
                   <Link href="/create-listing" className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-2 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl font-medium">
                     Start Selling
                   </Link>
@@ -212,10 +219,17 @@ export default function HomePage() {
                 <span className="text-red-500 font-medium">Auth Error</span>
               ) : user ? (
                 <>
-                  {/* GÜNCELLENMİŞ BUTON - Mobile Menu (Giriş yapmış kullanıcılar için) */}
-                  <Link href="/create-listing" className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors">
-                    Start Selling
-                  </Link>
+                  {/* Admin için Dashboard, normal kullanıcı için Start Selling - Mobile Menu */}
+                  {userRole === "admin" ? (
+                    <Link href="/admin/dashboard" className="block font-medium text-gray-900 py-2 hover:text-purple-600 transition-colors flex items-center">
+                      <AdminIcon size={20} className="mr-2" />
+                      Admin Dashboard
+                    </Link>
+                  ) : (
+                    <Link href="/create-listing" className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors">
+                      Start Selling
+                    </Link>
+                  )}
                   <button
                     onClick={logout}
                     className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors text-left w-full"
@@ -225,7 +239,7 @@ export default function HomePage() {
                 </>
               ) : (
                 <>
-                  {/* GÜNCELLENMİŞ BUTON - Mobile Menu (Giriş yapmamış kullanıcılar için) */}
+                  {/* Giriş yapmamış kullanıcılar için Start Selling - Mobile Menu */}
                   <Link href="/create-listing" className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors">
                     Start Selling
                   </Link>
@@ -270,15 +284,26 @@ export default function HomePage() {
               </div>
             </div>
             
-            {/* GÜNCELLENMİŞ BUTON - Hero Section */}
+            {/* Admin için Dashboard, normal kullanıcı için Start Selling - Hero Section */}
             <div className="mt-12 sm:mt-16">
-              <Link
-                href="/create-listing"
-                className="group inline-flex items-center px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold text-lg sm:text-xl rounded-2xl hover:from-yellow-500 hover:to-orange-600 transition-all duration-300 shadow-2xl hover:shadow-3xl transform hover:-translate-y-1"
-              >
-                Start Selling Your Items
-                <ArrowRightIcon size={24} className="ml-3 group-hover:translate-x-1 transition-transform duration-300" />
-              </Link>
+              {userRole === "admin" ? (
+                <Link
+                  href="/admin/dashboard"
+                  className="group inline-flex items-center px-8 py-4 bg-gradient-to-r from-purple-500 to-purple-600 text-white font-bold text-lg sm:text-xl rounded-2xl hover:from-purple-600 hover:to-purple-700 transition-all duration-300 shadow-2xl hover:shadow-3xl transform hover:-translate-y-1"
+                >
+                  <AdminIcon size={24} className="mr-3" />
+                  Admin Dashboard
+                  <ArrowRightIcon size={24} className="ml-3 group-hover:translate-x-1 transition-transform duration-300" />
+                </Link>
+              ) : (
+                <Link
+                  href="/create-listing"
+                  className="group inline-flex items-center px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold text-lg sm:text-xl rounded-2xl hover:from-yellow-500 hover:to-orange-600 transition-all duration-300 shadow-2xl hover:shadow-3xl transform hover:-translate-y-1"
+                >
+                  Start Selling Your Items
+                  <ArrowRightIcon size={24} className="ml-3 group-hover:translate-x-1 transition-transform duration-300" />
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -373,15 +398,26 @@ export default function HomePage() {
             </div>
           </div>
           
-          {/* GÜNCELLENMİŞ BUTON - CTA Section */}
+          {/* Admin için Dashboard, normal kullanıcı için Start Selling - CTA Section */}
           <div className="mt-12 flex justify-center">
-            <Link
-              href="/create-listing"
-              className="inline-flex items-center px-8 py-4 bg-white text-blue-600 font-bold text-lg rounded-2xl hover:bg-gray-100 transition-all duration-300 shadow-lg"
-            >
-              Start Selling Now
-              <ArrowRightIcon size={24} className="ml-3" />
-            </Link>
+            {userRole === "admin" ? (
+              <Link
+                href="/admin/dashboard"
+                className="inline-flex items-center px-8 py-4 bg-white text-purple-600 font-bold text-lg rounded-2xl hover:bg-gray-100 transition-all duration-300 shadow-lg"
+              >
+                <AdminIcon size={24} className="mr-3" />
+                Admin Dashboard
+                <ArrowRightIcon size={24} className="ml-3" />
+              </Link>
+            ) : (
+              <Link
+                href="/create-listing"
+                className="inline-flex items-center px-8 py-4 bg-white text-blue-600 font-bold text-lg rounded-2xl hover:bg-gray-100 transition-all duration-300 shadow-lg"
+              >
+                Start Selling Now
+                <ArrowRightIcon size={24} className="ml-3" />
+              </Link>
+            )}
           </div>
         </div>
       </section>
@@ -411,19 +447,10 @@ export default function HomePage() {
               </div>
             </div>
             <div>
-              <h4 className="font-bold text-lg mb-6 text-white">For Buyers</h4>
-              <ul className="space-y-3">
-                <li><Link href="/listings" className="text-gray-400 hover:text-white transition-colors">Browse Bundles</Link></li>
-                <li><Link href="/how-to-buy" className="text-gray-400 hover:text-white transition-colors">How to Buy</Link></li>
-                <li><Link href="/shipping" className="text-gray-400 hover:text-white transition-colors">Shipping Info</Link></li>
-                <li><Link href="/returns" className="text-gray-400 hover:text-white transition-colors">Returns & Refunds</Link></li>
-              </ul>
-            </div>
-            <div>
               <h4 className="font-bold text-lg mb-6 text-white">For Sellers</h4>
               <ul className="space-y-3">
                 <li><Link href="/condition-guidelines" className="text-gray-400 hover:text-white transition-colors">Condition Guidelines</Link></li>
-                <li><Link href="/fees" className="text-gray-400 hover:text-white transition-colors">Seller Fees</Link></li>
+                <li><Link href="/returns-policy" className="text-gray-400 hover:text-white transition-colors">Returns Policy</Link></li>
                 <li><Link href="/seller-protection" className="text-gray-400 hover:text-white transition-colors">Seller Protection</Link></li>
                 <li><Link href="/seller-guide" className="text-gray-400 hover:text-white transition-colors">Seller Guide</Link></li>
               </ul>
@@ -441,7 +468,7 @@ export default function HomePage() {
           <div className="mt-12 pt-8 border-t border-gray-800">
             <div className="flex flex-col sm:flex-row justify-between items-center">
               <p className="text-gray-400 text-sm">
-                © 2023 MarketPlace. All rights reserved.
+                © 2023 SecondLife Media. All rights reserved.
               </p>
               <div className="flex items-center space-x-6 mt-4 sm:mt-0">
                 <span className="text-gray-400 text-sm">Made with ❤️ for collectors</span>
