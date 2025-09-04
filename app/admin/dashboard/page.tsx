@@ -1,8 +1,9 @@
+// app/admin/page.tsx
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { auth, db } from "@/lib/firebase";
+import { auth, db, storage } from "@/lib/firebase";
 import { 
   collection, 
   onSnapshot, 
@@ -19,7 +20,9 @@ import {
   addDoc,
   writeBatch
 } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useRouter } from "next/navigation";
+
 // Type definitions
 interface OrderItem {
   id: string;
@@ -30,6 +33,7 @@ interface OrderItem {
   image?: string;
   shippingCost: number;
 }
+
 interface VendorOrderBreakdown {
   sellerId: string;
   items: OrderItem[];
@@ -37,6 +41,7 @@ interface VendorOrderBreakdown {
   shippingCost: number;
   itemCount: number;
 }
+
 interface Order {
   id: string;
   orderNumber: string;
@@ -74,6 +79,7 @@ interface Order {
   trackingHistory?: any[];
   lastTracked?: Timestamp | Date;
 }
+
 // Message Notification Component
 const MessageNotification = () => {
   const [user] = useAuthState(auth);
@@ -155,6 +161,7 @@ const MessageNotification = () => {
     </Link>
   );
 };
+
 // Orders Navigation Component
 const OrdersNavigation = () => {
   const [orderCount, setOrderCount] = useState(0);
@@ -213,12 +220,14 @@ const OrdersNavigation = () => {
     </Link>
   );
 };
+
 // Order Detail Modal Component
 interface OrderDetailModalProps {
   order: Order;
   onClose: () => void;
   onUpdateStatus: (orderId: string, status: string, notes: string) => Promise<void>;
 }
+
 const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onUpdateStatus }) => {
   const [status, setStatus] = useState(order.status);
   const [notes, setNotes] = useState(order.adminNotes || "");
@@ -315,8 +324,8 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
   };
   
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+      <div className="relative mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-medium text-gray-900">
             Order Details: {order.orderNumber}
@@ -581,6 +590,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
     </div>
   );
 };
+
 // Helper function for order status badge
 const getOrderStatusBadge = (status: Order['status']) => {
   const styles = {
@@ -607,8 +617,10 @@ const getOrderStatusBadge = (status: Order['status']) => {
     </span>
   );
 };
+
 // Import SellerManagement component
 import SellerManagement from '@/components/SellerManagement';
+
 export default function AdminListingsPage() {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
@@ -632,6 +644,15 @@ export default function AdminListingsPage() {
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState<"listings" | "orders" | "sellers">("listings");
+  
+  // 🆕 Yeni state'ler - shipping label ve tracking için
+  const [shippingLabel, setShippingLabel] = useState<File | null>(null);
+  const [shippingLabelPreview, setShippingLabelPreview] = useState<string | null>(null);
+  const [uploadingLabel, setUploadingLabel] = useState(false);
+  const [labelUploadError, setLabelUploadError] = useState("");
+  const [labelUploadSuccess, setLabelUploadSuccess] = useState("");
+  const [trackingNumber, setTrackingNumber] = useState("");
+  const [carrier, setCarrier] = useState("usps");
   
   // 📄 Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -695,10 +716,12 @@ export default function AdminListingsPage() {
                 title: data.title || "Untitled Bundle",
                 totalItems: data.totalItems || 0,
                 totalValue: data.totalValue || 0,
+                totalAmazonValue: data.totalAmazonValue || 0, // Amazon toplam fiyatı
                 shippingInfo: data.shippingInfo || null,
                 status: data.status || "pending",
                 vendorId: data.vendorId,
                 vendorName: data.vendorName || "Unknown Seller",
+                vendorEmail: data.vendorEmail || "", // Seller email
                 bundleItems: data.bundleItems || [],
                 description: data.description || "",
                 createdAt: data.createdAt?.toDate() || new Date(),
@@ -706,7 +729,11 @@ export default function AdminListingsPage() {
                 reviewedDate: data.reviewedDate,
                 rejectionReason: data.rejectionReason,
                 adminNotes: data.adminNotes,
-                views: data.views || 0
+                views: data.views || 0,
+                // Yeni alanlar eklendi
+                shippingLabelUrl: data.shippingLabelUrl || null,
+                trackingNumber: data.trackingNumber || null,
+                carrier: data.carrier || null
               });
             });
             
@@ -735,10 +762,12 @@ export default function AdminListingsPage() {
                     title: data.title || "Untitled Bundle",
                     totalItems: data.totalItems || 0,
                     totalValue: data.totalValue || 0,
+                    totalAmazonValue: data.totalAmazonValue || 0, // Amazon toplam fiyatı
                     shippingInfo: data.shippingInfo || null,
                     status: data.status || "pending",
                     vendorId: data.vendorId,
                     vendorName: data.vendorName || "Unknown Seller",
+                    vendorEmail: data.vendorEmail || "", // Seller email
                     bundleItems: data.bundleItems || [],
                     description: data.description || "",
                     createdAt: data.createdAt?.toDate() || new Date(),
@@ -746,7 +775,11 @@ export default function AdminListingsPage() {
                     reviewedDate: data.reviewedDate,
                     rejectionReason: data.rejectionReason,
                     adminNotes: data.adminNotes,
-                    views: data.views || 0
+                    views: data.views || 0,
+                    // Yeni alanlar eklendi
+                    shippingLabelUrl: data.shippingLabelUrl || null,
+                    trackingNumber: data.trackingNumber || null,
+                    carrier: data.carrier || null
                   });
                 });
                 
@@ -1061,37 +1094,121 @@ export default function AdminListingsPage() {
     }
   };
   
-  // ✅ Approve listing function
+  // ✅ Approve listing function - GÜNCELLENDİ
   const approveListing = async (listingId: string) => {
+    if (!shippingLabel) {
+      alert("⚠️ Please upload a shipping label before approving");
+      return;
+    }
+    
+    if (!trackingNumber.trim()) {
+      alert("⚠️ Please provide a tracking number before approving");
+      return;
+    }
+    
     setIsProcessing(true);
+    setUploadingLabel(true);
+    setLabelUploadError("");
+    setLabelUploadSuccess("");
     
     try {
+      let shippingLabelUrl = "";
+      
+      // Upload shipping label to Firebase Storage
+      // Dosya adını benzersiz yap ve uzantısını koru
+      const fileExtension = shippingLabel.name.split('.').pop();
+      const fileName = `${listingId}_${Date.now()}.${fileExtension}`;
+      const storageRef = ref(storage, `shipping-labels/${fileName}`);
+      
+      console.log("Uploading file:", shippingLabel.name, "Type:", shippingLabel.type);
+      
+      await uploadBytes(storageRef, shippingLabel);
+      shippingLabelUrl = await getDownloadURL(storageRef);
+      
+      console.log("File uploaded successfully. URL:", shippingLabelUrl);
+      
       const listingRef = doc(db, "listings", listingId);
       
+      // Update the listing with approval status, shipping label URL, and tracking info
       await updateDoc(listingRef, {
         status: "approved",
         reviewedDate: serverTimestamp(),
         reviewedBy: user?.email || "admin",
-        adminNotes: adminNotes
+        adminNotes: adminNotes,
+        shippingLabelUrl: shippingLabelUrl,
+        trackingNumber: trackingNumber,
+        carrier: carrier,
+        // Dosya bilgilerini de kaydedelim
+        shippingLabelName: shippingLabel.name,
+        shippingLabelType: shippingLabel.type
       });
+      
+      // Get seller's email
+      const listingDoc = await getDoc(listingRef);
+      const sellerId = listingDoc.data()?.vendorId;
+      
+      if (sellerId) {
+        const sellerDoc = await getDoc(doc(db, 'users', sellerId));
+        const sellerEmail = sellerDoc.data()?.email;
+        
+        if (sellerEmail) {
+          // Send email with shipping label and tracking info
+          const emailResponse = await fetch('/api/send-shipping-label-email', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: sellerEmail,
+              listingTitle: selectedListing.title,
+              shippingLabelUrl: shippingLabelUrl,
+              trackingNumber: trackingNumber,
+              carrier: carrier,
+              listingId: listingId
+            }),
+          });
+          
+          if (emailResponse.ok) {
+            console.log(`📧 Email sent to ${sellerEmail} with shipping label and tracking info`);
+          } else {
+            console.error("Failed to send email");
+          }
+        }
+      }
       
       console.log(`✅ Listing ${listingId} approved by ${user?.email}`);
       
       setSelectedListing(null);
       setAdminNotes("");
+      setShippingLabel(null);
+      setShippingLabelPreview(null);
+      setTrackingNumber("");
+      setCarrier("usps");
       
-      alert("✅ Listing approved successfully!");
+      alert("✅ Listing approved successfully! Shipping label and tracking info sent to seller.");
       
     } catch (error: any) {
       console.error("Error approving listing:", error);
-      if (error.code === 'permission-denied') {
-        alert("You don't have permission to approve listings. Please contact administrator.");
-      } else {
-        alert("❌ Error occurred while approving listing: " + error.message);
+      
+      // Daha detaylı hata mesajı göster
+      let errorMessage = "Error occurred while approving listing";
+      
+      if (error.code === 'storage/unauthorized') {
+        errorMessage = "You don't have permission to upload files. Please check your Firebase Storage rules.";
+      } else if (error.code === 'storage/canceled') {
+        errorMessage = "Upload was canceled.";
+      } else if (error.code === 'storage/unknown') {
+        errorMessage = "An unknown error occurred during upload.";
+      } else if (error.message) {
+        errorMessage = error.message;
       }
+      
+      setLabelUploadError(errorMessage);
+      alert("❌ " + errorMessage);
     }
     
     setIsProcessing(false);
+    setUploadingLabel(false);
   };
   
   // ❌ Reject listing function
@@ -1261,7 +1378,7 @@ export default function AdminListingsPage() {
   
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto py-6 px-4">
+      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         
         {/* 🏠 Navigation Header */}
         <div className="mb-6 flex justify-between items-center">
@@ -1383,7 +1500,7 @@ export default function AdminListingsPage() {
             </div>
             
             {/* 📈 Statistics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
               <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-yellow-400">
                 <div className="flex items-center">
                   <div className="text-3xl mr-4">⏳</div>
@@ -1532,6 +1649,12 @@ export default function AdminListingsPage() {
                             <div className="text-sm text-gray-500">
                               ID: {listing.id}
                             </div>
+                            {/* Tracking bilgisi varsa göster */}
+                            {listing.trackingNumber && (
+                              <div className="text-xs text-blue-600 mt-1">
+                                📦 {listing.trackingNumber} ({listing.carrier})
+                              </div>
+                            )}
                           </div>
                         </td>
                         
@@ -1573,7 +1696,14 @@ export default function AdminListingsPage() {
                         <td className="px-6 py-4">
                           <div className="flex space-x-2">
                             <button
-                              onClick={() => setSelectedListing(listing)}
+                              onClick={() => {
+                                setSelectedListing(listing);
+                                // Reset form states
+                                setShippingLabel(null);
+                                setShippingLabelPreview(null);
+                                setTrackingNumber("");
+                                setCarrier("usps");
+                              }}
                               className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-blue-600 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                             >
                               👁️ Review
@@ -1674,8 +1804,8 @@ export default function AdminListingsPage() {
             
             {/* 🆕 Toplu Silme Onay Modalı */}
             {showBulkDeleteConfirm && (
-              <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-                <div className="relative mx-auto p-5 border w-11/12 max-w-md shadow-lg rounded-md bg-white">
+              <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+                <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-medium text-gray-900">Confirm Bulk Deletion</h3>
                     <button 
@@ -1775,7 +1905,7 @@ export default function AdminListingsPage() {
             </div>
             
             {/* 📈 Order Statistics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-6 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
               <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-yellow-400">
                 <div className="flex items-center">
                   <div className="text-3xl mr-4">⏳</div>
@@ -2018,10 +2148,10 @@ export default function AdminListingsPage() {
           <SellerManagement />
         )}
         
-        {/* 🔍 Review Modal for Listings */}
+        {/* 🔍 Review Modal for Listings - GÜNCELLENDİ */}
         {selectedListing && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+            <div className="relative mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white max-h-[90vh] overflow-y-auto">
               
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-medium text-gray-900">
@@ -2048,8 +2178,16 @@ export default function AdminListingsPage() {
                       <p><strong>ID:</strong> {selectedListing.id}</p>
                       <p><strong>Title:</strong> {selectedListing.title}</p>
                       <p><strong>Seller:</strong> {selectedListing.vendorName}</p>
+                      {/* Seller Email bilgisi eklendi */}
+                      {selectedListing.vendorEmail && (
+                        <p><strong>Seller Email:</strong> {selectedListing.vendorEmail}</p>
+                      )}
                       <p><strong>Total Items:</strong> {selectedListing.totalItems}</p>
                       <p><strong>Total Value:</strong> ${selectedListing.totalValue.toFixed(2)}</p>
+                      {/* Amazon toplam fiyatı eklendi */}
+                      {selectedListing.totalAmazonValue && (
+                        <p><strong>Amazon Total Value:</strong> ${selectedListing.totalAmazonValue.toFixed(2)}</p>
+                      )}
                       <p><strong>Submitted:</strong> {selectedListing.submittedDate}</p>
                       <p><strong>Views:</strong> {selectedListing.views}</p>
                       <p><strong>Current Status:</strong> {getStatusBadge(selectedListing.status)}</p>
@@ -2096,6 +2234,16 @@ export default function AdminListingsPage() {
                               Weight: {selectedListing.shippingInfo.packageDimensions.weight} lb
                             </p>
                           </div>
+                          
+                          {/* PayPal Account bilgisi eklendi */}
+                          {selectedListing.shippingInfo.paypalAccount && (
+                            <div>
+                              <h5 className="text-sm font-medium text-purple-800 mb-1">PayPal Account</h5>
+                              <p className="text-sm text-gray-700">
+                                {selectedListing.shippingInfo.paypalAccount}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <p className="text-sm text-gray-500 italic">
@@ -2133,52 +2281,278 @@ export default function AdminListingsPage() {
                 
                 {/* Right column - Admin actions */}
                 <div className="space-y-4">
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Admin Notes
-                    </label>
-                    <textarea
-                      value={adminNotes}
-                      onChange={(e) => setAdminNotes(e.target.value)}
-                      rows={4}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Add any notes about this listing..."
-                    />
-                  </div>
-                  
-                  {selectedListing.status === "pending" && (
+                  {/* Onaylandıktan sonraki görünüm */}
+                  {selectedListing.status === "approved" ? (
                     <>
+                      {/* Shipping Label Display */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">Shipping Label</h4>
+                        <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-medium text-green-800">Uploaded Label</span>
+                            <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Approved</span>
+                          </div>
+                          
+                          {selectedListing.shippingLabelUrl && (
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-center">
+                                {selectedListing.shippingLabelType?.includes('pdf') ? (
+                                  <div className="text-center">
+                                    <div className="text-4xl mb-2">📄</div>
+                                    <div className="text-sm font-medium text-gray-900">
+                                      {selectedListing.shippingLabelName || "Shipping Label.pdf"}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <img 
+                                    src={selectedListing.shippingLabelUrl} 
+                                    alt="Shipping label" 
+                                    className="max-h-40 object-contain"
+                                  />
+                                )}
+                              </div>
+                              
+                              <div className="text-center">
+                                <a 
+                                  href={selectedListing.shippingLabelUrl} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors"
+                                >
+                                  View Full Label
+                                </a>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Tracking Information Display */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">Tracking Information</h4>
+                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-blue-800">Tracking Number:</span>
+                              <span className="text-sm font-mono">{selectedListing.trackingNumber}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-blue-800">Carrier:</span>
+                              <span className="text-sm">{selectedListing.carrier?.toUpperCase()}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Status Information */}
+                      <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0">
+                            <svg className="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <div className="ml-3">
+                            <h3 className="text-sm font-medium text-green-800">Listing Approved</h3>
+                            <div className="mt-2 text-sm text-green-700">
+                              <p>This listing has been approved and the shipping label has been sent to the seller.</p>
+                              {selectedListing.reviewedDate && (
+                                <p className="mt-1">
+                                  <strong>Approved on:</strong> {new Date(selectedListing.reviewedDate.seconds * 1000).toLocaleDateString()}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* 🆕 Shipping Label Upload Section - sadece onaylanmamış listing'lerde göster */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">Shipping Label</h4>
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                          {shippingLabelPreview ? (
+                            // Resim dosyaları için önizleme
+                            <div className="space-y-3">
+                              <div className="flex justify-center">
+                                <img 
+                                  src={shippingLabelPreview} 
+                                  alt="Shipping label preview" 
+                                  className="max-h-40 object-contain"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShippingLabel(null);
+                                  setShippingLabelPreview(null);
+                                }}
+                                className="text-sm text-red-600 hover:text-red-800"
+                              >
+                                Remove label
+                              </button>
+                            </div>
+                          ) : shippingLabel ? (
+                            // PDF veya diğer dosya türleri için dosya bilgisi
+                            <div className="space-y-3">
+                              <div className="flex flex-col items-center justify-center">
+                                <div className="text-4xl mb-2">📄</div>
+                                <div className="text-sm font-medium text-gray-900">{shippingLabel.name}</div>
+                                <div className="text-xs text-gray-500">
+                                  {(shippingLabel.size / 1024).toFixed(2)} KB
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShippingLabel(null);
+                                  setShippingLabelPreview(null);
+                                }}
+                                className="text-sm text-red-600 hover:text-red-800"
+                              >
+                                Remove file
+                              </button>
+                            </div>
+                          ) : (
+                            // Dosya seçme alanı
+                            <div className="space-y-2">
+                              <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                              <div className="flex text-sm text-gray-600 justify-center">
+                                <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500">
+                                  <span>Upload a shipping label</span>
+                                  <input 
+                                    type="file" 
+                                    className="sr-only" 
+                                    accept="image/*,.pdf"
+                                    onChange={(e) => {
+                                      if (e.target.files && e.target.files[0]) {
+                                        const file = e.target.files[0];
+                                        console.log("Selected file:", file.name, "Type:", file.type);
+                                        setShippingLabel(file);
+                                        
+                                        // Sadece resim dosyaları için önizleme oluştur
+                                        if (file.type.startsWith('image/')) {
+                                          const reader = new FileReader();
+                                          reader.onload = (e) => {
+                                            setShippingLabelPreview(e.target?.result as string);
+                                          };
+                                          reader.readAsDataURL(file);
+                                        } else {
+                                          // PDF veya diğer dosya türleri için önizleme oluşturma
+                                          setShippingLabelPreview(null);
+                                        }
+                                      }
+                                    }}
+                                  />
+                                </label>
+                              </div>
+                              <p className="text-xs text-gray-500">PNG, JPG, PDF up to 10MB</p>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {labelUploadError && (
+                          <div className="mt-2 text-red-600 text-sm bg-red-50 p-2 rounded">
+                            {labelUploadError}
+                          </div>
+                        )}
+                        
+                        {labelUploadSuccess && (
+                          <div className="mt-2 text-green-600 text-sm bg-green-50 p-2 rounded">
+                            {labelUploadSuccess}
+                          </div>
+                        )}
+                        
+                        <p className="mt-2 text-sm text-gray-500">
+                          Upload a shipping label for this listing. The label will be sent to the seller upon approval.
+                        </p>
+                      </div>
+                      
+                      {/* 🆕 Tracking Number Section - sadece onaylanmamış listing'lerde göster */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">Tracking Information</h4>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Tracking Number
+                            </label>
+                            <input
+                              type="text"
+                              value={trackingNumber}
+                              onChange={(e) => setTrackingNumber(e.target.value)}
+                              className="w-full p-2 border border-gray-300 rounded text-sm"
+                              placeholder="Enter tracking number"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Carrier
+                            </label>
+                            <select
+                              value={carrier}
+                              onChange={(e) => setCarrier(e.target.value)}
+                              className="w-full p-2 border border-gray-300 rounded text-sm"
+                            >
+                              <option value="usps">USPS</option>
+                              <option value="fedex">FedEx</option>
+                              <option value="ups">UPS</option>
+                              <option value="dhl">DHL</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                      
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Rejection Reason (if rejecting)
+                          Admin Notes
                         </label>
                         <textarea
-                          value={rejectionReason}
-                          onChange={(e) => setRejectionReason(e.target.value)}
-                          rows={3}
+                          value={adminNotes}
+                          onChange={(e) => setAdminNotes(e.target.value)}
+                          rows={4}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Provide reason for rejection..."
+                          placeholder="Add any notes about this listing..."
                         />
                       </div>
                       
-                      <div className="flex space-x-3">
-                        <button
-                          onClick={() => approveListing(selectedListing.id)}
-                          disabled={isProcessing}
-                          className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isProcessing ? "Processing..." : "✅ Approve"}
-                        </button>
-                        
-                        <button
-                          onClick={() => rejectListing(selectedListing.id)}
-                          disabled={isProcessing || !rejectionReason.trim()}
-                          className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isProcessing ? "Processing..." : "❌ Reject"}
-                        </button>
-                      </div>
+                      {selectedListing.status === "pending" && (
+                        <>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Rejection Reason (if rejecting)
+                            </label>
+                            <textarea
+                              value={rejectionReason}
+                              onChange={(e) => setRejectionReason(e.target.value)}
+                              rows={3}
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="Provide reason for rejection..."
+                            />
+                          </div>
+                          
+                          <div className="flex space-x-3">
+                            <button
+                              onClick={() => approveListing(selectedListing.id)}
+                              disabled={isProcessing || !shippingLabel || !trackingNumber.trim()}
+                              className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {isProcessing ? "Processing..." : "✅ Approve & Send Label"}
+                            </button>
+                            
+                            <button
+                              onClick={() => rejectListing(selectedListing.id)}
+                              disabled={isProcessing || !rejectionReason.trim()}
+                              className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {isProcessing ? "Processing..." : "❌ Reject"}
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </>
                   )}
                   
@@ -2217,14 +2591,10 @@ export default function AdminListingsPage() {
                   )}
                   
                   {/* Show status if already reviewed */}
-                  {selectedListing.status !== "pending" && (
-                    <div className={`p-4 rounded-lg ${
-                      selectedListing.status === 'approved' ? 'bg-green-50' : 'bg-red-50'
-                    }`}>
-                      <p className={`font-medium ${
-                        selectedListing.status === 'approved' ? 'text-green-800' : 'text-red-800'
-                      }`}>
-                        This listing has been {selectedListing.status}
+                  {selectedListing.status === "rejected" && (
+                    <div className="bg-red-50 p-4 rounded-lg">
+                      <p className="font-medium text-red-800">
+                        This listing has been rejected
                       </p>
                       {selectedListing.rejectionReason && (
                         <p className="text-red-600 text-sm mt-1">
@@ -2266,6 +2636,10 @@ export default function AdminListingsPage() {
                       setAdminNotes("");
                       setRejectionReason("");
                       setShowDeleteConfirm(false);
+                      setShippingLabel(null);
+                      setShippingLabelPreview(null);
+                      setTrackingNumber("");
+                      setCarrier("usps");
                     }}
                     className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                   >

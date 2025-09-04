@@ -17,7 +17,7 @@ import { AmazonProduct, PricingResult } from "@/lib/pricingEngine";
 interface BundleItem {
   id: string;
   isbn: string;
-  condition: "like-new" | "good";
+  condition: "very-good"; // Sadece very-good kondisyonu
   quantity: number;
   price: number;
   image: string | null;
@@ -50,6 +50,7 @@ interface ShippingInfo {
   lastName: string;
   address: Address;
   packageDimensions: PackageDimensions;
+  paypalAccount: string;
 }
 
 export default function CreateListingPage() {
@@ -58,7 +59,7 @@ export default function CreateListingPage() {
   const [currentItem, setCurrentItem] = useState<BundleItem>({
     id: "",
     isbn: "",
-    condition: "like-new",
+    condition: "very-good", // Sadece very-good kondisyonu
     quantity: 1,
     price: 0,
     image: null,
@@ -84,7 +85,8 @@ export default function CreateListingPage() {
       width: 0,
       height: 0,
       weight: 0
-    }
+    },
+    paypalAccount: ""
   });
   const [shippingError, setShippingError] = useState<string>('');
   const [dimensionErrors, setDimensionErrors] = useState({
@@ -115,16 +117,21 @@ export default function CreateListingPage() {
   // Yeni state'ler için popup
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [popupTimer, setPopupTimer] = useState<NodeJS.Timeout | null>(null);
-
+  
   // Calculate total our price
   const totalOurPrice = bundleItems.reduce((total, item) => {
     return total + (item.price * item.quantity);
   }, 0);
-
+  
+  // Calculate total Amazon value
+  const totalAmazonValue = bundleItems.reduce((total, item) => {
+    return total + ((item.originalPrice || 0) * item.quantity);
+  }, 0);
+  
   const getStorageKey = useCallback(() => {
     return user ? `bundleListingDraft_${user.uid}` : 'bundleListingDraft_guest';
   }, [user]);
-
+  
   const validateDescription = (text: string): boolean => {
     if (text.length > 500) {
       setDescriptionError("Description must be 500 characters or less");
@@ -133,7 +140,7 @@ export default function CreateListingPage() {
     setDescriptionError("");
     return true;
   };
-
+  
   const validateShippingInfo = (): boolean => {
     setDimensionErrors({
       length: '',
@@ -141,30 +148,35 @@ export default function CreateListingPage() {
       height: '',
       weight: ''
     });
-
     if (!shippingInfo.firstName.trim() || !shippingInfo.lastName.trim()) {
       setShippingError("Please enter your first and last name");
       return false;
     }
-
+    if (!shippingInfo.paypalAccount.trim()) {
+      setShippingError("Please enter your PayPal account email");
+      return false;
+    }
+    // Basic email validation for PayPal account
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(shippingInfo.paypalAccount)) {
+      setShippingError("Please enter a valid PayPal email address");
+      return false;
+    }
     if (!shippingInfo.address.street || !shippingInfo.address.city ||
       !shippingInfo.address.state || !shippingInfo.address.zip) {
       setShippingError("Please fill in all address fields");
       return false;
     }
-
     if (shippingInfo.packageDimensions.length <= 0 || shippingInfo.packageDimensions.width <= 0 ||
       shippingInfo.packageDimensions.height <= 0 || shippingInfo.packageDimensions.weight <= 0) {
       setShippingError("Please enter valid package dimensions and weight");
       return false;
     }
-
     if (shippingInfo.packageDimensions.weight > 50) {
       setDimensionErrors(prev => ({ ...prev, weight: "Weight cannot exceed 50 pounds" }));
       setShippingError("Package weight cannot exceed 50 pounds");
       return false;
     }
-
     if (shippingInfo.packageDimensions.length > 18) {
       setDimensionErrors(prev => ({ ...prev, length: "Length cannot exceed 18 inches" }));
     }
@@ -174,29 +186,34 @@ export default function CreateListingPage() {
     if (shippingInfo.packageDimensions.height > 16) {
       setDimensionErrors(prev => ({ ...prev, height: "Height cannot exceed 16 inches" }));
     }
-
     if (shippingInfo.packageDimensions.length > 18 || shippingInfo.packageDimensions.width > 16 || shippingInfo.packageDimensions.height > 16) {
       setShippingError("Package dimensions cannot exceed 18x16x16 inches");
       return false;
     }
-
     setShippingError("");
     return true;
   };
-
+  
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
     setDescription(text);
     validateDescription(text);
   };
-
+  
   const handleNameChange = (field: keyof Pick<ShippingInfo, 'firstName' | 'lastName'>, value: string) => {
     setShippingInfo(prev => ({
       ...prev,
       [field]: value
     }));
   };
-
+  
+  const handlePaypalAccountChange = (value: string) => {
+    setShippingInfo(prev => ({
+      ...prev,
+      paypalAccount: value
+    }));
+  };
+  
   const handleAddressChange = (field: keyof Address, value: string) => {
     setShippingInfo(prev => ({
       ...prev,
@@ -206,41 +223,44 @@ export default function CreateListingPage() {
       }
     }));
   };
-
+  
   const handlePackageDimensionsChange = (field: keyof PackageDimensions, value: number) => {
+    // Ensure value is a valid number
+    const numValue = isNaN(value) ? 0 : value;
+    
     setShippingInfo(prev => ({
       ...prev,
       packageDimensions: {
         ...prev.packageDimensions,
-        [field]: value
+        [field]: numValue
       }
     }));
-
+    
     const newErrors = { ...dimensionErrors };
     switch (field) {
       case 'weight':
-        if (value > 50) {
+        if (numValue > 50) {
           newErrors.weight = "Weight cannot exceed 50 pounds";
         } else {
           newErrors.weight = '';
         }
         break;
       case 'length':
-        if (value > 18) {
+        if (numValue > 18) {
           newErrors.length = "Length cannot exceed 18 inches";
         } else {
           newErrors.length = '';
         }
         break;
       case 'width':
-        if (value > 16) {
+        if (numValue > 16) {
           newErrors.width = "Width cannot exceed 16 inches";
         } else {
           newErrors.width = '';
         }
         break;
       case 'height':
-        if (value > 16) {
+        if (numValue > 16) {
           newErrors.height = "Height cannot exceed 16 inches";
         } else {
           newErrors.height = '';
@@ -248,14 +268,13 @@ export default function CreateListingPage() {
         break;
     }
     setDimensionErrors(newErrors);
-
     if (newErrors.length || newErrors.width || newErrors.height || newErrors.weight) {
       setShippingError("Package exceeds size or weight limits");
     } else if (shippingError === "Package exceeds size or weight limits") {
       setShippingError("");
     }
   };
-
+  
   const getCategoryFromPricing = (pricingCategory: string): "book" | "cd" | "dvd" | "game" | "mix" => {
     switch (pricingCategory) {
       case 'books': return 'book';
@@ -265,21 +284,21 @@ export default function CreateListingPage() {
       default: return 'book';
     }
   };
-
+  
   // Amazon sonuçlarını temizleme fonksiyonu
   const clearAmazonResults = useCallback(() => {
     setAmazonResult(null);
     setError("");
     setScannerError("");
   }, []);
-
+  
   const autoAddAcceptedItem = (isbn: string, product: AmazonProduct, pricing: PricingResult) => {
     if (!pricing.accepted || !pricing.ourPrice) return;
-
+    
     const newItem: BundleItem = {
       id: Date.now().toString(),
       isbn: isbn,
-      condition: "like-new",
+      condition: "very-good", // Sadece very-good kondisyonu
       quantity: 1,
       price: pricing.ourPrice,
       image: product.image || null,
@@ -290,12 +309,12 @@ export default function CreateListingPage() {
       ourPrice: pricing.ourPrice,
       originalPrice: product.price
     };
-
+    
     setBundleItems(prev => [...prev, newItem]);
     setCurrentItem({
       id: "",
       isbn: "",
-      condition: "like-new",
+      condition: "very-good", // Sadece very-good kondisyonu
       quantity: 1,
       price: 0,
       image: null,
@@ -303,10 +322,11 @@ export default function CreateListingPage() {
       category: "book",
       imageUrl: null
     });
+    
     clearAmazonResults(); // Amazon sonuçlarını temizle
     console.log(`✅ Auto-added item with Amazon image: ${product.image}`);
   };
-
+  
   const handleBarcodeScanned = useCallback(async (code: string) => {
     console.log('📱 Barcode scanned:', code);
     try {
@@ -318,11 +338,11 @@ export default function CreateListingPage() {
         ...prev,
         isbn: code
       }));
-
+      
       const response = await axios.post('/api/amazon-check', {
         isbn_upc: code
       });
-
+      
       if (response.data.success) {
         const { product, pricing, message } = response.data.data;
         setAmazonResult({ product, pricing, message });
@@ -336,21 +356,21 @@ export default function CreateListingPage() {
           originalPrice: product.price,
           ourPrice: pricing.ourPrice
         }));
-
+        
         const categoryMap: Record<string, "book" | "cd" | "dvd" | "game"> = {
           'books': 'book',
           'cds': 'cd',
           'dvds': 'dvd',
           'games': 'game'
         };
-
+        
         if (pricing.category && categoryMap[pricing.category]) {
           setCurrentItem(prev => ({
             ...prev,
             category: categoryMap[pricing.category]
           }));
         }
-
+        
         if (pricing.accepted && pricing.ourPrice) {
           setTimeout(() => {
             autoAddAcceptedItem(code, product, pricing);
@@ -396,7 +416,7 @@ export default function CreateListingPage() {
       setIsCheckingAmazon(false);
     }
   }, [autoAddAcceptedItem]);
-
+  
   const handleScanBarcode = () => {
     if (!isMobile) {
       setError("Barcode scanning only works on mobile devices");
@@ -406,13 +426,13 @@ export default function CreateListingPage() {
     clearAmazonResults(); // Yeni tarama başlarken temizle
     startScanning();
   };
-
+  
   const closeBarcodeScanner = () => {
     stopScanning();
     setShowScanner(false);
     setScannerError("");
   };
-
+  
   const {
     isScanning,
     isCameraReady,
@@ -427,7 +447,7 @@ export default function CreateListingPage() {
     continuous: false,
     timeout: 30000
   });
-
+  
   // Storage initialization - simplified
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -447,7 +467,7 @@ export default function CreateListingPage() {
     
     initializeStorage();
   }, []);
-
+  
   const saveToStorage = useCallback(() => {
     if (!isMounted || isPrivateMode || isInitializing) return;
     
@@ -477,7 +497,7 @@ export default function CreateListingPage() {
       console.error("Failed to save to localStorage", e);
     }
   }, [bundleItems, currentItem, description, shippingInfo, isMounted, isPrivateMode, isInitializing, getStorageKey]);
-
+  
   const loadFromStorage = useCallback(() => {
     if (!isMounted || isPrivateMode || isInitializing) return;
     
@@ -509,13 +529,13 @@ export default function CreateListingPage() {
       console.error("Failed to load from localStorage", e);
     }
   }, [isMounted, isPrivateMode, isInitializing, getStorageKey]);
-
+  
   useEffect(() => {
     if (isMounted && !isPrivateMode && !isInitializing) {
       loadFromStorage();
     }
   }, [isMounted, isPrivateMode, isInitializing, loadFromStorage]);
-
+  
   useEffect(() => {
     if (!isMounted || isInitializing) return;
     
@@ -525,29 +545,26 @@ export default function CreateListingPage() {
     
     return () => clearTimeout(timeoutId);
   }, [bundleItems, description, shippingInfo, saveToStorage, isMounted, isInitializing]);
-
+  
   const handleCurrentItemChange = (field: keyof BundleItem, value: string | number) => {
     setCurrentItem(prev => ({
       ...prev,
       [field]: value
     }));
   };
-
+  
   const removeItem = (id: string) => {
     setBundleItems(prev => prev.filter(item => item.id !== id));
   };
-
+  
   const generateTitle = () => {
     const categoryCounts: Record<string, number> = {};
-    const conditionCounts: Record<string, number> = {};
     
     bundleItems.forEach(item => {
       categoryCounts[item.category] = (categoryCounts[item.category] || 0) + 1;
-      conditionCounts[item.condition] = (conditionCounts[item.condition] || 0) + 1;
     });
     
     const dominantCategory = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0][0];
-    const dominantCondition = Object.entries(conditionCounts).sort((a, b) => b[1] - a[1])[0][0];
     const totalItems = bundleItems.reduce((sum, item) => sum + item.quantity, 0);
     
     const categoryNames = {
@@ -558,14 +575,9 @@ export default function CreateListingPage() {
       mix: "Mixed Media"
     };
     
-    const conditionNames = {
-      "like-new": "Like New",
-      "good": "Good"
-    };
-    
-    return `${totalItems} ${categoryNames[dominantCategory as keyof typeof categoryNames]} Collection in ${conditionNames[dominantCondition as keyof typeof conditionNames]} Condition`;
+    return `${totalItems} ${categoryNames[dominantCategory as keyof typeof categoryNames]} Collection in Very Good Condition`;
   };
-
+  
   const uploadImageToStorage = async (item: BundleItem, userId: string): Promise<string | null> => {
     if (!item.imageBlob) return null;
     
@@ -586,7 +598,7 @@ export default function CreateListingPage() {
       return null;
     }
   };
-
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
@@ -667,9 +679,11 @@ export default function CreateListingPage() {
         description: description,
         totalItems: totalItems,
         totalValue: totalValue,
+        totalAmazonValue: totalAmazonValue, // Add total Amazon value
         status: "pending",
         vendorId: user?.uid || "",
         vendorName: user?.displayName || user?.email?.split('@')[0] || "Anonymous",
+        vendorEmail: user?.email || "", // Satıcının e-posta adresi eklendi
         bundleItems: uploadedItems,
         shippingInfo: shippingInfo,
         createdAt: serverTimestamp(),
@@ -690,8 +704,10 @@ export default function CreateListingPage() {
           body: JSON.stringify({
             sellerName: `${shippingInfo.firstName} ${shippingInfo.lastName}`.trim(),
             sellerEmail: user?.email || "",
+            paypalEmail: shippingInfo.paypalAccount,
             totalItems: totalItems,
             totalValue: totalValue,
+            totalAmazonValue: totalAmazonValue, // Include in email notification
             submissionId: docRef.id,
             dashboardUrl: `${window.location.origin}/admin/listings`,
             shippingInfo: shippingInfo
@@ -720,7 +736,7 @@ export default function CreateListingPage() {
       setCurrentItem({
         id: "",
         isbn: "",
-        condition: "like-new",
+        condition: "very-good", // Sadece very-good kondisyonu
         quantity: 1,
         price: 0,
         image: null,
@@ -744,7 +760,8 @@ export default function CreateListingPage() {
           width: 0,
           height: 0,
           weight: 0
-        }
+        },
+        paypalAccount: ""
       });
       setDimensionErrors({
         length: '',
@@ -768,7 +785,7 @@ export default function CreateListingPage() {
       setUploadProgress("");
     }
   };
-
+  
   // Component unmount olduğunda timer'ı temizle
   useEffect(() => {
     return () => {
@@ -777,14 +794,14 @@ export default function CreateListingPage() {
       }
     };
   }, [popupTimer]);
-
+  
   const resetForm = () => {
     if (window.confirm("Are you sure you want to reset all data? This cannot be undone.")) {
       setBundleItems([]);
       setCurrentItem({
         id: "",
         isbn: "",
-        condition: "like-new",
+        condition: "very-good", // Sadece very-good kondisyonu
         quantity: 1,
         price: 0,
         image: null,
@@ -808,7 +825,8 @@ export default function CreateListingPage() {
           width: 0,
           height: 0,
           weight: 0
-        }
+        },
+        paypalAccount: ""
       });
       setDimensionErrors({
         length: '',
@@ -824,7 +842,7 @@ export default function CreateListingPage() {
       }
     }
   };
-
+  
   if (loading || isInitializing) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -835,7 +853,7 @@ export default function CreateListingPage() {
       </div>
     );
   }
-
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Head>
@@ -1138,7 +1156,7 @@ export default function CreateListingPage() {
                       </button>
                       <input
                         type="text"
-                        value={currentItem.isbn}
+                        value={currentItem.isbn || ''}
                         onChange={(e) => handleCurrentItemChange('isbn', e.target.value)}
                         placeholder="Enter ISBN/UPC or scan barcode"
                         className="flex-1 block w-full px-4 py-3 border-0 focus:ring-0 text-base"
@@ -1204,16 +1222,6 @@ export default function CreateListingPage() {
                             
                             <div className="flex-1 min-w-0">
                               <div className="grid grid-cols-2 gap-2">
-                                <div className="bg-gray-50 rounded p-2">
-                                  <p className="text-xs text-gray-500">Amazon Price</p>
-                                  <p className="text-sm font-medium text-gray-900">${amazonResult.product.price}</p>
-                                </div>
-                                <div className="bg-gray-50 rounded p-2">
-                                  <p className="text-xs text-gray-500">Sales Rank</p>
-                                  <p className="text-sm font-medium text-gray-900">
-                                    #{amazonResult.product.sales_rank?.toLocaleString() || 'N/A'}
-                                  </p>
-                                </div>
                                 <div className="bg-gray-50 rounded p-2">
                                   <p className="text-xs text-gray-500">Category</p>
                                   <p className="text-sm font-medium text-gray-900 capitalize">
@@ -1351,7 +1359,7 @@ export default function CreateListingPage() {
                                     {item.category}
                                   </span>
                                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                                    {item.condition === "like-new" ? "Like New" : "Good"}
+                                    Very Good
                                   </span>
                                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
                                     Qty: {item.quantity}
@@ -1362,28 +1370,7 @@ export default function CreateListingPage() {
                                   <p className="text-sm font-medium text-gray-900">
                                     Our Price: ${item.price.toFixed(2)}
                                   </p>
-                                  {item.amazonData && (
-                                    <div className="flex items-center text-xs text-blue-600">
-                                      <FiDollarSign className="h-3 w-3 mr-0.5" />
-                                      <span>${item.originalPrice}</span>
-                                    </div>
-                                  )}
                                 </div>
-                                
-                                {item.amazonData && (
-                                  <div className="flex flex-wrap gap-2 text-xs">
-                                    {item.amazonData.sales_rank && (
-                                      <span className="inline-flex items-center text-green-600">
-                                        <FiTrendingUp className="h-3 w-3 mr-0.5" />
-                                        #{item.amazonData.sales_rank.toLocaleString()}
-                                      </span>
-                                    )}
-                                    <span className="inline-flex items-center text-purple-600">
-                                      <FiStar className="h-3 w-3 mr-0.5" />
-                                      Auto
-                                    </span>
-                                  </div>
-                                )}
                               </div>
                             </div>
                           </div>
@@ -1430,17 +1417,6 @@ export default function CreateListingPage() {
                     </div>
                   </div>
                 </div>
-                
-                {bundleItems.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-green-100">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Average price per item:</span>
-                      <span className="font-medium text-gray-900">
-                        ${(totalOurPrice / bundleItems.reduce((total, item) => total + item.quantity, 0)).toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                )}
               </div>
               
               {user && (
@@ -1462,7 +1438,7 @@ export default function CreateListingPage() {
                           id="description"
                           name="description"
                           rows={4}
-                          value={description}
+                          value={description || ''}
                           onChange={handleDescriptionChange}
                           maxLength={500}
                           placeholder="Describe your items... Mention any special features, condition details, or other relevant information."
@@ -1510,7 +1486,7 @@ export default function CreateListingPage() {
                             <input
                               type="text"
                               id="firstName"
-                              value={shippingInfo.firstName}
+                              value={shippingInfo.firstName || ''}
                               onChange={(e) => handleNameChange('firstName', e.target.value)}
                               placeholder="John"
                               className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
@@ -1523,11 +1499,32 @@ export default function CreateListingPage() {
                             <input
                               type="text"
                               id="lastName"
-                              value={shippingInfo.lastName}
+                              value={shippingInfo.lastName || ''}
                               onChange={(e) => handleNameChange('lastName', e.target.value)}
                               placeholder="Doe"
                               className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                             />
+                          </div>
+                          <div className="md:col-span-2">
+                            <label htmlFor="paypalAccount" className="block text-sm font-medium text-gray-700 mb-1">
+                              PayPal Account Email
+                            </label>
+                            <div className="relative">
+                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <FiMail className="h-5 w-5 text-gray-400" />
+                              </div>
+                              <input
+                                type="email"
+                                id="paypalAccount"
+                                value={shippingInfo.paypalAccount || ''}
+                                onChange={(e) => handlePaypalAccountChange(e.target.value)}
+                                placeholder="your-paypal-email@example.com"
+                                className="block w-full pl-10 px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                              />
+                            </div>
+                            <p className="mt-1 text-sm text-gray-500">
+                              We'll send your payment to this PayPal account after your items are processed
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -1542,7 +1539,7 @@ export default function CreateListingPage() {
                             <input
                               type="text"
                               id="street"
-                              value={shippingInfo.address.street}
+                              value={shippingInfo.address.street || ''}
                               onChange={(e) => handleAddressChange('street', e.target.value)}
                               placeholder="123 Main St"
                               className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
@@ -1555,7 +1552,7 @@ export default function CreateListingPage() {
                             <input
                               type="text"
                               id="city"
-                              value={shippingInfo.address.city}
+                              value={shippingInfo.address.city || ''}
                               onChange={(e) => handleAddressChange('city', e.target.value)}
                               placeholder="New York"
                               className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
@@ -1568,7 +1565,7 @@ export default function CreateListingPage() {
                             <input
                               type="text"
                               id="state"
-                              value={shippingInfo.address.state}
+                              value={shippingInfo.address.state || ''}
                               onChange={(e) => handleAddressChange('state', e.target.value)}
                               placeholder="NY"
                               className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
@@ -1581,7 +1578,7 @@ export default function CreateListingPage() {
                             <input
                               type="text"
                               id="zip"
-                              value={shippingInfo.address.zip}
+                              value={shippingInfo.address.zip || ''}
                               onChange={(e) => handleAddressChange('zip', e.target.value)}
                               placeholder="10001"
                               className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
@@ -1594,7 +1591,7 @@ export default function CreateListingPage() {
                             <div className="relative">
                               <select
                                 id="country"
-                                value={shippingInfo.address.country}
+                                value={shippingInfo.address.country || 'US'}
                                 onChange={(e) => handleAddressChange('country', e.target.value)}
                                 className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none bg-white"
                               >
