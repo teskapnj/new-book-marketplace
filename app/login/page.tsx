@@ -136,6 +136,9 @@ export default function LoginPage() {
         if (userRole === "admin") {
           console.log("Redirecting to admin dashboard");
           window.location.href = "/admin/dashboard";
+        } else if (userRole === "buyer") {
+          console.log("Redirecting to listing page");
+          window.location.href = "/listings";
         } else {
           console.log("Redirecting to create listing page");
           window.location.href = "/create-listing";
@@ -278,6 +281,9 @@ export default function LoginPage() {
         if (userRole === "admin") {
           console.log("Redirecting to admin dashboard");
           window.location.href = "/admin/dashboard";
+        } else if (userRole === "buyer") {
+          console.log("Redirecting to listing page");
+          window.location.href = "/listing";
         } else {
           console.log("Redirecting to create listing page");
           window.location.href = "/create-listing";
@@ -413,6 +419,9 @@ export default function LoginPage() {
       if (userRole === "admin") {
         console.log("Redirecting to admin dashboard");
         window.location.href = "/admin/dashboard";
+      } else if (userRole === "buyer") {
+        console.log("Redirecting to listing page");
+        window.location.href = "/listing";
       } else {
         console.log("Redirecting to create listing page");
         window.location.href = "/create-listing";
@@ -471,23 +480,6 @@ export default function LoginPage() {
               </div>
             </div>
           )}
-          
-          {/* Info Message */}
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-start">
-              <svg className="h-5 w-5 text-blue-400 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-              <div className="text-sm text-blue-800">
-                <strong>Redirect Information:</strong>
-                <p className="mt-1">After signing in, you'll be redirected based on your account type:</p>
-                <ul className="list-disc pl-5 mt-1">
-                  <li>Admin users will be redirected to the Admin Dashboard</li>
-                  <li>Seller users will be redirected to the Create Listing page</li>
-                </ul>
-              </div>
-            </div>
-          </div>
           
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -596,16 +588,6 @@ export default function LoginPage() {
             Sign up
           </Link>
         </p>
-        
-        {/* Account Types Info */}
-        <div className="bg-white rounded-lg p-4 text-center border border-gray-200">
-          <h4 className="text-sm font-medium text-gray-900 mb-2">Account Types</h4>
-          <div className="text-xs text-gray-600 space-y-1">
-            <p><strong>Admin:</strong> Access admin panel to manage listings and users</p>
-            <p><strong>Seller:</strong> Create and manage your product listings</p>
-            <p><strong>Buyer:</strong> Browse and purchase items from the marketplace</p>
-          </div>
-        </div>
         
         {/* Footer */}
         <div className="mt-8 text-center text-xs text-gray-500">

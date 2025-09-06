@@ -74,7 +74,6 @@ function FileTextIcon({ size = 24, className = "" }: { size?: number; className?
     </svg>
   );
 }
-// NEW: Truck Icon for Shipping
 function TruckIcon({ size = 24, className = "" }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -85,10 +84,16 @@ function TruckIcon({ size = 24, className = "" }: { size?: number; className?: s
     </svg>
   );
 }
+function AmazonIcon({ size = 24, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M.045 18.02c.017.023.05.035.09.035.058 0 .13-.035.22-.105l.27-.27c.14-.14.21-.28.21-.42 0-.088-.035-.175-.105-.262-.035-.07-.09-.128-.166-.175-.077-.047-.166-.07-.268-.07-.094 0-.183.023-.268.07a.738.738 0 0 0-.21.175.738.738 0 0 0-.175.21c-.047.085-.07.174-.07.268 0 .094.023.183.07.268a.738.738 0 0 0 .175.21c.085.047.174.07.268.07.094 0 .183-.023.268-.07a.738.738 0 0 0 .21-.175l.27-.27c.035-.035.058-.07.07-.105z"/>
+    </svg>
+  );
+}
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const router = useRouter();
-  const [quantity, setQuantity] = useState(1);
   const [showNotification, setShowNotification] = useState(false);
   const [loading, setLoading] = useState(true);
   const [product, setProduct] = useState<any>(null);
@@ -109,24 +114,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         if (docSnap.exists()) {
           const data = docSnap.data();
           
-          // Calculate dominant category and condition
+          // Calculate dominant category
           const distinctCategories = new Set<string>();
-          const conditionCounts: Record<string, number> = {};
           
           data.bundleItems.forEach((item: any) => {
             if (item.category) {
               distinctCategories.add(item.category);
             }
-            if (item.condition) {
-              conditionCounts[item.condition] = (conditionCounts[item.condition] || 0) + 1;
-            }
           });
           
           const dominantCategory = distinctCategories.size > 1 ? "mix" : 
                                   (distinctCategories.values().next().value || "mix");
-          
-          const dominantCondition = Object.entries(conditionCounts)
-            .sort((a, b) => b[1] - a[1])[0]?.[0] || "good";
           
           // Collect all images from bundle items
           const bundleImages = data.bundleItems
@@ -136,9 +134,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           const firstItemImage = data.bundleItems[0]?.imageUrl || null;
           const images = bundleImages.length > 0 ? bundleImages : (firstItemImage ? [firstItemImage] : []);
           
+          // Calculate total Amazon value from bundle items
+          let totalAmazonValue = 0;
+          data.bundleItems.forEach((item: any) => {
+            if (item.amazonData && item.amazonData.price) {
+              totalAmazonValue += item.amazonData.price * (item.quantity || 1);
+            }
+          });
+          
           const features = [
             `Items: ${data.totalItems || data.bundleItems.length}`,
-            `Condition: ${dominantCondition === "like-new" ? "Like New" : "Good"}`,
             `Category: ${dominantCategory === "mix" ? "Mix Bundle" : dominantCategory}`,
             `Seller: ${data.vendorName || data.vendorId || "Anonymous Seller"}`
           ];
@@ -147,12 +152,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             id: docSnap.id,
             title: data.title || "Untitled Bundle",
             price: data.totalValue || 0,
-            shippingPrice: data.shippingPrice || 0, // NEW: Add shipping price
-            condition: dominantCondition === "like-new" ? "Like New" : "Good",
+            shippingPrice: data.shippingPrice || 0,
+            totalAmazonValue: totalAmazonValue,
             seller: data.vendorName || data.vendorId || "Anonymous Seller",
             sellerRating: 4.5,
             images: images,
-            description: data.description || `Bundle of ${data.totalItems || data.bundleItems.length} items including various ${dominantCategory === "mix" ? "categories" : dominantCategory + "s"} in ${dominantCondition === "like-new" ? "Like New" : "Good"} condition.`,
+            description: data.description || `Bundle of ${data.totalItems || data.bundleItems.length} items including various ${dominantCategory === "mix" ? "categories" : dominantCategory + "s"}.`,
             features: features,
             category: dominantCategory,
             bundleItems: data.bundleItems,
@@ -173,13 +178,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       fetchProduct();
     }
   }, [resolvedParams.id]);
-  // NEW: Calculate pricing with shipping
-  const calculatePricing = () => {
-    const subtotal = product.price * quantity;
-    const shipping = product.shippingPrice;
-    const total = subtotal + shipping;
-    return { subtotal, shipping, total };
-  };
   
   if (loading) {
     return (
@@ -215,7 +213,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       </div>
     );
   }
-  const { subtotal, shipping, total } = calculatePricing();
   
   const handleAddToCart = () => {
     addToCart({
@@ -273,24 +270,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     return icons[category as keyof typeof icons] || "📦";
   };
   
-  const getConditionColor = (condition: string) => {
-    return condition === 'like-new' 
-      ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-      : 'bg-amber-50 text-amber-700 border-amber-200';
-  };
-  
   const handleImageError = () => {
     setImageError(true);
   };
   
-  // Helper function to get the image URL from a bundle item
   const getItemImage = (item: any) => {
     return item.imageUrl || item.amazonData?.image || item.image;
   };
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Notification */}
       {showNotification && (
         <div className="fixed top-6 right-6 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-4 rounded-2xl shadow-xl z-50 transform transition-all duration-300">
           <div className="flex items-center">
@@ -300,7 +289,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         </div>
       )}
       
-      {/* Header */}
       <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <button 
@@ -315,9 +303,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Product Images */}
           <div className="space-y-6">
-            {/* Main Image with Navigation */}
             <div className="relative h-[500px] bg-white rounded-3xl overflow-hidden shadow-2xl border border-gray-100">
               {product.images.length > 0 && !imageError ? (
                 <Image 
@@ -339,7 +325,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               )}
               
-              {/* Image Navigation */}
               {product.images.length > 1 && (
                 <>
                   <button 
@@ -363,7 +348,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </>
               )}
               
-              {/* Image Indicators */}
               {product.images.length > 1 && (
                 <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-2">
                   {product.images.map((_: any, index: number) => (
@@ -377,7 +361,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               )}
               
-              {/* Bundle Badge */}
               <div className="absolute top-6 left-6">
                 <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
                   <PackageIcon size={16} className="inline mr-2" />
@@ -385,7 +368,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               </div>
               
-              {/* Image Source Indicator */}
               {product.images.length > 0 && (
                 <div className="absolute top-6 right-6">
                   {product.images[selectedImageIndex].includes('amazon.com') ? (
@@ -401,7 +383,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               )}
             </div>
             
-            {/* Thumbnail Gallery */}
             {product.images.length > 1 && (
               <div className="grid grid-cols-4 gap-3">
                 {product.images.map((image: string, index: number) => (
@@ -429,9 +410,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             )}
           </div>
           
-          {/* Product Details */}
           <div className="space-y-8">
-            {/* Title and Rating */}
             <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
               <h1 className="text-3xl font-bold text-gray-900 mb-4">{product.title}</h1>
               
@@ -457,31 +436,22 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </span>
               </div>
               
-              {/* NEW: Shipping Information Display */}
-              <div className="bg-blue-50 rounded-2xl p-4 border border-blue-200 mb-6">
-                <div className="flex items-center">
-                  <TruckIcon size={20} className="text-blue-600 mr-3" />
-                  <div>
-                    <p className="text-blue-900 font-medium">
-                      Shipping: Calculated at checkout
-                    </p>
-                    <p className="text-blue-700 text-sm">
-                      Based on your location
-                    </p>
+              {/* Amazon Total Value */}
+              {product.totalAmazonValue > 0 && (
+                <div className="bg-orange-50 rounded-2xl p-4 border border-orange-200 mb-6">
+                  <div className="flex items-center">
+                    <AmazonIcon size={20} className="text-orange-600 mr-3" />
+                    <div>
+                      <p className="text-orange-900 font-medium">
+                        Amazon Total new Items Value: ${product.totalAmazonValue.toFixed(2)}
+                      </p>
+                    
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
               
-              {/* Product Info Cards */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-4 border border-blue-200">
-                  <div className="flex items-center justify-between">
-                    <span className="text-blue-700 font-medium">Condition</span>
-                    <span className={`px-3 py-1 rounded-full text-sm font-bold border ${getConditionColor(product.condition.toLowerCase().replace(' ', '-'))}`}>
-                      {product.condition}
-                    </span>
-                  </div>
-                </div>
+              <div className="grid grid-cols-1 gap-4">
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-4 border border-purple-200">
                   <div className="flex items-center justify-between">
                     <span className="text-purple-700 font-medium">Category</span>
@@ -493,36 +463,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
             
-            {/* NEW: Price Breakdown Section */}
-            <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
-              <h3 className="text-xl font-bold text-gray-900 mb-6">Price Breakdown</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-gray-700">Bundle Price (×{quantity})</span>
-                  <span className="font-semibold">${subtotal.toFixed(2)}</span>
-                </div>
-                
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-gray-700 flex items-center">
-                    <TruckIcon size={16} className="mr-2" />
-                    Shipping
-                  </span>
-                  <span className="font-semibold text-blue-600">Calculated at checkout</span>
-                </div>
-                
-                <div className="border-t border-gray-200 pt-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xl font-bold text-gray-900">Subtotal</span>
-                    <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                      ${subtotal.toFixed(2)}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-500 mt-2">Shipping will be calculated at checkout</p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Description Section */}
             <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
               <div className="flex items-center mb-4">
                 <FileTextIcon size={24} className="text-blue-600 mr-3" />
@@ -541,41 +481,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               )}
             </div>
             
-            {/* Seller Info */}
             <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Seller Information</h3>
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">{product.seller.charAt(0).toUpperCase()}</span>
-                </div>
-                <div>
-                  <p className="font-bold text-gray-900">{product.seller}</p>
-                  <p className="text-sm text-gray-500">Trusted Seller • 500+ sales</p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Quantity and Actions */}
-            <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 space-y-6">
-              <div className="flex items-center space-x-6">
-                <span className="font-bold text-gray-900">Quantity:</span>
-                <div className="flex items-center bg-gray-50 rounded-2xl border border-gray-200">
-                  <button 
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-l-2xl transition-colors"
-                  >
-                    −
-                  </button>
-                  <span className="px-6 py-3 font-bold text-gray-900">{quantity}</span>
-                  <button 
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-r-2xl transition-colors"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-              
               <div className="flex space-x-4">
                 <button 
                   onClick={handleAddToCart}
@@ -605,7 +511,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
         
-        {/* Bundle Items Detailed Table */}
         {product.bundleItems && product.bundleItems.length > 0 && (
           <div className="mt-16">
             <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden">
@@ -620,7 +525,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     <tr>
                       <th className="px-6 py-4 text-left text-sm font-bold text-gray-900 uppercase tracking-wider">Item</th>
                       <th className="px-6 py-4 text-left text-sm font-bold text-gray-900 uppercase tracking-wider">Category</th>
-                      <th className="px-6 py-4 text-left text-sm font-bold text-gray-900 uppercase tracking-wider">Condition</th>
                       <th className="px-6 py-4 text-left text-sm font-bold text-gray-900 uppercase tracking-wider">ISBN</th>
                       <th className="px-6 py-4 text-center text-sm font-bold text-gray-900 uppercase tracking-wider">Qty</th>
                       <th className="px-6 py-4 text-right text-sm font-bold text-gray-900 uppercase tracking-wider">Price</th>
@@ -667,11 +571,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold border ${getConditionColor(item.condition)}`}>
-                              {item.condition === 'like-new' ? 'Like New' : 'Good'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm">
                               {item.isbn ? (
                                 <span className="font-mono bg-gray-100 px-3 py-1 rounded-lg text-xs border border-gray-200">
@@ -697,46 +596,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                       );
                     })}
                   </tbody>
-                  <tfoot className="bg-gradient-to-r from-gray-50 to-gray-100 border-t-2 border-gray-200">
-                    <tr>
-                      <td colSpan={5} className="px-6 py-4 text-right text-lg font-bold text-gray-900">
-                        Bundle Subtotal:
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                          ${product.price.toFixed(2)}
-                        </div>
-                      </td>
-                    </tr>
-                    <tr className="bg-blue-50">
-                      <td colSpan={5} className="px-6 py-3 text-right text-md font-medium text-blue-900 flex items-center justify-end">
-                        <TruckIcon size={16} className="mr-2" />
-                        Shipping:
-                      </td>
-                      <td className="px-6 py-3 text-right">
-                        <div className="text-lg font-bold text-blue-600">
-                          Calculated at checkout
-                        </div>
-                      </td>
-                    </tr>
-                    <tr className="bg-gradient-to-r from-blue-600 to-purple-600">
-                      <td colSpan={5} className="px-6 py-4 text-right text-xl font-bold text-white">
-                        Subtotal:
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="text-3xl font-bold text-white">
-                          ${subtotal.toFixed(2)}
-                        </div>
-                      </td>
-                    </tr>
-                  </tfoot>
                 </table>
               </div>
             </div>
           </div>
         )}
         
-        {/* Trust and Security Section */}
         <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 text-center">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">

@@ -86,6 +86,16 @@ function AdminIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
+// Yeni eklenen alışveriş ikonu
+function ShoppingCartIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="9" cy="21" r="1"></circle>
+      <circle cx="20" cy="21" r="1"></circle>
+      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+    </svg>
+  );
+}
 export default function HomePage() {
   const { user, loading, error, logout } = useAuth();
   const router = useRouter();
@@ -104,7 +114,7 @@ export default function HomePage() {
     const checkUserRole = async () => {
       if (user) {
         try {
-          // Admin email kontrolü - burayı admin@secondlife.com olarak güncelledim
+          // Admin email kontrolü
           if (user.email === "admin@secondlife.com") {
             setUserRole("admin");
             return;
@@ -144,12 +154,25 @@ export default function HomePage() {
               SecondLife Media
             </Link>
             <div className="flex items-center space-x-2">
+              {/* Alışveriş Sepeti İkonu - Mobil (Sadece buyer rolü için) */}
+              {userRole === "buyer" && (
+                <Link href="/cart" className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors relative">
+                  <ShoppingCartIcon size={20} />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></span>
+                </Link>
+              )}
               {/* Kullanıcı İkonu - Mobil */}
               <button
                 onClick={() => {
                   if (user) {
-                    // Admin için dashboard, normal kullanıcı için create-listing
-                    router.push(userRole === "admin" ? '/admin/dashboard' : '/create-listing');
+                    // Admin için dashboard, normal kullanıcı için create-listing, buyer için listings
+                    if (userRole === "admin") {
+                      router.push('/admin/dashboard');
+                    } else if (userRole === "buyer") {
+                      router.push('/listings');
+                    } else {
+                      router.push('/create-listing');
+                    }
                   } else {
                     router.push('/login');
                   }
@@ -176,17 +199,31 @@ export default function HomePage() {
                 <span className="text-red-500 font-medium">Auth Error</span>
               ) : user ? (
                 <>
-                  {/* Admin için Dashboard, normal kullanıcı için Start Selling */}
+                  {/* Admin için Dashboard, normal kullanıcı için Start Selling, Buyer için Start Shopping */}
                   {userRole === "admin" ? (
                     <Link href="/admin/dashboard" className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-2 rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-200 shadow-lg hover:shadow-xl font-medium flex items-center">
                       <AdminIcon size={20} className="mr-2" />
                       Admin Dashboard
+                    </Link>
+                  ) : userRole === "buyer" ? (
+                    <Link href="/listings" className="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-2 rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-xl font-medium flex items-center">
+                      <ShoppingCartIcon size={20} className="mr-2" />
+                      Start Shopping
                     </Link>
                   ) : (
                     <Link href="/create-listing" className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-2 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl font-medium">
                       Start Selling
                     </Link>
                   )}
+                  
+                  {/* Alışveriş Sepeti İkonu - Desktop (Sadece buyer rolü için) */}
+                  {userRole === "buyer" && (
+                    <Link href="/cart" className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors relative">
+                      <ShoppingCartIcon size={20} />
+                      <span className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></span>
+                    </Link>
+                  )}
+                  
                   <button
                     onClick={logout}
                     className="font-medium text-gray-700 hover:text-gray-900 transition-colors"
@@ -219,17 +256,31 @@ export default function HomePage() {
                 <span className="text-red-500 font-medium">Auth Error</span>
               ) : user ? (
                 <>
-                  {/* Admin için Dashboard, normal kullanıcı için Start Selling - Mobile Menu */}
+                  {/* Admin için Dashboard, normal kullanıcı için Start Selling, Buyer için Start Shopping - Mobile Menu */}
                   {userRole === "admin" ? (
                     <Link href="/admin/dashboard" className="block font-medium text-gray-900 py-2 hover:text-purple-600 transition-colors flex items-center">
                       <AdminIcon size={20} className="mr-2" />
                       Admin Dashboard
+                    </Link>
+                  ) : userRole === "buyer" ? (
+                    <Link href="/listings" className="block font-medium text-gray-900 py-2 hover:text-green-600 transition-colors flex items-center">
+                      <ShoppingCartIcon size={20} className="mr-2" />
+                      Start Shopping
                     </Link>
                   ) : (
                     <Link href="/create-listing" className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors">
                       Start Selling
                     </Link>
                   )}
+                  
+                  {/* Alışveriş Sepeti Linki - Mobile Menu (Sadece buyer rolü için) */}
+                  {userRole === "buyer" && (
+                    <Link href="/cart" className="block font-medium text-gray-900 py-2 hover:text-green-600 transition-colors flex items-center">
+                      <ShoppingCartIcon size={20} className="mr-2" />
+                      My Cart
+                    </Link>
+                  )}
+                  
                   <button
                     onClick={logout}
                     className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors text-left w-full"
@@ -284,7 +335,7 @@ export default function HomePage() {
               </div>
             </div>
             
-            {/* Admin için Dashboard, normal kullanıcı için Start Selling - Hero Section */}
+            {/* Admin için Dashboard, normal kullanıcı için Start Selling, Buyer için Start Shopping - Hero Section */}
             <div className="mt-12 sm:mt-16">
               {userRole === "admin" ? (
                 <Link
@@ -293,6 +344,15 @@ export default function HomePage() {
                 >
                   <AdminIcon size={24} className="mr-3" />
                   Admin Dashboard
+                  <ArrowRightIcon size={24} className="ml-3 group-hover:translate-x-1 transition-transform duration-300" />
+                </Link>
+              ) : userRole === "buyer" ? (
+                <Link
+                  href="/listings"
+                  className="group inline-flex items-center px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold text-lg sm:text-xl rounded-2xl hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-2xl hover:shadow-3xl transform hover:-translate-y-1"
+                >
+                  <ShoppingCartIcon size={24} className="mr-3" />
+                  Start Shopping
                   <ArrowRightIcon size={24} className="ml-3 group-hover:translate-x-1 transition-transform duration-300" />
                 </Link>
               ) : (
@@ -398,7 +458,7 @@ export default function HomePage() {
             </div>
           </div>
           
-          {/* Admin için Dashboard, normal kullanıcı için Start Selling - CTA Section */}
+          {/* Admin için Dashboard, normal kullanıcı için Start Selling, Buyer için Start Shopping - CTA Section */}
           <div className="mt-12 flex justify-center">
             {userRole === "admin" ? (
               <Link
@@ -407,6 +467,15 @@ export default function HomePage() {
               >
                 <AdminIcon size={24} className="mr-3" />
                 Admin Dashboard
+                <ArrowRightIcon size={24} className="ml-3" />
+              </Link>
+            ) : userRole === "buyer" ? (
+              <Link
+                href="/listings"
+                className="inline-flex items-center px-8 py-4 bg-white text-green-600 font-bold text-lg rounded-2xl hover:bg-gray-100 transition-all duration-300 shadow-lg"
+              >
+                <ShoppingCartIcon size={24} className="mr-3" />
+                Start Shopping
                 <ArrowRightIcon size={24} className="ml-3" />
               </Link>
             ) : (
@@ -453,6 +522,15 @@ export default function HomePage() {
                 <li><Link href="/returns-policy" className="text-gray-400 hover:text-white transition-colors">Returns Policy</Link></li>
                 <li><Link href="/seller-protection" className="text-gray-400 hover:text-white transition-colors">Seller Protection</Link></li>
                 <li><Link href="/seller-guide" className="text-gray-400 hover:text-white transition-colors">Seller Guide</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-bold text-lg mb-6 text-white">For Buyers</h4>
+              <ul className="space-y-3">
+                <li><Link href="/listings" className="text-gray-400 hover:text-white transition-colors">Browse Listings</Link></li>
+                <li><Link href="/buying-guide" className="text-gray-400 hover:text-white transition-colors">Buying Guide</Link></li>
+                <li><Link href="/buyer-protection" className="text-gray-400 hover:text-white transition-colors">Buyer Protection</Link></li>
+                <li><Link href="/shipping-info" className="text-gray-400 hover:text-white transition-colors">Shipping Info</Link></li>
               </ul>
             </div>
             <div>

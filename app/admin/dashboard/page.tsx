@@ -1094,15 +1094,58 @@ export default function AdminListingsPage() {
     }
   };
   
-  // ✅ Approve listing function - GÜNCELLENDİ
-  const approveListing = async (listingId: string) => {
+  // ✅ Approve listing only - GÜNCELLENDİ
+  const approveListingOnly = async (listingId: string) => {
+    setIsProcessing(true);
+    
+    try {
+      const listingRef = doc(db, "listings", listingId);
+      
+      await updateDoc(listingRef, {
+        status: "approved",
+        reviewedDate: serverTimestamp(),
+        reviewedBy: user?.email || "admin",
+        adminNotes: adminNotes
+      });
+      
+      console.log(`✅ Listing ${listingId} approved by ${user?.email}`);
+      
+      // Modal'ı kapatma - label ve tracking için açık kalsın
+      setAdminNotes("");
+      
+      // 🆕 YENİ: Seçili listing'in durumunu güncelle
+      if (selectedListing && selectedListing.id === listingId) {
+        setSelectedListing({
+          ...selectedListing,
+          status: "approved",
+          reviewedDate: new Date(), // Geçici yerel güncelleme
+          reviewedBy: user?.email || "admin"
+        });
+      }
+      
+      alert("✅ Listing approved successfully! You can now send the shipping label and tracking information.");
+      
+    } catch (error: any) {
+      console.error("Error approving listing:", error);
+      if (error.code === 'permission-denied') {
+        alert("You don't have permission to approve listings. Please contact administrator.");
+      } else {
+        alert("❌ Error occurred while approving listing: " + error.message);
+      }
+    }
+    
+    setIsProcessing(false);
+  };
+  
+  // 📦 Send shipping label and tracking - YENİ FONKSİYON
+  const sendShippingLabelAndTracking = async (listingId: string) => {
     if (!shippingLabel) {
-      alert("⚠️ Please upload a shipping label before approving");
+      alert("⚠️ Please upload a shipping label");
       return;
     }
     
     if (!trackingNumber.trim()) {
-      alert("⚠️ Please provide a tracking number before approving");
+      alert("⚠️ Please provide a tracking number");
       return;
     }
     
@@ -1115,30 +1158,20 @@ export default function AdminListingsPage() {
       let shippingLabelUrl = "";
       
       // Upload shipping label to Firebase Storage
-      // Dosya adını benzersiz yap ve uzantısını koru
       const fileExtension = shippingLabel.name.split('.').pop();
       const fileName = `${listingId}_${Date.now()}.${fileExtension}`;
       const storageRef = ref(storage, `shipping-labels/${fileName}`);
       
-      console.log("Uploading file:", shippingLabel.name, "Type:", shippingLabel.type);
-      
       await uploadBytes(storageRef, shippingLabel);
       shippingLabelUrl = await getDownloadURL(storageRef);
       
-      console.log("File uploaded successfully. URL:", shippingLabelUrl);
-      
       const listingRef = doc(db, "listings", listingId);
       
-      // Update the listing with approval status, shipping label URL, and tracking info
+      // Update the listing with shipping label URL and tracking info
       await updateDoc(listingRef, {
-        status: "approved",
-        reviewedDate: serverTimestamp(),
-        reviewedBy: user?.email || "admin",
-        adminNotes: adminNotes,
         shippingLabelUrl: shippingLabelUrl,
         trackingNumber: trackingNumber,
         carrier: carrier,
-        // Dosya bilgilerini de kaydedelim
         shippingLabelName: shippingLabel.name,
         shippingLabelType: shippingLabel.type
       });
@@ -1176,22 +1209,22 @@ export default function AdminListingsPage() {
         }
       }
       
-      console.log(`✅ Listing ${listingId} approved by ${user?.email}`);
+      setLabelUploadSuccess("Shipping label and tracking sent successfully!");
       
-      setSelectedListing(null);
-      setAdminNotes("");
+      // Reset form
       setShippingLabel(null);
       setShippingLabelPreview(null);
       setTrackingNumber("");
       setCarrier("usps");
       
-      alert("✅ Listing approved successfully! Shipping label and tracking info sent to seller.");
+      // Close modal after a short delay
+      setTimeout(() => {
+        setSelectedListing(null);
+      }, 2000);
       
     } catch (error: any) {
-      console.error("Error approving listing:", error);
-      
-      // Daha detaylı hata mesajı göster
-      let errorMessage = "Error occurred while approving listing";
+      console.error("Error sending shipping label and tracking:", error);
+      let errorMessage = "Error occurred while sending shipping label and tracking";
       
       if (error.code === 'storage/unauthorized') {
         errorMessage = "You don't have permission to upload files. Please check your Firebase Storage rules.";
@@ -1205,10 +1238,10 @@ export default function AdminListingsPage() {
       
       setLabelUploadError(errorMessage);
       alert("❌ " + errorMessage);
+    } finally {
+      setIsProcessing(false);
+      setUploadingLabel(false);
     }
-    
-    setIsProcessing(false);
-    setUploadingLabel(false);
   };
   
   // ❌ Reject listing function
@@ -1707,13 +1740,6 @@ export default function AdminListingsPage() {
                               className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-blue-600 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                             >
                               👁️ Review
-                            </button>
-                            {/* 🆕 Tekil silme butonu eklendi */}
-                            <button
-                              onClick={() => deleteSingleListing(listing.id)}
-                              className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-red-600 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
-                            >
-                              🗑️ Delete
                             </button>
                           </div>
                         </td>
@@ -2281,8 +2307,365 @@ export default function AdminListingsPage() {
                 
                 {/* Right column - Admin actions */}
                 <div className="space-y-4">
-                  {/* Onaylandıktan sonraki görünüm */}
-                  {selectedListing.status === "approved" ? (
+                  {/* For pending listings */}
+                  {selectedListing.status === "pending" && (
+                    <>
+                      {/* 🆕 Shipping Label & Tracking Container - Always visible but disabled initially */}
+                      <div className={`bg-gray-50 p-4 rounded-lg border ${selectedListing.status === "pending" ? "border-gray-200 opacity-60" : "border-blue-200"}`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-sm font-medium text-gray-900">Shipping Label & Tracking</h4>
+                          {selectedListing.status === "pending" && (
+                            <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded">
+                              Disabled - Approve first
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* Shipping Label Upload */}
+                        <div className="mb-4">
+                          <h5 className="text-sm font-medium text-gray-700 mb-2">Shipping Label</h5>
+                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                            {shippingLabelPreview ? (
+                              <div className="space-y-3">
+                                <div className="flex justify-center">
+                                  <img 
+                                    src={shippingLabelPreview} 
+                                    alt="Shipping label preview" 
+                                    className="max-h-40 object-contain"
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setShippingLabel(null);
+                                    setShippingLabelPreview(null);
+                                  }}
+                                  className="text-sm text-red-600 hover:text-red-800"
+                                >
+                                  Remove label
+                                </button>
+                              </div>
+                            ) : shippingLabel ? (
+                              <div className="space-y-3">
+                                <div className="flex flex-col items-center justify-center">
+                                  <div className="text-4xl mb-2">📄</div>
+                                  <div className="text-sm font-medium text-gray-900">{shippingLabel.name}</div>
+                                  <div className="text-xs text-gray-500">
+                                    {(shippingLabel.size / 1024).toFixed(2)} KB
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setShippingLabel(null);
+                                    setShippingLabelPreview(null);
+                                  }}
+                                  className="text-sm text-red-600 hover:text-red-800"
+                                >
+                                  Remove file
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                                <div className="flex text-sm text-gray-600 justify-center">
+                                  <label className={`relative cursor-pointer ${selectedListing.status === "pending" ? "pointer-events-none" : "bg-white rounded-md font-medium text-blue-600 hover:text-blue-500"}`}>
+                                    <span>Upload a shipping label</span>
+                                    <input 
+                                      type="file" 
+                                      className="sr-only" 
+                                      accept="image/*,.pdf"
+                                      disabled={selectedListing.status === "pending"}
+                                      onChange={(e) => {
+                                        if (e.target.files && e.target.files[0]) {
+                                          const file = e.target.files[0];
+                                          setShippingLabel(file);
+                                          
+                                          if (file.type.startsWith('image/')) {
+                                            const reader = new FileReader();
+                                            reader.onload = (e) => {
+                                              setShippingLabelPreview(e.target?.result as string);
+                                            };
+                                            reader.readAsDataURL(file);
+                                          } else {
+                                            setShippingLabelPreview(null);
+                                          }
+                                        }
+                                      }}
+                                    />
+                                  </label>
+                                </div>
+                                <p className="text-xs text-gray-500">PNG, JPG, PDF up to 10MB</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Tracking Information */}
+                        <div className="mb-4">
+                          <h5 className="text-sm font-medium text-gray-700 mb-2">Tracking Information</h5>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                                Tracking Number
+                              </label>
+                              <input
+                                type="text"
+                                value={trackingNumber}
+                                onChange={(e) => setTrackingNumber(e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded text-sm bg-gray-100"
+                                placeholder="Enter tracking number"
+                                disabled={selectedListing.status === "pending"}
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                                Carrier
+                              </label>
+                              <select
+                                value={carrier}
+                                onChange={(e) => setCarrier(e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded text-sm bg-gray-100"
+                                disabled={selectedListing.status === "pending"}
+                              >
+                                <option value="usps">USPS</option>
+                                <option value="fedex">FedEx</option>
+                                <option value="ups">UPS</option>
+                                <option value="dhl">DHL</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Error and success messages */}
+                        {labelUploadError && (
+                          <div className="mb-4 text-red-600 text-sm bg-red-50 p-2 rounded">
+                            {labelUploadError}
+                          </div>
+                        )}
+                        
+                        {labelUploadSuccess && (
+                          <div className="mb-4 text-green-600 text-sm bg-green-50 p-2 rounded">
+                            {labelUploadSuccess}
+                          </div>
+                        )}
+                        
+                        {/* Send button - Disabled until approved */}
+                        <button
+                          onClick={() => sendShippingLabelAndTracking(selectedListing.id)}
+                          disabled={selectedListing.status === "pending" || isProcessing || !shippingLabel || !trackingNumber.trim()}
+                          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isProcessing ? "Sending..." : "📦 Send Label & Tracking"}
+                        </button>
+                      </div>
+                      
+                      {/* Admin Notes */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Admin Notes
+                        </label>
+                        <textarea
+                          value={adminNotes}
+                          onChange={(e) => setAdminNotes(e.target.value)}
+                          rows={4}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Add any notes about this listing..."
+                        />
+                      </div>
+                      
+                      {/* Rejection Reason */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Rejection Reason (if rejecting)
+                        </label>
+                        <textarea
+                          value={rejectionReason}
+                          onChange={(e) => setRejectionReason(e.target.value)}
+                          rows={3}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Provide reason for rejection..."
+                        />
+                      </div>
+                      
+                      {/* Action Buttons */}
+                      <div className="flex space-x-3">
+                        <button
+                          onClick={() => approveListingOnly(selectedListing.id)}
+                          disabled={isProcessing}
+                          className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isProcessing ? "Processing..." : "✅ Approve Listing"}
+                        </button>
+                        
+                        <button
+                          onClick={() => rejectListing(selectedListing.id)}
+                          disabled={isProcessing || !rejectionReason.trim()}
+                          className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isProcessing ? "Processing..." : "❌ Reject"}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                  
+                  {/* For approved listings without tracking */}
+                  {selectedListing.status === "approved" && !selectedListing.trackingNumber && (
+                    <>
+                      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-sm font-medium text-gray-900">Shipping Label & Tracking</h4>
+                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                            Ready to send
+                          </span>
+                        </div>
+                        
+                        {/* Shipping Label Upload */}
+                        <div className="mb-4">
+                          <h5 className="text-sm font-medium text-gray-700 mb-2">Shipping Label</h5>
+                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                            {shippingLabelPreview ? (
+                              <div className="space-y-3">
+                                <div className="flex justify-center">
+                                  <img 
+                                    src={shippingLabelPreview} 
+                                    alt="Shipping label preview" 
+                                    className="max-h-40 object-contain"
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setShippingLabel(null);
+                                    setShippingLabelPreview(null);
+                                  }}
+                                  className="text-sm text-red-600 hover:text-red-800"
+                                >
+                                  Remove label
+                                </button>
+                              </div>
+                            ) : shippingLabel ? (
+                              <div className="space-y-3">
+                                <div className="flex flex-col items-center justify-center">
+                                  <div className="text-4xl mb-2">📄</div>
+                                  <div className="text-sm font-medium text-gray-900">{shippingLabel.name}</div>
+                                  <div className="text-xs text-gray-500">
+                                    {(shippingLabel.size / 1024).toFixed(2)} KB
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setShippingLabel(null);
+                                    setShippingLabelPreview(null);
+                                  }}
+                                  className="text-sm text-red-600 hover:text-red-800"
+                                >
+                                  Remove file
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                                <div className="flex text-sm text-gray-600 justify-center">
+                                  <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500">
+                                    <span>Upload a shipping label</span>
+                                    <input 
+                                      type="file" 
+                                      className="sr-only" 
+                                      accept="image/*,.pdf"
+                                      onChange={(e) => {
+                                        if (e.target.files && e.target.files[0]) {
+                                          const file = e.target.files[0];
+                                          setShippingLabel(file);
+                                          
+                                          if (file.type.startsWith('image/')) {
+                                            const reader = new FileReader();
+                                            reader.onload = (e) => {
+                                              setShippingLabelPreview(e.target?.result as string);
+                                            };
+                                            reader.readAsDataURL(file);
+                                          } else {
+                                            setShippingLabelPreview(null);
+                                          }
+                                        }
+                                      }}
+                                    />
+                                  </label>
+                                </div>
+                                <p className="text-xs text-gray-500">PNG, JPG, PDF up to 10MB</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Tracking Information */}
+                        <div className="mb-4">
+                          <h5 className="text-sm font-medium text-gray-700 mb-2">Tracking Information</h5>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                                Tracking Number
+                              </label>
+                              <input
+                                type="text"
+                                value={trackingNumber}
+                                onChange={(e) => setTrackingNumber(e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded text-sm"
+                                placeholder="Enter tracking number"
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                                Carrier
+                              </label>
+                              <select
+                                value={carrier}
+                                onChange={(e) => setCarrier(e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded text-sm"
+                              >
+                                <option value="usps">USPS</option>
+                                <option value="fedex">FedEx</option>
+                                <option value="ups">UPS</option>
+                                <option value="dhl">DHL</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Error and success messages */}
+                        {labelUploadError && (
+                          <div className="mb-4 text-red-600 text-sm bg-red-50 p-2 rounded">
+                            {labelUploadError}
+                          </div>
+                        )}
+                        
+                        {labelUploadSuccess && (
+                          <div className="mb-4 text-green-600 text-sm bg-green-50 p-2 rounded">
+                            {labelUploadSuccess}
+                          </div>
+                        )}
+                        
+                        {/* Send button */}
+                        <button
+                          onClick={() => sendShippingLabelAndTracking(selectedListing.id)}
+                          disabled={isProcessing || !shippingLabel || !trackingNumber.trim()}
+                          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isProcessing ? "Sending..." : "📦 Send Label & Tracking"}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                  
+                  {/* For approved listings with tracking */}
+                  {selectedListing.status === "approved" && selectedListing.trackingNumber && (
                     <>
                       {/* Shipping Label Display */}
                       <div>
@@ -2290,7 +2673,7 @@ export default function AdminListingsPage() {
                         <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                           <div className="flex items-center justify-between mb-3">
                             <span className="text-sm font-medium text-green-800">Uploaded Label</span>
-                            <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Approved</span>
+                            <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Sent</span>
                           </div>
                           
                           {selectedListing.shippingLabelUrl && (
@@ -2353,206 +2736,13 @@ export default function AdminListingsPage() {
                             </svg>
                           </div>
                           <div className="ml-3">
-                            <h3 className="text-sm font-medium text-green-800">Listing Approved</h3>
+                            <h3 className="text-sm font-medium text-green-800">Label & Tracking Sent</h3>
                             <div className="mt-2 text-sm text-green-700">
-                              <p>This listing has been approved and the shipping label has been sent to the seller.</p>
-                              {selectedListing.reviewedDate && (
-                                <p className="mt-1">
-                                  <strong>Approved on:</strong> {new Date(selectedListing.reviewedDate.seconds * 1000).toLocaleDateString()}
-                                </p>
-                              )}
+                              <p>The shipping label and tracking information have been sent to the seller.</p>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </>
-                  ) : (
-                    <>
-                      {/* 🆕 Shipping Label Upload Section - sadece onaylanmamış listing'lerde göster */}
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">Shipping Label</h4>
-                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                          {shippingLabelPreview ? (
-                            // Resim dosyaları için önizleme
-                            <div className="space-y-3">
-                              <div className="flex justify-center">
-                                <img 
-                                  src={shippingLabelPreview} 
-                                  alt="Shipping label preview" 
-                                  className="max-h-40 object-contain"
-                                />
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setShippingLabel(null);
-                                  setShippingLabelPreview(null);
-                                }}
-                                className="text-sm text-red-600 hover:text-red-800"
-                              >
-                                Remove label
-                              </button>
-                            </div>
-                          ) : shippingLabel ? (
-                            // PDF veya diğer dosya türleri için dosya bilgisi
-                            <div className="space-y-3">
-                              <div className="flex flex-col items-center justify-center">
-                                <div className="text-4xl mb-2">📄</div>
-                                <div className="text-sm font-medium text-gray-900">{shippingLabel.name}</div>
-                                <div className="text-xs text-gray-500">
-                                  {(shippingLabel.size / 1024).toFixed(2)} KB
-                                </div>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setShippingLabel(null);
-                                  setShippingLabelPreview(null);
-                                }}
-                                className="text-sm text-red-600 hover:text-red-800"
-                              >
-                                Remove file
-                              </button>
-                            </div>
-                          ) : (
-                            // Dosya seçme alanı
-                            <div className="space-y-2">
-                              <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                              </svg>
-                              <div className="flex text-sm text-gray-600 justify-center">
-                                <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500">
-                                  <span>Upload a shipping label</span>
-                                  <input 
-                                    type="file" 
-                                    className="sr-only" 
-                                    accept="image/*,.pdf"
-                                    onChange={(e) => {
-                                      if (e.target.files && e.target.files[0]) {
-                                        const file = e.target.files[0];
-                                        console.log("Selected file:", file.name, "Type:", file.type);
-                                        setShippingLabel(file);
-                                        
-                                        // Sadece resim dosyaları için önizleme oluştur
-                                        if (file.type.startsWith('image/')) {
-                                          const reader = new FileReader();
-                                          reader.onload = (e) => {
-                                            setShippingLabelPreview(e.target?.result as string);
-                                          };
-                                          reader.readAsDataURL(file);
-                                        } else {
-                                          // PDF veya diğer dosya türleri için önizleme oluşturma
-                                          setShippingLabelPreview(null);
-                                        }
-                                      }
-                                    }}
-                                  />
-                                </label>
-                              </div>
-                              <p className="text-xs text-gray-500">PNG, JPG, PDF up to 10MB</p>
-                            </div>
-                          )}
-                        </div>
-                        
-                        {labelUploadError && (
-                          <div className="mt-2 text-red-600 text-sm bg-red-50 p-2 rounded">
-                            {labelUploadError}
-                          </div>
-                        )}
-                        
-                        {labelUploadSuccess && (
-                          <div className="mt-2 text-green-600 text-sm bg-green-50 p-2 rounded">
-                            {labelUploadSuccess}
-                          </div>
-                        )}
-                        
-                        <p className="mt-2 text-sm text-gray-500">
-                          Upload a shipping label for this listing. The label will be sent to the seller upon approval.
-                        </p>
-                      </div>
-                      
-                      {/* 🆕 Tracking Number Section - sadece onaylanmamış listing'lerde göster */}
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">Tracking Information</h4>
-                        <div className="space-y-3">
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">
-                              Tracking Number
-                            </label>
-                            <input
-                              type="text"
-                              value={trackingNumber}
-                              onChange={(e) => setTrackingNumber(e.target.value)}
-                              className="w-full p-2 border border-gray-300 rounded text-sm"
-                              placeholder="Enter tracking number"
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">
-                              Carrier
-                            </label>
-                            <select
-                              value={carrier}
-                              onChange={(e) => setCarrier(e.target.value)}
-                              className="w-full p-2 border border-gray-300 rounded text-sm"
-                            >
-                              <option value="usps">USPS</option>
-                              <option value="fedex">FedEx</option>
-                              <option value="ups">UPS</option>
-                              <option value="dhl">DHL</option>
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Admin Notes
-                        </label>
-                        <textarea
-                          value={adminNotes}
-                          onChange={(e) => setAdminNotes(e.target.value)}
-                          rows={4}
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Add any notes about this listing..."
-                        />
-                      </div>
-                      
-                      {selectedListing.status === "pending" && (
-                        <>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Rejection Reason (if rejecting)
-                            </label>
-                            <textarea
-                              value={rejectionReason}
-                              onChange={(e) => setRejectionReason(e.target.value)}
-                              rows={3}
-                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              placeholder="Provide reason for rejection..."
-                            />
-                          </div>
-                          
-                          <div className="flex space-x-3">
-                            <button
-                              onClick={() => approveListing(selectedListing.id)}
-                              disabled={isProcessing || !shippingLabel || !trackingNumber.trim()}
-                              className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {isProcessing ? "Processing..." : "✅ Approve & Send Label"}
-                            </button>
-                            
-                            <button
-                              onClick={() => rejectListing(selectedListing.id)}
-                              disabled={isProcessing || !rejectionReason.trim()}
-                              className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {isProcessing ? "Processing..." : "❌ Reject"}
-                            </button>
-                          </div>
-                        </>
-                      )}
                     </>
                   )}
                   
@@ -2590,7 +2780,7 @@ export default function AdminListingsPage() {
                     </div>
                   )}
                   
-                  {/* Show status if already reviewed */}
+                  {/* Show rejection info if rejected */}
                   {selectedListing.status === "rejected" && (
                     <div className="bg-red-50 p-4 rounded-lg">
                       <p className="font-medium text-red-800">
@@ -2613,14 +2803,6 @@ export default function AdminListingsPage() {
                       )}
                     </div>
                   )}
-                  
-                  {/* Real-time status indicator */}
-                  <div className="bg-blue-50 p-3 rounded-lg">
-                    <p className="text-blue-800 text-sm">
-                      🔄 <strong>Real-time:</strong> This listing is being monitored in real-time. 
-                      Any changes will be reflected immediately across all admin panels.
-                    </p>
-                  </div>
                 </div>
               </div>
               

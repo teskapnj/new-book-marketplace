@@ -1,26 +1,23 @@
-// app/listings/page.tsx
 "use client";
-
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
-import { collection, query, where, onSnapshot, orderBy, getDocs, DocumentData } from "firebase/firestore";
+import { collection, query, where, onSnapshot, orderBy, getDocs, DocumentData, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCart } from "@/contexts/CartContext";
 import ProductCard from "@/components/ProductCard";
-
 // SVG Icons
 interface IconProps {
   size?: number;
   className?: string;
 }
-
 const FilterIcon = ({ size = 24, className = "" }: IconProps) => (
   <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
   </svg>
 );
-
 const GridIcon = ({ size = 24, className = "" }: IconProps) => (
   <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <rect x="3" y="3" width="7" height="7"></rect>
@@ -29,7 +26,6 @@ const GridIcon = ({ size = 24, className = "" }: IconProps) => (
     <rect x="3" y="14" width="7" height="7"></rect>
   </svg>
 );
-
 const ListIcon = ({ size = 24, className = "" }: IconProps) => (
   <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <line x1="8" y1="6" x2="21" y2="6"></line>
@@ -40,20 +36,17 @@ const ListIcon = ({ size = 24, className = "" }: IconProps) => (
     <line x1="3" y1="18" x2="3.01" y2="18"></line>
   </svg>
 );
-
 const ArrowLeftIcon = ({ size = 24, className = "" }: IconProps) => (
   <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <polyline points="15 18 9 12 15 6"></polyline>
   </svg>
 );
-
 const SearchIcon = ({ size = 24, className = "" }: IconProps) => (
   <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <circle cx="11" cy="11" r="8"></circle>
     <path d="m21 21-4.35-4.35"></path>
   </svg>
 );
-
 const PackageIcon = ({ size = 24, className = "" }: IconProps) => (
   <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line>
@@ -62,20 +55,25 @@ const PackageIcon = ({ size = 24, className = "" }: IconProps) => (
     <line x1="12" y1="22.08" x2="12" y2="12"></line>
   </svg>
 );
-
 const XIcon = ({ size = 24, className = "" }: IconProps) => (
   <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="m18 6-12 12"></path>
     <path d="m6 6 12 12"></path>
   </svg>
 );
-
 const ChevronDownIcon = ({ size = 24, className = "" }: IconProps) => (
   <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="m6 9 6 6 6-6"></path>
   </svg>
 );
-
+// Shopping Cart Icon
+const ShoppingCartIcon = ({ size = 24, className = "" }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="9" cy="21" r="1"></circle>
+    <circle cx="20" cy="21" r="1"></circle>
+    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+  </svg>
+);
 // TypeScript Interfaces
 interface Product {
   id: string;
@@ -111,14 +109,12 @@ interface Product {
   tags?: string[];
   highlights?: string[];
 }
-
 interface Category {
   id: string;
   name: string;
   count: number;
   icon: string;
 }
-
 interface FilterContentProps {
   categories: Category[];
   selectedCategory: string;
@@ -129,10 +125,11 @@ interface FilterContentProps {
   setSortBy: (sort: string) => void;
   router: ReturnType<typeof useRouter>;
 }
-
 export default function ListingsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  const { cartItems } = useCart();
   const categoryFromUrl = searchParams.get('category') || 'all';
   
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -146,7 +143,95 @@ export default function ListingsPage() {
   const [fallbackMode, setFallbackMode] = useState<boolean>(false);
   const [showFilters, setShowFilters] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [userRole, setUserRole] = useState<string | null>(null);
   
+  // Calculate total items in cart
+  const totalCartItems = cartItems.reduce((total, item) => total + (item.quantity || 1), 0);
+  
+  // Kullanıcı yetkilendirme kontrolü
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (!authLoading) {
+        if (!user) {
+          // Kullanıcı giriş yapmamışsa login sayfasına yönlendir
+          router.push("/login");
+          return;
+        }
+        // Kullanıcının rolünü kontrol et
+        const role = localStorage.getItem("userRole");
+        
+        if (role) {
+          setUserRole(role);
+          
+          // Firestore'dan rolü doğrula
+          try {
+            const userDoc = await getDoc(doc(db, "users", user.uid));
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              const firestoreRole = userData.role || "seller";
+              
+              // localStorage'i güncelle (eğer rol değiştiyse)
+              if (firestoreRole !== role) {
+                localStorage.setItem("userRole", firestoreRole);
+                setUserRole(firestoreRole);
+              }
+              
+              // Kullanıcının uygun role sahip olup olmadığını kontrol et
+              if (firestoreRole !== "buyer" && firestoreRole !== "admin") {
+                // Kullanıcı uygun role sahip değil, doğru sayfaya yönlendir
+                if (firestoreRole === "seller") {
+                  router.push("/create-listing");
+                } else {
+                  router.push("/");
+                }
+                return;
+              }
+            } else {
+              // Kullanıcı dokümanı bulunamadı, login sayfasına yönlendir
+              router.push("/login");
+              return;
+            }
+          } catch (error) {
+            console.error("Error verifying user role:", error);
+            router.push("/login");
+            return;
+          }
+        } else {
+          // localStorage'da rol yok, Firestore'dan almayı dene
+          try {
+            const userDoc = await getDoc(doc(db, "users", user.uid));
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              const firestoreRole = userData.role || "seller";
+              
+              localStorage.setItem("userRole", firestoreRole);
+              setUserRole(firestoreRole);
+              
+              // Kullanıcının uygun role sahip olup olmadığını kontrol et
+              if (firestoreRole !== "buyer" && firestoreRole !== "admin") {
+                // Kullanıcı uygun role sahip değil, doğru sayfaya yönlendir
+                if (firestoreRole === "seller") {
+                  router.push("/create-listing");
+                } else {
+                  router.push("/");
+                }
+                return;
+              }
+            } else {
+              // Kullanıcı dokümanı bulunamadı, login sayfasına yönlendir
+              router.push("/login");
+              return;
+            }
+          } catch (error) {
+            console.error("Error verifying user role:", error);
+            router.push("/login");
+            return;
+          }
+        }
+      }
+    };
+    checkAuth();
+  }, [user, authLoading, router]);
   // URL'den kategoriyi güncelleme
   useEffect(() => {
     const urlCategory = searchParams.get('category');
@@ -155,19 +240,124 @@ export default function ListingsPage() {
     }
   }, [searchParams, selectedCategory]);
   
-  // Firebase'den veri çekme
+  // Firebase'den veri çekme - sadece doğru roldeki kullanıcılar için
   useEffect(() => {
-    setLoading(true);
-    
-    const fetchListings = async () => {
-      try {
-        const q = query(
-          collection(db, "listings"),
-          where("status", "==", "approved"),
-          orderBy("createdAt", "desc")
-        );
-        
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    // Kullanıcı doğrulandıktan ve doğru role sahipse verileri çek
+    if (userRole === "buyer" || userRole === "admin") {
+      setLoading(true);
+      
+      const fetchListings = async () => {
+        try {
+          const q = query(
+            collection(db, "listings"),
+            where("status", "==", "approved"),
+            orderBy("createdAt", "desc")
+          );
+          
+          const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const listingsData: Product[] = [];
+            
+            querySnapshot.forEach((doc) => {
+              const data = doc.data() as DocumentData;
+              
+              if (!data.bundleItems || !Array.isArray(data.bundleItems)) {
+                console.warn(`Listing ${doc.id} has invalid bundleItems:`, data.bundleItems);
+                return;
+              }
+              
+              const distinctCategories = new Set<string>();
+              const conditionCounts: Record<string, number> = {};
+              
+              data.bundleItems.forEach((item: any) => {
+                if (item.category) {
+                  distinctCategories.add(item.category);
+                }
+                if (item.condition) {
+                  conditionCounts[item.condition] = (conditionCounts[item.condition] || 0) + 1;
+                }
+              });
+              
+              const dominantCategory = distinctCategories.size > 1 ? "mix" : 
+                                      (distinctCategories.values().next().value || "mix");
+              
+              const dominantCondition = Object.entries(conditionCounts)
+                .sort((a, b) => b[1] - a[1])[0]?.[0] || "good";
+              
+              // İlk ürün fotoğrafını bulma
+              let firstItemImage: string | undefined;
+              for (const item of data.bundleItems) {
+                if (item.image) {
+                  firstItemImage = item.image;
+                  break;
+                }
+                if (item.imageUrl) {
+                  firstItemImage = item.imageUrl;
+                  break;
+                }
+                if (item.amazonData?.image) {
+                  firstItemImage = item.amazonData.image;
+                  break;
+                }
+              }
+              
+              listingsData.push({
+                id: doc.id,
+                title: data.title || "Untitled Bundle",
+                price: data.totalValue || 0,
+                category: dominantCategory,
+                condition: dominantCondition,
+                imageUrl: firstItemImage,
+                image: firstItemImage,
+                sellerName: data.vendorName || data.vendorId || "Anonymous Seller",
+                seller: data.vendorName || data.vendorId || "Anonymous Seller",
+                createdAt: data.createdAt?.toDate() || new Date(),
+                bundleItems: data.bundleItems,
+                description: `Bundle of ${data.totalItems || data.bundleItems.length} items including various ${dominantCategory === "mix" ? "categories" : dominantCategory + "s"} in ${dominantCondition === "like-new" ? "Like New" : "Good"} condition.`,
+                totalItems: data.totalItems || data.bundleItems.length,
+                vendorId: data.vendorId,
+                distinctCategories: Array.from(distinctCategories),
+                status: data.status,
+                updatedAt: data.updatedAt?.toDate() || null,
+                location: data.location || null,
+                tags: data.tags || [],
+                highlights: data.highlights || []
+              });
+            });
+            
+            setProducts(listingsData);
+            setLoading(false);
+            setIndexError(null);
+            setFallbackMode(false);
+          }, (error) => {
+            console.error("Firestore error:", error);
+            
+            if (error.code === 'failed-precondition' && error.message.includes('index')) {
+              const match = error.message.match(/https:\/\/console\.firebase\.google\.com\/[^\s]*/);
+              const indexLink = match ? match[0] : null;
+              
+              setIndexError(indexLink || "Index required but no link provided");
+              setFallbackMode(true);
+              fetchWithoutIndex();
+            } else {
+              setLoading(false);
+            }
+          });
+          
+          return unsubscribe;
+        } catch (error) {
+          console.error("Query setup error:", error);
+          setLoading(false);
+        }
+      };
+      
+      const fetchWithoutIndex = async () => {
+        try {
+          const q = query(
+            collection(db, "listings"),
+            where("status", "==", "approved")
+          );
+          
+          const querySnapshot = await getDocs(q);
           const listingsData: Product[] = [];
           
           querySnapshot.forEach((doc) => {
@@ -195,8 +385,7 @@ export default function ListingsPage() {
             
             const dominantCondition = Object.entries(conditionCounts)
               .sort((a, b) => b[1] - a[1])[0]?.[0] || "good";
-            
-            // İlk ürün fotoğrafını bulma
+              
             let firstItemImage: string | undefined;
             for (const item of data.bundleItems) {
               if (item.image) {
@@ -237,122 +426,64 @@ export default function ListingsPage() {
             });
           });
           
+          listingsData.sort((a, b) => {
+            return new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime();
+          });
+          
           setProducts(listingsData);
           setLoading(false);
-          setIndexError(null);
-          setFallbackMode(false);
-        }, (error) => {
-          console.error("Firestore error:", error);
-          
-          if (error.code === 'failed-precondition' && error.message.includes('index')) {
-            const match = error.message.match(/https:\/\/console\.firebase\.google\.com\/[^\s]*/);
-            const indexLink = match ? match[0] : null;
-            
-            setIndexError(indexLink || "Index required but no link provided");
-            setFallbackMode(true);
-            fetchWithoutIndex();
-          } else {
-            setLoading(false);
-          }
-        });
-        
-        return unsubscribe;
-      } catch (error) {
-        console.error("Query setup error:", error);
-        setLoading(false);
-      }
-    };
-    
-    const fetchWithoutIndex = async () => {
-      try {
-        const q = query(
-          collection(db, "listings"),
-          where("status", "==", "approved")
-        );
-        
-        const querySnapshot = await getDocs(q);
-        const listingsData: Product[] = [];
-        
-        querySnapshot.forEach((doc) => {
-          const data = doc.data() as DocumentData;
-          
-          if (!data.bundleItems || !Array.isArray(data.bundleItems)) {
-            console.warn(`Listing ${doc.id} has invalid bundleItems:`, data.bundleItems);
-            return;
-          }
-          
-          const distinctCategories = new Set<string>();
-          const conditionCounts: Record<string, number> = {};
-          
-          data.bundleItems.forEach((item: any) => {
-            if (item.category) {
-              distinctCategories.add(item.category);
-            }
-            if (item.condition) {
-              conditionCounts[item.condition] = (conditionCounts[item.condition] || 0) + 1;
-            }
-          });
-          
-          const dominantCategory = distinctCategories.size > 1 ? "mix" : 
-                                  (distinctCategories.values().next().value || "mix");
-          
-          const dominantCondition = Object.entries(conditionCounts)
-            .sort((a, b) => b[1] - a[1])[0]?.[0] || "good";
-            
-          let firstItemImage: string | undefined;
-          for (const item of data.bundleItems) {
-            if (item.image) {
-              firstItemImage = item.image;
-              break;
-            }
-            if (item.imageUrl) {
-              firstItemImage = item.imageUrl;
-              break;
-            }
-            if (item.amazonData?.image) {
-              firstItemImage = item.amazonData.image;
-              break;
-            }
-          }
-          
-          listingsData.push({
-            id: doc.id,
-            title: data.title || "Untitled Bundle",
-            price: data.totalValue || 0,
-            category: dominantCategory,
-            condition: dominantCondition,
-            imageUrl: firstItemImage,
-            image: firstItemImage,
-            sellerName: data.vendorName || data.vendorId || "Anonymous Seller",
-            seller: data.vendorName || data.vendorId || "Anonymous Seller",
-            createdAt: data.createdAt?.toDate() || new Date(),
-            bundleItems: data.bundleItems,
-            description: `Bundle of ${data.totalItems || data.bundleItems.length} items including various ${dominantCategory === "mix" ? "categories" : dominantCategory + "s"} in ${dominantCondition === "like-new" ? "Like New" : "Good"} condition.`,
-            totalItems: data.totalItems || data.bundleItems.length,
-            vendorId: data.vendorId,
-            distinctCategories: Array.from(distinctCategories),
-            status: data.status,
-            updatedAt: data.updatedAt?.toDate() || null,
-            location: data.location || null,
-            tags: data.tags || [],
-            highlights: data.highlights || []
-          });
-        });
-        
-        listingsData.sort((a, b) => {
-          return new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime();
-        });
-        
-        setProducts(listingsData);
-        setLoading(false);
-      } catch (error) {
-        console.error("Fallback fetch error:", error);
-        setLoading(false);
-      }
-    };
-    
-    fetchListings();
-  }, []);
+        } catch (error) {
+          console.error("Fallback fetch error:", error);
+          setLoading(false);
+        }
+      };
+      
+      fetchListings();
+    }
+  }, [userRole]); // userRole değiştiğinde verileri yeniden çek
+  
+  // Yüklenme durumu veya yetkilendirme kontrolü yapılıyorsa
+  if (authLoading || (user && !userRole)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Erişim reddedildi mesajı
+  if (user && userRole && userRole !== "buyer" && userRole !== "admin") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="text-center max-w-md">
+          <div className="bg-red-100 rounded-full p-4 w-16 h-16 flex items-center justify-center mx-auto mb-4">
+            <svg className="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
+          <p className="text-gray-600 mb-6">
+            You don't have permission to view this page. Only buyers and administrators can access the listings page.
+          </p>
+          <button
+            onClick={() => {
+              if (userRole === "seller") {
+                router.push("/create-listing");
+              } else {
+                router.push("/");
+              }
+            }}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+          >
+            Go to {userRole === "seller" ? "Create Listing" : "Home"}
+          </button>
+        </div>
+      </div>
+    );
+  }
   
   // Filtreleme ve sıralama
   const filteredProducts = products
@@ -442,6 +573,16 @@ export default function ListingsPage() {
             </div>
             
             <div className="flex items-center space-x-2">
+              {/* Shopping Cart Icon */}
+              <Link href="/cart" className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors">
+                <ShoppingCartIcon size={20} />
+                {totalCartItems > 0 && (
+                  <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                    {totalCartItems > 99 ? '99+' : totalCartItems}
+                  </span>
+                )}
+              </Link>
+              
               {/* View Mode Toggle */}
               <div className="hidden sm:flex border border-gray-200 rounded-xl p-1 bg-gray-50">
                 <button 
@@ -667,7 +808,6 @@ export default function ListingsPage() {
     </div>
   );
 }
-
 // Filter Components
 function DesktopFilterContent({ categories, selectedCategory, setSelectedCategory, priceRange, setPriceRange, sortBy, setSortBy, router }: FilterContentProps) {
   const handleCategoryChange = (categoryId: string) => {
@@ -774,7 +914,6 @@ function DesktopFilterContent({ categories, selectedCategory, setSelectedCategor
     </>
   );
 }
-
 function MobileFilterContent({ categories, selectedCategory, setSelectedCategory, priceRange, setPriceRange, sortBy, setSortBy, router }: FilterContentProps) {
   const handleCategoryChange = (categoryId: string) => {
     setSelectedCategory(categoryId);
@@ -845,14 +984,14 @@ function MobileFilterContent({ categories, selectedCategory, setSelectedCategory
           <div className="grid grid-cols-2 gap-3">
             <input
               type="number"
-              placeholder="Min"
+              placeholder="min"
               value={priceRange[0]}
               onChange={(e) => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
               className="p-2 border border-gray-200 rounded-lg text-sm"
             />
             <input
               type="number"
-              placeholder="Max"
+              placeholder="max"
               value={priceRange[1]}
               onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value) || 1000])}
               className="p-2 border border-gray-200 rounded-lg text-sm"
@@ -878,13 +1017,11 @@ function MobileFilterContent({ categories, selectedCategory, setSelectedCategory
     </>
   );
 }
-
 // ProductListItem
 interface ProductListItemProps {
   product: Product;
   onSelect: (product: Product) => void;
 }
-
 function ProductListItem({ product, onSelect }: ProductListItemProps) {
   const [imageError, setImageError] = useState<boolean>(false);
   
@@ -980,13 +1117,11 @@ function ProductListItem({ product, onSelect }: ProductListItemProps) {
     </div>
   );
 }
-
 // ProductModal
 interface ProductModalProps {
   product: Product;
   onClose: () => void;
 }
-
 function ProductModal({ product, onClose }: ProductModalProps) {
   const [imageError, setImageError] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>("details");

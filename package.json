@@ -13,8 +13,10 @@
   "dependencies": {
     "@ericblade/quagga2": "^1.8.4",
     "@googlemaps/js-api-loader": "^1.16.10",
+    "@types/cheerio": "^0.22.35",
     "@zxing/library": "^0.21.3",
     "axios": "^1.11.0",
+    "cheerio": "^1.1.2",
     "firebase": "^12.1.0",
     "firebase-admin": "^13.5.0",
     "firebase-functions": "^6.4.0",
