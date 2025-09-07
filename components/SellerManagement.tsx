@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "@/lib/firebase";
+import DOMPurify from 'isomorphic-dompurify'; // Bu satırı ekleyin
 import { 
   collection, 
   onSnapshot, 
@@ -83,7 +84,7 @@ const DeleteConfirmModal = ({
         
         <div className="mb-4">
           <p className="text-sm text-gray-600 mb-2">
-            Are you sure you want to delete <strong>{seller.name || seller.businessName}</strong>?
+            Are you sure you want to delete <strong>{seller.name || seller.businessName || "No Name"}</strong>?
           </p>
           <div className="bg-red-50 border border-red-200 rounded p-3">
             <p className="text-red-800 text-sm">
@@ -370,7 +371,7 @@ const SellerChatModal = ({
         <div className="flex items-center justify-between mb-4 pb-3 border-b">
           <div>
             <h3 className="text-lg font-medium text-gray-900">
-              Chat with {seller.name || seller.businessName}
+              Chat with {seller.name || seller.businessName || "No Name"}
             </h3>
             <p className="text-sm text-gray-500">{seller.email}</p>
           </div>
@@ -420,7 +421,7 @@ const SellerChatModal = ({
                 <div 
                   className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${msg.senderRole === 'admin' ? 'bg-blue-500 text-white rounded-br-none' : 'bg-white border border-gray-300 text-gray-800 rounded-bl-none'}`}
                 >
-                  <div className="text-sm">{msg.text}</div>
+                  <div className="text-sm" dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(msg.text)}} />
                   <div className={`text-xs mt-1 ${msg.senderRole === 'admin' ? 'text-blue-100' : 'text-gray-500'}`}>
                     {msg.createdAt?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
@@ -435,7 +436,7 @@ const SellerChatModal = ({
           <input
             type="text"
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={(e) => setNewMessage(DOMPurify.sanitize(e.target.value).substring(0, 500))}
             placeholder="Type your message..."
             className="flex-1 border border-gray-300 rounded-l-lg px-4 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
             disabled={isSending || isLoadingConversation}
@@ -496,7 +497,9 @@ const SellerManagement = () => {
         sellersData.push({
           id: docSnapshot.id,
           userId: docSnapshot.id,
-          name: data.name || "",
+          name: data.firstName && data.lastName 
+          ? `${data.firstName} ${data.lastName}`.trim()
+          : data.name || data.displayName || null,
           businessName: data.businessName || "",
           email: data.email || "",
           phone: data.phone || "",
@@ -939,7 +942,7 @@ const SellerManagement = () => {
               type="text"
               placeholder="Search by name, business name, email, or ID..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => setSearchTerm(DOMPurify.sanitize(e.target.value).substring(0, 100))}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>

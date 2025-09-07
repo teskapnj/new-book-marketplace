@@ -5,6 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import DOMPurify from 'isomorphic-dompurify'; // Bu satırı ekleyin
+
 
 // Temporary types - move to lib/firebase/orders.ts later
 interface Order {
@@ -66,17 +68,17 @@ async function createOrder(orderData: Omit<Order, 'orderNumber' | 'createdAt' | 
   try {
     console.log('=== CREATE ORDER START ===');
     console.log('createOrder called with:', orderData);
-    
+
     // Check if db is available
     if (!db) {
       throw new Error('Firebase db is not initialized');
     }
     console.log('Firebase db is available');
-    
+
     // Extract seller IDs from items - YENİ EKLENDİ
     const sellerIds = [...new Set(orderData.items.map(item => item.sellerId))];
     console.log('Seller IDs:', sellerIds);
-    
+
     // Clean undefined values before sending to Firebase
     const cleanOrderData = JSON.parse(JSON.stringify({
       ...orderData,
@@ -87,19 +89,19 @@ async function createOrder(orderData: Omit<Order, 'orderNumber' | 'createdAt' | 
     }));
     console.log('Cleaned order data:', cleanOrderData);
     console.log('About to call addDoc...');
-    
+
     const docRef = await addDoc(collection(db, 'orders'), cleanOrderData);
-    
+
     console.log('Firebase addDoc successful, docRef.id:', docRef.id);
     console.log('=== CREATE ORDER SUCCESS ===');
-    
+
     return docRef.id;
   } catch (error: any) {
     console.log('=== CREATE ORDER ERROR ===');
     console.log('Raw error:', error);
     console.log('Error type:', typeof error);
     console.log('Error constructor:', error?.constructor?.name);
-    
+
     // Try different ways to extract error info
     if (error instanceof Error) {
       console.log('Error is instance of Error');
@@ -110,7 +112,7 @@ async function createOrder(orderData: Omit<Order, 'orderNumber' | 'createdAt' | 
       console.log('Error is not instance of Error');
       console.log('Error as string:', String(error));
     }
-    
+
     throw error;
   }
 }
@@ -143,40 +145,40 @@ interface CheckoutData {
 
 export default function CheckoutPage() {
   console.log('=== CHECKOUT PAGE RENDERING ===');
-  
+
   const router = useRouter();
   const { user } = useAuth();
   const { clearCart } = useCart();
-  
+
   console.log('User from auth:', user);
   console.log('User type:', typeof user);
   console.log('User is null?', user === null);
   console.log('User is undefined?', user === undefined);
-  
+
   const [checkoutData, setCheckoutData] = useState<CheckoutData | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal' | 'demo'>('demo');
   const [apiErrors, setApiErrors] = useState<string[]>([]);
-  
+
   // Guest user info
   const [guestInfo, setGuestInfo] = useState({
     email: '',
     fullName: '',
     phone: ''
   });
-  
+
   // Recalculated totals (to fix tax calculation)
   const recalculatedTotals = useMemo(() => {
     if (!checkoutData) return null;
-    
+
     const subtotal = checkoutData.totals.subtotal;
     const shipping = checkoutData.totals.shipping;
     const marketplaceFee = checkoutData.totals.marketplaceFee;
-    
+
     // CORRECTED: Tax only on subtotal + shipping (no marketplace fee)
     const tax = (subtotal + shipping) * 0.08;
     const grandTotal = subtotal + shipping + marketplaceFee + tax;
-    
+
     return {
       subtotal,
       shipping,
@@ -186,29 +188,70 @@ export default function CheckoutPage() {
     };
   }, [checkoutData]);
 
+  // GÜVENLİ
   useEffect(() => {
-    // Session storage'dan checkout verilerini al
     const storedData = sessionStorage.getItem('checkoutData');
     if (storedData) {
-      setCheckoutData(JSON.parse(storedData));
+      try {
+        const parsedData = JSON.parse(storedData);
+
+        // Validation ekleyin
+        if (parsedData &&
+          Array.isArray(parsedData.cartItems) &&
+          parsedData.shippingAddress &&
+          typeof parsedData.shippingAddress.street1 === 'string' &&
+          typeof parsedData.shippingAddress.city === 'string' &&
+          typeof parsedData.shippingAddress.state === 'string' &&
+          typeof parsedData.shippingAddress.zip === 'string' &&
+          parsedData.totals &&
+          typeof parsedData.totals.subtotal === 'number') {
+
+          // Sanitize critical fields
+          const sanitizedData = {
+            ...parsedData,
+            shippingAddress: {
+              ...parsedData.shippingAddress,
+              street1: DOMPurify.sanitize(parsedData.shippingAddress.street1),
+              city: DOMPurify.sanitize(parsedData.shippingAddress.city),
+              state: DOMPurify.sanitize(parsedData.shippingAddress.state),
+              zip: DOMPurify.sanitize(parsedData.shippingAddress.zip),
+              country: DOMPurify.sanitize(parsedData.shippingAddress.country || 'US')
+            },
+            cartItems: parsedData.cartItems.map((item: any) => ({
+              ...item,
+              title: DOMPurify.sanitize(item.title || ''),
+              sellerId: DOMPurify.sanitize(item.sellerId || 'default-seller')
+            }))
+          };
+
+          setCheckoutData(sanitizedData);
+        } else {
+          console.error('Invalid checkout data structure');
+          sessionStorage.removeItem('checkoutData');
+          router.push('/cart');
+        }
+      } catch (error) {
+        console.error('Error parsing checkout data:', error);
+        sessionStorage.removeItem('checkoutData');
+        router.push('/cart');
+      }
     } else {
-      // Eğer checkout verisi yoksa cart'a yönlendir
       router.push('/cart');
     }
   }, [router]);
 
   const handlePlaceOrder = async () => {
     if (!checkoutData) return;
-    
+
     setIsProcessing(true);
     setApiErrors([]); // Önceki hataları temizle
-    
+
     try {
       // Guest kullanıcı bilgilerini hazırla
-      const customerInfo = user 
+      const customerInfo = user
         ? { email: user.email || '', fullName: user.displayName || '', phone: '' }
         : { email: guestInfo.email, fullName: guestInfo.fullName, phone: guestInfo.phone };
-      
+
       // Order verisini hazırla
       const orderData: Omit<Order, 'id' | 'orderNumber' | 'createdAt' | 'updatedAt'> = {
         userId: user?.uid,
@@ -233,27 +276,28 @@ export default function CheckoutPage() {
         vendorBreakdown: checkoutData.vendorBreakdown,
         sellerIds: [...new Set(checkoutData.cartItems.map(item => item.sellerId || 'default-seller'))] // YENİ EKLENDİ
       };
-      
+
       // Siparişi Firebase'e kaydet
       const orderId = await createOrder(orderData);
       console.log('Order created with ID:', orderId);
-      
+
       // Satılan ürünleri "sold" olarak işaretle - API KULLANIMI
       console.log('Marking listings as sold...');
       const updatePromises = checkoutData.cartItems.map(async (item) => {
         try {
           console.log(`Marking listing ${item.id} as sold...`);
           console.log('Item data:', JSON.stringify(item, null, 2));
-          
+
           const requestBody = {
             listingId: item.id,
             buyerId: user?.uid || null,
             orderId: orderId
           };
-          
+
           console.log('API request body:', requestBody);
-          
+
           // API endpoint'ini çağır
+          // GÜVENLİ
           const response = await fetch('/api/mark-listing-sold', {
             method: 'POST',
             headers: {
@@ -261,61 +305,71 @@ export default function CheckoutPage() {
             },
             body: JSON.stringify(requestBody),
           });
-          
+
           console.log('API response status:', response.status);
-          
+
           if (!response.ok) {
             const errorData = await response.json();
             console.error('API Error:', errorData);
-            
-            // Hata mesajını state'e ekle
-            setApiErrors(prev => [...prev, `Item ${item.id}: ${errorData.error || 'Unknown error'}`]);
-            
-            throw new Error(errorData.error || 'Failed to mark listing as sold');
+
+            // API response validation ve sanitization
+            const sanitizedError = errorData && typeof errorData.error === 'string'
+              ? DOMPurify.sanitize(errorData.error).substring(0, 200)
+              : 'Unknown error';
+
+            setApiErrors(prev => [...prev, `Item ${DOMPurify.sanitize(item.id)}: ${sanitizedError}`]);
+
+            throw new Error(sanitizedError);
           }
-          
+
           const result = await response.json();
-          console.log(`API Response for item ${item.id}:`, result);
+
+          // Result validation
+          if (result && typeof result === 'object') {
+            console.log(`API Response for item ${item.id}:`, result);
+          } else {
+            console.warn('Invalid API response format');
+          }
           console.log(`Successfully marked listing ${item.id} as sold`);
           return { id: item.id, success: true };
         } catch (error: any) {
           console.error(`Failed to mark listing ${item.id} as sold:`, error);
-          
+
           // Hata mesajını state'e ekle
           setApiErrors(prev => [...prev, `Item ${item.id}: ${error.message || 'Unknown error'}`]);
-          
+
           return { id: item.id, success: false, error: error.message };
         }
       });
-      
+
       // Tüm işlemleri bekle
       const results = await Promise.allSettled(updatePromises);
-      
+
       // Başarısız olanları logla
-      const failedUpdates = results.filter(result => 
-        result.status === 'rejected' || 
+      const failedUpdates = results.filter(result =>
+        result.status === 'rejected' ||
         (result.status === 'fulfilled' && !result.value.success)
       );
-      
+
       if (failedUpdates.length > 0) {
         console.warn('Some listings could not be marked as sold:', failedUpdates);
         // Kullanıcıya bildirim göster ama işlemi durdurma
       }
-      
+
       console.log('All listings processed');
-      
+
       // Sepeti temizle
       clearCart();
-      
+
       // Session storage'ı temizle
       sessionStorage.removeItem('checkoutData');
-      
+
       // Başarı sayfasına yönlendir
       router.push(`/checkout/success?orderId=${orderId}`);
-      
+
     } catch (error: any) {
       console.error('Order creation failed:', error);
-      
+
       // Firebase hatası için özel mesaj
       if (error.code === 'permission-denied') {
         alert('Permission denied. Please try again later.');
@@ -348,7 +402,7 @@ export default function CheckoutPage() {
           </h1>
           <p className="text-gray-600">Review your order and complete your purchase</p>
         </div>
-        
+
         {/* API Errors Display */}
         {apiErrors.length > 0 && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
@@ -368,7 +422,7 @@ export default function CheckoutPage() {
             </div>
           </div>
         )}
-        
+
         <div className="lg:grid lg:grid-cols-3 lg:gap-8">
           {/* Left Column - Order Summary */}
           <div className="lg:col-span-2 mb-8 lg:mb-0">
@@ -386,8 +440,9 @@ export default function CheckoutPage() {
                       required
                       value={guestInfo.email}
                       onChange={(e) => {
-                        console.log('Email input changed:', e.target.value);
-                        setGuestInfo(prev => ({ ...prev, email: e.target.value }));
+                        const sanitizedValue = DOMPurify.sanitize(e.target.value).substring(0, 254); // Email max length
+                        console.log('Email input changed:', sanitizedValue);
+                        setGuestInfo(prev => ({ ...prev, email: sanitizedValue }));
                       }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="your@email.com"
@@ -402,8 +457,9 @@ export default function CheckoutPage() {
                       required
                       value={guestInfo.fullName}
                       onChange={(e) => {
-                        console.log('FullName input changed:', e.target.value);
-                        setGuestInfo(prev => ({ ...prev, fullName: e.target.value }));
+                        const sanitizedValue = DOMPurify.sanitize(e.target.value).substring(0, 100); // Name max length
+                        console.log('FullName input changed:', sanitizedValue);
+                        setGuestInfo(prev => ({ ...prev, fullName: sanitizedValue }));
                       }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="John Doe"
@@ -417,8 +473,10 @@ export default function CheckoutPage() {
                       type="tel"
                       value={guestInfo.phone}
                       onChange={(e) => {
-                        console.log('Phone input changed:', e.target.value);
-                        setGuestInfo(prev => ({ ...prev, phone: e.target.value }));
+                        const value = e.target.value.replace(/[^\d\s\-\+\(\)]/g, '').substring(0, 20); // Only phone chars
+                        const sanitizedValue = DOMPurify.sanitize(value);
+                        console.log('Phone input changed:', sanitizedValue);
+                        setGuestInfo(prev => ({ ...prev, phone: sanitizedValue }));
                       }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="+1 (555) 123-4567"
@@ -427,7 +485,7 @@ export default function CheckoutPage() {
                 </div>
               </div>
             )}
-            
+
             {/* Login suggestion for guest users */}
             {!user && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
@@ -448,7 +506,7 @@ export default function CheckoutPage() {
                 </div>
               </div>
             )}
-            
+
             {/* Shipping Address */}
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Shipping Address</h2>
@@ -460,26 +518,26 @@ export default function CheckoutPage() {
                 <p className="text-gray-600">{checkoutData.shippingAddress.country}</p>
               </div>
             </div>
-            
+
             {/* Order Items by Vendor */}
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Order Items</h2>
-              
+
               {checkoutData.vendorBreakdown.map(vendor => (
                 <div key={vendor.sellerId} className="mb-6 last:mb-0">
                   <div className="bg-gray-50 rounded-lg p-4 mb-3">
                     <h3 className="font-semibold text-gray-900">
-                      {vendor.sellerId === 'default-seller' ? 'Default Seller' : vendor.sellerId}
+                      {vendor.sellerId === 'default-seller' ? 'Default Seller' : DOMPurify.sanitize(vendor.sellerId)}
                     </h3>
                     <p className="text-sm text-gray-600">{vendor.itemCount} items</p>
                   </div>
-                  
+
                   <div className="space-y-3">
                     {vendor.items.map(item => (
                       <div key={item.id} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
                         <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
                           {item.image ? (
-                            <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                            <img src={item.image} alt={DOMPurify.sanitize(item.title)} className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
                               <span className="text-2xl">📦</span>
@@ -487,7 +545,7 @@ export default function CheckoutPage() {
                           )}
                         </div>
                         <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">{item.title}</h4>
+                          <h4 className="font-medium text-gray-900">{DOMPurify.sanitize(item.title)}</h4>
                           <p className="text-sm text-gray-600">SKU: {item.id}</p>
                         </div>
                         <p className="font-semibold text-gray-900">${item.price.toFixed(2)}</p>
@@ -497,7 +555,7 @@ export default function CheckoutPage() {
                 </div>
               ))}
             </div>
-            
+
             {/* Payment Method (Demo) */}
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Payment Method</h2>
@@ -514,12 +572,12 @@ export default function CheckoutPage() {
               </div>
             </div>
           </div>
-          
+
           {/* Right Column - Order Summary */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 sticky top-8">
               <h2 className="text-xl font-bold text-gray-900 mb-6 text-center">Order Summary</h2>
-              
+
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subtotal</span>
@@ -546,16 +604,15 @@ export default function CheckoutPage() {
                   </div>
                 </div>
               </div>
-              
+
               {/* Place Order Button */}
               <button
                 onClick={handlePlaceOrder}
                 disabled={isProcessing || (!user && (!guestInfo.email || !guestInfo.fullName))}
-                className={`w-full py-4 font-bold rounded-lg transition-all duration-200 ${
-                  isProcessing || (!user && (!guestInfo.email || !guestInfo.fullName))
-                    ? 'bg-gray-400 text-white cursor-not-allowed'
-                    : 'bg-green-600 text-white hover:bg-green-700 shadow-md hover:shadow-lg'
-                }`}
+                className={`w-full py-4 font-bold rounded-lg transition-all duration-200 ${isProcessing || (!user && (!guestInfo.email || !guestInfo.fullName))
+                  ? 'bg-gray-400 text-white cursor-not-allowed'
+                  : 'bg-green-600 text-white hover:bg-green-700 shadow-md hover:shadow-lg'
+                  }`}
               >
                 {isProcessing ? (
                   <div className="flex items-center justify-center">
@@ -566,14 +623,14 @@ export default function CheckoutPage() {
                   `Place Order${!user ? ' (Guest)' : ''}`
                 )}
               </button>
-              
+
               {/* Debug info for guest users */}
               {!user && (
                 <div className="mt-2 text-xs text-gray-500 bg-gray-50 p-2 rounded">
                   Debug: Email={guestInfo.email || 'empty'}, Name={guestInfo.fullName || 'empty'}
                 </div>
               )}
-              
+
               <button
                 onClick={() => router.push('/cart')}
                 className="w-full mt-3 py-3 bg-white text-gray-600 font-medium rounded-lg border-2 border-gray-200 hover:bg-gray-50 transition-all duration-200"

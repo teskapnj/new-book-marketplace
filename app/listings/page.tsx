@@ -8,6 +8,8 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import ProductCard from "@/components/ProductCard";
+import DOMPurify from 'isomorphic-dompurify'; // Bu satırı ekleyin
+
 // SVG Icons
 interface IconProps {
   size?: number;
@@ -130,8 +132,12 @@ export default function ListingsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { cartItems } = useCart();
-  const categoryFromUrl = searchParams.get('category') || 'all';
-  
+  // GÜVENLİ
+  const rawCategory = searchParams.get('category');
+  const categoryFromUrl = rawCategory && ['all', 'book', 'cd', 'dvd', 'game', 'mix'].includes(rawCategory)
+    ? DOMPurify.sanitize(rawCategory)
+    : 'all';
+
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedCategory, setSelectedCategory] = useState<string>(categoryFromUrl);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
@@ -144,10 +150,10 @@ export default function ListingsPage() {
   const [showFilters, setShowFilters] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [userRole, setUserRole] = useState<string | null>(null);
-  
+
   // Calculate total items in cart
   const totalCartItems = cartItems.reduce((total, item) => total + (item.quantity || 1), 0);
-  
+
   // Kullanıcı yetkilendirme kontrolü
   useEffect(() => {
     const checkAuth = async () => {
@@ -159,23 +165,23 @@ export default function ListingsPage() {
         }
         // Kullanıcının rolünü kontrol et
         const role = localStorage.getItem("userRole");
-        
+
         if (role) {
           setUserRole(role);
-          
+
           // Firestore'dan rolü doğrula
           try {
             const userDoc = await getDoc(doc(db, "users", user.uid));
             if (userDoc.exists()) {
               const userData = userDoc.data();
               const firestoreRole = userData.role || "seller";
-              
+
               // localStorage'i güncelle (eğer rol değiştiyse)
               if (firestoreRole !== role) {
                 localStorage.setItem("userRole", firestoreRole);
                 setUserRole(firestoreRole);
               }
-              
+
               // Kullanıcının uygun role sahip olup olmadığını kontrol et
               if (firestoreRole !== "buyer" && firestoreRole !== "admin") {
                 // Kullanıcı uygun role sahip değil, doğru sayfaya yönlendir
@@ -203,10 +209,10 @@ export default function ListingsPage() {
             if (userDoc.exists()) {
               const userData = userDoc.data();
               const firestoreRole = userData.role || "seller";
-              
+
               localStorage.setItem("userRole", firestoreRole);
               setUserRole(firestoreRole);
-              
+
               // Kullanıcının uygun role sahip olup olmadığını kontrol et
               if (firestoreRole !== "buyer" && firestoreRole !== "admin") {
                 // Kullanıcı uygun role sahip değil, doğru sayfaya yönlendir
@@ -239,13 +245,13 @@ export default function ListingsPage() {
       setSelectedCategory(urlCategory);
     }
   }, [searchParams, selectedCategory]);
-  
+
   // Firebase'den veri çekme - sadece doğru roldeki kullanıcılar için
   useEffect(() => {
     // Kullanıcı doğrulandıktan ve doğru role sahipse verileri çek
     if (userRole === "buyer" || userRole === "admin") {
       setLoading(true);
-      
+
       const fetchListings = async () => {
         try {
           const q = query(
@@ -253,21 +259,21 @@ export default function ListingsPage() {
             where("status", "==", "approved"),
             orderBy("createdAt", "desc")
           );
-          
+
           const unsubscribe = onSnapshot(q, (querySnapshot) => {
             const listingsData: Product[] = [];
-            
+
             querySnapshot.forEach((doc) => {
               const data = doc.data() as DocumentData;
-              
+
               if (!data.bundleItems || !Array.isArray(data.bundleItems)) {
                 console.warn(`Listing ${doc.id} has invalid bundleItems:`, data.bundleItems);
                 return;
               }
-              
+
               const distinctCategories = new Set<string>();
               const conditionCounts: Record<string, number> = {};
-              
+
               data.bundleItems.forEach((item: any) => {
                 if (item.category) {
                   distinctCategories.add(item.category);
@@ -276,13 +282,13 @@ export default function ListingsPage() {
                   conditionCounts[item.condition] = (conditionCounts[item.condition] || 0) + 1;
                 }
               });
-              
-              const dominantCategory = distinctCategories.size > 1 ? "mix" : 
-                                      (distinctCategories.values().next().value || "mix");
-              
+
+              const dominantCategory = distinctCategories.size > 1 ? "mix" :
+                (distinctCategories.values().next().value || "mix");
+
               const dominantCondition = Object.entries(conditionCounts)
                 .sort((a, b) => b[1] - a[1])[0]?.[0] || "good";
-              
+
               // İlk ürün fotoğrafını bulma
               let firstItemImage: string | undefined;
               for (const item of data.bundleItems) {
@@ -299,42 +305,43 @@ export default function ListingsPage() {
                   break;
                 }
               }
-              
+
+              // GÜVENLİ
               listingsData.push({
                 id: doc.id,
-                title: data.title || "Untitled Bundle",
-                price: data.totalValue || 0,
+                title: DOMPurify.sanitize(data.title || "Untitled Bundle").substring(0, 200),
+                price: Math.max(0, data.totalValue || 0),
                 category: dominantCategory,
                 condition: dominantCondition,
                 imageUrl: firstItemImage,
                 image: firstItemImage,
-                sellerName: data.vendorName || data.vendorId || "Anonymous Seller",
-                seller: data.vendorName || data.vendorId || "Anonymous Seller",
+                sellerName: DOMPurify.sanitize(data.vendorName || data.vendorId || "Anonymous Seller").substring(0, 100),
+                seller: DOMPurify.sanitize(data.vendorName || data.vendorId || "Anonymous Seller").substring(0, 100),
                 createdAt: data.createdAt?.toDate() || new Date(),
                 bundleItems: data.bundleItems,
-                description: `Bundle of ${data.totalItems || data.bundleItems.length} items including various ${dominantCategory === "mix" ? "categories" : dominantCategory + "s"} in ${dominantCondition === "like-new" ? "Like New" : "Good"} condition.`,
-                totalItems: data.totalItems || data.bundleItems.length,
-                vendorId: data.vendorId,
+                description: DOMPurify.sanitize(`Bundle of ${data.totalItems || data.bundleItems.length} items including various ${dominantCategory === "mix" ? "categories" : dominantCategory + "s"} in ${dominantCondition === "like-new" ? "Like New" : "Good"} condition.`).substring(0, 500),
+                totalItems: Math.max(0, data.totalItems || data.bundleItems.length),
+                vendorId: DOMPurify.sanitize(data.vendorId || '').substring(0, 50),
                 distinctCategories: Array.from(distinctCategories),
                 status: data.status,
                 updatedAt: data.updatedAt?.toDate() || null,
-                location: data.location || null,
-                tags: data.tags || [],
-                highlights: data.highlights || []
+                location: data.location ? DOMPurify.sanitize(data.location).substring(0, 200) : null,
+                tags: data.tags ? data.tags.map((tag: string) => DOMPurify.sanitize(tag).substring(0, 50)) : [],
+                highlights: data.highlights ? data.highlights.map((highlight: string) => DOMPurify.sanitize(highlight).substring(0, 200)) : []
               });
             });
-            
+
             setProducts(listingsData);
             setLoading(false);
             setIndexError(null);
             setFallbackMode(false);
           }, (error) => {
             console.error("Firestore error:", error);
-            
+
             if (error.code === 'failed-precondition' && error.message.includes('index')) {
               const match = error.message.match(/https:\/\/console\.firebase\.google\.com\/[^\s]*/);
               const indexLink = match ? match[0] : null;
-              
+
               setIndexError(indexLink || "Index required but no link provided");
               setFallbackMode(true);
               fetchWithoutIndex();
@@ -342,35 +349,35 @@ export default function ListingsPage() {
               setLoading(false);
             }
           });
-          
+
           return unsubscribe;
         } catch (error) {
           console.error("Query setup error:", error);
           setLoading(false);
         }
       };
-      
+
       const fetchWithoutIndex = async () => {
         try {
           const q = query(
             collection(db, "listings"),
             where("status", "==", "approved")
           );
-          
+
           const querySnapshot = await getDocs(q);
           const listingsData: Product[] = [];
-          
+
           querySnapshot.forEach((doc) => {
             const data = doc.data() as DocumentData;
-            
+
             if (!data.bundleItems || !Array.isArray(data.bundleItems)) {
               console.warn(`Listing ${doc.id} has invalid bundleItems:`, data.bundleItems);
               return;
             }
-            
+
             const distinctCategories = new Set<string>();
             const conditionCounts: Record<string, number> = {};
-            
+
             data.bundleItems.forEach((item: any) => {
               if (item.category) {
                 distinctCategories.add(item.category);
@@ -379,13 +386,13 @@ export default function ListingsPage() {
                 conditionCounts[item.condition] = (conditionCounts[item.condition] || 0) + 1;
               }
             });
-            
-            const dominantCategory = distinctCategories.size > 1 ? "mix" : 
-                                    (distinctCategories.values().next().value || "mix");
-            
+
+            const dominantCategory = distinctCategories.size > 1 ? "mix" :
+              (distinctCategories.values().next().value || "mix");
+
             const dominantCondition = Object.entries(conditionCounts)
               .sort((a, b) => b[1] - a[1])[0]?.[0] || "good";
-              
+
             let firstItemImage: string | undefined;
             for (const item of data.bundleItems) {
               if (item.image) {
@@ -401,7 +408,7 @@ export default function ListingsPage() {
                 break;
               }
             }
-            
+
             listingsData.push({
               id: doc.id,
               title: data.title || "Untitled Bundle",
@@ -425,11 +432,11 @@ export default function ListingsPage() {
               highlights: data.highlights || []
             });
           });
-          
+
           listingsData.sort((a, b) => {
             return new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime();
           });
-          
+
           setProducts(listingsData);
           setLoading(false);
         } catch (error) {
@@ -437,11 +444,11 @@ export default function ListingsPage() {
           setLoading(false);
         }
       };
-      
+
       fetchListings();
     }
   }, [userRole]); // userRole değiştiğinde verileri yeniden çek
-  
+
   // Yüklenme durumu veya yetkilendirme kontrolü yapılıyorsa
   if (authLoading || (user && !userRole)) {
     return (
@@ -453,7 +460,7 @@ export default function ListingsPage() {
       </div>
     );
   }
-  
+
   // Erişim reddedildi mesajı
   if (user && userRole && userRole !== "buyer" && userRole !== "admin") {
     return (
@@ -484,7 +491,7 @@ export default function ListingsPage() {
       </div>
     );
   }
-  
+
   // Filtreleme ve sıralama
   const filteredProducts = products
     .filter(product => {
@@ -502,7 +509,7 @@ export default function ListingsPage() {
         default: return 0;
       }
     });
-    
+
   const categories: Category[] = [
     { id: "all", name: "All Categories", count: products.length, icon: "🏪" },
     { id: "mix", name: "Mix Bundles", count: products.filter(p => p.category === "mix").length, icon: "🎁" },
@@ -511,48 +518,48 @@ export default function ListingsPage() {
     { id: "dvd", name: "DVDs/Blu-rays", count: products.filter(p => p.category === "dvd").length, icon: "📀" },
     { id: "game", name: "Games", count: products.filter(p => p.category === "game").length, icon: "🎮" },
   ];
-  
+
   // Yardımcı fonksiyonlar
   const getCategoryIcon = (category: string): string => {
     const icons: Record<string, string> = {
       book: "📚",
-      cd: "💿", 
+      cd: "💿",
       dvd: "📀",
       game: "🎮",
       mix: "📦"
     };
     return icons[category] || "📦";
   };
-  
+
   const getCategoryName = (category: string): string => {
     const names: Record<string, string> = {
       book: "Book",
-      cd: "CD", 
+      cd: "CD",
       dvd: "DVD",
       game: "Game",
       mix: "Mix Bundle"
     };
     return names[category] || category;
   };
-  
+
   const getCategoryDisplayName = (category: string): string => {
     const names: Record<string, string> = {
       all: "All Categories",
       book: "Books",
-      cd: "CDs", 
+      cd: "CDs",
       dvd: "DVDs/Blu-rays",
       game: "Games",
       mix: "Mix Bundles"
     };
     return names[category] || "Browse Items";
   };
-  
+
   const getConditionColor = (condition: string): string => {
-    return condition === 'like-new' 
-      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+    return condition === 'like-new'
+      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
       : 'bg-amber-50 text-amber-700 border border-amber-200';
   };
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Sticky Header */}
@@ -571,7 +578,7 @@ export default function ListingsPage() {
                 {getCategoryDisplayName(selectedCategory)}
               </h1>
             </div>
-            
+
             <div className="flex items-center space-x-2">
               {/* Shopping Cart Icon */}
               <Link href="/cart" className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors">
@@ -582,25 +589,25 @@ export default function ListingsPage() {
                   </span>
                 )}
               </Link>
-              
+
               {/* View Mode Toggle */}
               <div className="hidden sm:flex border border-gray-200 rounded-xl p-1 bg-gray-50">
-                <button 
+                <button
                   onClick={() => setViewMode("grid")}
                   className={`p-2 rounded-lg transition-all ${viewMode === "grid" ? "bg-white text-blue-600 shadow-sm" : "text-gray-500"}`}
                 >
                   <GridIcon size={18} />
                 </button>
-                <button 
+                <button
                   onClick={() => setViewMode("list")}
                   className={`p-2 rounded-lg transition-all ${viewMode === "list" ? "bg-white text-blue-600 shadow-sm" : "text-gray-500"}`}
                 >
                   <ListIcon size={18} />
                 </button>
               </div>
-              
+
               {/* Mobile Filter Button */}
-              <button 
+              <button
                 onClick={() => setShowFilters(!showFilters)}
                 className="lg:hidden bg-blue-600 text-white p-2 rounded-xl shadow-lg hover:bg-blue-700 transition-colors"
               >
@@ -608,23 +615,27 @@ export default function ListingsPage() {
               </button>
             </div>
           </div>
-          
+
           {/* Search Bar */}
           <div className="pb-4">
             <div className="relative max-w-md">
               <SearchIcon size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              // GÜVENLİ
               <input
                 type="text"
                 placeholder="Search bundles..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  const sanitizedQuery = DOMPurify.sanitize(e.target.value).substring(0, 100); // Search query limit
+                  setSearchTerm(sanitizedQuery);
+                }}
                 className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-2xl bg-white/70 backdrop-blur-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
             </div>
           </div>
         </div>
       </div>
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Index Error Message */}
         {indexError && (
@@ -640,12 +651,12 @@ export default function ListingsPage() {
               <div className="ml-4">
                 <h3 className="text-lg font-semibold text-yellow-800 mb-2">Database Index Required</h3>
                 <p className="text-yellow-700 mb-4">
-                  {fallbackMode 
+                  {fallbackMode
                     ? "Currently running in fallback mode. Some features may be limited."
                     : "We're building a database index to improve performance. This may take a few minutes."}
                 </p>
                 {typeof indexError === 'string' && indexError.startsWith('http') && (
-                  <a 
+                  <a
                     href={indexError}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -661,7 +672,7 @@ export default function ListingsPage() {
             </div>
           </div>
         )}
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Mobile Filters Overlay */}
           {showFilters && (
@@ -676,7 +687,7 @@ export default function ListingsPage() {
                   </div>
                 </div>
                 <div className="p-6 overflow-y-auto h-full pb-20">
-                  <MobileFilterContent 
+                  <MobileFilterContent
                     categories={categories}
                     selectedCategory={selectedCategory}
                     setSelectedCategory={setSelectedCategory}
@@ -690,11 +701,11 @@ export default function ListingsPage() {
               </div>
             </div>
           )}
-          
+
           {/* Desktop Sidebar Filters */}
           <div className="lg:col-span-1 hidden lg:block">
             <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100 p-6 sticky top-28">
-              <DesktopFilterContent 
+              <DesktopFilterContent
                 categories={categories}
                 selectedCategory={selectedCategory}
                 setSelectedCategory={setSelectedCategory}
@@ -706,7 +717,7 @@ export default function ListingsPage() {
               />
             </div>
           </div>
-          
+
           {/* Products Grid */}
           <div className="lg:col-span-3">
             {/* Results Header */}
@@ -722,7 +733,7 @@ export default function ListingsPage() {
                   </span>
                 )}
               </div>
-              
+
               <div className="flex items-center space-x-3">
                 <span className="text-sm text-gray-600 hidden sm:inline">Sort by:</span>
                 <select
@@ -737,7 +748,7 @@ export default function ListingsPage() {
                 </select>
               </div>
             </div>
-            
+
             {/* Loading State */}
             {loading ? (
               <div className="flex flex-col items-center justify-center h-96">
@@ -763,7 +774,7 @@ export default function ListingsPage() {
                     ))}
                   </div>
                 )}
-                
+
                 {/* Empty State */}
                 {filteredProducts.length === 0 && (
                   <div className="text-center py-16">
@@ -772,8 +783,8 @@ export default function ListingsPage() {
                     </div>
                     <h3 className="text-2xl font-bold text-gray-900 mb-4">No bundles found</h3>
                     <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                      {products.length === 0 
-                        ? "There are no listings yet. Be the first to create one!" 
+                      {products.length === 0
+                        ? "There are no listings yet. Be the first to create one!"
                         : "No bundles match your current filters. Try adjusting your search criteria."}
                     </p>
                     {products.length === 0 ? (
@@ -782,7 +793,7 @@ export default function ListingsPage() {
                         Create First Bundle
                       </Link>
                     ) : (
-                      <button 
+                      <button
                         onClick={() => {
                           setSelectedCategory("all");
                           setPriceRange([0, 1000]);
@@ -800,7 +811,7 @@ export default function ListingsPage() {
           </div>
         </div>
       </div>
-      
+
       {/* Product Detail Modal */}
       {selectedProduct && (
         <ProductModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
@@ -822,7 +833,7 @@ function DesktopFilterContent({ categories, selectedCategory, setSelectedCategor
     <>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-gray-900">Filters</h2>
-        <button 
+        <button
           onClick={() => {
             setSelectedCategory("all");
             setPriceRange([0, 1000]);
@@ -832,7 +843,7 @@ function DesktopFilterContent({ categories, selectedCategory, setSelectedCategor
           Reset All
         </button>
       </div>
-      
+
       {/* Categories */}
       <div className="mb-8">
         <h3 className="font-semibold text-gray-900 mb-4">Categories</h3>
@@ -859,7 +870,7 @@ function DesktopFilterContent({ categories, selectedCategory, setSelectedCategor
           ))}
         </div>
       </div>
-      
+
       {/* Price Range */}
       <div className="mb-8">
         <h3 className="font-semibold text-gray-900 mb-4">Price Range</h3>
@@ -896,7 +907,7 @@ function DesktopFilterContent({ categories, selectedCategory, setSelectedCategor
           </div>
         </div>
       </div>
-      
+
       {/* Sort By */}
       <div>
         <h3 className="font-semibold text-gray-900 mb-4">Sort By</h3>
@@ -927,7 +938,7 @@ function MobileFilterContent({ categories, selectedCategory, setSelectedCategory
     <>
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-bold text-gray-900">Reset Filters</h3>
-        <button 
+        <button
           onClick={() => {
             setSelectedCategory("all");
             setPriceRange([0, 1000]);
@@ -937,7 +948,7 @@ function MobileFilterContent({ categories, selectedCategory, setSelectedCategory
           Reset All
         </button>
       </div>
-      
+
       {/* Categories */}
       <div className="mb-8">
         <h4 className="font-semibold text-gray-900 mb-4">Categories</h4>
@@ -964,7 +975,7 @@ function MobileFilterContent({ categories, selectedCategory, setSelectedCategory
           ))}
         </div>
       </div>
-      
+
       {/* Price Range */}
       <div className="mb-8">
         <h4 className="font-semibold text-gray-900 mb-4">Price Range</h4>
@@ -999,7 +1010,7 @@ function MobileFilterContent({ categories, selectedCategory, setSelectedCategory
           </div>
         </div>
       </div>
-      
+
       {/* Sort By */}
       <div>
         <h4 className="font-semibold text-gray-900 mb-4">Sort By</h4>
@@ -1024,30 +1035,30 @@ interface ProductListItemProps {
 }
 function ProductListItem({ product, onSelect }: ProductListItemProps) {
   const [imageError, setImageError] = useState<boolean>(false);
-  
+
   const getCategoryIcon = (category: string): string => {
     const icons: Record<string, string> = { book: "📚", cd: "💿", dvd: "📀", game: "🎮", mix: "📦" };
     return icons[category] || "📦";
   };
-  
+
   const getConditionColor = (condition: string): string => {
-    return condition === 'like-new' 
-      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+    return condition === 'like-new'
+      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
       : 'bg-amber-50 text-amber-700 border border-amber-200';
   };
-  
+
   const handleImageError = () => {
     setImageError(true);
   };
-  
+
   const productImage = product.imageUrl || product.image;
   const isAmazonImage = productImage && (
-    productImage.includes('amazon.com') || 
+    productImage.includes('amazon.com') ||
     productImage.includes('ssl-images-amazon.com') ||
     productImage.includes('m.media-amazon.com') ||
     productImage.includes('images-na.ssl-images-amazon.com')
   );
-  
+
   return (
     <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-all duration-300">
       <div className="flex items-center space-x-6">
@@ -1055,16 +1066,16 @@ function ProductListItem({ product, onSelect }: ProductListItemProps) {
           {productImage && !imageError ? (
             <>
               {isAmazonImage ? (
-                <img 
-                  src={productImage} 
+                <img
+                  src={productImage}
                   alt="Product image"
                   className="w-full h-full object-cover"
                   onError={handleImageError}
                   loading="lazy"
                 />
               ) : (
-                <Image 
-                  src={productImage} 
+                <Image
+                  src={productImage}
                   alt="Product image"
                   fill
                   className="object-cover"
@@ -1079,10 +1090,12 @@ function ProductListItem({ product, onSelect }: ProductListItemProps) {
             </div>
           )}
         </div>
-        
+
         <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-xl text-gray-900 mb-2 truncate">{product.title}</h3>
-          <p className="text-gray-600 text-sm mb-2">by {product.sellerName || product.seller}</p>
+        // GÜVENLİ
+          <h3 className="font-bold text-xl text-gray-900 mb-2 truncate">{DOMPurify.sanitize(product.title)}</h3>
+          <p className="text-gray-600 text-sm mb-2">by {DOMPurify.sanitize(product.sellerName || product.seller)}</p>
+
           <div className="flex items-center space-x-4 text-sm text-gray-500">
             <span>{getCategoryIcon(product.category || 'mix')} {product.category === "mix" ? `${product.distinctCategories?.length || 0} categories` : product.category}</span>
             <span>•</span>
@@ -1097,7 +1110,7 @@ function ProductListItem({ product, onSelect }: ProductListItemProps) {
             )}
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-4">
           <div className="text-right">
             <div className="text-2xl font-bold text-gray-900">${product.price?.toFixed(2)}</div>
@@ -1105,8 +1118,8 @@ function ProductListItem({ product, onSelect }: ProductListItemProps) {
               {product.condition === "like-new" ? "Like New" : "Good"}
             </span>
           </div>
-          
-          <button 
+
+          <button
             onClick={() => onSelect(product)}
             className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-2xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl whitespace-nowrap"
           >
@@ -1125,35 +1138,35 @@ interface ProductModalProps {
 function ProductModal({ product, onClose }: ProductModalProps) {
   const [imageError, setImageError] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>("details");
-  
+
   const getCategoryIcon = (category: string): string => {
     const icons: Record<string, string> = { book: "📚", cd: "💿", dvd: "📀", game: "🎮", mix: "📦" };
     return icons[category] || "📦";
   };
-  
+
   const getCategoryName = (category: string): string => {
     const names: Record<string, string> = { book: "Book", cd: "CD", dvd: "DVD", game: "Game", mix: "Mix Bundle" };
     return names[category] || category;
   };
-  
+
   const getConditionColor = (condition: string): string => {
-    return condition === 'like-new' 
-      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+    return condition === 'like-new'
+      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
       : 'bg-amber-50 text-amber-700 border border-amber-200';
   };
-  
+
   const handleImageError = () => {
     setImageError(true);
   };
-  
+
   const productImage = product.imageUrl || product.image;
   const isAmazonImage = productImage && (
-    productImage.includes('amazon.com') || 
+    productImage.includes('amazon.com') ||
     productImage.includes('ssl-images-amazon.com') ||
     productImage.includes('m.media-amazon.com') ||
     productImage.includes('images-na.ssl-images-amazon.com')
   );
-  
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-3xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
@@ -1161,7 +1174,7 @@ function ProductModal({ product, onClose }: ProductModalProps) {
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
           <div className="flex justify-between items-start">
             <div className="flex-1">
-              <h3 className="text-2xl font-bold mb-2">{product.title}</h3>
+              <h3 className="text-2xl font-bold mb-2">{DOMPurify.sanitize(product.title)}</h3>
               <div className="flex flex-wrap items-center gap-3 text-blue-100">
                 <span>Listed on {product.createdAt?.toLocaleDateString()}</span>
                 <span>•</span>
@@ -1194,7 +1207,7 @@ function ProductModal({ product, onClose }: ProductModalProps) {
             </button>
           </div>
         </div>
-        
+
         {/* Tab Navigation */}
         <div className="flex border-b border-gray-200 bg-gray-50">
           <button
@@ -1216,7 +1229,7 @@ function ProductModal({ product, onClose }: ProductModalProps) {
             Seller Info
           </button>
         </div>
-        
+
         {/* Modal Content */}
         <div className="flex-1 overflow-y-auto">
           {activeTab === "details" && (
@@ -1228,22 +1241,22 @@ function ProductModal({ product, onClose }: ProductModalProps) {
                     {productImage && !imageError ? (
                       <>
                         {isAmazonImage ? (
-                          <img 
-                            src={productImage} 
+                          <img
+                            src={productImage}
                             alt="Product image"
                             className="w-full h-full object-cover"
                             onError={handleImageError}
                           />
                         ) : (
-                          <Image 
-                            src={productImage} 
+                          <Image
+                            src={productImage}
                             alt="Product image"
                             fill
                             className="object-cover"
                             onError={handleImageError}
                           />
                         )}
-                        
+
                         {isAmazonImage && (
                           <div className="absolute bottom-2 left-2">
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200">
@@ -1258,7 +1271,7 @@ function ProductModal({ product, onClose }: ProductModalProps) {
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Quick Stats */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-blue-50 rounded-xl p-3 text-center border border-blue-200">
@@ -1271,7 +1284,7 @@ function ProductModal({ product, onClose }: ProductModalProps) {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Right Column - Details */}
                 <div className="lg:col-span-2 space-y-4">
                   {/* Categories */}
@@ -1293,15 +1306,15 @@ function ProductModal({ product, onClose }: ProductModalProps) {
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Description */}
                   <div className="bg-gray-50 rounded-xl p-4">
                     <h4 className="font-semibold text-gray-900 mb-2">Description</h4>
                     <p className="text-gray-700 text-sm">
-                      {product.description || "No description available for this bundle."}
+                      {DOMPurify.sanitize(product.description || "No description available for this bundle.")}
                     </p>
                   </div>
-                  
+
                   {/* Condition and Status */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-gray-50 rounded-xl p-4">
@@ -1315,7 +1328,7 @@ function ProductModal({ product, onClose }: ProductModalProps) {
                       <p className="font-bold text-gray-900 capitalize">{product.status || "Approved"}</p>
                     </div>
                   </div>
-                  
+
                   {/* Image Source Info */}
                   {isAmazonImage && (
                     <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
@@ -1325,7 +1338,7 @@ function ProductModal({ product, onClose }: ProductModalProps) {
                       </p>
                     </div>
                   )}
-                  
+
                   {/* Location */}
                   {product.location && (
                     <div className="bg-gray-50 rounded-xl p-4">
@@ -1333,7 +1346,7 @@ function ProductModal({ product, onClose }: ProductModalProps) {
                       <p className="text-gray-700 text-sm">{product.location}</p>
                     </div>
                   )}
-                  
+
                   {/* Tags */}
                   {product.tags && product.tags.length > 0 && (
                     <div className="bg-gray-50 rounded-xl p-4">
@@ -1347,7 +1360,7 @@ function ProductModal({ product, onClose }: ProductModalProps) {
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Highlights */}
                   {product.highlights && product.highlights.length > 0 && (
                     <div className="bg-gray-50 rounded-xl p-4">
@@ -1368,11 +1381,11 @@ function ProductModal({ product, onClose }: ProductModalProps) {
               </div>
             </div>
           )}
-          
+
           {activeTab === "contents" && (
             <div className="p-6">
               <h3 className="text-xl font-bold text-gray-900 mb-4">Bundle Contents ({product.bundleItems?.length || 0} items)</h3>
-              
+
               {product.bundleItems && product.bundleItems.length > 0 ? (
                 <div className="overflow-hidden rounded-xl border border-gray-200">
                   <div className="max-h-[60vh] overflow-y-auto">
@@ -1431,7 +1444,7 @@ function ProductModal({ product, onClose }: ProductModalProps) {
               )}
             </div>
           )}
-          
+
           {activeTab === "seller" && (
             <div className="p-6">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1440,7 +1453,8 @@ function ProductModal({ product, onClose }: ProductModalProps) {
                     <div className="mx-auto h-24 w-24 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center mb-4">
                       <span className="text-3xl">👤</span>
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900">{product.sellerName || product.seller}</h3>
+                    <h3 className="text-lg font-bold text-gray-900">{DOMPurify.sanitize(product.sellerName || product.seller)}</h3>
+
                     <div className="mt-2 text-sm text-gray-500">Bundle Seller</div>
                     <div className="mt-4">
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
@@ -1451,7 +1465,7 @@ function ProductModal({ product, onClose }: ProductModalProps) {
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="mt-6 bg-gray-50 rounded-xl p-4">
                     <h4 className="font-semibold text-gray-900 mb-3">Contact Seller</h4>
                     <div className="space-y-3">
@@ -1464,7 +1478,7 @@ function ProductModal({ product, onClose }: ProductModalProps) {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="lg:col-span-2 space-y-4">
                   <div className="bg-gray-50 rounded-xl p-4">
                     <h4 className="font-semibold text-gray-900 mb-2">Seller Information</h4>
@@ -1487,7 +1501,7 @@ function ProductModal({ product, onClose }: ProductModalProps) {
                       </div>
                     </dl>
                   </div>
-                  
+
                   <div className="bg-gray-50 rounded-xl p-4">
                     <h4 className="font-semibold text-gray-900 mb-2">Seller Ratings</h4>
                     <div className="flex items-center">
@@ -1509,7 +1523,7 @@ function ProductModal({ product, onClose }: ProductModalProps) {
                       <span className="mx-2 text-gray-400">•</span>
                       <p className="text-sm text-gray-500">128 reviews</p>
                     </div>
-                    
+
                     <div className="mt-4 space-y-2">
                       <div className="flex items-center text-sm">
                         <span className="w-24 text-gray-500">5 stars</span>
@@ -1548,7 +1562,7 @@ function ProductModal({ product, onClose }: ProductModalProps) {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="bg-gray-50 rounded-xl p-4">
                     <h4 className="font-semibold text-gray-900 mb-2">Recent Reviews</h4>
                     <div className="space-y-4">
@@ -1574,7 +1588,7 @@ function ProductModal({ product, onClose }: ProductModalProps) {
                         </div>
                         <p className="mt-2 text-sm text-gray-700">The bundle was exactly as described. Fast shipping and great communication.</p>
                       </div>
-                      
+
                       <div>
                         <div className="flex items-center">
                           <div className="flex items-center">
@@ -1604,7 +1618,7 @@ function ProductModal({ product, onClose }: ProductModalProps) {
             </div>
           )}
         </div>
-        
+
         {/* Modal Footer */}
         <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">

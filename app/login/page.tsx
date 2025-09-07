@@ -8,17 +8,19 @@ import { auth, db } from "@/lib/firebase";
 import SocialLogin from "@/components/SocialLogin";
 import { FiHome, FiEye, FiEyeOff } from "react-icons/fi";
 import { useAuth } from "@/contexts/AuthContext";
+import DOMPurify from 'isomorphic-dompurify'; // Bu satırı ekleyin
+
 
 // Custom Password Input Component with Hold-to-Show functionality
-const PasswordInputHold = ({ 
-  id, 
-  name, 
-  value, 
-  onChange, 
-  placeholder, 
-  required, 
+const PasswordInputHold = ({
+  id,
+  name,
+  value,
+  onChange,
+  placeholder,
+  required,
   autoComplete,
-  className 
+  className
 }: {
   id: string;
   name: string;
@@ -31,28 +33,28 @@ const PasswordInputHold = ({
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isHolding, setIsHolding] = useState(false);
-  
+
   const handleMouseDown = () => {
     setIsHolding(true);
     setShowPassword(true);
   };
-  
+
   const handleMouseUp = () => {
     setIsHolding(false);
     setShowPassword(false);
   };
-  
+
   const handleTouchStart = (e: React.TouchEvent) => {
     e.preventDefault();
     setIsHolding(true);
     setShowPassword(true);
   };
-  
+
   const handleTouchEnd = () => {
     setIsHolding(false);
     setShowPassword(false);
   };
-  
+
   return (
     <div className={`relative ${className}`}>
       <input
@@ -93,29 +95,29 @@ const isAdminUser = async (email: string, uid: string): Promise<boolean> => {
   try {
     // 1. Firestore'dan user verilerini al
     const userDoc = await getDoc(doc(db, "users", uid));
-    
+
     if (!userDoc.exists()) {
       return false;
     }
-    
+
     const userData = userDoc.data();
     const userRole = userData.role;
     const userEmail = userData.email;
-    
+
     // 2. Firestore'da role kontrol et
     if (userRole !== "admin") {
       return false;
     }
-    
+
     // 3. Environment variable ile karşılaştır
     const envAdminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
     if (envAdminEmail && userEmail === envAdminEmail) {
       return true;
     }
-    
+
     console.log("Admin role var ama environment email uyuşmuyor:", userEmail, "vs", envAdminEmail);
     return false;
-    
+
   } catch (error) {
     console.error("Admin kontrol hatası:", error);
     return false;
@@ -132,18 +134,18 @@ export default function LoginPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  
+
   // Check user role and redirect - GÜVENLİ APPROACH
   const checkUserRoleAndRedirect = async (userId: string) => {
     try {
       console.log("Checking user role for:", userId);
       const userDoc = await getDoc(doc(db, "users", userId));
-      
+
       if (userDoc.exists()) {
         const userData = userDoc.data();
         const userRole = userData.role || "seller";
         const userStatus = userData.status || "active";
-        
+
         // Check if user account is active
         if (userStatus !== "active") {
           console.log("User account is not active:", userStatus);
@@ -151,13 +153,13 @@ export default function LoginPage() {
           setLoading(false);
           return;
         }
-        
+
         console.log("User role detected:", userRole);
-        
+
         // Store only non-sensitive data in localStorage
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("userName", userData.name || "User");
-        
+
         // ÇİFT KONTROLLÜ ADMIN REDIRECT - GÜVENLİ
         if (await isAdminUser(userData.email || user?.email || "", userId)) {
           console.log("Admin access granted - both Firestore role and environment email verified");
@@ -169,10 +171,10 @@ export default function LoginPage() {
           console.log("Redirecting to create listing page");
           router.push("/create-listing");
         }
-        
+
       } else {
         console.warn("User document not found, creating default profile");
-        
+
         // Create default user profile in Firestore
         const defaultUserData = {
           uid: userId,
@@ -189,14 +191,14 @@ export default function LoginPage() {
           commissionRate: 10,
           lastLogin: new Date()
         };
-        
+
         await setDoc(doc(db, "users", userId), defaultUserData);
         console.log("Default user profile created");
-        
+
         // Store only non-sensitive data
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("userName", user?.displayName || "User");
-        
+
         // Redirect to create listing page
         console.log("Redirecting to create listing page");
         router.push("/create-listing");
@@ -207,14 +209,14 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
-  
+
   // Redirect to appropriate page if user is already logged in
   useEffect(() => {
     if (user && !authLoading) {
       checkUserRoleAndRedirect(user.uid);
     }
   }, [user, authLoading]);
-  
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -225,7 +227,7 @@ export default function LoginPage() {
       </div>
     );
   }
-  
+
   if (user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -236,19 +238,44 @@ export default function LoginPage() {
       </div>
     );
   }
-  
+
+  // GÜVENLİ
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.type === "checkbox" ? e.target.checked : e.target.value
-    });
+    const { name, value, type, checked } = e.target;
+
+    if (type === "checkbox") {
+      setFormData({
+        ...formData,
+        [name]: checked
+      });
+    } else {
+      // Input sanitization with field-specific limits
+      let sanitizedValue = DOMPurify.sanitize(value);
+
+      // Field-specific validation
+      switch (name) {
+        case 'email':
+          sanitizedValue = sanitizedValue.toLowerCase().trim().substring(0, 100);
+          break;
+        case 'password':
+          sanitizedValue = sanitizedValue.substring(0, 128);
+          break;
+        default:
+          sanitizedValue = sanitizedValue.substring(0, 100);
+      }
+
+      setFormData({
+        ...formData,
+        [name]: sanitizedValue
+      });
+    }
   };
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
-    
+
     try {
       // Set Firebase persistence based on remember me checkbox
       if (formData.rememberMe) {
@@ -256,24 +283,24 @@ export default function LoginPage() {
       } else {
         await setPersistence(auth, browserSessionPersistence);
       }
-      
+
       // Firebase authentication
       const userCredential = await signInWithEmailAndPassword(
         auth,
         formData.email,
         formData.password
       );
-      
+
       console.log("Firebase login successful:", userCredential.user.email);
-      
+
       // Get user role from Firestore - FRESH DATA
       const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
-      
+
       if (userDoc.exists()) {
         const userData = userDoc.data();
         const userRole = userData.role || "seller";
         const userStatus = userData.status || "active";
-        
+
         // Check if user account is active
         if (userStatus !== "active") {
           console.log("User account is not active:", userStatus);
@@ -281,23 +308,23 @@ export default function LoginPage() {
           setLoading(false);
           return;
         }
-        
+
         console.log(`User role detected: ${userRole}`);
-        
+
         // Update last login time
         await setDoc(doc(db, "users", userCredential.user.uid), {
           ...userData,
           lastLogin: new Date()
         }, { merge: true });
-        
+
         // Store only non-sensitive session data
         localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("userName", userData.name || userData.displayName || "User");
-        
+        localStorage.setItem("userName", DOMPurify.sanitize(userData.name || userData.displayName || "User").substring(0, 50));
+
         if (formData.rememberMe) {
           localStorage.setItem("rememberMe", "true");
         }
-        
+
         // Çift kontrollü admin redirect - GÜVENLİ
         if (await isAdminUser(formData.email, userCredential.user.uid)) {
           console.log("Admin access granted - both Firestore role and environment email verified");
@@ -309,11 +336,11 @@ export default function LoginPage() {
           console.log("Redirecting to create listing page");
           router.push("/create-listing");
         }
-        
+
       } else {
         // User document doesn't exist, create default profile in Firestore
         console.warn("User document not found, creating default profile");
-        
+
         const defaultUserData = {
           uid: userCredential.user.uid,
           email: formData.email,
@@ -329,23 +356,23 @@ export default function LoginPage() {
           commissionRate: 10,
           lastLogin: new Date()
         };
-        
+
         // Create user profile in Firestore
         await setDoc(doc(db, "users", userCredential.user.uid), defaultUserData);
         console.log("Default user profile created in Firestore");
-        
+
         // Store only non-sensitive data
         localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("userName", userCredential.user.displayName || "User");
-        
+        localStorage.setItem("userName", DOMPurify.sanitize(userCredential.user.displayName || "User").substring(0, 50));
+
         // Redirect to create listing page
         console.log("Redirecting to create listing page");
         router.push("/create-listing");
       }
-      
+
     } catch (error: any) {
       console.error("Login error:", error);
-      
+
       // Firebase error handling with user-friendly messages
       switch (error.code) {
         case "auth/user-not-found":
@@ -369,29 +396,30 @@ export default function LoginPage() {
         case "auth/network-request-failed":
           setError("Network error. Please check your internet connection.");
           break;
+        // GÜVENLİ
         default:
-          setError(`Login failed: ${error.message}`);
+          setError(`Login failed: ${DOMPurify.sanitize(error.message).substring(0, 200)}`);
       }
     } finally {
       setLoading(false);
     }
   };
-  
+
   const handleSocialLoginSuccess = async (socialUser: any) => {
     try {
       // Check if user exists in Firestore for social login - FRESH DATA
       const userDoc = await getDoc(doc(db, "users", socialUser.uid));
-      
+
       let userRole = "seller"; // Default role for social login
       let userName = socialUser.displayName || "User";
       let userStatus = "active"; // Default status
-      
+
       if (userDoc.exists()) {
         const userData = userDoc.data();
         userRole = userData.role || "seller";
         userName = userData.name || userData.displayName || socialUser.displayName || "User";
         userStatus = userData.status || "active";
-        
+
         // Check if user account is active
         if (userStatus !== "active") {
           console.log("Social login user account is not active:", userStatus);
@@ -399,7 +427,7 @@ export default function LoginPage() {
           setLoading(false);
           return;
         }
-        
+
         // Update last login
         await setDoc(doc(db, "users", socialUser.uid), {
           ...userData,
@@ -422,15 +450,15 @@ export default function LoginPage() {
           commissionRate: 10,
           lastLogin: new Date()
         };
-        
+
         await setDoc(doc(db, "users", socialUser.uid), defaultUserData);
         console.log("Social login user profile created");
       }
-      
+
       // Store only non-sensitive session data for social login
       localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("userName", userName);
-      
+      localStorage.setItem("userName", DOMPurify.sanitize(userName).substring(0, 50));
+
       // ÇİFT KONTROLLÜ ADMIN REDIRECT - GÜVENLİ
       if (await isAdminUser(socialUser.email || "", socialUser.uid)) {
         console.log("Social admin access granted - both Firestore role and environment email verified");
@@ -442,18 +470,18 @@ export default function LoginPage() {
         console.log("Redirecting to create listing page");
         router.push("/create-listing");
       }
-      
+
     } catch (error) {
       console.error("Social login role check error:", error);
       setError("Failed to complete social login. Please try again.");
       setLoading(false);
     }
   };
-  
+
   const handleSocialLoginError = (errorMessage: string) => {
     setError(errorMessage);
   };
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
       {/* Back to Home Button */}
@@ -461,7 +489,7 @@ export default function LoginPage() {
         <FiHome className="h-5 w-5 mr-1" />
         <span className="font-medium">Back to Home</span>
       </Link>
-      
+
       <div className="max-w-md w-full space-y-8">
         {/* Logo and Title */}
         <div className="text-center">
@@ -477,7 +505,7 @@ export default function LoginPage() {
             Sign in to your account to continue
           </p>
         </div>
-        
+
         {/* Login Form */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
           {/* Error Message Display */}
@@ -491,7 +519,7 @@ export default function LoginPage() {
               </div>
             </div>
           )}
-          
+
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Input */}
@@ -516,7 +544,7 @@ export default function LoginPage() {
                 </svg>
               </div>
             </div>
-            
+
             {/* Password Input */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
@@ -536,7 +564,7 @@ export default function LoginPage() {
                 Hold the eye icon to reveal your password
               </p>
             </div>
-            
+
             {/* Remember Me & Forgot Password */}
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -558,7 +586,7 @@ export default function LoginPage() {
                 </Link>
               </div>
             </div>
-            
+
             {/* Submit Button */}
             <button
               type="submit"
@@ -583,7 +611,7 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-          
+
           {/* Social Login Component */}
           {/* <SocialLogin 
             isLogin={true}
@@ -591,7 +619,7 @@ export default function LoginPage() {
             onError={handleSocialLoginError}
           /> */}
         </div>
-        
+
         {/* Sign Up Link */}
         <p className="text-center text-sm text-gray-600">
           Don't have an account?{' '}
@@ -599,7 +627,7 @@ export default function LoginPage() {
             Sign up
           </Link>
         </p>
-        
+
         {/* Footer */}
         <div className="mt-8 text-center text-xs text-gray-500">
           <p>© 2024 SecondLife Media. All rights reserved.</p>

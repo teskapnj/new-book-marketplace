@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import DOMPurify from 'isomorphic-dompurify'; // Bu satırı ekleyin
 
 // USPS Media Mail pricing table (weight in lbs to cost in $)
 const uspsMediaMailPricing: Record<number, number> = {
@@ -65,7 +66,7 @@ const uspsMediaMailPricing: Record<number, number> = {
 function calculateShippingCost(weight: number): number {
   // Find the closest weight in the pricing table
   const weightRounded = Math.ceil(weight);
-  
+
   let baseCost;
   if (weightRounded <= 1) {
     baseCost = uspsMediaMailPricing[1];
@@ -74,7 +75,7 @@ function calculateShippingCost(weight: number): number {
   } else {
     baseCost = uspsMediaMailPricing[weightRounded];
   }
-  
+
   // Add 15% extra to shipping cost
   return baseCost * 1.15;
 }
@@ -126,7 +127,7 @@ function CompactShippingAddressForm({ onAddressChange, address, onClearAddress }
   const [validationResults, setValidationResults] = useState<Record<string, string>>({});
   const [isValidating, setIsValidating] = useState(false);
   const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
-  
+
   useEffect(() => {
     return () => {
       if (debounceTimer) {
@@ -134,14 +135,29 @@ function CompactShippingAddressForm({ onAddressChange, address, onClearAddress }
       }
     };
   }, [debounceTimer]);
-  
+
+  // GÜVENLİ
   const handleInputChange = (field: keyof ShippingAddress, value: string) => {
+    // Input sanitization ve validation
+    const sanitizedValue = DOMPurify.sanitize(value);
+
+    // Field-specific validation
+    let validatedValue = sanitizedValue;
+
+    if (field === 'state') {
+      validatedValue = sanitizedValue.replace(/[^A-Z]/g, '').substring(0, 2);
+    } else if (field === 'zip') {
+      validatedValue = sanitizedValue.replace(/[^\d-]/g, '').substring(0, 10);
+    } else {
+      validatedValue = sanitizedValue.substring(0, 100); // Length limit
+    }
+
     const updatedAddress = {
       ...address,
-      [field]: value
+      [field]: validatedValue
     };
     onAddressChange(updatedAddress);
-    
+
     if (validationResults[field]) {
       setValidationResults(prev => {
         const updated = { ...prev };
@@ -149,12 +165,12 @@ function CompactShippingAddressForm({ onAddressChange, address, onClearAddress }
         return updated;
       });
     }
-    
+
     if (field === 'zip') {
       if (debounceTimer) {
         clearTimeout(debounceTimer);
       }
-      
+
       const timer = setTimeout(() => {
         if (value.length >= 5) {
           const zipRegex = /^\d{5}(-\d{4})?$/;
@@ -166,10 +182,10 @@ function CompactShippingAddressForm({ onAddressChange, address, onClearAddress }
           }
         }
       }, 500);
-      
+
       setDebounceTimer(timer);
     }
-    
+
     if (updatedAddress.street1 && updatedAddress.city && updatedAddress.state && updatedAddress.zip && updatedAddress.zip.length >= 5) {
       const zipRegex = /^\d{5}(-\d{4})?$/;
       if (zipRegex.test(updatedAddress.zip)) {
@@ -177,10 +193,10 @@ function CompactShippingAddressForm({ onAddressChange, address, onClearAddress }
       }
     }
   };
-  
+
   const validateAddress = async (addressToValidate: ShippingAddress) => {
     if (isValidating) return;
-    
+
     setIsValidating(true);
     try {
       const response = await fetch('/api/address/validate', {
@@ -196,26 +212,45 @@ function CompactShippingAddressForm({ onAddressChange, address, onClearAddress }
           country: addressToValidate.country
         })
       });
-      
+
+      // GÜVENLİ
       if (response.ok) {
         const data = await response.json();
-        if (data.valid) {
-          setValidationResults(prev => ({
-            ...prev,
-            general: '✅ Address verified'
-          }));
-          
-          if (data.suggested && data.suggested !== addressToValidate) {
+
+        // API response validation
+        if (data && typeof data.valid === 'boolean') {
+          if (data.valid) {
             setValidationResults(prev => ({
               ...prev,
-              suggestion: `💡 Did you mean: ${data.suggested.street1}, ${data.suggested.city}, ${data.suggested.state} ${data.suggested.zip}?`
+              general: '✅ Address verified'
+            }));
+
+            // Suggested address validation
+            if (data.suggested &&
+              typeof data.suggested === 'object' &&
+              typeof data.suggested.street1 === 'string' &&
+              typeof data.suggested.city === 'string' &&
+              typeof data.suggested.state === 'string' &&
+              typeof data.suggested.zip === 'string') {
+
+              const sanitizedSuggestion = {
+                street1: DOMPurify.sanitize(data.suggested.street1),
+                city: DOMPurify.sanitize(data.suggested.city),
+                state: DOMPurify.sanitize(data.suggested.state),
+                zip: DOMPurify.sanitize(data.suggested.zip)
+              };
+
+              setValidationResults(prev => ({
+                ...prev,
+                suggestion: `💡 Did you mean: ${sanitizedSuggestion.street1}, ${sanitizedSuggestion.city}, ${sanitizedSuggestion.state} ${sanitizedSuggestion.zip}?`
+              }));
+            }
+          } else {
+            setValidationResults(prev => ({
+              ...prev,
+              general: '⚠️ Address could not be verified'
             }));
           }
-        } else {
-          setValidationResults(prev => ({
-            ...prev,
-            general: '⚠️ Address could not be verified'
-          }));
         }
       }
     } catch (error) {
@@ -224,7 +259,7 @@ function CompactShippingAddressForm({ onAddressChange, address, onClearAddress }
       setIsValidating(false);
     }
   };
-  
+
   return (
     <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
       <div className="flex items-center justify-between mb-3">
@@ -249,25 +284,23 @@ function CompactShippingAddressForm({ onAddressChange, address, onClearAddress }
           )}
         </div>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <input
           type="text"
           placeholder="Street Address"
           value={address.street1}
           onChange={(e) => handleInputChange('street1', e.target.value)}
-          className={`w-full px-3 py-2 border rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm ${
-            validationResults.street1 ? 'border-red-300 bg-red-50' : 'border-gray-200'
-          }`}
+          className={`w-full px-3 py-2 border rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm ${validationResults.street1 ? 'border-red-300 bg-red-50' : 'border-gray-200'
+            }`}
         />
         <input
           type="text"
           placeholder="City"
           value={address.city}
           onChange={(e) => handleInputChange('city', e.target.value)}
-          className={`w-full px-3 py-2 border rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm ${
-            validationResults.city ? 'border-red-300 bg-red-50' : 'border-gray-200'
-          }`}
+          className={`w-full px-3 py-2 border rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm ${validationResults.city ? 'border-red-300 bg-red-50' : 'border-gray-200'
+            }`}
         />
         <input
           type="text"
@@ -275,9 +308,8 @@ function CompactShippingAddressForm({ onAddressChange, address, onClearAddress }
           value={address.state}
           onChange={(e) => handleInputChange('state', e.target.value.toUpperCase())}
           maxLength={2}
-          className={`w-full px-3 py-2 border rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm ${
-            validationResults.state ? 'border-red-300 bg-red-50' : 'border-gray-200'
-          }`}
+          className={`w-full px-3 py-2 border rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm ${validationResults.state ? 'border-red-300 bg-red-50' : 'border-gray-200'
+            }`}
         />
         <input
           type="text"
@@ -288,12 +320,11 @@ function CompactShippingAddressForm({ onAddressChange, address, onClearAddress }
             handleInputChange('zip', value);
           }}
           maxLength={10}
-          className={`w-full px-3 py-2 border rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm ${
-            validationResults.zip && address.zip.length >= 5 ? 'border-red-300 bg-red-50' : 'border-gray-200'
-          }`}
+          className={`w-full px-3 py-2 border rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm ${validationResults.zip && address.zip.length >= 5 ? 'border-red-300 bg-red-50' : 'border-gray-200'
+            }`}
         />
       </div>
-      
+
       {/* Show saved address indicator */}
       {address.street1 && address.zip.length >= 5 && (
         <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
@@ -305,17 +336,16 @@ function CompactShippingAddressForm({ onAddressChange, address, onClearAddress }
           </div>
         </div>
       )}
-      
+
       {Object.entries(validationResults).map(([field, message]) => {
         if (field === 'zip' && address.zip.length < 5) {
           return null;
         }
-        
+
         return (
-          <div key={field} className={`mt-2 text-xs ${
-            message.includes('✅') ? 'text-green-600' : 
+          <div key={field} className={`mt-2 text-xs ${message.includes('✅') ? 'text-green-600' :
             message.includes('💡') ? 'text-blue-600' : 'text-red-600'
-          }`}>
+            }`}>
             {message}
           </div>
         );
@@ -336,111 +366,127 @@ export default function CartPage() {
   });
   const [vendorShipping, setVendorShipping] = useState<Record<string, { shippingCost: number }>>({});
   const router = useRouter();
-  
+
   // Load saved address from localStorage on component mount
+  // GÜVENLİ
   useEffect(() => {
     const savedAddress = localStorage.getItem('shippingAddress');
     if (savedAddress) {
       try {
         const parsedAddress = JSON.parse(savedAddress);
-        setShippingAddress(parsedAddress);
+        // Validation ekleyin
+        if (parsedAddress &&
+          typeof parsedAddress.street1 === 'string' &&
+          typeof parsedAddress.city === 'string' &&
+          typeof parsedAddress.state === 'string' &&
+          typeof parsedAddress.zip === 'string' &&
+          typeof parsedAddress.country === 'string') {
+          setShippingAddress({
+            street1: DOMPurify.sanitize(parsedAddress.street1),
+            city: DOMPurify.sanitize(parsedAddress.city),
+            state: DOMPurify.sanitize(parsedAddress.state),
+            zip: DOMPurify.sanitize(parsedAddress.zip),
+            country: DOMPurify.sanitize(parsedAddress.country)
+          });
+        }
       } catch (error) {
         console.error('Error parsing saved address:', error);
+        localStorage.removeItem('shippingAddress'); // Corrupt data'yı temizle
       }
     }
   }, []);
-  
+
   // Save address to localStorage whenever it changes
   useEffect(() => {
     if (shippingAddress.street1 || shippingAddress.city || shippingAddress.state || shippingAddress.zip) {
       localStorage.setItem('shippingAddress', JSON.stringify(shippingAddress));
     }
   }, [shippingAddress]);
-  
+
   // Memoize unique cart items
   const uniqueCartItems = useMemo(() => {
     return cartItems.filter((item, index, self) =>
       index === self.findIndex(t => t.id === item.id)
     );
   }, [cartItems]);
-  
+
   // Memoize sellers array
   const sellers = useMemo(() => {
     return Array.from(new Set(uniqueCartItems.map(item => item.sellerId || "default-seller")));
   }, [uniqueCartItems]);
-  
+
   // Memoize seller items function
   const getSellerItems = useCallback((sellerId: string) => {
     return uniqueCartItems.filter(item => (item.sellerId || "default-seller") === sellerId);
   }, [uniqueCartItems]);
-  
+
   // Memoize seller subtotal function
   const getSellerSubtotal = useCallback((sellerId: string) => {
     const sellerItems = getSellerItems(sellerId);
     return sellerItems.reduce((total, item) => total + item.price, 0);
   }, [getSellerItems]);
-  
+
   // Memoize seller shipping cost
   const getSellerShipping = useCallback((sellerId: string) => {
     return vendorShipping[sellerId]?.shippingCost || 0;
   }, [vendorShipping]);
-  
+
   // Memoize total calculations
   const getTotalPrice = useMemo(() => {
     return uniqueCartItems.reduce((total, item) => total + item.price, 0);
   }, [uniqueCartItems]);
-  
+
   const getTotalShipping = useMemo(() => {
     return sellers.reduce((total, sellerId) => total + getSellerShipping(sellerId), 0);
   }, [sellers, getSellerShipping]);
-  
+
   const getMarketplaceFee = useMemo(() => {
     return (getTotalPrice + getTotalShipping) * 0.085;
   }, [getTotalPrice, getTotalShipping]);
-  
+
   const getTotalTax = useMemo(() => {
     // Tax base: Only subtotal + shipping (marketplace fee excluded)
     const taxableAmount = getTotalPrice + getTotalShipping;
     return taxableAmount * 0.08; // %8 sales tax
   }, [getTotalPrice, getTotalShipping]); // Removed getMarketplaceFee from dependency
-  
+
   const getGrandTotal = useMemo(() => {
     return getTotalPrice + getTotalShipping + getMarketplaceFee + getTotalTax;
   }, [getTotalPrice, getTotalShipping, getMarketplaceFee, getTotalTax]);
-  
+
   const getTotalItemsCount = useMemo(() => {
     return uniqueCartItems.length;
   }, [uniqueCartItems]);
-  
+
   // Fetch vendor shipping settings and calculate shipping
   useEffect(() => {
     const calculateShippingRates = async () => {
       const vendorShippingData: Record<string, { shippingCost: number }> = {};
-      
+
       for (const sellerId of sellers) {
         const sellerItems = getSellerItems(sellerId);
-        
+
         try {
           // Calculate total shipping cost for this seller's items
           let totalShippingCost = 0;
-          
+
           // Loop through each item to calculate individual shipping cost
           for (const item of sellerItems) {
             try {
               // Fetch listing data from Firestore using the item ID
               const listingDoc = await getDoc(doc(db, "listings", item.id));
-              
+
               if (listingDoc.exists()) {
                 const listingData = listingDoc.data();
-                
+
                 // Use package dimensions from listing
                 if (listingData.shippingInfo && listingData.shippingInfo.packageDimensions) {
                   const dimensions = listingData.shippingInfo.packageDimensions;
                   const itemWeight = parseFloat(dimensions.weight.toString());
-                  
+
                   // Calculate shipping cost for this individual item (with 15% extra)
                   const itemShippingCost = calculateShippingCost(itemWeight);
-                  
+
                   // Add to total shipping cost for this seller
                   totalShippingCost += itemShippingCost;
                 }
@@ -449,11 +495,11 @@ export default function CartPage() {
               console.error('❌ Error fetching listing from Firestore:', error);
             }
           }
-          
+
           vendorShippingData[sellerId] = {
             shippingCost: totalShippingCost
           };
-          
+
         } catch (error) {
           console.error(`Error calculating shipping for vendor ${sellerId}:`, error);
           vendorShippingData[sellerId] = {
@@ -461,26 +507,26 @@ export default function CartPage() {
           };
         }
       }
-      
+
       setVendorShipping(vendorShippingData);
     };
-    
+
     if (sellers.length > 0) {
       calculateShippingRates();
     }
   }, [sellers, getSellerItems, uniqueCartItems]); // Added uniqueCartItems to dependency array
-  
+
   const handleGoBack = () => {
     router.back();
   };
-  
+
   const handleImageError = (itemId: string, sellerId: string) => {
     setImageErrors(prev => ({
       ...prev,
       [`${itemId}-${sellerId}`]: true
     }));
   };
-  
+
   const handleRemoveFromCart = (e: React.MouseEvent, itemId: string, sellerId: string) => {
     e.preventDefault();
     e.stopPropagation();
@@ -521,14 +567,14 @@ export default function CartPage() {
         itemCount: getSellerItems(sellerId).length
       }))
     };
-    
+
     // Session storage'a kaydet
     sessionStorage.setItem('checkoutData', JSON.stringify(checkoutData));
-    
+
     // Checkout sayfasına yönlendir
     router.push('/checkout');
   };
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -555,7 +601,7 @@ export default function CartPage() {
             </div>
           </div>
         </div>
-        
+
         {uniqueCartItems.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-32 h-32 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg">
@@ -580,9 +626,9 @@ export default function CartPage() {
               <div className="space-y-6 mb-8">
                 {sellers.map(sellerId => {
                   const sellerItems = getSellerItems(sellerId);
-                  
+
                   if (sellerItems.length === 0) return null;
-                  
+
                   return (
                     <div key={sellerId} className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
                       {/* Seller Header */}
@@ -596,22 +642,22 @@ export default function CartPage() {
                           </div>
                           <div>
                             <h3 className="font-bold text-gray-900">
-                              {sellerId === "default-seller" ? "Default Seller" : sellerId}
+                              {sellerId === "default-seller" ? "Default Seller" : DOMPurify.sanitize(sellerId)}
                             </h3>
                             <p className="text-sm text-gray-600">{sellerItems.length} items</p>
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Seller Items */}
                       <div className="divide-y divide-gray-100">
                         {sellerItems.map((item) => {
                           const imageKey = `${item.id}-${item.sellerId || "default-seller"}`;
                           const hasImageError = imageErrors[imageKey];
-                          
+
                           return (
-                            <Link 
-                              key={imageKey} 
+                            <Link
+                              key={imageKey}
                               href={`/products/${item.id}`}
                               className="block p-6 hover:bg-gray-50 transition-colors duration-200"
                             >
@@ -621,7 +667,7 @@ export default function CartPage() {
                                   {item.image && !hasImageError ? (
                                     <img
                                       src={item.image}
-                                      alt={item.title}
+                                      alt={DOMPurify.sanitize(item.title)}
                                       className="w-full h-full object-cover hover:opacity-90 transition-opacity"
                                       onError={() => handleImageError(item.id, item.sellerId || "default-seller")}
                                     />
@@ -631,12 +677,12 @@ export default function CartPage() {
                                     </div>
                                   )}
                                 </div>
-                                
+
                                 {/* Product Details */}
                                 <div className="flex-1">
-                                  <h4 className="font-bold text-gray-900 mb-1">{item.title}</h4>
+                                  <h4 className="font-bold text-gray-900 mb-1">{DOMPurify.sanitize(item.title)}</h4>
                                   <p className="text-sm text-gray-500 mb-3">SKU: {item.id}</p>
-                                  
+
                                   <div className="flex items-center justify-between">
                                     <p className="text-xl font-bold text-gray-900">${item.price.toFixed(2)}</p>
                                     <button
@@ -659,7 +705,7 @@ export default function CartPage() {
                   );
                 })}
               </div>
-              
+
               {/* Compact Shipping Address Form */}
               <CompactShippingAddressForm
                 address={shippingAddress}
@@ -667,12 +713,12 @@ export default function CartPage() {
                 onClearAddress={handleClearAddress}
               />
             </div>
-            
+
             {/* ORDER SUMMARY - Right Column */}
             <div className="lg:col-span-4">
               <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 sticky top-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-6 text-center">Order Summary</h2>
-                
+
                 <div className="space-y-4 mb-6">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Subtotal</span>
@@ -704,7 +750,7 @@ export default function CartPage() {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* ZIP Code Status */}
                 {shippingAddress.street1 && shippingAddress.zip.length < 5 && (
                   <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -718,16 +764,15 @@ export default function CartPage() {
                     </div>
                   </div>
                 )}
-                
+
                 {/* Checkout Button - UPDATED */}
                 <div className="space-y-3">
-                  <button 
+                  <button
                     onClick={handleProceedToCheckout}
-                    className={`w-full py-3 font-bold rounded-lg transition-all duration-200 ${
-                      getTotalShipping >= 0 && shippingAddress.street1 && shippingAddress.zip.length >= 5
-                        ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg' 
-                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    }`}
+                    className={`w-full py-3 font-bold rounded-lg transition-all duration-200 ${getTotalShipping >= 0 && shippingAddress.street1 && shippingAddress.zip.length >= 5
+                      ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
                     disabled={!shippingAddress.street1 || shippingAddress.zip.length < 5}
                   >
                     Proceed to Checkout

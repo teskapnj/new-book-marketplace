@@ -13,11 +13,12 @@ import axios from "axios";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { smartOptimizeImage, formatFileSize } from "@/utils/imageOptimization";
 import { AmazonProduct, PricingResult } from "@/lib/pricingEngine";
+import DOMPurify from 'isomorphic-dompurify';
 
 interface BundleItem {
   id: string;
   isbn: string;
-  condition: "very-good"; // Sadece very-good kondisyonu
+  condition: "very-good";
   quantity: number;
   price: number;
   image: string | null;
@@ -59,7 +60,7 @@ export default function CreateListingPage() {
   const [currentItem, setCurrentItem] = useState<BundleItem>({
     id: "",
     isbn: "",
-    condition: "very-good", // Sadece very-good kondisyonu
+    condition: "very-good",
     quantity: 1,
     price: 0,
     image: null,
@@ -113,25 +114,26 @@ export default function CreateListingPage() {
     message: string;
   } | null>(null);
   const [scannerError, setScannerError] = useState("");
-  
-  // Yeni state'ler için popup
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [popupTimer, setPopupTimer] = useState<NodeJS.Timeout | null>(null);
-  
-  // Calculate total our price
+  const [prevUser, setPrevUser] = useState(user); // Track previous user state
+
   const totalOurPrice = bundleItems.reduce((total, item) => {
     return total + (item.price * item.quantity);
   }, 0);
-  
-  // Calculate total Amazon value
+
   const totalAmazonValue = bundleItems.reduce((total, item) => {
     return total + ((item.originalPrice || 0) * item.quantity);
   }, 0);
-  
+
   const getStorageKey = useCallback(() => {
     return user ? `bundleListingDraft_${user.uid}` : 'bundleListingDraft_guest';
   }, [user]);
-  
+
+  const getGuestStorageKey = useCallback(() => {
+    return 'bundleListingDraft_guest';
+  }, []);
+
   const validateDescription = (text: string): boolean => {
     if (text.length > 500) {
       setDescriptionError("Description must be 500 characters or less");
@@ -140,7 +142,7 @@ export default function CreateListingPage() {
     setDescriptionError("");
     return true;
   };
-  
+
   const validateShippingInfo = (): boolean => {
     setDimensionErrors({
       length: '',
@@ -156,7 +158,6 @@ export default function CreateListingPage() {
       setShippingError("Please enter your PayPal account email");
       return false;
     }
-    // Basic email validation for PayPal account
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(shippingInfo.paypalAccount)) {
       setShippingError("Please enter a valid PayPal email address");
@@ -193,27 +194,27 @@ export default function CreateListingPage() {
     setShippingError("");
     return true;
   };
-  
+
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
     setDescription(text);
     validateDescription(text);
   };
-  
+
   const handleNameChange = (field: keyof Pick<ShippingInfo, 'firstName' | 'lastName'>, value: string) => {
     setShippingInfo(prev => ({
       ...prev,
       [field]: value
     }));
   };
-  
+
   const handlePaypalAccountChange = (value: string) => {
     setShippingInfo(prev => ({
       ...prev,
       paypalAccount: value
     }));
   };
-  
+
   const handleAddressChange = (field: keyof Address, value: string) => {
     setShippingInfo(prev => ({
       ...prev,
@@ -223,11 +224,9 @@ export default function CreateListingPage() {
       }
     }));
   };
-  
+
   const handlePackageDimensionsChange = (field: keyof PackageDimensions, value: number) => {
-    // Ensure value is a valid number
     const numValue = isNaN(value) ? 0 : value;
-    
     setShippingInfo(prev => ({
       ...prev,
       packageDimensions: {
@@ -235,7 +234,6 @@ export default function CreateListingPage() {
         [field]: numValue
       }
     }));
-    
     const newErrors = { ...dimensionErrors };
     switch (field) {
       case 'weight':
@@ -274,7 +272,7 @@ export default function CreateListingPage() {
       setShippingError("");
     }
   };
-  
+
   const getCategoryFromPricing = (pricingCategory: string): "book" | "cd" | "dvd" | "game" | "mix" => {
     switch (pricingCategory) {
       case 'books': return 'book';
@@ -284,21 +282,19 @@ export default function CreateListingPage() {
       default: return 'book';
     }
   };
-  
-  // Amazon sonuçlarını temizleme fonksiyonu
+
   const clearAmazonResults = useCallback(() => {
     setAmazonResult(null);
     setError("");
     setScannerError("");
   }, []);
-  
+
   const autoAddAcceptedItem = (isbn: string, product: AmazonProduct, pricing: PricingResult) => {
     if (!pricing.accepted || !pricing.ourPrice) return;
-    
     const newItem: BundleItem = {
       id: Date.now().toString(),
       isbn: isbn,
-      condition: "very-good", // Sadece very-good kondisyonu
+      condition: "very-good",
       quantity: 1,
       price: pricing.ourPrice,
       image: product.image || null,
@@ -309,12 +305,11 @@ export default function CreateListingPage() {
       ourPrice: pricing.ourPrice,
       originalPrice: product.price
     };
-    
     setBundleItems(prev => [...prev, newItem]);
     setCurrentItem({
       id: "",
       isbn: "",
-      condition: "very-good", // Sadece very-good kondisyonu
+      condition: "very-good",
       quantity: 1,
       price: 0,
       image: null,
@@ -322,61 +317,71 @@ export default function CreateListingPage() {
       category: "book",
       imageUrl: null
     });
-    
-    clearAmazonResults(); // Amazon sonuçlarını temizle
+    clearAmazonResults();
     console.log(`✅ Auto-added item with Amazon image: ${product.image}`);
   };
-  
+
   const handleBarcodeScanned = useCallback(async (code: string) => {
     console.log('📱 Barcode scanned:', code);
     try {
       setIsCheckingAmazon(true);
-      clearAmazonResults(); // Önce mevcut sonuçları temizle
+      clearAmazonResults();
       stopScanning();
       setShowScanner(false);
       setCurrentItem(prev => ({
         ...prev,
         isbn: code
       }));
-      
       const response = await axios.post('/api/amazon-check', {
         isbn_upc: code
       });
-      
       if (response.data.success) {
         const { product, pricing, message } = response.data.data;
-        setAmazonResult({ product, pricing, message });
-        
+        const sanitizedProduct = {
+          title: product?.title ? DOMPurify.sanitize(product.title).substring(0, 200) : '',
+          asin: product?.asin ? DOMPurify.sanitize(product.asin).substring(0, 50) : '',
+          price: typeof product?.price === 'number' ? product.price : 0,
+          sales_rank: typeof product?.sales_rank === 'number' ? product.sales_rank : 0,
+          category: product?.category ? DOMPurify.sanitize(product.category).substring(0, 50) : '',
+          image: product?.image && typeof product.image === 'string' ? product.image : null
+        };
+        const sanitizedPricing = {
+          ...pricing,
+          category: pricing?.category ? DOMPurify.sanitize(pricing.category).substring(0, 50) : '',
+          ourPrice: typeof pricing?.ourPrice === 'number' ? pricing.ourPrice : 0
+        };
+        const sanitizedMessage = message ? DOMPurify.sanitize(message).substring(0, 500) : '';
+        setAmazonResult({
+          product: sanitizedProduct,
+          pricing: sanitizedPricing,
+          message: sanitizedMessage
+        });
         setCurrentItem(prev => ({
           ...prev,
-          isbn: code,
-          amazonData: product,
-          image: product.image || null,
-          imageUrl: product.image || null,
-          originalPrice: product.price,
-          ourPrice: pricing.ourPrice
+          isbn: DOMPurify.sanitize(code).substring(0, 50),
+          amazonData: sanitizedProduct,
+          image: sanitizedProduct.image,
+          imageUrl: sanitizedProduct.image,
+          originalPrice: sanitizedProduct.price,
+          ourPrice: sanitizedPricing.ourPrice
         }));
-        
         const categoryMap: Record<string, "book" | "cd" | "dvd" | "game"> = {
           'books': 'book',
           'cds': 'cd',
           'dvds': 'dvd',
           'games': 'game'
         };
-        
         if (pricing.category && categoryMap[pricing.category]) {
           setCurrentItem(prev => ({
             ...prev,
             category: categoryMap[pricing.category]
           }));
         }
-        
         if (pricing.accepted && pricing.ourPrice) {
           setTimeout(() => {
             autoAddAcceptedItem(code, product, pricing);
           }, 2000);
         } else {
-          // Kabul edilmeyen ürün 3 saniyede temizlenir
           setTimeout(() => {
             setAmazonResult(null);
             setError("");
@@ -391,7 +396,6 @@ export default function CreateListingPage() {
         }
       } else {
         setError(response.data.error || 'Amazon check failed');
-        // Hata durumunda da 3 saniyede temizle
         setTimeout(() => {
           setError("");
           setAmazonResult(null);
@@ -400,7 +404,6 @@ export default function CreateListingPage() {
     } catch (err: any) {
       console.error('Amazon API error:', err);
       setError(err.response?.data?.error || 'Error occurred during Amazon check');
-      // Hata durumunda da 3 saniyede temizle
       setTimeout(() => {
         setError("");
         setAmazonResult(null);
@@ -416,23 +419,23 @@ export default function CreateListingPage() {
       setIsCheckingAmazon(false);
     }
   }, [autoAddAcceptedItem]);
-  
+
   const handleScanBarcode = () => {
     if (!isMobile) {
       setError("Barcode scanning only works on mobile devices");
       return;
     }
     setShowScanner(true);
-    clearAmazonResults(); // Yeni tarama başlarken temizle
+    clearAmazonResults();
     startScanning();
   };
-  
+
   const closeBarcodeScanner = () => {
     stopScanning();
     setShowScanner(false);
     setScannerError("");
   };
-  
+
   const {
     isScanning,
     isCameraReady,
@@ -447,11 +450,9 @@ export default function CreateListingPage() {
     continuous: false,
     timeout: 30000
   });
-  
-  // Storage initialization - simplified
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    
     const initializeStorage = async () => {
       try {
         localStorage.setItem('test', 'test');
@@ -464,13 +465,155 @@ export default function CreateListingPage() {
         setIsInitializing(false);
       }
     };
-    
     initializeStorage();
   }, []);
-  
-  const saveToStorage = useCallback(() => {
+
+  const validateAndSanitizeData = (parsed: any) => {
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+    let sanitizedBundleItems: BundleItem[] = [];
+    if (Array.isArray(parsed.bundleItems)) {
+      sanitizedBundleItems = parsed.bundleItems.map((item: any) => ({
+        ...item,
+        id: item.id ? DOMPurify.sanitize(item.id.toString()).substring(0, 50) : '',
+        isbn: item.isbn ? DOMPurify.sanitize(item.isbn.toString()).substring(0, 50) : '',
+        condition: "very-good",
+        quantity: typeof item.quantity === 'number' ? Math.max(1, item.quantity) : 1,
+        price: typeof item.price === 'number' ? Math.max(0, item.price) : 0,
+        category: ['book', 'cd', 'dvd', 'game', 'mix'].includes(item.category) ? item.category : 'book',
+        imageUrl: item.imageUrl && typeof item.imageUrl === 'string' ? item.imageUrl : null,
+        amazonData: item.amazonData ? {
+          title: item.amazonData.title ? DOMPurify.sanitize(item.amazonData.title).substring(0, 200) : '',
+          asin: item.amazonData.asin ? DOMPurify.sanitize(item.amazonData.asin).substring(0, 50) : '',
+          price: typeof item.amazonData.price === 'number' ? item.amazonData.price : 0,
+          category: item.amazonData.category ? DOMPurify.sanitize(item.amazonData.category).substring(0, 50) : '',
+          image: item.amazonData.image && typeof item.amazonData.image === 'string' ? item.amazonData.image : null
+        } : undefined
+      }));
+    }
+    let sanitizedDescription = '';
+    if (typeof parsed.description === 'string') {
+      sanitizedDescription = DOMPurify.sanitize(parsed.description).substring(0, 500);
+    }
+    let sanitizedShippingInfo: ShippingInfo = {
+      firstName: '',
+      lastName: '',
+      paypalAccount: '',
+      address: {
+        street: '',
+        city: '',
+        state: '',
+        zip: '',
+        country: 'US'
+      },
+      packageDimensions: {
+        length: 0,
+        width: 0,
+        height: 0,
+        weight: 0
+      }
+    };
+    if (parsed.shippingInfo && typeof parsed.shippingInfo === 'object') {
+      sanitizedShippingInfo = {
+        firstName: parsed.shippingInfo.firstName ? DOMPurify.sanitize(parsed.shippingInfo.firstName).substring(0, 50) : '',
+        lastName: parsed.shippingInfo.lastName ? DOMPurify.sanitize(parsed.shippingInfo.lastName).substring(0, 50) : '',
+        paypalAccount: parsed.shippingInfo.paypalAccount ? DOMPurify.sanitize(parsed.shippingInfo.paypalAccount).substring(0, 254) : '',
+        address: {
+          street: parsed.shippingInfo.address?.street ? DOMPurify.sanitize(parsed.shippingInfo.address.street).substring(0, 200) : '',
+          city: parsed.shippingInfo.address?.city ? DOMPurify.sanitize(parsed.shippingInfo.address.city).substring(0, 100) : '',
+          state: parsed.shippingInfo.address?.state ? DOMPurify.sanitize(parsed.shippingInfo.address.state).substring(0, 50) : '',
+          zip: parsed.shippingInfo.address?.zip ? DOMPurify.sanitize(parsed.shippingInfo.address.zip).substring(0, 20) : '',
+          country: parsed.shippingInfo.address?.country === 'US' ? 'US' : 'US'
+        },
+        packageDimensions: {
+          length: typeof parsed.shippingInfo.packageDimensions?.length === 'number' ? Math.max(0, Math.min(18, parsed.shippingInfo.packageDimensions.length)) : 0,
+          width: typeof parsed.shippingInfo.packageDimensions?.width === 'number' ? Math.max(0, Math.min(16, parsed.shippingInfo.packageDimensions.width)) : 0,
+          height: typeof parsed.shippingInfo.packageDimensions?.height === 'number' ? Math.max(0, Math.min(16, parsed.shippingInfo.packageDimensions.height)) : 0,
+          weight: typeof parsed.shippingInfo.packageDimensions?.weight === 'number' ? Math.max(0, Math.min(50, parsed.shippingInfo.packageDimensions.weight)) : 0
+        }
+      };
+    }
+    return {
+      bundleItems: sanitizedBundleItems,
+      description: sanitizedDescription,
+      shippingInfo: sanitizedShippingInfo
+    };
+  };
+
+  const loadFromStorage = useCallback(() => {
     if (!isMounted || isPrivateMode || isInitializing) return;
     
+    const userKey = getStorageKey();
+    const guestKey = getGuestStorageKey();
+    
+    if (user) {
+      try {
+        // First try to load user-specific data
+        const userData = localStorage.getItem(userKey);
+        if (userData) {
+          const parsed = JSON.parse(userData);
+          const data = validateAndSanitizeData(parsed);
+          if (data) {
+            setBundleItems(data.bundleItems);
+            setDescription(data.description);
+            setShippingInfo(data.shippingInfo);
+            console.log(`✅ Loaded and sanitized from user localStorage`);
+            return;
+          } else {
+            localStorage.removeItem(userKey);
+          }
+        }
+        
+        // If no user data, try to migrate from guest data
+        const guestData = localStorage.getItem(guestKey);
+        if (guestData) {
+          const parsed = JSON.parse(guestData);
+          const data = validateAndSanitizeData(parsed);
+          if (data) {
+            setBundleItems(data.bundleItems);
+            setDescription(data.description);
+            setShippingInfo(data.shippingInfo);
+            // Save guest data to user key
+            localStorage.setItem(userKey, guestData);
+            // Remove guest data
+            localStorage.removeItem(guestKey);
+            console.log(`✅ Migrated data from guest to user localStorage`);
+            return;
+          } else {
+            localStorage.removeItem(guestKey);
+          }
+        }
+      } catch (e) {
+        console.error("Error loading user data", e);
+        localStorage.removeItem(userKey);
+        localStorage.removeItem(guestKey);
+      }
+    } else {
+      // User is not logged in, load guest data
+      try {
+        const guestData = localStorage.getItem(guestKey);
+        if (guestData) {
+          const parsed = JSON.parse(guestData);
+          const data = validateAndSanitizeData(parsed);
+          if (data) {
+            setBundleItems(data.bundleItems);
+            setDescription(data.description);
+            setShippingInfo(data.shippingInfo);
+            console.log(`✅ Loaded and sanitized from guest localStorage`);
+          } else {
+            localStorage.removeItem(guestKey);
+          }
+        }
+      } catch (e) {
+        console.error("Error loading guest data", e);
+        localStorage.removeItem(guestKey);
+      }
+    }
+  }, [isMounted, isPrivateMode, isInitializing, getStorageKey, getGuestStorageKey]);
+
+  const saveToStorage = useCallback(() => {
+    if (!isMounted || isPrivateMode || isInitializing) return;
     try {
       const dataToSave = {
         bundleItems: bundleItems.map(item => ({
@@ -489,7 +632,6 @@ export default function CreateListingPage() {
         shippingInfo: shippingInfo,
         timestamp: Date.now()
       };
-      
       const storageKey = getStorageKey();
       localStorage.setItem(storageKey, JSON.stringify(dataToSave));
       console.log(`✅ Saved to localStorage`);
@@ -497,76 +639,57 @@ export default function CreateListingPage() {
       console.error("Failed to save to localStorage", e);
     }
   }, [bundleItems, currentItem, description, shippingInfo, isMounted, isPrivateMode, isInitializing, getStorageKey]);
-  
-  const loadFromStorage = useCallback(() => {
-    if (!isMounted || isPrivateMode || isInitializing) return;
-    
-    try {
-      const storageKey = getStorageKey();
-      const savedData = localStorage.getItem(storageKey);
-      
-      if (savedData) {
-        const parsed = JSON.parse(savedData);
-        console.log(`✅ Loaded from localStorage`);
-        setBundleItems(parsed.bundleItems || []);
-        setDescription(parsed.description || "");
-        
-        if (parsed.shippingInfo) {
-          setShippingInfo(parsed.shippingInfo);
-        }
-        
-        if (parsed.currentItem && parsed.currentItem.isbn) {
-          setCurrentItem({
-            ...parsed.currentItem,
-            image: null,
-            imageBlob: null,
-            imageStats: null,
-            imageUrl: null
-          });
-        }
-      }
-    } catch (e) {
-      console.error("Failed to load from localStorage", e);
+
+  // Handle user state changes - save data before logout and load after login
+  useEffect(() => {
+    // Save data when user logs out
+    if (prevUser && !user) {
+      saveToStorage();
     }
-  }, [isMounted, isPrivateMode, isInitializing, getStorageKey]);
-  
+    
+    // Load data when user logs in
+    if (!prevUser && user) {
+      loadFromStorage();
+    }
+    
+    // Update previous user state
+    setPrevUser(user);
+  }, [user, prevUser, saveToStorage, loadFromStorage]);
+
+  // Initial load when component mounts
   useEffect(() => {
     if (isMounted && !isPrivateMode && !isInitializing) {
       loadFromStorage();
     }
   }, [isMounted, isPrivateMode, isInitializing, loadFromStorage]);
-  
+
+  // Save data when form data changes
   useEffect(() => {
     if (!isMounted || isInitializing) return;
-    
     const timeoutId = setTimeout(() => {
       saveToStorage();
     }, 1000);
-    
     return () => clearTimeout(timeoutId);
   }, [bundleItems, description, shippingInfo, saveToStorage, isMounted, isInitializing]);
-  
+
   const handleCurrentItemChange = (field: keyof BundleItem, value: string | number) => {
     setCurrentItem(prev => ({
       ...prev,
       [field]: value
     }));
   };
-  
+
   const removeItem = (id: string) => {
     setBundleItems(prev => prev.filter(item => item.id !== id));
   };
-  
+
   const generateTitle = () => {
     const categoryCounts: Record<string, number> = {};
-    
     bundleItems.forEach(item => {
       categoryCounts[item.category] = (categoryCounts[item.category] || 0) + 1;
     });
-    
     const dominantCategory = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0][0];
     const totalItems = bundleItems.reduce((sum, item) => sum + item.quantity, 0);
-    
     const categoryNames = {
       book: "Book",
       cd: "CD",
@@ -574,23 +697,19 @@ export default function CreateListingPage() {
       game: "Game",
       mix: "Mixed Media"
     };
-    
     return `${totalItems} ${categoryNames[dominantCategory as keyof typeof categoryNames]} Collection in Very Good Condition`;
   };
-  
+
   const uploadImageToStorage = async (item: BundleItem, userId: string): Promise<string | null> => {
     if (!item.imageBlob) return null;
-    
     try {
       const timestamp = Date.now();
       const randomString = Math.random().toString(36).substring(7);
       const imagePath = `listings/${userId}/${timestamp}_${item.isbn}_${randomString}.jpg`;
-      
       console.log(`Uploading image for ISBN ${item.isbn}`);
       const storageRef = ref(storage, imagePath);
       const snapshot = await uploadBytes(storageRef, item.imageBlob);
       const downloadURL = await getDownloadURL(snapshot.ref);
-      
       console.log(`✅ Image uploaded successfully`);
       return downloadURL;
     } catch (error) {
@@ -598,44 +717,37 @@ export default function CreateListingPage() {
       return null;
     }
   };
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
       setError("Please login or sign up to create a listing");
       return;
     }
-    
     setIsSubmitting(true);
     setError("");
     setUploadProgress("");
-    
     try {
       if (!validateDescription(description)) {
         setIsSubmitting(false);
         return;
       }
-      
       if (!validateShippingInfo()) {
         setIsSubmitting(false);
         return;
       }
-      
       if (bundleItems.length < 5) {
         setError("Please add at least 5 items to create a bundle listing");
         setIsSubmitting(false);
         return;
       }
-      
       const title = generateTitle();
       setGeneratedTitle(title);
       setUploadProgress("Processing images...");
-      
       const uploadedItems = await Promise.all(
         bundleItems.map(async (item, index) => {
           setUploadProgress(`Processing image ${index + 1} of ${bundleItems.length}...`);
           let finalImageUrl = null;
-          
           if (item.amazonData?.image) {
             finalImageUrl = item.amazonData.image;
             console.log(`✅ Using Amazon image URL for ISBN ${item.isbn}`);
@@ -647,7 +759,6 @@ export default function CreateListingPage() {
           else {
             console.log(`⚠️ No image available for ISBN ${item.isbn}`);
           }
-          
           return {
             id: item.id,
             isbn: item.isbn,
@@ -669,34 +780,62 @@ export default function CreateListingPage() {
           };
         })
       );
-      
       setUploadProgress("Saving listing to database...");
       const totalValue = uploadedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const totalItems = uploadedItems.reduce((sum, item) => sum + item.quantity, 0);
-      
       const listingData = {
-        title: title,
-        description: description,
-        totalItems: totalItems,
-        totalValue: totalValue,
-        totalAmazonValue: totalAmazonValue, // Add total Amazon value
+        title: DOMPurify.sanitize(title).substring(0, 200),
+        description: DOMPurify.sanitize(description).substring(0, 500),
+        totalItems: Math.max(0, totalItems),
+        totalValue: Math.max(0, totalValue),
+        totalAmazonValue: Math.max(0, totalAmazonValue),
         status: "pending",
         vendorId: user?.uid || "",
-        vendorName: user?.displayName || user?.email?.split('@')[0] || "Anonymous",
-        vendorEmail: user?.email || "", // Satıcının e-posta adresi eklendi
-        bundleItems: uploadedItems,
-        shippingInfo: shippingInfo,
+        vendorName: user?.displayName ? DOMPurify.sanitize(user.displayName).substring(0, 100) :
+          user?.email ? DOMPurify.sanitize(user.email.split('@')[0]).substring(0, 50) : "Anonymous",
+        vendorEmail: user?.email ? DOMPurify.sanitize(user.email).substring(0, 254) : "",
+        bundleItems: uploadedItems.map(item => ({
+          ...item,
+          isbn: DOMPurify.sanitize(item.isbn || '').substring(0, 50),
+          condition: "very-good",
+          quantity: Math.max(1, item.quantity || 1),
+          price: Math.max(0, item.price || 0),
+          category: ['book', 'cd', 'dvd', 'game', 'mix'].includes(item.category) ? item.category : 'book',
+          amazonData: item.amazonData ? {
+            title: DOMPurify.sanitize(item.amazonData.title || '').substring(0, 200),
+            asin: DOMPurify.sanitize(item.amazonData.asin || '').substring(0, 50),
+            price: Math.max(0, item.amazonData.price || 0),
+            sales_rank: Math.max(0, item.amazonData.sales_rank || 0),
+            category: DOMPurify.sanitize(item.amazonData.category || '').substring(0, 50),
+            image: item.amazonData.image && typeof item.amazonData.image === 'string' ? item.amazonData.image : null
+          } : null
+        })),
+        shippingInfo: {
+          firstName: DOMPurify.sanitize(shippingInfo.firstName).substring(0, 50),
+          lastName: DOMPurify.sanitize(shippingInfo.lastName).substring(0, 50),
+          paypalAccount: DOMPurify.sanitize(shippingInfo.paypalAccount).substring(0, 254),
+          address: {
+            street: DOMPurify.sanitize(shippingInfo.address.street).substring(0, 200),
+            city: DOMPurify.sanitize(shippingInfo.address.city).substring(0, 100),
+            state: DOMPurify.sanitize(shippingInfo.address.state).substring(0, 50),
+            zip: DOMPurify.sanitize(shippingInfo.address.zip).substring(0, 20),
+            country: shippingInfo.address.country === 'US' ? 'US' : 'US'
+          },
+          packageDimensions: {
+            length: Math.max(0, Math.min(18, shippingInfo.packageDimensions.length)),
+            width: Math.max(0, Math.min(16, shippingInfo.packageDimensions.width)),
+            height: Math.max(0, Math.min(16, shippingInfo.packageDimensions.height)),
+            weight: Math.max(0, Math.min(50, shippingInfo.packageDimensions.weight))
+          }
+        },
         createdAt: serverTimestamp(),
         views: 0,
         hasAmazonImages: uploadedItems.some(item =>
-          item.imageUrl && item.imageUrl.includes('amazon.com')
+          item.imageUrl && typeof item.imageUrl === 'string' && item.imageUrl.includes('amazon.com')
         )
       };
-      
       const docRef = await addDoc(collection(db, "listings"), listingData);
       console.log("✅ Document written with ID: ", docRef.id);
-      
-      // Email notification
       try {
         await fetch('/api/send-seller-notification', {
           method: 'POST',
@@ -707,7 +846,7 @@ export default function CreateListingPage() {
             paypalEmail: shippingInfo.paypalAccount,
             totalItems: totalItems,
             totalValue: totalValue,
-            totalAmazonValue: totalAmazonValue, // Include in email notification
+            totalAmazonValue: totalAmazonValue,
             submissionId: docRef.id,
             dashboardUrl: `${window.location.origin}/admin/listings`,
             shippingInfo: shippingInfo
@@ -717,26 +856,20 @@ export default function CreateListingPage() {
       } catch (error) {
         console.error("Email error:", error);
       }
-      
-      // Başarılı gönderim sonrası popup'ı göster
       setSuccess(true);
       setShowSuccessPopup(true);
       setIsSubmitting(false);
       setUploadProgress("");
-      
-      // LocalStorage'dan taslağı temizle
       if (!isPrivateMode) {
         const storageKey = getStorageKey();
         localStorage.removeItem(storageKey);
         console.log("✅ Draft cleared from localStorage");
       }
-      
-      // Form verilerini temizle
       setBundleItems([]);
       setCurrentItem({
         id: "",
         isbn: "",
-        condition: "very-good", // Sadece very-good kondisyonu
+        condition: "very-good",
         quantity: 1,
         price: 0,
         image: null,
@@ -770,14 +903,11 @@ export default function CreateListingPage() {
         weight: ''
       });
       clearAmazonResults();
-      
-      // 15 saniye sonra popup'ı kapat
       if (popupTimer) clearTimeout(popupTimer);
       const timer = setTimeout(() => {
         setShowSuccessPopup(false);
       }, 15000);
       setPopupTimer(timer);
-      
     } catch (err) {
       console.error("Error creating listing:", err);
       setError("Failed to create listing. Please try again.");
@@ -785,8 +915,7 @@ export default function CreateListingPage() {
       setUploadProgress("");
     }
   };
-  
-  // Component unmount olduğunda timer'ı temizle
+
   useEffect(() => {
     return () => {
       if (popupTimer) {
@@ -794,14 +923,14 @@ export default function CreateListingPage() {
       }
     };
   }, [popupTimer]);
-  
+
   const resetForm = () => {
     if (window.confirm("Are you sure you want to reset all data? This cannot be undone.")) {
       setBundleItems([]);
       setCurrentItem({
         id: "",
         isbn: "",
-        condition: "very-good", // Sadece very-good kondisyonu
+        condition: "very-good",
         quantity: 1,
         price: 0,
         image: null,
@@ -834,15 +963,14 @@ export default function CreateListingPage() {
         height: '',
         weight: ''
       });
-      clearAmazonResults(); // Amazon sonuçlarını da temizle
-      
+      clearAmazonResults();
       if (typeof window !== 'undefined' && !isPrivateMode) {
         const storageKey = getStorageKey();
         localStorage.removeItem(storageKey);
       }
     }
   };
-  
+
   if (loading || isInitializing) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -853,14 +981,13 @@ export default function CreateListingPage() {
       </div>
     );
   }
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Head>
         <title>Sell Your Items | SecondLife Media</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </Head>
-      
       <main className="font-sans antialiased">
         <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
@@ -905,7 +1032,6 @@ export default function CreateListingPage() {
               </button>
             </div>
           </div>
-          
           {!isMobile && (
             <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg shadow-sm">
               <div className="flex">
@@ -921,7 +1047,6 @@ export default function CreateListingPage() {
               </div>
             </div>
           )}
-          
           {showScanner && (
             <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
               <div className="bg-white rounded-lg p-6 m-4 max-w-sm w-full">
@@ -934,26 +1059,22 @@ export default function CreateListingPage() {
                     <FiX className="h-5 w-5" />
                   </button>
                 </div>
-                
                 {!isCameraReady && !cameraError && (
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
                     <p className="text-gray-600">Preparing camera...</p>
                   </div>
                 )}
-                
                 {cameraError && (
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
                     <p className="text-red-700 text-sm">{cameraError}</p>
                   </div>
                 )}
-                
                 {scannerError && (
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
                     <p className="text-red-700 text-sm">{scannerError}</p>
                   </div>
                 )}
-                
                 <div className="relative">
                   <video
                     ref={videoRef}
@@ -967,14 +1088,12 @@ export default function CreateListingPage() {
                     </div>
                   )}
                 </div>
-                
                 <p className="text-center text-sm text-gray-600 mt-4">
                   Point the camera at the barcode/QR code
                 </p>
               </div>
             </div>
           )}
-          
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl">
             <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 py-6">
               <div className="flex items-center justify-between">
@@ -991,7 +1110,6 @@ export default function CreateListingPage() {
                 </div>
               </div>
             </div>
-            
             {showSuccessPopup && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                 <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 transform transition-all duration-300 scale-95 animate-in fade-in-90 zoom-in-90">
@@ -1012,15 +1130,12 @@ export default function CreateListingPage() {
                         <FiX className="h-6 w-6" />
                       </button>
                     </div>
-                    
                     <h3 className="text-xl font-bold text-center text-gray-900 mb-2">
                       Listing Submitted Successfully!
                     </h3>
-                    
                     <p className="text-gray-600 text-center mb-6">
                       Your items have been submitted for review. You will receive a free shipping label via email within 24 hours.
                     </p>
-                    
                     <div className="bg-blue-50 rounded-lg p-4 mb-6">
                       <div className="flex items-start">
                         <FiMail className="h-5 w-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
@@ -1047,20 +1162,18 @@ export default function CreateListingPage() {
                         </div>
                       </div>
                     </div>
-                    
                     <div className="bg-green-50 rounded-lg p-4 mb-6">
                       <div className="flex items-start">
                         <FiClock className="h-5 w-5 text-green-600 mt-0.5 mr-3 flex-shrink-0" />
                         <div>
                           <h4 className="text-sm font-medium text-green-800 mb-1">Important Information</h4>
                           <p className="text-sm text-green-700">
-                            Please check your email (including spam/junk folder) for the shipping label. 
+                            Please check your email (including spam/junk folder) for the shipping label.
                             If you don't receive it within 24 hours, please contact our support team.
                           </p>
                         </div>
                       </div>
                     </div>
-                    
                     <div className="text-center">
                       <p className="text-sm text-gray-500 mb-4">
                         This message will close automatically in 15 seconds...
@@ -1070,7 +1183,6 @@ export default function CreateListingPage() {
                 </div>
               </div>
             )}
-            
             {showSuccess && (
               <div className="mx-6 mt-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-lg shadow-sm">
                 <div className="flex items-center">
@@ -1085,7 +1197,6 @@ export default function CreateListingPage() {
                 </div>
               </div>
             )}
-            
             {uploadProgress && (
               <div className="mx-6 mt-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg shadow-sm">
                 <div className="flex items-center">
@@ -1094,7 +1205,6 @@ export default function CreateListingPage() {
                 </div>
               </div>
             )}
-            
             {isCheckingAmazon && (
               <div className="mx-6 mt-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg shadow-sm">
                 <div className="flex items-center">
@@ -1103,7 +1213,6 @@ export default function CreateListingPage() {
                 </div>
               </div>
             )}
-            
             {error && (
               <div className="mx-6 mt-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm">
                 <div className="flex items-start">
@@ -1116,7 +1225,6 @@ export default function CreateListingPage() {
                 </div>
               </div>
             )}
-            
             <form onSubmit={handleSubmit} className="px-6 py-6 space-y-8">
               <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 shadow-sm">
                 <div className="flex items-center mb-5">
@@ -1130,7 +1238,6 @@ export default function CreateListingPage() {
                     </span>
                   )}
                 </div>
-                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1185,8 +1292,6 @@ export default function CreateListingPage() {
                       )}
                     </div>
                   </div>
-                  
-                  {/* Amazon Ürün Bilgileri Bölümü */}
                   <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
                     <div className="p-4 h-full">
                       {amazonResult ? (
@@ -1202,7 +1307,6 @@ export default function CreateListingPage() {
                               </span>
                             )}
                           </div>
-                          
                           <div className="flex flex-col sm:flex-row gap-3 flex-1">
                             <div className="flex-shrink-0">
                               <div className="w-16 h-20 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
@@ -1219,7 +1323,6 @@ export default function CreateListingPage() {
                                 )}
                               </div>
                             </div>
-                            
                             <div className="flex-1 min-w-0">
                               <div className="grid grid-cols-2 gap-2">
                                 <div className="bg-gray-50 rounded p-2">
@@ -1235,11 +1338,10 @@ export default function CreateListingPage() {
                                   </p>
                                 </div>
                               </div>
-                              
                               <div className="mt-2">
                                 <div className={`text-xs inline-flex items-center px-2 py-1 rounded-full font-medium ${amazonResult.pricing.accepted
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-red-100 text-red-800'
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-red-100 text-red-800'
                                   }`}>
                                   {amazonResult.pricing.accepted ? (
                                     amazonResult.message
@@ -1250,13 +1352,11 @@ export default function CreateListingPage() {
                               </div>
                             </div>
                           </div>
-                          
                           {amazonResult.pricing.accepted && (
                             <div className="mt-2 text-xs text-green-600">
                               ⏱️ This product will be automatically added to the list in 2 seconds...
                             </div>
                           )}
-                          
                           {!amazonResult.pricing.accepted && (
                             <div className="mt-2 text-xs text-red-600">
                               ❌ This result will disappear in 3 seconds...
@@ -1278,7 +1378,6 @@ export default function CreateListingPage() {
                   </div>
                 </div>
               </div>
-              
               <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center">
@@ -1293,7 +1392,6 @@ export default function CreateListingPage() {
                     </span>
                   </div>
                 </div>
-                
                 {bundleItems.length < 5 && (
                   <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-lg shadow-sm">
                     <div className="flex">
@@ -1308,7 +1406,6 @@ export default function CreateListingPage() {
                     </div>
                   </div>
                 )}
-                
                 {bundleItems.length > 0 ? (
                   <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
                     {bundleItems.map((item) => (
@@ -1347,12 +1444,10 @@ export default function CreateListingPage() {
                                 </div>
                               )}
                             </div>
-                            
                             <div className="flex-1 min-w-0">
                               <h4 className="text-sm sm:text-md font-medium text-gray-900 truncate pr-2">
                                 {item.amazonData?.title || `ISBN: ${item.isbn}`}
                               </h4>
-                              
                               <div className="mt-1 space-y-1">
                                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
@@ -1365,7 +1460,6 @@ export default function CreateListingPage() {
                                     Qty: {item.quantity}
                                   </span>
                                 </div>
-                                
                                 <div className="flex items-center justify-between">
                                   <p className="text-sm font-medium text-gray-900">
                                     Our Price: ${item.price.toFixed(2)}
@@ -1374,7 +1468,6 @@ export default function CreateListingPage() {
                               </div>
                             </div>
                           </div>
-                          
                           <button
                             type="button"
                             onClick={() => removeItem(item.id)}
@@ -1396,7 +1489,6 @@ export default function CreateListingPage() {
                   </div>
                 )}
               </div>
-              
               <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
@@ -1418,7 +1510,6 @@ export default function CreateListingPage() {
                   </div>
                 </div>
               </div>
-              
               {user && (
                 <>
                   <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 shadow-sm">
@@ -1428,7 +1519,6 @@ export default function CreateListingPage() {
                       </div>
                       <h3 className="text-lg font-semibold text-gray-900">Additional Notes</h3>
                     </div>
-                    
                     <div className="space-y-2">
                       <label htmlFor="description" className="block text-sm font-medium text-gray-700">
                         Description <span className="text-gray-500">(Optional)</span>
@@ -1453,7 +1543,6 @@ export default function CreateListingPage() {
                       )}
                     </div>
                   </div>
-                  
                   <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 shadow-sm">
                     <div className="flex items-center mb-4">
                       <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
@@ -1461,7 +1550,6 @@ export default function CreateListingPage() {
                       </div>
                       <h3 className="text-lg font-semibold text-gray-900">Shipping Information</h3>
                     </div>
-                    
                     {shippingError && (
                       <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm">
                         <div className="flex">
@@ -1474,7 +1562,6 @@ export default function CreateListingPage() {
                         </div>
                       </div>
                     )}
-                    
                     <div className="space-y-6">
                       <div>
                         <h4 className="text-md font-medium text-gray-900 mb-3">Contact Information</h4>
@@ -1528,7 +1615,6 @@ export default function CreateListingPage() {
                           </div>
                         </div>
                       </div>
-                      
                       <div>
                         <h4 className="text-md font-medium text-gray-900 mb-3">Shipping Address</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1606,7 +1692,6 @@ export default function CreateListingPage() {
                           </div>
                         </div>
                       </div>
-                      
                       <div>
                         <h4 className="text-md font-medium text-gray-900 mb-3">Package Dimensions</h4>
                         <div className="mb-3 bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded-lg shadow-sm">
@@ -1708,7 +1793,6 @@ export default function CreateListingPage() {
                   </div>
                 </>
               )}
-              
               <div className="pt-5">
                 {!user ? (
                   <div className="space-y-4">

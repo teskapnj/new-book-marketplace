@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import DOMPurify from 'isomorphic-dompurify'; // Bu satırı ekleyin
+
 
 export default function HelpCenterPage() {
   const [activeCategory, setActiveCategory] = useState('selling');
@@ -59,36 +61,36 @@ export default function HelpCenterPage() {
   ];
 
   const quickHelp = [
-    { 
-      question: 'How do I start selling?', 
+    {
+      question: 'How do I start selling?',
       answer: 'Simply scan your first item using your phone camera or search manually. If we accept it, it will appear in your list.',
-      category: 'selling' 
+      category: 'selling'
     },
-    { 
-      question: 'What condition do you accept?', 
+    {
+      question: 'What condition do you accept?',
       answer: 'We only accept items in very good condition with no writing, highlighting, or damage. Check our condition guide.',
-      category: 'selling' 
+      category: 'selling'
     },
-    { 
-      question: 'How do I get paid?', 
+    {
+      question: 'How do I get paid?',
       answer: 'Payment is sent to your PayPal account after we inspect and approve your items.',
-      category: 'process' 
+      category: 'process'
     },
-    { 
-      question: 'Do you return rejected items?', 
+    {
+      question: 'Do you return rejected items?',
       answer: 'No, we do not return items. Non-qualifying items are responsibly recycled.',
-      category: 'process' 
+      category: 'process'
     },
-    { 
-      question: 'How long until I get shipping labels?', 
+    {
+      question: 'How long until I get shipping labels?',
       answer: 'You\'ll receive prepaid shipping labels via email within 24 hours of submission.',
-      category: 'selling' 
+      category: 'selling'
     }
   ];
 
   const filteredCategories = categories.map(category => ({
     ...category,
-    articles: category.articles.filter(article => 
+    articles: category.articles.filter(article =>
       article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       article.description.toLowerCase().includes(searchQuery.toLowerCase())
     )
@@ -106,7 +108,7 @@ export default function HelpCenterPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Back Button */}
           <div className="mb-8">
-            <button 
+            <button
               onClick={() => window.history.back()}
               className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
@@ -124,16 +126,20 @@ export default function HelpCenterPage() {
             <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
               Find answers to your questions about selling books, CDs, DVDs, and games
             </p>
-            
+
             {/* Search Bar */}
             <div className="max-w-2xl mx-auto">
               <div className="relative">
+              // GÜVENLİ
                 <input
                   type="text"
                   placeholder="Search for help articles..."
                   className="w-full py-4 px-6 pr-12 rounded-lg text-gray-800 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-300 shadow-sm"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    const sanitizedQuery = DOMPurify.sanitize(e.target.value).substring(0, 100); // Search query limit
+                    setSearchQuery(sanitizedQuery);
+                  }}
                 />
                 <svg className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -152,8 +158,9 @@ export default function HelpCenterPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {quickHelp.map((item, index) => (
                 <div key={index} className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-                  <h3 className="font-semibold text-gray-800 mb-3">{item.question}</h3>
-                  <p className="text-gray-600 text-sm">{item.answer}</p>
+                  // GÜVENLİ
+                  <h3 className="font-semibold text-gray-800 mb-3">{DOMPurify.sanitize(item.question)}</h3>
+                  <p className="text-gray-600 text-sm">{DOMPurify.sanitize(item.answer)}</p>
                 </div>
               ))}
             </div>
@@ -169,11 +176,10 @@ export default function HelpCenterPage() {
                 {categories.map((category) => (
                   <button
                     key={category.id}
-                    className={`w-full text-left px-4 py-3 rounded-lg transition ${
-                      activeCategory === category.id
-                        ? 'bg-blue-100 text-blue-700 font-medium'
-                        : 'hover:bg-gray-100'
-                    }`}
+                    className={`w-full text-left px-4 py-3 rounded-lg transition ${activeCategory === category.id
+                      ? 'bg-blue-100 text-blue-700 font-medium'
+                      : 'hover:bg-gray-100'
+                      }`}
                     onClick={() => setActiveCategory(category.id)}
                   >
                     <div className="flex items-center">
@@ -191,10 +197,11 @@ export default function HelpCenterPage() {
             {/* Search Results */}
             {searchQuery !== '' && (
               <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
+                // GÜVENLİ
                 <h2 className="text-2xl font-bold mb-6">
-                  Search Results for "{searchQuery}"
+                  Search Results for "{DOMPurify.sanitize(searchQuery)}"
                 </h2>
-                
+
                 {filteredCategories.length === 0 && filteredQuickHelp.length === 0 ? (
                   <div className="text-center py-12">
                     <div className="text-gray-400 mb-4">
@@ -216,8 +223,9 @@ export default function HelpCenterPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {filteredQuickHelp.map((item, index) => (
                             <div key={index} className="border border-gray-200 rounded-lg p-4">
-                              <h4 className="font-medium mb-2">{item.question}</h4>
-                              <p className="text-gray-600 text-sm">{item.answer}</p>
+                             // GÜVENLİ
+                              <h4 className="font-medium mb-2">{DOMPurify.sanitize(item.question)}</h4>
+                              <p className="text-gray-600 text-sm">{DOMPurify.sanitize(item.answer)}</p>
                             </div>
                           ))}
                         </div>
@@ -289,7 +297,7 @@ export default function HelpCenterPage() {
               <p className="text-gray-600 mb-8">
                 Can't find what you're looking for? Our support team is here to help.
               </p>
-              
+
               <div className="max-w-md mx-auto">
                 <div className="border border-gray-200 rounded-lg p-6 text-center">
                   <div className="flex justify-center mb-4">
@@ -303,7 +311,7 @@ export default function HelpCenterPage() {
                   <p className="text-gray-600 mb-6 text-sm">
                     Have a question? Send us a message and we'll respond within 24 hours.
                   </p>
-                  <Link 
+                  <Link
                     href="/contact"
                     className="inline-flex items-center justify-center w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition font-medium"
                   >

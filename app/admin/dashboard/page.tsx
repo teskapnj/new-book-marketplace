@@ -2314,9 +2314,9 @@ try {
                     <h4 className="text-sm font-medium text-gray-900 mb-2">Description</h4>
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
                       {selectedListing.description ? (
-                        <p className="text-sm text-gray-700 leading-relaxed">
-                          {selectedListing.description}
-                        </p>
+                        <p className="text-sm text-gray-700 leading-relaxed break-words overflow-hidden">
+                        {selectedListing.description}
+                      </p>
                       ) : (
                         <p className="text-sm text-gray-500 italic">
                           No description provided by the seller.

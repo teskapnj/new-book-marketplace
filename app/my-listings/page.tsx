@@ -6,6 +6,7 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { collection, query, where, onSnapshot, orderBy, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import DOMPurify from 'isomorphic-dompurify'; // Bu satırı ekleyin
 
 export default function SellerListingsPage() {
   const [user, setUser] = useState<any>(null);
@@ -29,26 +30,26 @@ export default function SellerListingsPage() {
   // Handle listing deletion
   const handleDeleteListing = async (listingId: string) => {
     if (!user) return;
-    
+
     // Show confirmation dialog
     if (!confirm("Are you sure you want to delete this listing? This action cannot be undone.")) {
       return;
     }
-    
+
     setDeleteLoading(listingId);
-    
+
     try {
       // Delete the listing from Firestore
       await deleteDoc(doc(db, "listings", listingId));
-      
+
       // Update local state
       setListings(prev => prev.filter(listing => listing.id !== listingId));
-      
+
       // If the deleted listing is currently selected, close the modal
       if (selectedListing && selectedListing.id === listingId) {
         setSelectedListing(null);
       }
-      
+
       // Show success message
       alert("Listing deleted successfully!");
     } catch (error) {
@@ -62,9 +63,9 @@ export default function SellerListingsPage() {
   // Fetch listings from Firebase for the current user
   useEffect(() => {
     if (!user) return;
-    
+
     setLoading(true);
-    
+
     const fetchListings = async () => {
       try {
         // Try the indexed query first
@@ -73,23 +74,23 @@ export default function SellerListingsPage() {
           where("vendorId", "==", user.uid),
           orderBy("createdAt", "desc")
         );
-        
+
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
           const listingsData: any[] = [];
-          
+
           querySnapshot.forEach((doc) => {
             const data = doc.data();
-            
+
             // Check if bundleItems exists and is an array
             if (!data.bundleItems || !Array.isArray(data.bundleItems)) {
               console.warn(`Listing ${doc.id} has invalid bundleItems:`, data.bundleItems);
               return;
             }
-            
+
             // Calculate dominant category and condition
             const distinctCategories = new Set<string>();
             const conditionCounts: Record<string, number> = {};
-            
+
             data.bundleItems.forEach((item: any) => {
               if (item.category) {
                 distinctCategories.add(item.category);
@@ -98,65 +99,66 @@ export default function SellerListingsPage() {
                 conditionCounts[item.condition] = (conditionCounts[item.condition] || 0) + 1;
               }
             });
-            
+
             // Determine category: if more than one distinct category, it's a mix
-            const dominantCategory = distinctCategories.size > 1 ? "mix" : 
-                                    (distinctCategories.values().next().value || "mix");
-            
+            const dominantCategory = distinctCategories.size > 1 ? "mix" :
+              (distinctCategories.values().next().value || "mix");
+
             const dominantCondition = Object.entries(conditionCounts)
               .sort((a, b) => b[1] - a[1])[0]?.[0] || "good";
-            
+
+            // GÜVENLİ
             listingsData.push({
               id: doc.id,
-              title: data.title || "Untitled Bundle",
-              price: data.totalValue || 0,
+              title: DOMPurify.sanitize(data.title || "Untitled Bundle").substring(0, 200),
+              price: Math.max(0, data.totalValue || 0),
               category: dominantCategory,
               condition: dominantCondition,
-              sellerName: data.vendorName || user.displayName || "Anonymous Seller",
+              sellerName: DOMPurify.sanitize(data.vendorName || user.displayName || "Anonymous Seller").substring(0, 100),
               createdAt: data.createdAt?.toDate() || new Date(),
               bundleItems: data.bundleItems,
-              description: `Bundle of ${data.totalItems || data.bundleItems.length} items including various ${dominantCategory === "mix" ? "categories" : dominantCategory + "s"} in ${dominantCondition === "like-new" ? "Like New" : "Good"} condition.`,
+              description: DOMPurify.sanitize(`Bundle of ${data.totalItems || data.bundleItems.length} items including various ${dominantCategory === "mix" ? "categories" : dominantCategory + "s"} in ${dominantCondition === "like-new" ? "Like New" : "Good"} condition.`).substring(0, 500),
               status: data.status || "pending",
-              totalItems: data.totalItems || data.bundleItems.length,
-              vendorId: data.vendorId,
+              totalItems: Math.max(0, data.totalItems || data.bundleItems.length),
+              vendorId: DOMPurify.sanitize(data.vendorId || '').substring(0, 50),
               distinctCategories: Array.from(distinctCategories),
               submittedDate: data.createdAt?.toDate().toLocaleDateString() || new Date().toLocaleDateString(),
               reviewedDate: data.reviewedAt?.toDate().toLocaleDateString() || null,
-              rejectionReason: data.rejectionReason || null,
-              adminNotes: data.adminNotes || null
+              rejectionReason: data.rejectionReason ? DOMPurify.sanitize(data.rejectionReason).substring(0, 500) : null,
+              adminNotes: data.adminNotes ? DOMPurify.sanitize(data.adminNotes).substring(0, 1000) : null
             });
           });
-          
+
           setListings(listingsData);
           setLoading(false);
           setIndexError(null);
           setFallbackMode(false);
         }, (error) => {
           console.error("Firestore error:", error);
-          
+
           // Check if it's the specific index error
           if (error.code === 'failed-precondition' && error.message.includes('index')) {
             // Extract the link from the error message
             const match = error.message.match(/https:\/\/console\.firebase\.google\.com\/[^\s]*/);
             const indexLink = match ? match[0] : null;
-            
+
             setIndexError(indexLink || "Index required but no link provided");
             setFallbackMode(true);
-            
+
             // Fallback: fetch without ordering
             fetchWithoutIndex();
           } else {
             setLoading(false);
           }
         });
-        
+
         return unsubscribe;
       } catch (error) {
         console.error("Query setup error:", error);
         setLoading(false);
       }
     };
-    
+
     // Fallback method: fetch without ordering and sort on client
     const fetchWithoutIndex = async () => {
       try {
@@ -164,23 +166,23 @@ export default function SellerListingsPage() {
           collection(db, "listings"),
           where("vendorId", "==", user.uid)
         );
-        
+
         const querySnapshot = await getDocs(q);
         const listingsData: any[] = [];
-        
+
         querySnapshot.forEach((doc) => {
           const data = doc.data();
-          
+
           // Check if bundleItems exists and is an array
           if (!data.bundleItems || !Array.isArray(data.bundleItems)) {
             console.warn(`Listing ${doc.id} has invalid bundleItems:`, data.bundleItems);
             return;
           }
-          
+
           // Calculate dominant category and condition
           const distinctCategories = new Set<string>();
           const conditionCounts: Record<string, number> = {};
-          
+
           data.bundleItems.forEach((item: any) => {
             if (item.category) {
               distinctCategories.add(item.category);
@@ -189,14 +191,14 @@ export default function SellerListingsPage() {
               conditionCounts[item.condition] = (conditionCounts[item.condition] || 0) + 1;
             }
           });
-          
+
           // Determine category: if more than one distinct category, it's a mix
-          const dominantCategory = distinctCategories.size > 1 ? "mix" : 
-                                  (distinctCategories.values().next().value || "mix");
-          
+          const dominantCategory = distinctCategories.size > 1 ? "mix" :
+            (distinctCategories.values().next().value || "mix");
+
           const dominantCondition = Object.entries(conditionCounts)
             .sort((a, b) => b[1] - a[1])[0]?.[0] || "good";
-          
+
           listingsData.push({
             id: doc.id,
             title: data.title || "Untitled Bundle",
@@ -217,12 +219,12 @@ export default function SellerListingsPage() {
             adminNotes: data.adminNotes || null
           });
         });
-        
+
         // Sort manually in JavaScript
         listingsData.sort((a, b) => {
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         });
-        
+
         setListings(listingsData);
         setLoading(false);
       } catch (error) {
@@ -230,7 +232,7 @@ export default function SellerListingsPage() {
         setLoading(false);
       }
     };
-    
+
     fetchListings();
   }, [user]);
 
@@ -241,11 +243,11 @@ export default function SellerListingsPage() {
   const getStatusBadge = (status: string) => {
     const styles = {
       pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      approved: "bg-green-100 text-green-800 border-green-200", 
+      approved: "bg-green-100 text-green-800 border-green-200",
       rejected: "bg-red-100 text-red-800 border-red-200"
     };
     const icons = { pending: "⏳", approved: "✅", rejected: "❌" };
-    
+
     return (
       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${styles[status as keyof typeof styles]}`}>
         {icons[status as keyof typeof icons]} <span className="ml-1 capitalize">{status}</span>
@@ -266,7 +268,7 @@ export default function SellerListingsPage() {
     const icons = {
       book: "📚",
       cd: "💿",
-      dvd: "📀", 
+      dvd: "📀",
       game: "🎮",
       mix: "📦"
     };
@@ -276,7 +278,7 @@ export default function SellerListingsPage() {
   const getCategoryName = (category: string) => {
     const names = {
       book: "Book",
-      cd: "CD", 
+      cd: "CD",
       dvd: "DVD",
       game: "Game",
       mix: "Mix Bundle"
@@ -313,7 +315,7 @@ export default function SellerListingsPage() {
       <div className="max-w-7xl mx-auto py-6 px-4">
         {/* Back Navigation */}
         <div className="mb-6">
-          <Link 
+          <Link
             href="/dashboard"
             className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
           >
@@ -327,7 +329,7 @@ export default function SellerListingsPage() {
             <h1 className="text-3xl font-bold text-gray-900">My Listings</h1>
             <p className="text-gray-600 mt-1">Track your submitted listings ({listings.length} total)</p>
           </div>
-          <Link 
+          <Link
             href="/dashboard/listings/create"
             className="inline-flex items-center justify-center px-6 py-3 text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors"
           >
@@ -346,14 +348,14 @@ export default function SellerListingsPage() {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-yellow-700">
-                  <strong>Database Index Required:</strong> 
-                  {fallbackMode 
+                  <strong>Database Index Required:</strong>
+                  {fallbackMode
                     ? "Currently running in fallback mode. Some features may be limited."
                     : "We're building a database index to improve performance. This may take a few minutes."}
                 </p>
                 <div className="mt-2">
                   {typeof indexError === 'string' && indexError.startsWith('http') ? (
-                    <a 
+                    <a
                       href={indexError}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -408,7 +410,7 @@ export default function SellerListingsPage() {
                 <div className="text-6xl mb-4">📦</div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No listings yet</h3>
                 <p className="text-gray-600 mb-6">Create your first bundle listing to get started selling.</p>
-                <Link 
+                <Link
                   href="/dashboard/listings/create"
                   className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors"
                 >
@@ -435,42 +437,40 @@ export default function SellerListingsPage() {
                         <button
                           onClick={() => handleDeleteListing(listing.id)}
                           disabled={deleteLoading === listing.id}
-                          className={`px-4 py-2 text-sm rounded-lg transition-colors ${
-                            deleteLoading === listing.id
-                              ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                              : "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
-                          }`}
+                          className={`px-4 py-2 text-sm rounded-lg transition-colors ${deleteLoading === listing.id
+                            ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                            : "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+                            }`}
                         >
                           {deleteLoading === listing.id ? "Deleting..." : "🗑️ Delete"}
                         </button>
                       </div>
                     </div>
-                    
+
+                    // GÜVENLİ
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                      {listing.title}
+                      {DOMPurify.sanitize(listing.title)}
                     </h3>
-                    
+
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4 text-sm text-gray-600">
                       <div>📦 {listing.totalItems} items</div>
                       <div>💰 ${listing.price.toFixed(2)}</div>
                       <div>📅 {listing.submittedDate}</div>
                     </div>
-                    
-                    <div className={`p-3 rounded-lg border-l-4 ${
-                      listing.status === 'pending' ? 'bg-yellow-50 border-yellow-400' :
+
+                    <div className={`p-3 rounded-lg border-l-4 ${listing.status === 'pending' ? 'bg-yellow-50 border-yellow-400' :
                       listing.status === 'approved' ? 'bg-green-50 border-green-400' :
-                      'bg-red-50 border-red-400'
-                    }`}>
-                      <p className={`text-sm font-medium ${
-                        listing.status === 'pending' ? 'text-yellow-800' :
-                        listing.status === 'approved' ? 'text-green-800' :
-                        'text-red-800'
+                        'bg-red-50 border-red-400'
                       }`}>
+                      <p className={`text-sm font-medium ${listing.status === 'pending' ? 'text-yellow-800' :
+                        listing.status === 'approved' ? 'text-green-800' :
+                          'text-red-800'
+                        }`}>
                         {getStatusMessage(listing.status)}
                       </p>
                       {listing.status === 'rejected' && listing.rejectionReason && (
                         <p className="text-sm text-red-700 mt-2">
-                          <strong>Reason:</strong> {listing.rejectionReason}
+                          <strong>Reason:</strong> {DOMPurify.sanitize(listing.rejectionReason)}
                         </p>
                       )}
                     </div>
@@ -513,7 +513,7 @@ export default function SellerListingsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                       <div className="flex justify-between">
                         <span className="font-medium text-gray-700">Title:</span>
-                        <span className="text-gray-900">{selectedListing.title}</span>
+                        <span className="text-gray-900">{DOMPurify.sanitize(selectedListing.title)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="font-medium text-gray-700">Status:</span>
@@ -612,11 +612,10 @@ export default function SellerListingsPage() {
                                   </span>
                                 </td>
                                 <td className="px-4 py-3 whitespace-nowrap">
-                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                    item.condition === 'like-new' 
-                                      ? 'bg-green-100 text-green-800' 
-                                      : 'bg-yellow-100 text-yellow-800'
-                                  }`}>
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${item.condition === 'like-new'
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-yellow-100 text-yellow-800'
+                                    }`}>
                                     {item.condition === 'like-new' ? 'Like New' : 'Good'}
                                   </span>
                                 </td>
@@ -669,7 +668,7 @@ export default function SellerListingsPage() {
                   <div className="mb-6">
                     <h4 className="text-lg font-medium text-gray-900 mb-4">Admin Notes</h4>
                     <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-lg">
-                      <p className="text-sm text-blue-800">{selectedListing.adminNotes}</p>
+                    <p className="text-sm text-blue-800">{DOMPurify.sanitize(selectedListing.adminNotes)}</p>
                     </div>
                   </div>
                 )}
@@ -694,11 +693,10 @@ export default function SellerListingsPage() {
                 <button
                   onClick={() => handleDeleteListing(selectedListing.id)}
                   disabled={deleteLoading === selectedListing.id}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    deleteLoading === selectedListing.id
-                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-red-600 hover:bg-red-700 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                  }`}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${deleteLoading === selectedListing.id
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-red-600 hover:bg-red-700 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    }`}
                 >
                   {deleteLoading === selectedListing.id ? "Deleting..." : "Delete Listing"}
                 </button>

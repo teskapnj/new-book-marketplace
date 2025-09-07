@@ -8,6 +8,8 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase"; // Firestore import'u düzeltildi: db olarak import ettik
 import { FiHome } from "react-icons/fi";
 import SocialLogin from "@/components/SocialLogin";
+import DOMPurify from 'isomorphic-dompurify'; // Bu satırı ekleyin
+
 
 // PasswordInput bileşeni RegisterPage dışına taşıyoruz
 interface PasswordInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -82,24 +84,47 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const router = useRouter();
-  
+
+  // GÜVENLİ
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+
+    // Input sanitization with field-specific limits
+    let sanitizedValue = DOMPurify.sanitize(value);
+
+    // Field-specific validation and limits
+    switch (name) {
+      case 'firstName':
+      case 'lastName':
+        sanitizedValue = sanitizedValue.substring(0, 50);
+        break;
+      case 'email':
+        sanitizedValue = sanitizedValue.substring(0, 100);
+        break;
+      case 'password':
+      case 'confirmPassword':
+        sanitizedValue = sanitizedValue.substring(0, 128);
+        break;
+      default:
+        sanitizedValue = sanitizedValue.substring(0, 100);
+    }
+
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: sanitizedValue,
     }));
+
     // Anlık şifre eşleşme kontrolü
     if (
-      (name === "password" && formData.confirmPassword && value !== formData.confirmPassword) ||
-      (name === "confirmPassword" && formData.password && value !== formData.password)
+      (name === "password" && formData.confirmPassword && sanitizedValue !== formData.confirmPassword) ||
+      (name === "confirmPassword" && formData.password && sanitizedValue !== formData.password)
     ) {
       setError("Passwords do not match");
     } else {
       setError("");
     }
   };
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -122,28 +147,29 @@ export default function RegisterPage() {
         formData.email,
         formData.password
       );
-      
+
       console.log("User created:", userCredential.user);
-      
+
       // Firestore'a kullanıcı dokümanını ekle (UID ile)
+      // GÜVENLİ
       await setDoc(doc(db, "users", userCredential.user.uid), {
-        email: formData.email,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        role: "seller", // Sabit olarak seller rolü atanıyor
+        email: DOMPurify.sanitize(formData.email.toLowerCase().trim()).substring(0, 100),
+        firstName: DOMPurify.sanitize(formData.firstName.trim()).substring(0, 50),
+        lastName: DOMPurify.sanitize(formData.lastName.trim()).substring(0, 50),
+        role: "seller",
         emailVerified: false,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
       console.log("User document created in Firestore");
-      
+
       // Doğrulama e-postası gönder
       await sendEmailVerification(userCredential.user);
       console.log("Verification email sent");
-      
+
       // Kullanıcıyı oturumdan çıkar (e-posta doğrulanana kadar giriş yapamaması için)
       await auth.signOut();
-      
+
       setEmailSent(true);
     } catch (error: any) {
       console.error("Registration error:", error);
@@ -186,18 +212,19 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       // Kullanıcıyı tekrar oluştur (e-posta doğrulanmamışsa)
+      // GÜVENLİ
       const userCredential = await createUserWithEmailAndPassword(
         auth,
-        formData.email,
-        formData.password
+        DOMPurify.sanitize(formData.email.toLowerCase().trim()),
+        formData.password // Password zaten sanitize edildi handleChange'de
       );
-      
+
       // Doğrulama e-postasını tekrar gönder
       await sendEmailVerification(userCredential.user);
-      
+
       // Kullanıcıyı oturumdan çıkar
       await auth.signOut();
-      
+
       alert("Verification email resent successfully!");
     } catch (error: any) {
       console.error("Resend email error:", error);
@@ -216,7 +243,7 @@ export default function RegisterPage() {
           <FiHome className="h-5 w-5 mr-1" />
           <span className="font-medium">Back to Home</span>
         </Link>
-        
+
         <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md text-center">
           <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -225,7 +252,7 @@ export default function RegisterPage() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Verify Your Email</h2>
           <p className="text-gray-600 mb-6">
-            We've sent a verification email to <strong>{formData.email}</strong>. 
+            We've sent a verification email to <strong>{formData.email}</strong>.
             Please check your inbox and click the verification link to activate your account.
           </p>
           <p className="text-sm text-gray-500 mb-6">
@@ -239,8 +266,8 @@ export default function RegisterPage() {
             >
               {loading ? "Sending..." : "Resend Email"}
             </button>
-            <Link 
-              href="/login" 
+            <Link
+              href="/login"
               className="block w-full bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 text-center"
             >
               Back to Login
@@ -260,7 +287,7 @@ export default function RegisterPage() {
           <FiHome className="h-5 w-5 mr-1" />
           <span className="font-medium">Back to Home</span>
         </Link>
-        
+
         <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -284,7 +311,7 @@ export default function RegisterPage() {
         <FiHome className="h-5 w-5 mr-1" />
         <span className="font-medium">Back to Home</span>
       </Link>
-      
+
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
@@ -412,13 +439,13 @@ export default function RegisterPage() {
             </button>
           </div>
         </form>
-        
-        <SocialLogin 
+
+        <SocialLogin
           isLogin={false}
           onSuccess={handleSocialLoginSuccess}
           onError={handleSocialLoginError}
         />
-        
+
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             Already have an account?{' '}

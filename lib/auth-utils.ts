@@ -21,13 +21,13 @@ export const sanitizeInput = (input: string): string => {
   if (!input || typeof input !== 'string') {
     return '';
   }
-  
+
   return input
     .trim()
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') 
-    .replace(/[<>]/g, '') 
-    .replace(/javascript:/gi, '') 
-    .replace(/on\w+=/gi, '') 
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/[<>]/g, '')
+    .replace(/javascript:/gi, '')
+    .replace(/on\w+=/gi, '')
     .substring(0, 1000);
 };
 
@@ -40,7 +40,7 @@ export const validateEmail = (email: string): boolean => {
 
 // Güvenli API çağrısı
 export const secureApiCall = async (
-  url: string, 
+  url: string,
   options: RequestInit = {},
   timeoutMs: number = 10000
 ): Promise<Response> => {
@@ -76,10 +76,12 @@ export const verifyUserRoleSecurely = async (user: User): Promise<UserRole> => {
   }
 
   try {
-    console.log('🔍 Checking role for:', user.email);
+    console.log('🔍 Checking role for user');
 
     // Önce admin email kontrolü
-    if (user.email === 'admin@secondlife.com') {
+    // GÜVENLI - Hardcoded fallback olmadan
+    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+    if (adminEmail && user.email === adminEmail) {
       console.log('✅ Admin role assigned via email');
       return UserRole.ADMIN;
     }
@@ -91,9 +93,9 @@ export const verifyUserRoleSecurely = async (user: User): Promise<UserRole> => {
     if (userDoc.exists()) {
       const userData = userDoc.data();
       const firestoreRole = userData.role;
-      
-      console.log('📄 Firestore role found:', firestoreRole);
-      
+
+      console.log('📄 Firestore role found:', firestoreRole ? 'role_assigned' : 'no_role');
+
       // Rol doğrulama ve dönüştürme
       switch (firestoreRole) {
         case 'admin':
@@ -114,9 +116,10 @@ export const verifyUserRoleSecurely = async (user: User): Promise<UserRole> => {
 
   } catch (error) {
     console.error('❌ Firestore role check error:', error);
-    
+
     // Hata durumunda email bazlı fallback
-    if (user.email === 'admin@secondlife.com') {
+    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+    if (adminEmail && user.email === adminEmail) {
       return UserRole.ADMIN;
     }
     return UserRole.SELLER; // Varsayılan seller
@@ -127,7 +130,7 @@ export const verifyUserRoleSecurely = async (user: User): Promise<UserRole> => {
 export const secureLogout = async (user: User): Promise<void> => {
   try {
     console.log('🚪 Logging out user:', user.uid);
-    
+
     // Basit logout API çağrısı (opsiyonel)
     await secureApiCall('/api/auth/logout', {
       method: 'POST',
@@ -136,7 +139,7 @@ export const secureLogout = async (user: User): Promise<void> => {
   } catch (error) {
     console.error('Logout API error:', error);
   }
-  
+
   // Local storage temizle
   if (typeof window !== 'undefined') {
     localStorage.removeItem('auth-rate-limit');
@@ -149,7 +152,7 @@ export const secureLogout = async (user: User): Promise<void> => {
 // Rol cache yönetimi
 export const getCachedRole = (userId: string): UserRole | null => {
   if (typeof window === 'undefined') return null;
-  
+
   try {
     const cached = localStorage.getItem(`user-role-${userId}`);
     if (cached) {
@@ -165,13 +168,13 @@ export const getCachedRole = (userId: string): UserRole | null => {
   } catch (error) {
     console.error('Cache read error:', error);
   }
-  
+
   return null;
 };
 
 export const setCachedRole = (userId: string, role: UserRole): void => {
   if (typeof window === 'undefined') return;
-  
+
   try {
     localStorage.setItem(`user-role-${userId}`, JSON.stringify({
       role,
@@ -203,7 +206,10 @@ export const logSecurityAttempt = (
       timestamp: Date.now(),
       userAgent: navigator.userAgent.substring(0, 100)
     };
-    
-    console.log(`🔐 Security Log: ${JSON.stringify(log)}`);
+
+    // GÜVENLI
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🔐 Security Log: ${JSON.stringify(log)}`);
+    }
   }
 };

@@ -7,6 +7,8 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
+import DOMPurify from 'isomorphic-dompurify'; // Bu satırı ekleyin
+
 // SVG İkonlar
 function ArrowLeftIcon({ size = 24, className = "" }: { size?: number; className?: string }) {
   return (
@@ -87,7 +89,7 @@ function TruckIcon({ size = 24, className = "" }: { size?: number; className?: s
 function AmazonIcon({ size = 24, className = "" }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M.045 18.02c.017.023.05.035.09.035.058 0 .13-.035.22-.105l.27-.27c.14-.14.21-.28.21-.42 0-.088-.035-.175-.105-.262-.035-.07-.09-.128-.166-.175-.077-.047-.166-.07-.268-.07-.094 0-.183.023-.268.07a.738.738 0 0 0-.21.175.738.738 0 0 0-.175.21c-.047.085-.07.174-.07.268 0 .094.023.183.07.268a.738.738 0 0 0 .175.21c.085.047.174.07.268.07.094 0 .183-.023.268-.07a.738.738 0 0 0 .21-.175l.27-.27c.035-.035.058-.07.07-.105z"/>
+      <path d="M.045 18.02c.017.023.05.035.09.035.058 0 .13-.035.22-.105l.27-.27c.14-.14.21-.28.21-.42 0-.088-.035-.175-.105-.262-.035-.07-.09-.128-.166-.175-.077-.047-.166-.07-.268-.07-.094 0-.183.023-.268.07a.738.738 0 0 0-.21.175.738.738 0 0 0-.175.21c-.047.085-.07.174-.07.268 0 .094.023.183.07.268a.738.738 0 0 0 .175.21c.085.047.174.07.268.07.094 0 .183-.023.268-.07a.738.738 0 0 0 .21-.175l.27-.27c.035-.035.058-.07.07-.105z" />
     </svg>
   );
 }
@@ -100,40 +102,52 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [notFound, setNotFound] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [imageError, setImageError] = useState(false);
-  
+
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
-  
+
   useEffect(() => {
     const fetchProduct = async () => {
       try {
         setLoading(true);
-        const docRef = doc(db, "listings", resolvedParams.id);
+        // GÜVENLİ
+        // URL parameter validation
+        const sanitizedId = resolvedParams.id && /^[a-zA-Z0-9-_]{10,50}$/.test(resolvedParams.id)
+          ? DOMPurify.sanitize(resolvedParams.id)
+          : null;
+
+        if (!sanitizedId) {
+          setNotFound(true);
+          setLoading(false);
+          return;
+        }
+
+        const docRef = doc(db, "listings", sanitizedId);
         const docSnap = await getDoc(docRef);
-        
+
         if (docSnap.exists()) {
           const data = docSnap.data();
-          
+
           // Calculate dominant category
           const distinctCategories = new Set<string>();
-          
+
           data.bundleItems.forEach((item: any) => {
             if (item.category) {
               distinctCategories.add(item.category);
             }
           });
-          
-          const dominantCategory = distinctCategories.size > 1 ? "mix" : 
-                                  (distinctCategories.values().next().value || "mix");
-          
+
+          const dominantCategory = distinctCategories.size > 1 ? "mix" :
+            (distinctCategories.values().next().value || "mix");
+
           // Collect all images from bundle items
           const bundleImages = data.bundleItems
             .filter((item: any) => item.imageUrl)
             .map((item: any) => item.imageUrl);
-          
+
           const firstItemImage = data.bundleItems[0]?.imageUrl || null;
           const images = bundleImages.length > 0 ? bundleImages : (firstItemImage ? [firstItemImage] : []);
-          
+
           // Calculate total Amazon value from bundle items
           let totalAmazonValue = 0;
           data.bundleItems.forEach((item: any) => {
@@ -141,27 +155,34 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               totalAmazonValue += item.amazonData.price * (item.quantity || 1);
             }
           });
-          
+
           const features = [
             `Items: ${data.totalItems || data.bundleItems.length}`,
             `Category: ${dominantCategory === "mix" ? "Mix Bundle" : dominantCategory}`,
             `Seller: ${data.vendorName || data.vendorId || "Anonymous Seller"}`
           ];
-          
+
+          // GÜVENLİ
           setProduct({
             id: docSnap.id,
-            title: data.title || "Untitled Bundle",
-            price: data.totalValue || 0,
-            shippingPrice: data.shippingPrice || 0,
-            totalAmazonValue: totalAmazonValue,
-            seller: data.vendorName || data.vendorId || "Anonymous Seller",
+            title: DOMPurify.sanitize(data.title || "Untitled Bundle").substring(0, 200),
+            price: Math.max(0, data.totalValue || 0),
+            shippingPrice: Math.max(0, data.shippingPrice || 0),
+            totalAmazonValue: Math.max(0, totalAmazonValue),
+            seller: DOMPurify.sanitize(data.vendorName || data.vendorId || "Anonymous Seller").substring(0, 100),
             sellerRating: 4.5,
             images: images,
-            description: data.description || `Bundle of ${data.totalItems || data.bundleItems.length} items including various ${dominantCategory === "mix" ? "categories" : dominantCategory + "s"}.`,
-            features: features,
+            description: DOMPurify.sanitize(data.description || `Bundle of ${data.totalItems || data.bundleItems.length} items including various ${dominantCategory === "mix" ? "categories" : dominantCategory + "s"}.`).substring(0, 1000),
+            features: features.map(feature => DOMPurify.sanitize(feature).substring(0, 100)),
             category: dominantCategory,
-            bundleItems: data.bundleItems,
-            totalItems: data.totalItems || data.bundleItems.length
+            bundleItems: data.bundleItems.map((item: any) => ({
+              ...item,
+              isbn: item.isbn ? DOMPurify.sanitize(item.isbn).substring(0, 50) : null,
+              category: item.category ? DOMPurify.sanitize(item.category).substring(0, 20) : 'book',
+              price: Math.max(0, item.price || 0),
+              quantity: Math.max(1, item.quantity || 1)
+            })),
+            totalItems: Math.max(0, data.totalItems || data.bundleItems.length)
           });
         } else {
           setNotFound(true);
@@ -173,12 +194,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         setLoading(false);
       }
     };
-    
+
     if (resolvedParams.id) {
       fetchProduct();
     }
   }, [resolvedParams.id]);
-  
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
@@ -192,7 +213,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       </div>
     );
   }
-  
+
   if (notFound || !product) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
@@ -202,7 +223,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Bundle Not Found</h1>
           <p className="text-gray-600 mb-8">The bundle you're looking for doesn't exist or has been removed.</p>
-          <button 
+          <button
             onClick={() => router.back()}
             className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-3 rounded-full font-medium hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl"
           >
@@ -213,7 +234,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       </div>
     );
   }
-  
+
   const handleAddToCart = () => {
     addToCart({
       id: product.id,
@@ -224,11 +245,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       shippingInfo: undefined,
       weight: 0
     });
-    
+
     setShowNotification(true);
     setTimeout(() => setShowNotification(false), 3000);
   };
-  
+
   const handleWishlist = () => {
     if (isInWishlist(product.id)) {
       removeFromWishlist(product.id);
@@ -241,7 +262,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       });
     }
   };
-  
+
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -258,26 +279,26 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       alert('Link copied to clipboard!');
     }
   };
-  
+
   const getCategoryIcon = (category: string) => {
     const icons = {
       book: "📚",
       cd: "💿",
-      dvd: "📀", 
+      dvd: "📀",
       game: "🎮",
       mix: "📦"
     };
     return icons[category as keyof typeof icons] || "📦";
   };
-  
+
   const handleImageError = () => {
     setImageError(true);
   };
-  
+
   const getItemImage = (item: any) => {
     return item.imageUrl || item.amazonData?.image || item.image;
   };
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {showNotification && (
@@ -288,10 +309,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
       )}
-      
+
       <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <button 
+          <button
             onClick={() => router.back()}
             className="flex items-center text-blue-600 font-medium hover:text-blue-700 transition-colors group"
           >
@@ -300,14 +321,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </button>
         </div>
       </div>
-      
+
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           <div className="space-y-6">
             <div className="relative h-[500px] bg-white rounded-3xl overflow-hidden shadow-2xl border border-gray-100">
               {product.images.length > 0 && !imageError ? (
-                <Image 
-                  src={product.images[selectedImageIndex]} 
+                <Image
+                  src={product.images[selectedImageIndex]}
                   alt="Product image"
                   fill
                   className="object-contain p-8"
@@ -324,10 +345,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   </div>
                 </div>
               )}
-              
+
               {product.images.length > 1 && (
                 <>
-                  <button 
+                  <button
                     onClick={() => setSelectedImageIndex((prev) => (prev === 0 ? product.images.length - 1 : prev - 1))}
                     className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 rounded-full p-2 shadow-md transition-all"
                     aria-label="Previous image"
@@ -336,7 +357,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
-                  <button 
+                  <button
                     onClick={() => setSelectedImageIndex((prev) => (prev === product.images.length - 1 ? 0 : prev + 1))}
                     className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 rounded-full p-2 shadow-md transition-all"
                     aria-label="Next image"
@@ -347,7 +368,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   </button>
                 </>
               )}
-              
+
               {product.images.length > 1 && (
                 <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-2">
                   {product.images.map((_: any, index: number) => (
@@ -360,14 +381,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   ))}
                 </div>
               )}
-              
+
               <div className="absolute top-6 left-6">
                 <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
                   <PackageIcon size={16} className="inline mr-2" />
                   {product.totalItems} Items Bundle
                 </div>
               </div>
-              
+
               {product.images.length > 0 && (
                 <div className="absolute top-6 right-6">
                   {product.images[selectedImageIndex].includes('amazon.com') ? (
@@ -382,22 +403,21 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               )}
             </div>
-            
+
             {product.images.length > 1 && (
               <div className="grid grid-cols-4 gap-3">
                 {product.images.map((image: string, index: number) => (
                   <button
                     key={index}
                     onClick={() => setSelectedImageIndex(index)}
-                    className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all ${
-                      selectedImageIndex === index 
-                        ? 'border-blue-500 ring-2 ring-blue-200' 
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                    className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all ${selectedImageIndex === index
+                      ? 'border-blue-500 ring-2 ring-blue-200'
+                      : 'border-gray-200 hover:border-gray-300'
+                      }`}
                     aria-label={`View image ${index + 1}`}
                   >
-                    <Image 
-                      src={image} 
+                    <Image
+                      src={image}
                       alt={`Thumbnail ${index + 1}`}
                       fill
                       className="object-cover"
@@ -409,11 +429,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </div>
             )}
           </div>
-          
+
           <div className="space-y-8">
             <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
               <h1 className="text-3xl font-bold text-gray-900 mb-4">{product.title}</h1>
-              
+
               <div className="flex items-center mb-6">
                 <div className="flex items-center bg-yellow-50 rounded-full px-3 py-1">
                   {[...Array(5)].map((_, i) => (
@@ -425,7 +445,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </div>
                 <span className="ml-3 text-sm text-gray-500">(128 reviews)</span>
               </div>
-              
+
               <div className="flex items-baseline space-x-4 mb-6">
                 <span className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   ${product.price.toFixed(2)}
@@ -435,7 +455,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   Save 23%
                 </span>
               </div>
-              
+
               {/* Amazon Total Value */}
               {product.totalAmazonValue > 0 && (
                 <div className="bg-orange-50 rounded-2xl p-4 border border-orange-200 mb-6">
@@ -445,12 +465,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                       <p className="text-orange-900 font-medium">
                         Amazon Total new Items Value: ${product.totalAmazonValue.toFixed(2)}
                       </p>
-                    
+
                     </div>
                   </div>
                 </div>
               )}
-              
+
               <div className="grid grid-cols-1 gap-4">
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-4 border border-purple-200">
                   <div className="flex items-center justify-between">
@@ -462,7 +482,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
               <div className="flex items-center mb-4">
                 <FileTextIcon size={24} className="text-blue-600 mr-3" />
@@ -480,27 +500,26 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               )}
             </div>
-            
+
             <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
               <div className="flex space-x-4">
-                <button 
+                <button
                   onClick={handleAddToCart}
                   className="flex-1 py-4 rounded-2xl font-bold transition-all duration-200 flex items-center justify-center bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                 >
                   <ShoppingCartIcon size={20} className="mr-3" />
                   Add to Cart
                 </button>
-                <button 
+                <button
                   onClick={handleWishlist}
-                  className={`p-4 rounded-2xl border-2 transition-all duration-200 hover:scale-105 ${
-                    isInWishlist(product.id) 
-                      ? 'text-red-500 border-red-500 bg-red-50' 
-                      : 'text-gray-400 border-gray-200 hover:border-red-300 hover:text-red-400'
-                  }`}
+                  className={`p-4 rounded-2xl border-2 transition-all duration-200 hover:scale-105 ${isInWishlist(product.id)
+                    ? 'text-red-500 border-red-500 bg-red-50'
+                    : 'text-gray-400 border-gray-200 hover:border-red-300 hover:text-red-400'
+                    }`}
                 >
                   <HeartIcon size={20} filled={isInWishlist(product.id)} />
                 </button>
-                <button 
+                <button
                   onClick={handleShare}
                   className="p-4 border-2 border-gray-200 rounded-2xl hover:border-blue-300 hover:text-blue-500 transition-all duration-200 hover:scale-105"
                 >
@@ -510,7 +529,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
         </div>
-        
+
         {product.bundleItems && product.bundleItems.length > 0 && (
           <div className="mt-16">
             <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden">
@@ -518,7 +537,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <h3 className="text-2xl font-bold text-white mb-2">Complete Bundle Details</h3>
                 <p className="text-blue-100">Detailed breakdown of all {product.bundleItems.length} items in this bundle</p>
               </div>
-              
+
               <div className="overflow-x-auto">
                 <table className="min-w-full">
                   <thead className="bg-gray-50">
@@ -539,8 +558,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             <div className="flex items-center space-x-4">
                               <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center border border-gray-200 overflow-hidden">
                                 {itemImage ? (
-                                  <Image 
-                                    src={itemImage} 
+                                  <Image
+                                    src={itemImage}
                                     alt={`Item ${index + 1}`}
                                     width={48}
                                     height={48}
@@ -601,7 +620,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
         )}
-        
+
         <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 text-center">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -610,7 +629,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <h4 className="font-bold text-gray-900 mb-2">Secure Payment</h4>
             <p className="text-gray-600 text-sm">Your payment information is encrypted and secure</p>
           </div>
-          
+
           <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 text-center">
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <TruckIcon size={24} className="text-blue-600" />
@@ -618,7 +637,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <h4 className="font-bold text-gray-900 mb-2">Fast Shipping</h4>
             <p className="text-gray-600 text-sm">Your order will be shipped promptly</p>
           </div>
-          
+
           <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 text-center">
             <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <HeartIcon size={24} className="text-purple-600" />

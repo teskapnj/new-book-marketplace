@@ -2,14 +2,20 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import DOMPurify from 'isomorphic-dompurify'; // Bu satırı ekleyin
+
 
 export default function CheckoutSuccessPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const orderId = searchParams.get('orderId');
-  
+  // GÜVENLİ
+  const rawOrderId = searchParams.get('orderId');
+  const orderId = rawOrderId && /^[a-zA-Z0-9-_]{10,50}$/.test(rawOrderId)
+    ? DOMPurify.sanitize(rawOrderId)
+    : null;
+
   const [countdown, setCountdown] = useState(10);
-  
+
   // Email gönderiminin tek seferde yapılması için ref kullan
   const emailSentRef = useRef(false);
 
@@ -23,11 +29,20 @@ export default function CheckoutSuccessPage() {
     try {
       console.log('Sending order confirmation email for:', orderIdParam);
       emailSentRef.current = true; // Email gönderilmeye başladığını işaretle
-      
-      const response = await fetch(`/api/orders/${orderIdParam}/send-confirmation`, {
+
+      // GÜVENLİ
+      // Önce orderIdParam'ı validate et
+      if (!orderIdParam || !/^[a-zA-Z0-9-_]{10,50}$/.test(orderIdParam)) {
+        console.error('Invalid order ID format');
+        return;
+      }
+
+      const sanitizedOrderId = DOMPurify.sanitize(orderIdParam);
+
+      const response = await fetch(`/api/orders/${sanitizedOrderId}/send-confirmation`, {
         method: 'POST'
       });
-      
+
       if (response.ok) {
         console.log('Order confirmation email sent successfully');
       } else {
@@ -94,7 +109,7 @@ export default function CheckoutSuccessPage() {
           <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-green-600 via-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
             Order Placed Successfully!
           </h1>
-          
+
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
             Thank you for your order! We've received your order and will begin processing it shortly.
           </p>
@@ -102,35 +117,37 @@ export default function CheckoutSuccessPage() {
           {/* Order Details Card */}
           <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 mb-8 max-w-md mx-auto">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Order Details</h2>
-            
+
             <div className="space-y-4">
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span className="font-medium text-gray-700">Order ID:</span>
-                <span className="font-mono text-sm text-blue-600">{orderId.slice(0, 8)}...</span>
-              </div>
-              
+                // GÜVENLİ
+                <span className="font-mono text-sm text-blue-600">
+                  {orderId ? `${DOMPurify.sanitize(orderId.slice(0, 8))}...` : 'Invalid'}
+                </span>
+              </div>ß
+
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span className="font-medium text-gray-700">Status:</span>
                 <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
                   Pending
                 </span>
               </div>
-              
+
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span className="font-medium text-gray-700">Payment:</span>
                 <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
                   Completed (Demo)
                 </span>
               </div>
-              
+
               {/* Email durumu gösterici (opsiyonel) */}
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span className="font-medium text-gray-700">Confirmation Email:</span>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  emailSentRef.current 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-yellow-100 text-yellow-800'
-                }`}>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${emailSentRef.current
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-yellow-100 text-yellow-800'
+                  }`}>
                   {emailSentRef.current ? 'Sent' : 'Sending...'}
                 </span>
               </div>
@@ -167,10 +184,15 @@ export default function CheckoutSuccessPage() {
               </svg>
               Continue Shopping
             </Link>
-            
+
             <button
               onClick={() => {
-                navigator.clipboard.writeText(orderId);
+                if (orderId && /^[a-zA-Z0-9-_]{10,50}$/.test(orderId)) {
+                  navigator.clipboard.writeText(DOMPurify.sanitize(orderId));
+                  alert('Order ID copied to clipboard!');
+                } else {
+                  alert('Invalid order ID');
+                }
                 alert('Order ID copied to clipboard!');
               }}
               className="inline-flex items-center px-6 py-4 bg-white text-gray-700 font-medium rounded-2xl border-2 border-gray-200 hover:bg-gray-50 transition-all duration-200"

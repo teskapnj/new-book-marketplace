@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import ProductCard from "@/components/ProductCard";
+import DOMPurify from 'isomorphic-dompurify'; // Bu satırı ekleyin
 
 // SVG İkon Bileşenleri
 function FilterIcon({ size = 24, className = "" }) {
@@ -48,10 +49,16 @@ export default function BrowsePage() {
   const [sortBy, setSortBy] = useState<string>("relevance");
 
   // URL'den kategori parametresini oku
+  // GÜVENLİ
   useEffect(() => {
     const category = searchParams.get("category");
-    if (category) {
+    const validCategories = ["all", "mix", "book", "cd", "dvd", "game"];
+
+    if (category && validCategories.includes(category)) {
       setSelectedCategory(category);
+    } else if (category) {
+      // Geçersiz kategori varsa "all" a yönlendir
+      setSelectedCategory("all");
     }
   }, [searchParams]);
 
@@ -283,24 +290,24 @@ export default function BrowsePage() {
               ← Back to Home
             </Link>
             <h1 className="text-2xl font-bold">
-              {selectedCategory === "all" ? "Browse All Items" : 
-               selectedCategory === "mix" ? "Mix Bundles" :
-               selectedCategory === "book" ? "Books" :
-               selectedCategory === "cd" ? "CDs" :
-               selectedCategory === "dvd" ? "DVDs/Blu-rays" :
-               selectedCategory === "game" ? "Games" : "Browse Items"}
+              {selectedCategory === "all" ? "Browse All Items" :
+                selectedCategory === "mix" ? "Mix Bundles" :
+                  selectedCategory === "book" ? "Books" :
+                    selectedCategory === "cd" ? "CDs" :
+                      selectedCategory === "dvd" ? "DVDs/Blu-rays" :
+                        selectedCategory === "game" ? "Games" : DOMPurify.sanitize("Browse Items")}
             </h1>
           </div>
-          
+
           <div className="flex items-center space-x-4">
             <div className="flex border rounded-lg">
-              <button 
+              <button
                 onClick={() => setViewMode("grid")}
                 className={`p-2 ${viewMode === "grid" ? "bg-blue-100 text-blue-600" : ""}`}
               >
                 <GridIcon size={20} />
               </button>
-              <button 
+              <button
                 onClick={() => setViewMode("list")}
                 className={`p-2 ${viewMode === "list" ? "bg-blue-100 text-blue-600" : ""}`}
               >
@@ -318,7 +325,7 @@ export default function BrowsePage() {
             <div className="bg-white rounded-lg shadow-sm p-4 sticky top-4">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-bold text-lg">Filters</h2>
-                <button 
+                <button
                   onClick={() => {
                     setSelectedCategory("all");
                     setPriceRange([0, 100]);
@@ -343,7 +350,8 @@ export default function BrowsePage() {
                           onChange={() => setSelectedCategory(category.id)}
                           className="mr-2"
                         />
-                        <span>{category.name}</span>
+                        // GÜVENLİ
+                        <span>{DOMPurify.sanitize(category.name)}</span>
                       </div>
                       <span className="text-gray-500 text-sm">({category.count})</span>
                     </label>
@@ -359,12 +367,18 @@ export default function BrowsePage() {
                     <span>${priceRange[0]}</span>
                     <span>${priceRange[1]}</span>
                   </div>
+                  // GÜVENLİ
                   <input
                     type="range"
                     min="0"
                     max="100"
                     value={priceRange[1]}
-                    onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value);
+                      if (value >= 0 && value <= 100 && !isNaN(value)) {
+                        setPriceRange([priceRange[0], value]);
+                      }
+                    }}
                     className="w-full"
                   />
                 </div>
@@ -373,9 +387,15 @@ export default function BrowsePage() {
               {/* Sort By */}
               <div>
                 <h3 className="font-medium mb-3">Sort By</h3>
+                // GÜVENLİ
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
+                  onChange={(e) => {
+                    const validOptions = ["relevance", "price-low", "price-high", "newest"];
+                    if (validOptions.includes(e.target.value)) {
+                      setSortBy(e.target.value);
+                    }
+                  }}
                   className="w-full p-2 border rounded"
                 >
                   <option value="relevance">Relevance</option>
@@ -398,7 +418,12 @@ export default function BrowsePage() {
                 <span>Sort by:</span>
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
+                  onChange={(e) => {
+                    const validOptions = ["relevance", "price-low", "price-high", "newest"];
+                    if (validOptions.includes(e.target.value)) {
+                      setSortBy(e.target.value);
+                    }
+                  }}
                   className="border rounded p-1"
                 >
                   <option value="relevance">Relevance</option>
@@ -421,8 +446,8 @@ export default function BrowsePage() {
                 {filteredProducts.map(product => (
                   <div key={product.id} className="bg-white rounded-lg shadow-sm p-4 flex">
                     <div className="relative h-24 w-24 bg-gray-200 rounded mr-4 flex-shrink-0">
-                      <Image 
-                        src={product.image} 
+                      <Image
+                        src={product.image}
                         alt={product.title}
                         width={96}
                         height={96}
@@ -435,11 +460,11 @@ export default function BrowsePage() {
                       )}
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-medium text-lg">{product.title}</h3>
+                      <h3 className="font-medium text-lg">{DOMPurify.sanitize(product.title)}</h3>
                       {product.description && (
-                        <p className="text-gray-600 text-sm mb-1">{product.description}</p>
+                        <p className="text-gray-600 text-sm mb-1">{DOMPurify.sanitize(product.description)}</p>
                       )}
-                      <p className="text-gray-500 text-sm">Sold by {product.seller}</p>
+                      <p className="text-gray-500 text-sm">Sold by {DOMPurify.sanitize(product.seller)}</p>
                       <div className="flex justify-between items-center mt-2">
                         <span className="font-bold text-lg">${product.price.toFixed(2)}</span>
                         <Link href={`/products/${product.id}`}>
@@ -457,7 +482,7 @@ export default function BrowsePage() {
             {filteredProducts.length === 0 && (
               <div className="text-center py-12">
                 <p className="text-gray-500">No products found matching your filters.</p>
-                <button 
+                <button
                   onClick={() => {
                     setSelectedCategory("all");
                     setPriceRange([0, 100]);

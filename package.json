@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "dev-https": "next dev --turbopack --experimental-https",
+    "dev": "next dev",
+    "dev-https": "next dev --experimental-https",
     "setup-ssl": "npx mkcert create-ca && npx mkcert create-cert localhost 192.168.1.45 127.0.0.1",
     "build": "next build",
     "start": "next start",
@@ -22,6 +22,7 @@
     "firebase-functions": "^6.4.0",
     "framer-motion": "^12.23.12",
     "html5-qrcode": "^2.3.8",
+    "isomorphic-dompurify": "^2.26.0",
     "lucide-react": "^0.541.0",
     "next": "15.4.6",
     "nodemailer": "^7.0.6",
@@ -36,6 +37,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/dompurify": "^3.0.5",
     "@types/node": "^20",
     "@types/nodemailer": "^6.4.19",
     "@types/react": "^19",

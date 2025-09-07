@@ -5,6 +5,7 @@ import { auth } from "@/lib/firebase";
 import { GoogleAuthProvider, FacebookAuthProvider, signInWithPopup, TwitterAuthProvider } from "firebase/auth";
 import { FcGoogle } from "react-icons/fc";
 import { FaFacebook, FaTwitter } from "react-icons/fa";
+import DOMPurify from 'isomorphic-dompurify'; // Bu satırı ekleyin
 
 interface SocialLoginProps {
   isLogin?: boolean;
@@ -35,13 +36,17 @@ export default function SocialLogin({ isLogin = true, onSuccess, onError }: Soci
       }
       
       const result = await signInWithPopup(auth, authProvider);
-      console.log(`${provider} login successful:`, result.user);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`${provider} login successful`);
+      }
       
       if (onSuccess) {
         onSuccess();
       }
     } catch (error: any) {
-      console.error(`${provider} login error:`, error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error(`${provider} login error:`, error);
+      }
       
       let errorMessage = "An error occurred during authentication";
       
@@ -71,7 +76,7 @@ export default function SocialLogin({ isLogin = true, onSuccess, onError }: Soci
           errorMessage = "The domain is not authorized";
           break;
         default:
-          errorMessage = error.message || "An unknown error occurred";
+          errorMessage = DOMPurify.sanitize(error.message || "An unknown error occurred").substring(0, 200);
       }
       
       if (onError) {

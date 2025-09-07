@@ -7,6 +7,7 @@ import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { FcGoogle } from "react-icons/fc";
 import { FaFacebook, FaTwitter, FaGithub } from "react-icons/fa";
+import DOMPurify from 'isomorphic-dompurify'; // Bu satırı ekleyin
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -19,14 +20,14 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-    
+
     try {
       await sendPasswordResetEmail(auth, email);
       setSuccess(true);
       console.log("Password reset email sent");
     } catch (error: any) {
       console.error("Password reset error:", error);
-      
+
       switch (error.code) {
         case "auth/user-not-found":
           setError("No account found with this email address");
@@ -38,7 +39,8 @@ export default function ForgotPasswordPage() {
           setError("Too many attempts. Please try again later");
           break;
         default:
-          setError(`Error: ${error.message}`);
+          const sanitizedMessage = error.message ? DOMPurify.sanitize(error.message).substring(0, 200) : 'Unknown error occurred';
+          setError(`Error: ${sanitizedMessage}`);
       }
     } finally {
       setLoading(false);
@@ -66,7 +68,7 @@ export default function ForgotPasswordPage() {
             Enter your email to receive password reset instructions
           </p>
         </div>
-        
+
         {/* Reset Form */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
           {success ? (
@@ -95,17 +97,18 @@ export default function ForgotPasswordPage() {
                     <svg className="h-5 w-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 9H7a1 1 0 00-2 0V7a1 1 0 00-2 0v2.586l-2.707 2.707a1 1 0 00-1.414 1.414l2.707-2.707A1 1 0 008 10z" clipRule="evenodd" />
                     </svg>
-                    <span className="text-red-800 font-medium">{error}</span>
+                    <span className="text-red-800 font-medium">{DOMPurify.sanitize(error)}</span>
                   </div>
                 </div>
               )}
-              
+
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                     Email Address
                   </label>
                   <div className="relative">
+                  // GÜVENLİ
                     <input
                       id="email"
                       name="email"
@@ -113,7 +116,10 @@ export default function ForgotPasswordPage() {
                       autoComplete="email"
                       required
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e) => {
+                        const sanitizedEmail = DOMPurify.sanitize(e.target.value).substring(0, 254); // Email max length
+                        setEmail(sanitizedEmail);
+                      }}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                       placeholder="Enter your email"
                     />
@@ -122,7 +128,7 @@ export default function ForgotPasswordPage() {
                     </svg>
                   </div>
                 </div>
-                
+
                 <button
                   type="submit"
                   disabled={loading}
@@ -146,14 +152,14 @@ export default function ForgotPasswordPage() {
                   )}
                 </button>
               </form>
-              
+
               {/* Back to Login Link */}
               <div className="mt-6 text-center">
                 <Link href="/login" className="text-sm font-medium text-blue-600 hover:text-blue-500">
                   Back to login
                 </Link>
               </div>
-              
+
               {/* Ayırıcı Çizgi */}
               <div className="relative mt-6">
                 <div className="absolute inset-0 flex items-center">
@@ -163,7 +169,7 @@ export default function ForgotPasswordPage() {
                   <span className="px-2 bg-white text-gray-500">Or continue with</span>
                 </div>
               </div>
-              
+
               {/* Social Login Butonları */}
               <div className="grid grid-cols-3 gap-3 mt-6">
                 <button
@@ -173,7 +179,7 @@ export default function ForgotPasswordPage() {
                   <FcGoogle className="h-5 w-5 mr-2" />
                   <span className="text-sm font-medium text-gray-700">Google</span>
                 </button>
-                
+
                 <button
                   onClick={() => handleSocialLogin("Facebook")}
                   className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-200"
@@ -181,7 +187,7 @@ export default function ForgotPasswordPage() {
                   <FaFacebook className="h-5 w-5 mr-2 text-blue-600" />
                   <span className="text-sm font-medium text-gray-700">Facebook</span>
                 </button>
-                
+
                 <button
                   onClick={() => handleSocialLogin("Twitter")}
                   className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-200"
@@ -193,7 +199,7 @@ export default function ForgotPasswordPage() {
             </>
           )}
         </div>
-        
+
         {/* Kayıt Linki */}
         <p className="text-center text-sm text-gray-600">
           Don't have an account?{' '}
@@ -201,7 +207,7 @@ export default function ForgotPasswordPage() {
             Sign up
           </Link>
         </p>
-        
+
         {/* Footer */}
         <div className="mt-8 text-center text-xs text-gray-500">
           <p>© 2024 MarketPlace. All rights reserved.</p>
