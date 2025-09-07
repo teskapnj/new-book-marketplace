@@ -1,12 +1,23 @@
-// app/page.tsx
+// app/page.tsx - BÖLÜM 1: Import'lar ve Icon'lar
 "use client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-// SVG Icons (tüm icon component'leri aynı kalacak)
+
+// Güvenlik hooks ve utilities
+import { useRateLimit } from "@/hooks/useRateLimit";
+import { RateLimitWarning } from "@/components/RateLimitWarning";
+import { 
+  verifyUserRoleSecurely, 
+  UserRole, 
+  getCachedRole, 
+  setCachedRole,
+  secureLogout,
+  logSecurityAttempt 
+} from "@/lib/auth-utils";
+
+// SVG Icons
 function UserIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -15,6 +26,7 @@ function UserIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
+
 function MenuIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -24,6 +36,7 @@ function MenuIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
+
 function XIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -32,50 +45,17 @@ function XIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
-function PackageIcon({ size = 24, className = "" }) {
+
+function ShoppingCartIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line>
-      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-      <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-      <line x1="12" y1="22.08" x2="12" y2="12"></line>
+      <circle cx="9" cy="21" r="1"></circle>
+      <circle cx="20" cy="21" r="1"></circle>
+      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
     </svg>
   );
 }
-function SparklesIcon({ size = 24, className = "" }) {
-  return (
-    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.582a.5.5 0 0 1 0 .962L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path>
-    </svg>
-  );
-}
-function ArrowRightIcon({ size = 24, className = "" }) {
-  return (
-    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M5 12h14"></path>
-      <path d="m12 5 7 7-7 7"></path>
-    </svg>
-  );
-}
-function TrendingUpIcon({ size = 24, className = "" }) {
-  return (
-    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
-      <polyline points="16 7 22 7 22 13"></polyline>
-    </svg>
-  );
-}
-function ShieldCheckIcon({ size = 24, className = "" }) {
-  return (
-    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M9 12l2 2 4-4"></path>
-      <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"></path>
-      <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"></path>
-      <path d="M3 7h2c1 0 1 1 1 1v8c0 1-1 1-1 1H3"></path>
-      <path d="M21 7h-2c-1 0-1 1-1 1v8c0 1 1 1 1 1h2"></path>
-    </svg>
-  );
-}
+
 function AdminIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -86,59 +66,201 @@ function AdminIcon({ size = 24, className = "" }) {
     </svg>
   );
 }
-// Yeni eklenen alışveriş ikonu
-function ShoppingCartIcon({ size = 24, className = "" }) {
+
+function ArrowRightIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="9" cy="21" r="1"></circle>
-      <circle cx="20" cy="21" r="1"></circle>
-      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+      <path d="M5 12h14"></path>
+      <path d="m12 5 7 7-7 7"></path>
     </svg>
   );
 }
+
+function SparklesIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.582a.5.5 0 0 1 0 .962L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path>
+    </svg>
+  );
+}
+
+function TrendingUpIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+      <polyline points="16 7 22 7 22 13"></polyline>
+    </svg>
+  );
+}
+
+function ShieldCheckIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M9 12l2 2 4-4"></path>
+      <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3 3 3"></path>
+      <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"></path>
+      <path d="M3 7h2c1 0 1 1 1 1v8c0 1-1 1-1 1H3"></path>
+      <path d="M21 7h-2c-1 0-1 1-1 1v8c0 1 1 1 1 1h2"></path>
+    </svg>
+  );
+}
+
+function PackageIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line>
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+      <line x1="12" y1="22.08" x2="12" y2="12"></line>
+    </svg>
+  );
+}
+// app/page.tsx - BÖLÜM 2: Component ve State Yönetimi
+
 export default function HomePage() {
   const { user, loading, error, logout } = useAuth();
   const router = useRouter();
+  
+  // State yönetimi
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [userRole, setUserRole] = useState<string | null>(null);
-  
-  // Client-side rendering kontrolü
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const [roleLoading, setRoleLoading] = useState(false);
+  const [roleError, setRoleError] = useState<string | null>(null);
+
+  // Rate limiting konfigürasyonu
+  const rateLimitConfig = {
+    maxAttempts: 5,
+    windowMs: 5 * 60 * 1000, // 5 dakika
+    storageKey: 'auth-rate-limit'
+  };
   
+  const { isBlocked, remainingTime, attempts, recordAttempt } = useRateLimit(rateLimitConfig);
+
+  // Client-side rendering kontrolü
   useEffect(() => {
     setIsClient(true);
   }, []);
-  
-  // Kullanıcı rolünü kontrol et
+
+  // Güvenli rol kontrolü
   useEffect(() => {
-    const checkUserRole = async () => {
-      if (user) {
-        try {
-          // Admin email kontrolü
-          if (user.email === "admin@secondlife.com") {
-            setUserRole("admin");
-            return;
-          }
-          const userDoc = await getDoc(doc(db, "users", user.uid));
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            setUserRole(userData.role || "user");
-          } else {
-            setUserRole("user");
-          }
-        } catch (error) {
-          console.error("Error checking user role:", error);
-          setUserRole("user");
-        }
-      } else {
+    const checkUserRoleSecurely = async () => {
+      if (!user || isBlocked) {
         setUserRole(null);
+        return;
+      }
+
+      // Önce cache'den kontrol et
+      const cachedRole = getCachedRole(user.uid);
+      if (cachedRole) {
+        setUserRole(cachedRole);
+        logSecurityAttempt('role_check', true, user.uid);
+        return;
+      }
+
+      setRoleLoading(true);
+      setRoleError(null);
+
+      try {
+        const role = await verifyUserRoleSecurely(user);
+        setUserRole(role);
+        setCachedRole(user.uid, role);
+        logSecurityAttempt('role_check', true, user.uid);
+      } catch (error) {
+        recordAttempt();
+        setRoleError('Rol kontrolü başarısız oldu');
+        setUserRole(UserRole.SELLER); // Güvenli varsayılan (SELLER)
+        logSecurityAttempt('role_check', false, user.uid);
+        console.error('Güvenli rol kontrolü başarısız');
+      } finally {
+        setRoleLoading(false);
       }
     };
-    checkUserRole();
-  }, [user]);
-  
+
+    checkUserRoleSecurely();
+  }, [user, isBlocked, recordAttempt]);
+
+  // Güvenli logout işlemi
+  const handleSecureLogout = async () => {
+    if (user) {
+      try {
+        await secureLogout(user);
+        logSecurityAttempt('logout', true, user.uid);
+      } catch (error) {
+        console.error('Güvenli logout hatası');
+      }
+    }
+    await logout();
+  };
+
+  // Rate limit kontrolü
+  if (isBlocked) {
+    return (
+      <RateLimitWarning 
+        isBlocked={isBlocked}
+        remainingTime={remainingTime}
+        attempts={attempts}
+        maxAttempts={rateLimitConfig.maxAttempts}
+      />
+    );
+  }
+
+  // Loading durumu
+  if (loading || roleLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">
+            {loading ? 'Kimlik doğrulanıyor...' : 'Yetkilendirme kontrol ediliyor...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+  // app/page.tsx - BÖLÜM 3: JSX Return ve Header
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      {/* Rate Limit Uyarısı */}
+      <RateLimitWarning 
+        isBlocked={isBlocked}
+        remainingTime={remainingTime}
+        attempts={attempts}
+        maxAttempts={rateLimitConfig.maxAttempts}
+      />
+
+      {/* Rol Hatası Uyarısı */}
+      {roleError && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+          <div className="flex">
+            <div className="text-yellow-400 text-xl mr-3">⚠️</div>
+            <div>
+              <p className="text-yellow-700 font-medium">Authorization Warning</p>
+              <p className="text-yellow-600 text-sm">{roleError}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DEBUG PANEL - Geçici 
+      {user && (
+        <div className="bg-blue-50 border border-blue-200 p-4 mb-4">
+          <div className="text-sm space-y-2">
+            <div className="flex items-center space-x-4">
+              <span className="font-medium text-blue-800">🔍 Debug Info:</span>
+              <span className="text-blue-600">Email: {user.email}</span>
+              <span className="text-blue-600">UID: {user.uid}</span>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span className="text-blue-600">Current Role: <strong className="text-red-600">{userRole || 'loading...'}</strong></span>
+              <span className="text-blue-600">Role Loading: {roleLoading ? 'Yes' : 'No'}</span>
+              <span className="text-blue-600">Role Error: {roleError || 'None'}</span>
+            </div>
+          </div>
+        </div>
+      )}*/}
+
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -154,24 +276,27 @@ export default function HomePage() {
               SecondLife Media
             </Link>
             <div className="flex items-center space-x-2">
-              {/* Alışveriş Sepeti İkonu - Mobil (Sadece buyer rolü için) */}
-              {userRole === "buyer" && (
+              {/* Shopping Cart Icon - Mobile (Only for buyer role) */}
+              {userRole === UserRole.BUYER && (
                 <Link href="/cart" className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors relative">
                   <ShoppingCartIcon size={20} />
                   <span className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></span>
                 </Link>
               )}
-              {/* Kullanıcı İkonu - Mobil */}
+              {/* User Icon - Mobile */}
               <button
                 onClick={() => {
                   if (user) {
-                    // Admin için dashboard, normal kullanıcı için create-listing, buyer için listings
-                    if (userRole === "admin") {
-                      router.push('/admin/dashboard');
-                    } else if (userRole === "buyer") {
-                      router.push('/listings');
-                    } else {
-                      router.push('/create-listing');
+                    // Secure route navigation
+                    switch (userRole) {
+                      case UserRole.ADMIN:
+                        router.push('/admin/dashboard');
+                        break;
+                      case UserRole.BUYER:
+                        router.push('/listings');
+                        break;
+                      default: // SELLER role
+                        router.push('/create-listing');
                     }
                   } else {
                     router.push('/login');
@@ -199,13 +324,13 @@ export default function HomePage() {
                 <span className="text-red-500 font-medium">Auth Error</span>
               ) : user ? (
                 <>
-                  {/* Admin için Dashboard, normal kullanıcı için Start Selling, Buyer için Start Shopping */}
-                  {userRole === "admin" ? (
+                  {/* Role-based buttons */}
+                  {userRole === UserRole.ADMIN ? (
                     <Link href="/admin/dashboard" className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-2 rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-200 shadow-lg hover:shadow-xl font-medium flex items-center">
                       <AdminIcon size={20} className="mr-2" />
                       Admin Dashboard
                     </Link>
-                  ) : userRole === "buyer" ? (
+                  ) : userRole === UserRole.BUYER ? (
                     <Link href="/listings" className="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-2 rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-xl font-medium flex items-center">
                       <ShoppingCartIcon size={20} className="mr-2" />
                       Start Shopping
@@ -216,8 +341,8 @@ export default function HomePage() {
                     </Link>
                   )}
                   
-                  {/* Alışveriş Sepeti İkonu - Desktop (Sadece buyer rolü için) */}
-                  {userRole === "buyer" && (
+                  {/* Shopping Cart Icon - Desktop (Only for buyer role) */}
+                  {userRole === UserRole.BUYER && (
                     <Link href="/cart" className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors relative">
                       <ShoppingCartIcon size={20} />
                       <span className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></span>
@@ -225,7 +350,7 @@ export default function HomePage() {
                   )}
                   
                   <button
-                    onClick={logout}
+                    onClick={handleSecureLogout}
                     className="font-medium text-gray-700 hover:text-gray-900 transition-colors"
                   >
                     Logout
@@ -233,7 +358,6 @@ export default function HomePage() {
                 </>
               ) : (
                 <>
-                  {/* Giriş yapmamış kullanıcılar için Start Selling */}
                   <Link href="/create-listing" className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-2 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl font-medium">
                     Start Selling
                   </Link>
@@ -256,13 +380,13 @@ export default function HomePage() {
                 <span className="text-red-500 font-medium">Auth Error</span>
               ) : user ? (
                 <>
-                  {/* Admin için Dashboard, normal kullanıcı için Start Selling, Buyer için Start Shopping - Mobile Menu */}
-                  {userRole === "admin" ? (
+                  {/* Role-based mobile menu links */}
+                  {userRole === UserRole.ADMIN ? (
                     <Link href="/admin/dashboard" className="block font-medium text-gray-900 py-2 hover:text-purple-600 transition-colors flex items-center">
                       <AdminIcon size={20} className="mr-2" />
                       Admin Dashboard
                     </Link>
-                  ) : userRole === "buyer" ? (
+                  ) : userRole === UserRole.BUYER ? (
                     <Link href="/listings" className="block font-medium text-gray-900 py-2 hover:text-green-600 transition-colors flex items-center">
                       <ShoppingCartIcon size={20} className="mr-2" />
                       Start Shopping
@@ -273,8 +397,8 @@ export default function HomePage() {
                     </Link>
                   )}
                   
-                  {/* Alışveriş Sepeti Linki - Mobile Menu (Sadece buyer rolü için) */}
-                  {userRole === "buyer" && (
+                  {/* Shopping Cart Link - Mobile Menu (Only for buyer role) */}
+                  {userRole === UserRole.BUYER && (
                     <Link href="/cart" className="block font-medium text-gray-900 py-2 hover:text-green-600 transition-colors flex items-center">
                       <ShoppingCartIcon size={20} className="mr-2" />
                       My Cart
@@ -282,7 +406,7 @@ export default function HomePage() {
                   )}
                   
                   <button
-                    onClick={logout}
+                    onClick={handleSecureLogout}
                     className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors text-left w-full"
                   >
                     Logout
@@ -290,7 +414,6 @@ export default function HomePage() {
                 </>
               ) : (
                 <>
-                  {/* Giriş yapmamış kullanıcılar için Start Selling - Mobile Menu */}
                   <Link href="/create-listing" className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors">
                     Start Selling
                   </Link>
@@ -303,7 +426,8 @@ export default function HomePage() {
           </div>
         )}
       </header>
-      
+    
+
       {/* Hero Section */}
       <section className="relative py-16 sm:py-24 lg:py-32 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700"></div>
@@ -318,7 +442,7 @@ export default function HomePage() {
               Sell Your Books, CDs, DVDs & Games
             </h1>
             <p className="text-xl sm:text-2xl text-blue-100 mb-8 leading-relaxed">
-              Turn your old Books, CDs, DVDs and games into cash. We accept a wide range of items and our prices start from $1 - no cents, just dollars. Get instant quotes and free shipping today.!
+              Turn your old Books, CDs, DVDs and games into cash. We accept a wide range of items and our prices start from $1 - no cents, just dollars. Get instant quotes and free shipping today!
             </p>
             <div className="grid grid-cols-3 gap-8 mt-16 max-w-2xl mx-auto">
               <div className="text-center">
@@ -335,9 +459,9 @@ export default function HomePage() {
               </div>
             </div>
             
-            {/* Admin için Dashboard, normal kullanıcı için Start Selling, Buyer için Start Shopping - Hero Section */}
+            {/* Secure CTA buttons based on role */}
             <div className="mt-12 sm:mt-16">
-              {userRole === "admin" ? (
+              {userRole === UserRole.ADMIN ? (
                 <Link
                   href="/admin/dashboard"
                   className="group inline-flex items-center px-8 py-4 bg-gradient-to-r from-purple-500 to-purple-600 text-white font-bold text-lg sm:text-xl rounded-2xl hover:from-purple-600 hover:to-purple-700 transition-all duration-300 shadow-2xl hover:shadow-3xl transform hover:-translate-y-1"
@@ -346,7 +470,7 @@ export default function HomePage() {
                   Admin Dashboard
                   <ArrowRightIcon size={24} className="ml-3 group-hover:translate-x-1 transition-transform duration-300" />
                 </Link>
-              ) : userRole === "buyer" ? (
+              ) : userRole === UserRole.BUYER ? (
                 <Link
                   href="/listings"
                   className="group inline-flex items-center px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold text-lg sm:text-xl rounded-2xl hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-2xl hover:shadow-3xl transform hover:-translate-y-1"
@@ -458,9 +582,9 @@ export default function HomePage() {
             </div>
           </div>
           
-          {/* Admin için Dashboard, normal kullanıcı için Start Selling, Buyer için Start Shopping - CTA Section */}
+          {/* Secure CTA Section */}
           <div className="mt-12 flex justify-center">
-            {userRole === "admin" ? (
+            {userRole === UserRole.ADMIN ? (
               <Link
                 href="/admin/dashboard"
                 className="inline-flex items-center px-8 py-4 bg-white text-purple-600 font-bold text-lg rounded-2xl hover:bg-gray-100 transition-all duration-300 shadow-lg"
@@ -469,7 +593,7 @@ export default function HomePage() {
                 Admin Dashboard
                 <ArrowRightIcon size={24} className="ml-3" />
               </Link>
-            ) : userRole === "buyer" ? (
+            ) : userRole === UserRole.BUYER ? (
               <Link
                 href="/listings"
                 className="inline-flex items-center px-8 py-4 bg-white text-green-600 font-bold text-lg rounded-2xl hover:bg-gray-100 transition-all duration-300 shadow-lg"
@@ -520,26 +644,17 @@ export default function HomePage() {
               <ul className="space-y-3">
                 <li><Link href="/condition-guidelines" className="text-gray-400 hover:text-white transition-colors">Condition Guidelines</Link></li>
                 <li><Link href="/returns-policy" className="text-gray-400 hover:text-white transition-colors">Returns Policy</Link></li>
-                <li><Link href="/seller-protection" className="text-gray-400 hover:text-white transition-colors">Seller Protection</Link></li>
                 <li><Link href="/seller-guide" className="text-gray-400 hover:text-white transition-colors">Seller Guide</Link></li>
               </ul>
             </div>
-            <div>
-              <h4 className="font-bold text-lg mb-6 text-white">For Buyers</h4>
-              <ul className="space-y-3">
-                <li><Link href="/listings" className="text-gray-400 hover:text-white transition-colors">Browse Listings</Link></li>
-                <li><Link href="/buying-guide" className="text-gray-400 hover:text-white transition-colors">Buying Guide</Link></li>
-                <li><Link href="/buyer-protection" className="text-gray-400 hover:text-white transition-colors">Buyer Protection</Link></li>
-                <li><Link href="/shipping-info" className="text-gray-400 hover:text-white transition-colors">Shipping Info</Link></li>
-              </ul>
-            </div>
+           
             <div>
               <h4 className="font-bold text-lg mb-6 text-white">Support</h4>
               <ul className="space-y-3">
                 <li><Link href="/help" className="text-gray-400 hover:text-white transition-colors">Help Center</Link></li>
                 <li><Link href="/contact" className="text-gray-400 hover:text-white transition-colors">Contact Us</Link></li>
                 <li><Link href="/terms" className="text-gray-400 hover:text-white transition-colors">Terms of Service</Link></li>
-                <li><Link href="/privacy" className="text-gray-400 hover:text-white transition-colors">Privacy Policy</Link></li>
+                <li><Link href="/privacy-policy" className="text-gray-400 hover:text-white transition-colors">Privacy Policy</Link></li>
               </ul>
             </div>
           </div>

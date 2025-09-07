@@ -2,8 +2,74 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, auth } from '@/lib/firebaseAdmin';
 import { initializeShippoTracking, getTrackingUrl } from '@/lib/shippo';
-import { sendTrackingEmail } from '@/lib/emails';
 import { FieldValue } from 'firebase-admin/firestore';
+import nodemailer from 'nodemailer';
+
+// Nodemailer transporter'ı oluştur
+const createEmailTransporter = () => {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    }
+  });
+};
+
+// Tracking email gönderme fonksiyonu
+const sendTrackingEmail = async ({
+  customerEmail,
+  customerName,
+  orderNumber,
+  trackingNumber,
+  carrier,
+  trackingUrl
+}: {
+  customerEmail: string;
+  customerName: string;
+  orderNumber: string;
+  trackingNumber: string;
+  carrier: string;
+  trackingUrl: string;
+}) => {
+  const transporter = createEmailTransporter();
+  
+  const mailOptions = {
+    from: `"Your Store" <${process.env.EMAIL_USER}>`,
+    to: customerEmail,
+    subject: `Your Order #${orderNumber} Has Shipped!`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Your Order Has Shipped!</h2>
+        
+        <p>Hi ${customerName},</p>
+        
+        <p>Great news! Your order #${orderNumber} has been shipped and is on its way to you.</p>
+        
+        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0; color: #333;">Tracking Information</h3>
+          <p><strong>Tracking Number:</strong> ${trackingNumber}</p>
+          <p><strong>Carrier:</strong> ${carrier.toUpperCase()}</p>
+          <p><strong>Track Your Package:</strong> <a href="${trackingUrl}" style="color: #007bff;">${trackingUrl}</a></p>
+        </div>
+        
+        <p>You can click the tracking link above to see real-time updates on your package's location and delivery status.</p>
+        
+        <p>If you have any questions about your order, please don't hesitate to contact our customer service team.</p>
+        
+        <p>Thank you for your business!</p>
+        
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+        <p style="font-size: 12px; color: #666;">
+          This email was sent regarding order #${orderNumber}. 
+          If you have any questions, please contact us at ${process.env.ADMIN_EMAIL}
+        </p>
+      </div>
+    `
+  };
+  
+  await transporter.sendMail(mailOptions);
+};
 
 export async function POST(
  request: NextRequest, 
@@ -128,7 +194,7 @@ export async function POST(
      await orderRef.update(updateData);
      console.log(`Order ${id} updated successfully`);
      
-     // EMAIL GÖNDERME KISMI
+     // NODEMAILER İLE EMAIL GÖNDERME
      const customerEmail = orderData?.customerInfo?.email;
      const customerName = orderData?.customerInfo?.fullName || 'Customer';
      const orderNumber = orderData?.orderNumber || id;

@@ -8,6 +8,7 @@ import { auth, db } from "@/lib/firebase";
 import SocialLogin from "@/components/SocialLogin";
 import { FiHome, FiEye, FiEyeOff } from "react-icons/fi";
 import { useAuth } from "@/contexts/AuthContext";
+
 // Custom Password Input Component with Hold-to-Show functionality
 const PasswordInputHold = ({ 
   id, 
@@ -42,7 +43,7 @@ const PasswordInputHold = ({
   };
   
   const handleTouchStart = (e: React.TouchEvent) => {
-    e.preventDefault(); // Prevent scrolling on touch devices
+    e.preventDefault();
     setIsHolding(true);
     setShowPassword(true);
   };
@@ -86,6 +87,41 @@ const PasswordInputHold = ({
     </div>
   );
 };
+
+// Çift kontrollü admin kontrolü - PAYLAŞILAN FONKSİYON
+const isAdminUser = async (email: string, uid: string): Promise<boolean> => {
+  try {
+    // 1. Firestore'dan user verilerini al
+    const userDoc = await getDoc(doc(db, "users", uid));
+    
+    if (!userDoc.exists()) {
+      return false;
+    }
+    
+    const userData = userDoc.data();
+    const userRole = userData.role;
+    const userEmail = userData.email;
+    
+    // 2. Firestore'da role kontrol et
+    if (userRole !== "admin") {
+      return false;
+    }
+    
+    // 3. Environment variable ile karşılaştır
+    const envAdminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+    if (envAdminEmail && userEmail === envAdminEmail) {
+      return true;
+    }
+    
+    console.log("Admin role var ama environment email uyuşmuyor:", userEmail, "vs", envAdminEmail);
+    return false;
+    
+  } catch (error) {
+    console.error("Admin kontrol hatası:", error);
+    return false;
+  }
+};
+
 export default function LoginPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -97,14 +133,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   
-  // Redirect to appropriate page if user is already logged in
-  useEffect(() => {
-    if (user && !authLoading) {
-      checkUserRoleAndRedirect(user.uid);
-    }
-  }, [user, authLoading]);
-  
-  // Check user role from Firestore and redirect accordingly
+  // Check user role and redirect - GÜVENLİ APPROACH
   const checkUserRoleAndRedirect = async (userId: string) => {
     try {
       console.log("Checking user role for:", userId);
@@ -113,7 +142,7 @@ export default function LoginPage() {
       if (userDoc.exists()) {
         const userData = userDoc.data();
         const userRole = userData.role || "seller";
-        const userStatus = userData.status || "active"; // Get user status
+        const userStatus = userData.status || "active";
         
         // Check if user account is active
         if (userStatus !== "active") {
@@ -125,23 +154,20 @@ export default function LoginPage() {
         
         console.log("User role detected:", userRole);
         
-        // Store user role and info in localStorage
-        localStorage.setItem("userRole", userRole);
-        localStorage.setItem("userEmail", user?.email || "");
+        // Store only non-sensitive data in localStorage
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("userName", userData.name || "User");
-        localStorage.setItem("userId", userId);
         
-        // Redirect based on user role
-        if (userRole === "admin") {
-          console.log("Redirecting to admin dashboard");
-          window.location.href = "/admin/dashboard";
+        // ÇİFT KONTROLLÜ ADMIN REDIRECT - GÜVENLİ
+        if (await isAdminUser(userData.email || user?.email || "", userId)) {
+          console.log("Admin access granted - both Firestore role and environment email verified");
+          router.push("/admin/dashboard");
         } else if (userRole === "buyer") {
           console.log("Redirecting to listing page");
-          window.location.href = "/listings";
+          router.push("/listings");
         } else {
           console.log("Redirecting to create listing page");
-          window.location.href = "/create-listing";
+          router.push("/create-listing");
         }
         
       } else {
@@ -167,29 +193,27 @@ export default function LoginPage() {
         await setDoc(doc(db, "users", userId), defaultUserData);
         console.log("Default user profile created");
         
-        localStorage.setItem("userRole", "seller");
-        localStorage.setItem("userEmail", user?.email || "");
+        // Store only non-sensitive data
         localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("userId", userId);
         localStorage.setItem("userName", user?.displayName || "User");
         
         // Redirect to create listing page
         console.log("Redirecting to create listing page");
-        window.location.href = "/create-listing";
+        router.push("/create-listing");
       }
     } catch (error) {
       console.error("Error checking user role:", error);
-      // Default to seller if error occurs
-      localStorage.setItem("userRole", "seller");
-      localStorage.setItem("userEmail", user?.email || "");
-      localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("userId", userId);
-      
-      // Redirect to create listing page
-      console.log("Redirecting to create listing page");
-      window.location.href = "/create-listing";
+      setError("Failed to load user profile. Please try again.");
+      setLoading(false);
     }
   };
+  
+  // Redirect to appropriate page if user is already logged in
+  useEffect(() => {
+    if (user && !authLoading) {
+      checkUserRoleAndRedirect(user.uid);
+    }
+  }, [user, authLoading]);
   
   if (authLoading) {
     return (
@@ -242,13 +266,13 @@ export default function LoginPage() {
       
       console.log("Firebase login successful:", userCredential.user.email);
       
-      // Get user role from Firestore
+      // Get user role from Firestore - FRESH DATA
       const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
       
       if (userDoc.exists()) {
         const userData = userDoc.data();
         const userRole = userData.role || "seller";
-        const userStatus = userData.status || "active"; // Get user status
+        const userStatus = userData.status || "active";
         
         // Check if user account is active
         if (userStatus !== "active") {
@@ -264,29 +288,26 @@ export default function LoginPage() {
         await setDoc(doc(db, "users", userCredential.user.uid), {
           ...userData,
           lastLogin: new Date()
-        });
+        }, { merge: true });
         
-        // Store user session data
-        localStorage.setItem("userRole", userRole);
-        localStorage.setItem("userEmail", formData.email);
+        // Store only non-sensitive session data
         localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("userId", userCredential.user.uid);
         localStorage.setItem("userName", userData.name || userData.displayName || "User");
         
         if (formData.rememberMe) {
           localStorage.setItem("rememberMe", "true");
         }
         
-        // Redirect based on user role
-        if (userRole === "admin") {
-          console.log("Redirecting to admin dashboard");
-          window.location.href = "/admin/dashboard";
+        // Çift kontrollü admin redirect - GÜVENLİ
+        if (await isAdminUser(formData.email, userCredential.user.uid)) {
+          console.log("Admin access granted - both Firestore role and environment email verified");
+          router.push("/admin/dashboard");
         } else if (userRole === "buyer") {
           console.log("Redirecting to listing page");
-          window.location.href = "/listing";
+          router.push("/listings");
         } else {
           console.log("Redirecting to create listing page");
-          window.location.href = "/create-listing";
+          router.push("/create-listing");
         }
         
       } else {
@@ -313,15 +334,13 @@ export default function LoginPage() {
         await setDoc(doc(db, "users", userCredential.user.uid), defaultUserData);
         console.log("Default user profile created in Firestore");
         
-        localStorage.setItem("userRole", "seller");
-        localStorage.setItem("userEmail", formData.email);
+        // Store only non-sensitive data
         localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("userId", userCredential.user.uid);
         localStorage.setItem("userName", userCredential.user.displayName || "User");
         
         // Redirect to create listing page
         console.log("Redirecting to create listing page");
-        window.location.href = "/create-listing";
+        router.push("/create-listing");
       }
       
     } catch (error: any) {
@@ -360,7 +379,7 @@ export default function LoginPage() {
   
   const handleSocialLoginSuccess = async (socialUser: any) => {
     try {
-      // Check if user exists in Firestore for social login
+      // Check if user exists in Firestore for social login - FRESH DATA
       const userDoc = await getDoc(doc(db, "users", socialUser.uid));
       
       let userRole = "seller"; // Default role for social login
@@ -385,7 +404,7 @@ export default function LoginPage() {
         await setDoc(doc(db, "users", socialUser.uid), {
           ...userData,
           lastLogin: new Date()
-        });
+        }, { merge: true });
       } else {
         // Create profile for social login user
         const defaultUserData = {
@@ -408,34 +427,26 @@ export default function LoginPage() {
         console.log("Social login user profile created");
       }
       
-      // Store session data for social login
-      localStorage.setItem("userRole", userRole);
-      localStorage.setItem("userEmail", socialUser.email || "");
+      // Store only non-sensitive session data for social login
       localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("userId", socialUser.uid);
       localStorage.setItem("userName", userName);
       
-      // Redirect based on user role
-      if (userRole === "admin") {
-        console.log("Redirecting to admin dashboard");
-        window.location.href = "/admin/dashboard";
+      // ÇİFT KONTROLLÜ ADMIN REDIRECT - GÜVENLİ
+      if (await isAdminUser(socialUser.email || "", socialUser.uid)) {
+        console.log("Social admin access granted - both Firestore role and environment email verified");
+        router.push("/admin/dashboard");
       } else if (userRole === "buyer") {
         console.log("Redirecting to listing page");
-        window.location.href = "/listing";
+        router.push("/listings");
       } else {
         console.log("Redirecting to create listing page");
-        window.location.href = "/create-listing";
+        router.push("/create-listing");
       }
       
     } catch (error) {
       console.error("Social login role check error:", error);
-      // Default to seller on error
-      localStorage.setItem("userRole", "seller");
-      localStorage.setItem("isLoggedIn", "true");
-      
-      // Redirect to create listing page
-      console.log("Redirecting to create listing page");
-      window.location.href = "/create-listing";
+      setError("Failed to complete social login. Please try again.");
+      setLoading(false);
     }
   };
   

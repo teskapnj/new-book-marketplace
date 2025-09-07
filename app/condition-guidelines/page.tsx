@@ -1,301 +1,229 @@
-// app/condition-guidelines/page.tsx
 'use client';
 
-import { useState } from 'react';
-import { CheckCircle, XCircle, BookOpen, Disc, Gamepad, Film, Package, Star, Info, ArrowLeft, Sparkles, Shield } from 'lucide-react';
-
-// Simplified interface for category guidelines
-interface CategoryGuidelines {
-  id: string;
-  name: string;
-  icon: React.ReactNode;
-  description: string;
-  acceptable: string[];
-  notAcceptable: string[];
-  notes?: string;
-  color: string;
-  bgColor: string;
-}
-
 export default function ConditionGuidelines() {
-  const [activeTab, setActiveTab] = useState('books');
-
-  // Updated data structure focusing on a single "Gently Used" standard per category
-  const categories: CategoryGuidelines[] = [
-    {
-      id: 'books',
-      name: 'Books',
-      icon: <BookOpen className="w-5 h-5" />,
-      description: 'We look for books that are in a clean, readable condition with all pages and covers intact.',
-      color: 'text-amber-600',
-      bgColor: 'bg-amber-50 border-amber-200',
-      acceptable: [
-        'Light shelf wear on cover edges or spine',
-        'Minor corner bumping or creasing',
-        'Clean pages with no significant markings',
-        'Intact dust jacket (if originally included)',
-        'Price stickers or residue on the cover'
-      ],
-      notAcceptable: [
-        'Water, mold, or moisture damage',
-        'Missing pages, covers, or dust jackets',
-        'Any underlining, highlighting, or notes on pages',
-        'Owner\'s name or inscriptions',
-        'Strong odors (e.g., smoke, mildew)',
-        'Ex-library books (with stamps, stickers, etc.)',
-        'Broken or detached spines',
-        'Obscured or unreadable text',
-        'Remainder marks on page edges'
-      ]
-    },
-    {
-      id: 'cds',
-      name: 'CDs',
-      icon: <Disc className="w-5 h-5" />,
-      description: 'Discs must play perfectly. Original cases and booklets are required for the best value.',
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50 border-purple-200',
-      acceptable: [
-        'Light surface marks or scuffs that do not affect playback',
-        'Minor scuffs or cracks on the jewel case',
-        'Intact and readable booklet/artwork (normal wear and tear is acceptable)',
-        'Original case and booklet included'
-      ],
-      notAcceptable: [
-        'Deep scratches or cracks that cause skipping',
-        'Missing discs, booklets, or original cover art',
-        'Torn, water-damaged, or moldy booklets',
-        'Promotional, burned, or bootleg copies',
-        'Significant water damage to cover art or inserts'
-      ]
-    },
-    {
-      id: 'games',
-      name: 'Video Games',
-      icon: <Gamepad className="w-5 h-5" />,
-      description: 'Games must be fully playable and include their original case, cover art, and manual.',
-      color: 'text-green-600',
-      bgColor: 'bg-green-50 border-green-200',
-      acceptable: [
-        'Light, cosmetic scratches on the disc that don\'t affect gameplay',
-        'Minor wear on the case or cartridge label',
-        'Complete with original case, cover art, manual, and inserts',
-        'Sticker residue on the case'
-      ],
-      notAcceptable: [
-        'Non-working or game-breaking damage',
-        'Missing original case, cover art, or manual',
-        'Cracked or heavily damaged discs or cartridges',
-        'Counterfeit or pirated copies',
-        'Region-locked games incompatible with US consoles'
-      ],
-      notes: 'Games missing their original case or cover art will not be accepted.'
-    },
-    {
-      id: 'dvds',
-      name: 'DVDs & Blu-rays',
-      icon: <Film className="w-5 h-5" />,
-      description: 'All discs must play without interruption and come with their original case and artwork.',
-      color: 'text-red-600',
-      bgColor: 'bg-red-50 border-red-200',
-      acceptable: [
-        'Light surface marks that don\'t affect playback',
-        'Minor wear or cracks on the case',
-        'All original inserts and cover art present',
-        'Box sets with minor shelf wear'
-      ],
-      notAcceptable: [
-        'Deep scratches or cracks that cause skipping or freezing',
-        'Missing discs from a set',
-        'Missing original cover art',
-        'Bootleg, copied, or promotional discs',
-        'Severe damage to packaging or water-damaged cover art',
-        'Former rental or ex-library copies'
-      ]
-    }
-  ];
-
-  const activeCategory = categories.find(cat => cat.id === activeTab) || categories[0];
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-white/20 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {/* Back Button */}
-          <div className="mb-8">
-            <button 
-              onClick={() => window.history.back()}
-              className="flex items-center space-x-2 text-gray-600 hover:text-indigo-600 transition-all duration-200 group bg-white/60 hover:bg-white/80 px-4 py-2 rounded-full shadow-sm hover:shadow-md border border-white/50"
-            >
-              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-200" />
-              <span className="font-medium">Back</span>
-            </button>
-          </div>
-          
-          <div className="text-center">
-            <div className="flex justify-center mb-6">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full blur-lg opacity-20 animate-pulse"></div>
-                <div className="relative bg-gradient-to-r from-indigo-500 to-purple-600 p-4 rounded-full">
-                  <Shield className="w-8 h-8 text-white" />
-                </div>
-              </div>
-            </div>
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-gray-900 via-indigo-900 to-purple-900 bg-clip-text text-transparent mb-4">
-              Our 'Gently Used' Standard
-            </h1>
-            <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-              We accept a wide range of gently used media. Use these guidelines to see what we look for and what to avoid sending. This ensures you get a fair and fast valuation.
-            </p>
-            <div className="flex justify-center mt-6">
-              <div className="flex items-center space-x-2 bg-indigo-100 text-indigo-700 px-4 py-2 rounded-full text-sm font-medium">
-                <Sparkles className="w-4 h-4" />
-                <span>Quality guaranteed</span>
-              </div>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        {/* Back Button */}
+        <div className="mb-8">
+          <button 
+            onClick={() => window.history.back()}
+            className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back
+          </button>
         </div>
-      </div>
 
-      {/* Category Tabs */}
-      <div className="bg-white/60 backdrop-blur-sm shadow-lg sticky top-0 z-10 border-b border-white/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
-            {categories.map(category => (
-              <button
-                key={category.id}
-                onClick={() => setActiveTab(category.id)}
-                className={`flex items-center space-x-2 sm:space-x-3 px-4 sm:px-6 py-3 rounded-2xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl text-sm sm:text-base ${
-                  activeTab === category.id
-                    ? `${category.bgColor} ${category.color} shadow-xl scale-105`
-                    : 'bg-white/80 text-gray-600 hover:text-gray-900 hover:bg-white/90'
-                }`}
-              >
-                <div className={`p-1 rounded-lg ${activeTab === category.id ? 'bg-white/50' : 'bg-gray-100'}`}>
-                  {category.icon}
-                </div>
-                <span className="whitespace-nowrap">{category.name}</span>
-              </button>
-            ))}
-          </div>
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl mb-4">
+            Product Condition Guidelines
+          </h1>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            We only accept items in <strong>very good condition</strong>. 
+            Please review these simple criteria carefully before sending your items.
+          </p>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-8 sm:p-12 mb-12">
-          <div className={`mb-8 p-6 rounded-2xl ${activeCategory.bgColor} border-2`}>
-            <div className="flex items-center space-x-4 mb-4">
-              <div className={`p-3 rounded-xl bg-white shadow-md ${activeCategory.color}`}>
-                {activeCategory.icon}
-              </div>
-              <div>
-                <h2 className={`text-3xl font-bold ${activeCategory.color} mb-2`}>
-                  {activeCategory.name} Guidelines
-                </h2>
-                <p className="text-gray-700 text-lg leading-relaxed">
-                  {activeCategory.description}
-                </p>
+        {/* Main Guidelines */}
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-12">
+          <div className="p-8">
+            
+            {/* Quality Standard */}
+            <div className="bg-blue-50 border-l-4 border-blue-400 p-6 mb-8">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-lg font-medium text-blue-800 mb-2">
+                    Our Quality Standard: VERY GOOD CONDITION
+                  </h3>
+                  <p className="text-blue-700">
+                    All items must be in very good condition with minimal wear from normal use only.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="grid lg:grid-cols-2 gap-10">
-            {/* Acceptable Column */}
-            <div className="bg-green-50/80 backdrop-blur-sm p-8 rounded-2xl border-2 border-green-200/50 shadow-lg">
-              <div className="flex items-center space-x-4 mb-6">
-                <div className="p-2 bg-green-500 rounded-xl shadow-lg">
-                  <CheckCircle className="w-7 h-7 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold text-green-800">
+            {/* Unified Guidelines */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+              
+              {/* What We Accept */}
+              <div className="bg-green-50 p-6 rounded-xl border border-green-200">
+                <h3 className="text-xl font-bold text-green-800 mb-4 flex items-center">
+                  <svg className="h-6 w-6 text-green-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
                   What We Accept
                 </h3>
-              </div>
-              <ul className="space-y-4">
-                {activeCategory.acceptable.map((item, index) => (
-                  <li key={index} className="flex items-start space-x-4 bg-white/60 p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
-                    <div className="flex-shrink-0 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center mt-0.5">
-                      <CheckCircle className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="text-gray-800 font-medium leading-relaxed">{item}</span>
+                <ul className="space-y-3 text-green-700">
+                  <li className="flex items-start">
+                    <span className="font-medium mr-2">✓</span>
+                    <span>Items that play/function perfectly without issues</span>
                   </li>
-                ))}
-              </ul>
-            </div>
+                  <li className="flex items-start">
+                    <span className="font-medium mr-2">✓</span>
+                    <span>Minor surface wear or light scuffs that don't affect function</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="font-medium mr-2">✓</span>
+                    <span>Original case/cover with minor wear acceptable</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="font-medium mr-2">✓</span>
+                    <span>Complete with all original inserts, artwork, and manuals</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="font-medium mr-2">✓</span>
+                    <span>Clean, readable, and odor-free</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="font-medium mr-2">✓</span>
+                    <span>removable Price stickers </span>
+                  </li>
+                </ul>
+              </div>
 
-            {/* Not Acceptable Column */}
-            <div className="bg-red-50/80 backdrop-blur-sm p-8 rounded-2xl border-2 border-red-200/50 shadow-lg">
-              <div className="flex items-center space-x-4 mb-6">
-                <div className="p-2 bg-red-500 rounded-xl shadow-lg">
-                  <XCircle className="w-7 h-7 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold text-red-800">
+              {/* What We Don't Accept */}
+              <div className="bg-red-50 p-6 rounded-xl border border-red-200">
+                <h3 className="text-xl font-bold text-red-800 mb-4 flex items-center">
+                  <svg className="h-6 w-6 text-red-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                   What We Don't Accept
                 </h3>
-              </div>
-              <ul className="space-y-4">
-                {activeCategory.notAcceptable.map((item, index) => (
-                  <li key={index} className="flex items-start space-x-4 bg-white/60 p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
-                    <div className="flex-shrink-0 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center mt-0.5">
-                      <XCircle className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="text-gray-800 font-medium leading-relaxed">{item}</span>
+                <ul className="space-y-3 text-red-700">
+                  <li className="flex items-start">
+                    <span className="font-medium mr-2">✗</span>
+                    <span><strong>Any writing, highlighting, underlining, or annotations</strong></span>
                   </li>
+                  <li className="flex items-start">
+                    <span className="font-medium mr-2">✗</span>
+                    <span><strong>Deep scratches that affect playback/reading</strong></span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="font-medium mr-2">✗</span>
+                    <span>Cracked, broken, or badly damaged items</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="font-medium mr-2">✗</span>
+                    <span>Water damage, stains, mold, or warped items</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="font-medium mr-2">✗</span>
+                    <span>Missing original case, cover art, inserts, or manuals</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="font-medium mr-2">✗</span>
+                    <span>Strong odors (smoke, mildew, etc.)</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="font-medium mr-2">✗</span>
+                    <span>Ex-library books, promotional copies, or bootleg items</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Special Emphasis */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-8">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-6 w-6 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h4 className="text-lg font-medium text-yellow-800 mb-2">
+                    Important: No Writing or Markings
+                  </h4>
+                  <p className="text-yellow-700">
+                    We do not accept any items with writing, highlighting, underlining, marker stains, or any kind of markings. 
+                    This is strictly enforced for all product categories.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Product Categories */}
+            <div className="mb-10">
+              <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Product Categories We Accept</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { name: 'Books', icon: '📚' },
+                  { name: 'CDs', icon: '💿' },
+                  { name: 'DVDs', icon: '📀' },
+                  { name: 'Games', icon: '🎮' }
+                ].map((category) => (
+                  <div key={category.name} className="bg-gray-50 p-4 rounded-lg text-center border border-gray-200">
+                    <div className="text-3xl mb-2">{category.icon}</div>
+                    <div className="font-medium text-gray-800">{category.name}</div>
+                  </div>
                 ))}
-              </ul>
+              </div>
+            </div>
+
+            {/* Simple Process */}
+            <div className="bg-gray-50 rounded-xl p-6 mb-8">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">Our Simple Process</h3>
+              <div className="space-y-3 text-gray-600">
+                <div className="flex items-center">
+                  <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">1</span>
+                  <span>Check your items against our condition guide</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">2</span>
+                  <span>Send only items in very good condition</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">3</span>
+                  <span>We inspect and pay for qualifying items</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3">4</span>
+                  <span>Non-qualifying items are recycled (not returned)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Final Warning */}
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-6 w-6 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h4 className="text-lg font-medium text-red-800 mb-2">
+                    Remember: No Returns!
+                  </h4>
+                  <p className="text-red-700">
+                    Items that don't meet our very good condition standard will be recycled and not returned to you. 
+                    Please check your items carefully before sending.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
-
-          {activeCategory.id === 'games' && activeCategory.notes && (
-            <div className="mt-10 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-200 shadow-lg">
-              <div className="flex items-start space-x-4">
-                <div className="p-2 bg-blue-500 rounded-lg shadow-md">
-                  <Info className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-blue-900 text-lg mb-2">Important Note</h4>
-                  <p className="text-blue-800 font-medium">{activeCategory.notes}</p>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* FAQ Section */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/50 p-8 sm:p-12">
-          <h2 className="text-4xl font-bold text-gray-900 mb-8 text-center">
-            Frequently Asked Questions
-          </h2>
-          <div className="grid md:grid-cols-2 gap-8">
-            {[
-              {
-                question: "What if I'm unsure about my item's condition?",
-                answer: "Please review our guidelines carefully. If you're still in doubt, it's best not to send the item. Our quality team reviews all items and will recycle anything that doesn't meet our standards."
-              },
-              {
-                question: "Do you accept items without barcodes?",
-                answer: "Yes, we accept items without barcodes. We also accept Amazon ASIN numbers as valid identifiers for your items."
-              },
-              {
-                question: "How are valuations determined?",
-                answer: "Valuations are based on current market demand, condition, and our current inventory levels. Prices are updated regularly to reflect market changes."
-              },
-              {
-                question: "What happens to rejected items?",
-                answer: "Items that don't meet our 'gently used' standards are responsibly recycled. We are unable to return rejected items, so please check your items carefully."
-              }
-            ].map((faq, index) => (
-              <div key={index} className="bg-gradient-to-br from-white to-gray-50 p-8 rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                <h3 className="font-bold text-gray-900 mb-4 text-lg">
-                  {faq.question}
-                </h3>
-                <p className="text-gray-700 leading-relaxed">
-                  {faq.answer}
-                </p>
-              </div>
-            ))}
-          </div>
+        {/* Contact Section */}
+        <div className="text-center bg-white rounded-xl shadow-lg p-8">
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">Questions About Item Condition?</h3>
+          <p className="text-gray-600 mb-6">
+            If you're unsure whether your items meet our very good condition standard, 
+            please contact us before sending them.
+          </p>
+          <button className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            Contact Support
+          </button>
         </div>
       </div>
     </div>

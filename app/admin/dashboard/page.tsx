@@ -3,7 +3,11 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuthState } from "react-firebase-hooks/auth";
+import { sanitizeInput } from '@/lib/auth-utils';
 import { auth, db, storage } from "@/lib/firebase";
+import { useRateLimit } from '@/hooks/useRateLimit';
+import { RateLimitWarning } from '@/components/RateLimitWarning';
+
 import { 
   collection, 
   onSnapshot, 
@@ -532,7 +536,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
               </label>
               <textarea
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                onChange={(e) => setNotes(sanitizeInput(e.target.value))}
                 rows={4}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Add notes about this order..."
@@ -627,6 +631,19 @@ export default function AdminListingsPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [checkingAdmin, setCheckingAdmin] = useState(true);
   const [permissionError, setPermissionError] = useState<string | null>(null);
+  const adminRateLimit = useRateLimit({
+    maxAttempts: 15, // 15 admin aksiyonu
+    windowMs: 60 * 1000, // 1 dakika içinde
+    storageKey: 'admin-actions'
+  });
+  // Rate limit kontrolü için helper function
+  const checkRateLimit = (actionName: string): boolean => {
+    if (adminRateLimit.isBlocked) {
+      alert(`Too many admin actions. Please wait ${Math.ceil(adminRateLimit.remainingTime / 60)} minutes before ${actionName}.`);
+      return false;
+    }
+    return true;
+  };
   
   // 📊 State management
   const [listings, setListings] = useState<any[]>([]);
@@ -1036,24 +1053,24 @@ export default function AdminListingsPage() {
       return;
     }
     
+    // Rate limit kontrolü
+    if (!checkRateLimit('bulk deleting listings')) return;
+    
+    adminRateLimit.recordAttempt();
     setIsBulkDeleting(true);
     
     try {
-      // Batch işlemi başlat
       const batch = writeBatch(db);
       
-      // Seçilen her listing için silme işlemi ekle
       selectedListings.forEach(listingId => {
         const listingRef = doc(db, "listings", listingId);
         batch.delete(listingRef);
       });
       
-      // Batch işlemini uygula
       await batch.commit();
       
       console.log(`🗑️ Deleted ${selectedListings.size} listings in bulk`);
       
-      // State'i temizle
       setSelectedListings(new Set());
       setSelectAll(false);
       setShowBulkDeleteConfirm(false);
@@ -1070,6 +1087,7 @@ export default function AdminListingsPage() {
     
     setIsBulkDeleting(false);
   };
+
   
   // Tekil silme
   const deleteSingleListing = async (listingId: string) => {
@@ -1096,6 +1114,10 @@ export default function AdminListingsPage() {
   
   // ✅ Approve listing only - GÜNCELLENDİ
   const approveListingOnly = async (listingId: string) => {
+    // Rate limit kontrolü
+    if (!checkRateLimit('approving listings')) return;
+    
+    adminRateLimit.recordAttempt();
     setIsProcessing(true);
     
     try {
@@ -1105,20 +1127,18 @@ export default function AdminListingsPage() {
         status: "approved",
         reviewedDate: serverTimestamp(),
         reviewedBy: user?.email || "admin",
-        adminNotes: adminNotes
+        adminNotes: sanitizeInput(adminNotes) // Sanitize eklendi
       });
       
       console.log(`✅ Listing ${listingId} approved by ${user?.email}`);
       
-      // Modal'ı kapatma - label ve tracking için açık kalsın
       setAdminNotes("");
       
-      // 🆕 YENİ: Seçili listing'in durumunu güncelle
       if (selectedListing && selectedListing.id === listingId) {
         setSelectedListing({
           ...selectedListing,
           status: "approved",
-          reviewedDate: new Date(), // Geçici yerel güncelleme
+          reviewedDate: new Date(),
           reviewedBy: user?.email || "admin"
         });
       }
@@ -1139,15 +1159,69 @@ export default function AdminListingsPage() {
   
   // 📦 Send shipping label and tracking - YENİ FONKSİYON
   const sendShippingLabelAndTracking = async (listingId: string) => {
+    // File validation
     if (!shippingLabel) {
-      alert("⚠️ Please upload a shipping label");
+      alert("Please upload a shipping label");
       return;
     }
     
-    if (!trackingNumber.trim()) {
-      alert("⚠️ Please provide a tracking number");
+    // Gelişmiş dosya güvenlik kontrolü
+const validateFile = async (file: File): Promise<boolean> => {
+  // Dosya boyutu kontrolü (max 10MB)
+  if (file.size > 10 * 1024 * 1024) {
+    throw new Error('Dosya boyutu çok büyük (max 10MB)');
+  }
+  
+  // MIME type kontrolü
+  const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error('İzin verilmeyen dosya türü');
+  }
+  
+  // Dosya imzası kontrolü (magic numbers)
+  const buffer = await file.arrayBuffer();
+  const uint8Array = new Uint8Array(buffer.slice(0, 4));
+  const hex = Array.from(uint8Array).map(b => b.toString(16).padStart(2, '0')).join('');
+  
+  const validSignatures: Record<string, string> = {
+    'ffd8ffe0': 'image/jpeg',
+    'ffd8ffe1': 'image/jpeg',
+    '89504e47': 'image/png',
+    '25504446': 'application/pdf'
+  };
+  
+  if (!validSignatures[hex]) {
+    throw new Error('Dosya imzası geçersiz');
+  }
+  
+  return true;
+};
+
+// Dosya kontrolü yap
+try {
+  await validateFile(shippingLabel);
+} catch (error: any) {
+  alert(error.message);
+  return;
+}
+    
+    // File size kontrolü (max 10MB)
+    if (shippingLabel.size > 10 * 1024 * 1024) {
+      alert("File size must be less than 10MB");
       return;
     }
+    
+    // Tracking number validation
+    const sanitizedTracking = sanitizeInput(trackingNumber);
+    if (!sanitizedTracking.trim() || sanitizedTracking.length < 5) {
+      alert("Please provide a valid tracking number (minimum 5 characters)");
+      return;
+    }
+    
+    // Rate limit kontrolü
+    if (!checkRateLimit('uploading shipping labels')) return;
+    
+    adminRateLimit.recordAttempt();
     
     setIsProcessing(true);
     setUploadingLabel(true);
@@ -1155,24 +1229,21 @@ export default function AdminListingsPage() {
     setLabelUploadSuccess("");
     
     try {
-      let shippingLabelUrl = "";
-      
-      // Upload shipping label to Firebase Storage
+      // Filename sanitization
       const fileExtension = shippingLabel.name.split('.').pop();
-      const fileName = `${listingId}_${Date.now()}.${fileExtension}`;
-      const storageRef = ref(storage, `shipping-labels/${fileName}`);
+      const sanitizedFileName = `${listingId}_${Date.now()}.${fileExtension}`;
+      const storageRef = ref(storage, `shipping-labels/${sanitizedFileName}`);
       
       await uploadBytes(storageRef, shippingLabel);
-      shippingLabelUrl = await getDownloadURL(storageRef);
+      const shippingLabelUrl = await getDownloadURL(storageRef);
       
       const listingRef = doc(db, "listings", listingId);
       
-      // Update the listing with shipping label URL and tracking info
       await updateDoc(listingRef, {
         shippingLabelUrl: shippingLabelUrl,
-        trackingNumber: trackingNumber,
-        carrier: carrier,
-        shippingLabelName: shippingLabel.name,
+        trackingNumber: sanitizedTracking,
+        carrier: sanitizeInput(carrier),
+        shippingLabelName: sanitizedFileName,
         shippingLabelType: shippingLabel.type
       });
       
@@ -1246,11 +1317,15 @@ export default function AdminListingsPage() {
   
   // ❌ Reject listing function
   const rejectListing = async (listingId: string) => {
-    if (!rejectionReason.trim()) {
+    if (!sanitizeInput(rejectionReason).trim()) {
       alert("⚠️ Please provide a rejection reason");
       return;
     }
     
+    // Rate limit kontrolü
+    if (!checkRateLimit('rejecting listings')) return;
+    
+    adminRateLimit.recordAttempt();
     setIsProcessing(true);
     
     try {
@@ -1260,8 +1335,8 @@ export default function AdminListingsPage() {
         status: "rejected",
         reviewedDate: serverTimestamp(),
         reviewedBy: user?.email || "admin",
-        rejectionReason: rejectionReason,
-        adminNotes: adminNotes
+        rejectionReason: sanitizeInput(rejectionReason), // Sanitize eklendi
+        adminNotes: sanitizeInput(adminNotes) // Sanitize eklendi
       });
       
       console.log(`❌ Listing ${listingId} rejected by ${user?.email}`);
@@ -1283,14 +1358,16 @@ export default function AdminListingsPage() {
     
     setIsProcessing(false);
   };
-  
   // 🗑️ Delete listing function
   const deleteListing = async (listingId: string) => {
+    // Rate limit kontrolü
+    if (!checkRateLimit('deleting listings')) return;
+    
+    adminRateLimit.recordAttempt();
     setIsProcessing(true);
     
     try {
       const listingRef = doc(db, "listings", listingId);
-      
       await deleteDoc(listingRef);
       
       console.log(`🗑️ Listing ${listingId} deleted by ${user?.email}`);
@@ -1311,9 +1388,14 @@ export default function AdminListingsPage() {
     
     setIsProcessing(false);
   };
+
   
   // 🔄 Update order status function
   const updateOrderStatus = async (orderId: string, status: string, notes: string) => {
+    // Rate limit kontrolü
+    if (!checkRateLimit('updating orders')) return;
+    
+    adminRateLimit.recordAttempt();
     setIsProcessing(true);
     
     try {
@@ -1323,7 +1405,7 @@ export default function AdminListingsPage() {
         status: status,
         updatedAt: serverTimestamp(),
         updatedBy: user?.email || "admin",
-        adminNotes: notes
+        adminNotes: sanitizeInput(notes) // Sanitize eklendi
       });
       
       console.log(`🔄 Order ${orderId} status updated to ${status} by ${user?.email}`);
@@ -1342,7 +1424,7 @@ export default function AdminListingsPage() {
     
     setIsProcessing(false);
   };
-  
+
   // 🎨 Helper functions
   const getStatusBadge = (status: string) => {
     const styles = {
@@ -1411,18 +1493,25 @@ export default function AdminListingsPage() {
   
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        
-        {/* 🏠 Navigation Header */}
-        <div className="mb-6 flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <Link 
-              href="/"
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
-            >
-              ← Back to Home
-            </Link>
-          </div>
+  {/* Rate limit warning - BURAYA */}
+  <RateLimitWarning 
+    isBlocked={adminRateLimit.isBlocked}
+    remainingTime={adminRateLimit.remainingTime}
+    attempts={adminRateLimit.attempts}
+    maxAttempts={15}
+  />
+  
+  <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    {/* 🏠 Navigation Header */}
+    <div className="mb-6 flex justify-between items-center">
+      <div className="flex items-center space-x-4">
+        <Link 
+          href="/"
+          className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+        >
+          ← Back to Home
+        </Link>
+      </div>
           
           {/* Admin Info & Notifications */}
           <div className="flex items-center space-x-4">
@@ -2470,7 +2559,7 @@ export default function AdminListingsPage() {
                         </label>
                         <textarea
                           value={adminNotes}
-                          onChange={(e) => setAdminNotes(e.target.value)}
+                          onChange={(e) => setAdminNotes(sanitizeInput(e.target.value))}
                           rows={4}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           placeholder="Add any notes about this listing..."
@@ -2484,7 +2573,7 @@ export default function AdminListingsPage() {
                         </label>
                         <textarea
                           value={rejectionReason}
-                          onChange={(e) => setRejectionReason(e.target.value)}
+                          onChange={(e) => setRejectionReason(sanitizeInput(e.target.value))}
                           rows={3}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           placeholder="Provide reason for rejection..."
