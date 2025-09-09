@@ -110,7 +110,7 @@ const isAdminUser = async (email: string, uid: string): Promise<boolean> => {
     }
 
     // 3. Environment variable ile karşılaştır
-    const envAdminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+    const envAdminEmail = process.env.ADMIN_EMAIL;
     if (envAdminEmail && userEmail === envAdminEmail) {
       return true;
     }

@@ -80,7 +80,7 @@ export const verifyUserRoleSecurely = async (user: User): Promise<UserRole> => {
 
     // Önce admin email kontrolü
     // GÜVENLI - Hardcoded fallback olmadan
-    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+    const adminEmail = process.env.ADMIN_EMAIL;
     if (adminEmail && user.email === adminEmail) {
       console.log('✅ Admin role assigned via email');
       return UserRole.ADMIN;
@@ -118,7 +118,7 @@ export const verifyUserRoleSecurely = async (user: User): Promise<UserRole> => {
     console.error('❌ Firestore role check error:', error);
 
     // Hata durumunda email bazlı fallback
-    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+    const adminEmail = process.env.ADMIN_EMAIL;
     if (adminEmail && user.email === adminEmail) {
       return UserRole.ADMIN;
     }
