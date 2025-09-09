@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
 
           ${data.shippingInfo ? `
           <div class="card">
-            <h3 style="margin-top: 0; color: #374151;">🚚 Pickup Address</h3>
+            <h3 style="margin-top: 0; color: #374151;">🚚 Shpping/Pickup Address</h3>
             <div class="address">
               ${data.shippingInfo.firstName} ${data.shippingInfo.lastName}<br>
               ${data.shippingInfo.address.street}<br>

@@ -697,8 +697,7 @@ export default function CreateListingPage() {
       game: "Game",
       mix: "Mixed Media"
     };
-    return `${totalItems} ${categoryNames[dominantCategory as keyof typeof categoryNames]} Collection in Very Good Condition`;
-  };
+    return `${totalItems} ${categoryNames[dominantCategory as keyof typeof categoryNames]} Collection in Used Condition`;  };
 
   const uploadImageToStorage = async (item: BundleItem, userId: string): Promise<string | null> => {
     if (!item.imageBlob) return null;
@@ -852,9 +851,27 @@ export default function CreateListingPage() {
             shippingInfo: shippingInfo
           })
         });
-        console.log("Email notification sent");
+        console.log("Admin notification sent");
       } catch (error) {
-        console.error("Email error:", error);
+        console.error("Admin email error:", error);
+      }
+      
+      // Seller confirmation email
+      try {
+        await fetch('/api/send-seller-confirmation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sellerName: `${shippingInfo.firstName} ${shippingInfo.lastName}`.trim(),
+            sellerEmail: user?.email || "",
+            totalItems: totalItems,
+            totalValue: totalValue,
+            submissionId: docRef.id
+          })
+        });
+        console.log("Seller confirmation sent");
+      } catch (error) {
+        console.error("Seller email error:", error);
       }
       setSuccess(true);
       setShowSuccessPopup(true);
