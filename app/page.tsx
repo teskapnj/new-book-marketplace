@@ -442,7 +442,7 @@ export default function HomePage() {
               Sell Your Books, CDs, DVDs & Games
             </h1>
             <p className="text-xl sm:text-2xl text-blue-100 mb-8 leading-relaxed">
-              Turn your old Books, CDs, DVDs and games into cash. We accept a wide range of items and our prices start from $1 - no cents, just dollars. Get instant quotes and free shipping today!
+              Turn your old Books, CDs, DVDs and games into cash. We accept a wide range of items and our prices start from $1.49 - no cents, just dollars. Get instant quotes and free shipping today!
             </p>
             <div className="grid grid-cols-3 gap-8 mt-16 max-w-2xl mx-auto">
               <div className="text-center">

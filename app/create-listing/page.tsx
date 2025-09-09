@@ -1041,7 +1041,7 @@ export default function CreateListingPage() {
               </div>
 
               {/* Desktop Navigation - Horizontal */}
-              <div className="hidden sm:grid grid-cols-4 gap-3">
+              <div className={`hidden sm:grid gap-3 ${user ? 'grid-cols-5' : 'grid-cols-4'}`}>
                 <Link
                   href="/"
                   className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-blue-600 hover:text-blue-700 hover:shadow-md transition-all duration-200"
@@ -1063,6 +1063,15 @@ export default function CreateListingPage() {
                   <FiMessageSquare className="mr-2 h-4 w-4" />
                   Contact Us
                 </Link>
+                {user && (
+                  <Link
+                    href="/dashboard/settings"
+                    className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-gray-600 hover:text-gray-700 hover:shadow-md transition-all duration-200"
+                  >
+                    <FiSettings className="mr-2 h-4 w-4" />
+                    Settings
+                  </Link>
+                )}
                 <button
                   type="button"
                   onClick={resetForm}
