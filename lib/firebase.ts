@@ -4,6 +4,8 @@ import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth"
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getFunctions } from "firebase/functions";
+import { getAnalytics } from "firebase/analytics"; // Analytics import edildi
+
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
@@ -39,6 +41,13 @@ export const functions = getFunctions(app);
 // if (process.env.NODE_ENV === 'development') {
 //   connectFunctionsEmulator(functions, "localhost", 5001);
 // }
+// Analytics'i başlat (sadece client-side)
+let analytics = null;
+if (typeof window !== 'undefined') {
+  analytics = getAnalytics(app);
+}
+
 
 // Export app instance
+export { analytics };
 export default app;

@@ -3,7 +3,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios, { AxiosError } from 'axios';
 import { productCache } from '@/lib/productCache';
-
 // Fiyat hesaplama motorunu içe aktarmaya çalışın
 let calculateOurPrice: any;
 try {
@@ -12,7 +11,6 @@ try {
 } catch (e) {
   console.error('Failed to import pricingEngine:', e);
 }
-
 // TypeScript tip tanımlamaları - Sadece kullanılan alanlar
 interface AmazonProduct {
   title: string;
@@ -22,7 +20,6 @@ interface AmazonProduct {
   category: string;
   asin: string;
 }
-
 interface PricingResult {
   accepted: boolean;
   ourPrice?: number;
@@ -31,30 +28,25 @@ interface PricingResult {
   priceRange?: string;
   rankRange?: string;
 }
-
 interface PricingOffer {
   price: number;
   seller: string;
   condition: string;
 }
-
 interface PricingContent {
   title: string;
   pricing: PricingOffer[];
 }
-
 interface SearchResult {
   asin?: string;
   title?: string;
 }
-
 interface SearchContent {
   results?: {
     organic?: SearchResult[];
     paid?: SearchResult[];
   };
 }
-
 interface ProductDetailResult {
   title?: string;
   images?: string[];
@@ -71,19 +63,17 @@ interface ProductDetailResult {
     }>;
   }>;
 }
-
 interface OxylabsResponse<T> {
   results: Array<{
     content: T;
   }>;
 }
-
 interface PriceAnalysisResult {
   bestPrice: number;
   bestCondition: string;
   analysisDetails: string;
+  hasNewPrice: boolean; // Yeni eklenen: new fiyatı olup olmadığını belirtir
 }
-
 interface ApiResponse {
   success: boolean;
   data?: {
@@ -106,6 +96,9 @@ interface ApiResponse {
   };
   error?: string;
 }
+
+// Global kategori listesi
+const MAIN_CATEGORIES = ['Books', 'CDs & Vinyl', 'Movies & TV', 'Video Games', 'Music', 'DVD'];
 
 /**
  * ISBN/UPC kod tipini algıla
@@ -135,45 +128,54 @@ function detectCodeType(code: string): 'isbn' | 'upc' | 'asin' | 'unknown' {
   
   return 'unknown';
 }
-
 /**
  * Fiyat analizi - EN DÜŞÜK NEW, sonra EN DÜŞÜK USED
  */
 function analyzePricingOffers(pricingData: PricingContent): PriceAnalysisResult {
+   // 🔍 DEBUG EKLEME - BAŞLANGICI
+   console.log('🔍 Pricing Analysis Debug:');
+   console.log('Raw pricing data:', pricingData?.pricing);
+   
+   if (pricingData?.pricing && Array.isArray(pricingData.pricing)) {
+     console.log('Total offers:', pricingData.pricing.length);
+     pricingData.pricing.forEach((offer, i) => {
+       console.log(`Offer ${i}: price=${offer.price}, condition="${offer.condition}", seller="${offer.seller}"`);
+     });
+   }
+   // 🔍 DEBUG EKLEME - BİTİŞİ
   if (!pricingData?.pricing || !Array.isArray(pricingData.pricing)) {
     return {
       bestPrice: 0,
       bestCondition: 'unknown',
-      analysisDetails: 'Fiyat verileri bulunamadı'
+      analysisDetails: 'Fiyat verileri bulunamadı',
+      hasNewPrice: false
     };
   }
-
   const offers = pricingData.pricing;
   const newOffers: PricingOffer[] = [];
   const usedOffers: PricingOffer[] = [];
-
   offers.forEach(offer => {
     if (!offer.price || offer.price <= 0) return;
     
     const condition = (offer.condition || '').toLowerCase();
     
-    if (condition.includes('new') || condition === '' || condition.includes('neu')) {
+    // "Like New" durumunu "Used" olarak kabul et
+    if (condition.includes('new') && !condition.includes('like') || condition === '' || condition.includes('neu')) {
       newOffers.push(offer);
     } else if (condition.includes('used') || condition.includes('gebraucht') || 
                condition.includes('very good') || condition.includes('good') ||
-               condition.includes('acceptable')) {
+               condition.includes('acceptable') || condition.includes('like new')) {
       usedOffers.push(offer);
     }
   });
-
   newOffers.sort((a, b) => a.price - b.price);
   usedOffers.sort((a, b) => a.price - b.price);
-
   let bestPrice = 0;
   let bestCondition = 'unknown';
   let analysisDetails = '';
-
-  if (newOffers.length > 0) {
+  const hasNewPrice = newOffers.length > 0; // Yeni eklenen: new fiyatı olup olmadığını kontrol et
+  
+  if (hasNewPrice) {
     bestPrice = newOffers[0].price;
     bestCondition = 'new';
     analysisDetails = `En düşük NEW: $${bestPrice} (${newOffers[0].seller})`;
@@ -184,22 +186,26 @@ function analyzePricingOffers(pricingData: PricingContent): PriceAnalysisResult 
   } else {
     analysisDetails = 'Hiç geçerli teklif bulunamadı';
   }
-
-  return { bestPrice, bestCondition, analysisDetails };
+  // 🔍 FINAL PRICE DEBUG EKLE - BAŞLANGICI
+  console.log('🎯 Final Pricing Decision:');
+  console.log(`NEW offers: ${newOffers.length}`);
+  console.log(`USED offers: ${usedOffers.length}`);
+  console.log(`Selected: ${bestCondition} - $${bestPrice}`);
+  console.log(`Analysis: ${analysisDetails}`);
+  console.log(`Has New Price: ${hasNewPrice}`);
+  // 🔍 FINAL PRICE DEBUG EKLE - BİTİŞİ
+  return { bestPrice, bestCondition, analysisDetails, hasNewPrice };
 }
-
 /**
  * Sales rank çıkarma
  */
 function extractSalesRank(productData: ProductDetailResult): number {
   if (productData.sales_rank && Array.isArray(productData.sales_rank)) {
-    const mainCategories = ['Books', 'CDs & Vinyl', 'Movies & TV', 'Video Games', 'Music', 'DVD'];
-    
     for (const rankItem of productData.sales_rank) {
       if (rankItem.rank && rankItem.rank > 0) {
         if (rankItem.ladder && rankItem.ladder[0]) {
           const categoryName = rankItem.ladder[0].name || '';
-          if (mainCategories.some(cat => categoryName.includes(cat))) {
+          if (MAIN_CATEGORIES.some(cat => categoryName.includes(cat))) {
             return rankItem.rank;
           }
         }
@@ -222,18 +228,15 @@ function extractSalesRank(productData: ProductDetailResult): number {
   
   return 0;
 }
-
 /**
  * Kategori çıkarma
  */
 function extractCategory(data: ProductDetailResult): string {
-  const mainCategories = ['Books', 'CDs & Vinyl', 'Movies & TV', 'Video Games', 'Music', 'DVD'];
-  
   if (data.sales_rank && Array.isArray(data.sales_rank)) {
     for (const rankItem of data.sales_rank) {
       if (rankItem.ladder && rankItem.ladder[0]) {
         const categoryName = rankItem.ladder[0].name;
-        if (mainCategories.some(cat => categoryName.includes(cat))) {
+        if (MAIN_CATEGORIES.some(cat => categoryName.includes(cat))) {
           return categoryName;
         }
       }
@@ -246,9 +249,8 @@ function extractCategory(data: ProductDetailResult): string {
   
   return 'Unknown';
 }
-
 /**
- * PARALLEL API EXECUTION - Sadece gerekli alanlar
+ * PARALLEL API EXECUTION - HER ZAMAN PRİCİNG + PRODUCT
  */
 async function executeParallelAnalysis(asin: string, username: string, password: string) {
   const startTime = Date.now();
@@ -256,9 +258,10 @@ async function executeParallelAnalysis(asin: string, username: string, password:
   const apiConfig = {
     auth: { username, password },
     headers: { 'Content-Type': 'application/json' },
-    timeout: 6000 // Daha agresif timeout
+    timeout: 5000  // 6 saniyeden 4 saniyeye düşürüldü
   };
   
+  // HER ZAMAN İKİ API CALL - PRİCİNG + PRODUCT
   const pricingRequest = {
     source: 'amazon_pricing',
     query: asin,
@@ -275,41 +278,34 @@ async function executeParallelAnalysis(asin: string, username: string, password:
     parse: true
   };
   
-  const [pricingResult, productResult] = await Promise.allSettled([
+  // Promise.allSettled yerine Promise.all kullanıldı
+  const [pricingResponse, productResponse] = await Promise.all([
     axios.post<OxylabsResponse<PricingContent>>(
       'https://realtime.oxylabs.io/v1/queries',
       pricingRequest,
       apiConfig
-    ),
+    ).catch(error => {
+      console.error('Pricing API error:', error.message);
+      return null;
+    }),
     axios.post<OxylabsResponse<ProductDetailResult>>(
       'https://realtime.oxylabs.io/v1/queries',
       productRequest,
       apiConfig
-    )
+    ).catch(error => {
+      console.error('Product API error:', error.message);
+      return null;
+    })
   ]);
   
   const parallelTime = Date.now() - startTime;
   
-  const pricingContent = pricingResult.status === 'fulfilled' 
-    ? pricingResult.value.data.results?.[0]?.content || null
-    : null;
-    
-  const productContent = productResult.status === 'fulfilled'
-    ? productResult.value.data.results?.[0]?.content || null
-    : null;
+  const pricingContent = pricingResponse?.data?.results?.[0]?.content || null;
+  const productContent = productResponse?.data?.results?.[0]?.content || null;
   
-  let apiCallCount = 0;
-  const callSequence: string[] = [];
-  
-  if (pricingContent) {
-    apiCallCount++;
-    callSequence.push('pricing');
-  }
-  
-  if (productContent) {
-    apiCallCount++;
-    callSequence.push('product');
-  }
+  // HER ZAMAN 2 CALL (PRİCİNG + PRODUCT)
+  const apiCallCount = 2;
+  const callSequence = ['pricing', 'product'];
   
   return {
     pricingContent,
@@ -319,7 +315,6 @@ async function executeParallelAnalysis(asin: string, username: string, password:
     timings: { parallelTime }
   };
 }
-
 /**
  * POST /api/amazon-check - CLEAN & OPTIMIZED
  */
@@ -337,7 +332,7 @@ export async function POST(request: NextRequest) {
     if (!isbn_upc || typeof isbn_upc !== 'string') {
       return NextResponse.json({
         success: false,
-        error: 'ISBN veya UPC kodu gerekli'
+        error: 'only valid ISBN or UPC code or ASIN'
       } as ApiResponse, { status: 400 });
     }
     
@@ -347,7 +342,7 @@ export async function POST(request: NextRequest) {
     if (codeType === 'unknown') {
       return NextResponse.json({
         success: false,
-        error: 'Geçersiz ISBN/UPC formatı'
+        error: 'invalid ISBN/UPC format'
       } as ApiResponse, { status: 400 });
     }
     
@@ -378,7 +373,8 @@ export async function POST(request: NextRequest) {
     if (!username || !password) {
       return NextResponse.json({
         success: false,
-        error: 'Oxylabs API yapılandırması eksik'
+        error: 'Please try again.'
+       // error: 'Oxylabs API yapılandırması eksik'
       } as ApiResponse, { status: 500 });
     }
     
@@ -408,7 +404,7 @@ export async function POST(request: NextRequest) {
         {
           auth: { username, password },
           headers: { 'Content-Type': 'application/json' },
-          timeout: 6000
+          timeout: 4000  // 6 saniyeden 4 saniyeye düşürüldü
         }
       );
       
@@ -421,14 +417,14 @@ export async function POST(request: NextRequest) {
         console.log(`Ürün bulunamadı: ${cleanCode}`);
         return NextResponse.json({
           success: false,
-          error: `Bu ${codeType.toUpperCase()} için ürün bulunamadı`
+          error: 'Please try again.'
+          //error: `Bu ${codeType.toUpperCase()} için ürün bulunamadı`
         } as ApiResponse, { status: 404 });
       }
       
       asin = firstProduct.asin;
       console.log(`ASIN bulundu: ${asin} (${searchTime}ms)`);
     }
-
     // PARALLEL EXECUTION
     const parallelResult = await executeParallelAnalysis(asin, username, password);
     
@@ -440,7 +436,8 @@ export async function POST(request: NextRequest) {
       console.log(`Pricing verileri alınamadı: ${asin}`);
       return NextResponse.json({
         success: false,
-        error: `Pricing verileri alınamadı`
+        error: 'Please try again.'
+       // error: `Pricing verileri alınamadı`
       } as ApiResponse, { status: 404 });
     }
     
@@ -452,10 +449,14 @@ export async function POST(request: NextRequest) {
     const title = parallelResult.productContent?.title || parallelResult.pricingContent?.title || 'Başlık bulunamadı';
     const image = parallelResult.productContent?.images?.[0] || '';
     
+    // Eğer new fiyatı yoksa ve used fiyatı varsa, fiyatı 0 olarak ayarla
+    // Bu durumda pricing motoru rank'e göre karar verecek
+    const productPrice = pricingAnalysis.hasNewPrice ? pricingAnalysis.bestPrice : 0;
+    
     const product: AmazonProduct = {
       title,
       image,
-      price: pricingAnalysis.bestPrice,
+      price: productPrice,
       sales_rank: salesRank,
       category,
       asin
@@ -463,9 +464,16 @@ export async function POST(request: NextRequest) {
     
     const pricingResult = calculateOurPrice(product);
     
-    const message = pricingResult.accepted && pricingResult.ourPrice
-      ? `Kabul Edildi! Bizim Fiyatımız: $${pricingResult.ourPrice}`
-      : `Reddedildi: ${pricingResult.reason}`;
+    let message = '';
+    if (pricingResult.accepted && pricingResult.ourPrice) {
+      if (!pricingAnalysis.hasNewPrice) {
+        message = `Kabul Edildi! New fiyatı yok, rank'e göre fiyatlandırıldı: $${pricingResult.ourPrice}`;
+      } else {
+        message = `Kabul Edildi! Bizim Fiyatımız: $${pricingResult.ourPrice}`;
+      }
+    } else {
+      message = `Reddedildi: ${pricingResult.reason}`;
+    }
     
     const totalTime = Date.now() - totalStartTime;
     
@@ -492,7 +500,7 @@ export async function POST(request: NextRequest) {
       debugInfo
     );
     
-    const speedLabel = totalTime < 4000 ? 'SUPER HIZLI' : totalTime < 7000 ? 'HIZLI' : 'NORMAL';
+    const speedLabel = totalTime < 3000 ? 'SUPER HIZLI' : totalTime < 5000 ? 'HIZLI' : 'NORMAL';
     console.log(`[${speedLabel}] ${totalTime}ms, ${apiCallCount} calls: ${callSequence.join(' + ')}`);
     
     return NextResponse.json({
@@ -507,36 +515,39 @@ export async function POST(request: NextRequest) {
     
   } catch (error: any) {
     const totalTime = Date.now() - totalStartTime;
-    console.error(`HATA [${totalTime}ms]: ${error.message}`);
+    console.error(`HATA [${totalTime}ms]: ${error.toString()}`);
     
     if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
       return NextResponse.json({
         success: false,
-        error: 'Timeout - API çok yavaş'
+        error: 'Please try again.'
+        //error: 'Timeout - API çok yavaş'
       } as ApiResponse, { status: 408 });
     }
     
     if (error.response?.status === 401) {
       return NextResponse.json({ 
         success: false, 
-        error: 'API kimlik doğrulama hatası' 
+        error: 'Please try again.'
+        //error: 'API kimlik doğrulama hatası' 
       } as ApiResponse, { status: 500 });
     }
     
     if (error.response?.status === 429) {
       return NextResponse.json({ 
-        success: false, 
-        error: 'API limit aşıldı' 
+        success: false,
+        error: 'Please try again.' 
+        //error: 'API limit aşıldı' 
       } as ApiResponse, { status: 429 });
     }
     
     return NextResponse.json({
       success: false,
-      error: 'Amazon kontrolü sırasında hata oluştu'
+      error: 'Please try again.'
+      //error: 'Amazon kontrolü sırasında hata oluştu'
     } as ApiResponse, { status: 500 });
   }
 }
-
 export async function GET() {
   const hasConfig = !!(process.env.OXYLABS_USERNAME && process.env.OXYLABS_PASSWORD);
   

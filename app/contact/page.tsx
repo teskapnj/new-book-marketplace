@@ -5,87 +5,7 @@ import Link from "next/link";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import DOMPurify from 'isomorphic-dompurify'; // Bu satırı ekleyin
-
-// FAQ verilerini ayrı bir dosyadan import etmek daha iyi olur
-const faqs = [
-  {
-    question: "How do I create an account?",
-    answer: "You can create an account by clicking on the 'Register' button in the top right corner of our homepage. Fill in your details including name, email address, and password. After submitting, you'll receive a verification email. Click the link in the email to activate your account."
-  },
-  {
-    question: "What payment methods do you accept?",
-    answer: "We accept all major credit cards (Visa, MasterCard, American Express), PayPal, Apple Pay, Google Pay, and bank transfers. All transactions are securely processed through our encrypted payment system."
-  },
-  {
-    question: "How long does shipping take?",
-    answer: "Sellers are required to ship items within 3 business days of purchase. Delivery times vary based on the shipping method selected: Standard shipping takes 3-5 business days, while expedited shipping takes 1-2 business days. You'll receive tracking information once your item ships."
-  },
-  {
-    question: "What is your return policy?",
-    answer: "You have 3 days from the delivery date to initiate a return for items that are not as described, damaged, or defective. To start a return, contact the seller through your account dashboard. If the seller doesn't resolve the issue within 3 business days, you can escalate to our support team for assistance."
-  },
-  {
-    question: "How do I sell an item?",
-    answer: "To sell an item, click the 'Sell Items' button in the header. You'll need to create an account if you haven't already. Then, fill in the item details including title, description, condition, price, and upload clear photos. Set your shipping preferences and list your item. We charge an 8.5% marketplace fee on successful sales."
-  },
-  {
-    question: "How do I track my order?",
-    answer: "Once your item ships, you'll receive a tracking number via email. You can also track your order by logging into your account and going to 'My Orders'. Click on the specific order to view tracking information and estimated delivery date."
-  },
-  {
-    question: "What if my item doesn't arrive?",
-    answer: "If your item doesn't arrive within the estimated delivery time, first contact the seller through our messaging system. If the seller doesn't resolve the issue or if the item is significantly delayed, you can open a dispute with our support team. We'll investigate and arrange a refund if necessary."
-  },
-  {
-    question: "How do I contact customer support?",
-    answer: "You can contact our customer support team by filling out the contact form on this page. We typically respond to messages within 24 hours through our internal messaging system."
-  },
-  {
-    question: "Is my personal information secure?",
-    answer: "Yes, we take the security of your personal information very seriously. We use industry-standard encryption and security measures to protect your data. We never share your payment information with sellers, and we comply with all applicable privacy laws and regulations."
-  },
-  {
-    question: "What are the marketplace fees?",
-    answer: "We charge an 8.5% marketplace fee on all successful transactions. This fee is automatically deducted from the seller's payment. There are no hidden fees or charges for buyers. Additional fees may apply for optional services like featured listings or expedited shipping."
-  }
-];
-
-// FAQ Bileşeni
-const FAQItem = ({
-  question,
-  answer,
-  isOpen,
-  onClick
-}: {
-  question: string;
-  answer: string;
-  isOpen: boolean;
-  onClick: () => void;
-}) => (
-  <div className="border border-gray-200 rounded-lg overflow-hidden">
-    <button
-      className="w-full flex justify-between items-center p-6 text-left font-medium text-lg hover:bg-gray-50 transition"
-      onClick={onClick}
-    >
-      <span>{DOMPurify.sanitize(question)}</span>
-      <svg
-        className={`w-5 h-5 text-gray-500 transform transition-transform ${isOpen ? 'rotate-180' : ''}`}
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-      </svg>
-    </button>
-
-    {isOpen && (
-      <div className="p-6 pt-0 bg-gray-50 border-t border-gray-200">
-        <p className="text-gray-700">{DOMPurify.sanitize(answer)}</p>
-      </div>
-    )}
-  </div>
-);
+import DOMPurify from 'isomorphic-dompurify';
 
 // Sosyal Medya İkonları Bileşeni
 const SocialMediaIcons = () => (
@@ -134,28 +54,13 @@ const ContactInfo = () => (
       <div className="flex items-start">
         <div className="bg-blue-100 p-3 rounded-full mr-4">
           <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
         </div>
         <div>
-          <h3 className="font-bold text-lg mb-1">Phone</h3>
-          <p className="text-gray-700">+1 (555) 123-4567</p>
-          <p className="text-gray-700">Mon-Fri 9AM-5PM EST</p>
-        </div>
-      </div>
-
-      <div className="flex items-start">
-        <div className="bg-blue-100 p-3 rounded-full mr-4">
-          <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-        </div>
-        <div>
-          <h3 className="font-bold text-lg mb-1">Office</h3>
-          <p className="text-gray-700">123 Market Street</p>
-          <p className="text-gray-700">Suite 100</p>
-          <p className="text-gray-700">New York, NY 10001</p>
+          <h3 className="font-bold text-lg mb-1">Email</h3>
+          <p className="text-gray-700">support@marketplace.com</p>
+          <p className="text-gray-700">We respond within 24 hours</p>
         </div>
       </div>
 
@@ -430,53 +335,7 @@ const ContactForm = () => {
           )}
         </button>
       </form>
-
-      {/* Info Box */}
-      <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <div className="flex items-start">
-          <svg className="w-5 h-5 text-blue-600 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div>
-            <h4 className="text-blue-800 font-medium mb-1">How it works</h4>
-            <p className="text-blue-700 text-sm">
-              Your message will be sent directly to our admin team through our internal messaging system.
-              You'll receive a response within 24 hours. If you have an account, you can also check
-              your message status in your dashboard.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
-  );
-};
-
-// FAQ Bölümü Bileşeni
-const FAQSection = () => {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
-
-  const toggleFAQ = (index: number) => {
-    setOpenIndex(openIndex === index ? null : index);
-  };
-
-  return (
-    <section className="py-16 px-4 bg-white">
-      <div className="max-w-4xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-12">Frequently Asked Questions</h2>
-
-        <div className="space-y-4">
-          {faqs.map((faq, index) => (
-            <FAQItem
-              key={index}
-              question={faq.question}
-              answer={faq.answer}
-              isOpen={openIndex === index}
-              onClick={() => toggleFAQ(index)}
-            />
-          ))}
-        </div>
-      </div>
-    </section>
   );
 };
 
@@ -519,24 +378,6 @@ export default function ContactPage() {
         </div>
       </section>
 
-      {/* Map Section */}
-      <section className="py-16 px-4 bg-gray-100">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-12">Find Us</h2>
-          <div className="bg-gray-300 rounded-xl h-96 flex items-center justify-center">
-            <div className="text-center">
-              <svg className="w-16 h-16 text-gray-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-              </svg>
-              <p className="text-gray-600">Interactive map will be displayed here</p>
-              <p className="text-gray-500 text-sm mt-2">123 Market Street, New York, NY 10001</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <FAQSection />
-
       {/* Success Stories Section */}
       <section className="py-16 px-4 bg-white">
         <div className="max-w-4xl mx-auto">
@@ -549,7 +390,6 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h4 className="font-bold">John Doe</h4>
-                  <p className="text-gray-600 text-sm">Verified Buyer</p>
                 </div>
               </div>
               <p className="text-gray-700 italic">
@@ -570,7 +410,6 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h4 className="font-bold">Sarah Miller</h4>
-                  <p className="text-gray-600 text-sm">Seller</p>
                 </div>
               </div>
               <p className="text-gray-700 italic">
@@ -591,7 +430,6 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h4 className="font-bold">Mike Johnson</h4>
-                  <p className="text-gray-600 text-sm">Regular User</p>
                 </div>
               </div>
               <p className="text-gray-700 italic">

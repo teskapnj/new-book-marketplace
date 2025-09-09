@@ -8,11 +8,11 @@ import { auth, db, storage } from "@/lib/firebase";
 import { useRateLimit } from '@/hooks/useRateLimit';
 import { RateLimitWarning } from '@/components/RateLimitWarning';
 
-import { 
-  collection, 
-  onSnapshot, 
-  doc, 
-  updateDoc, 
+import {
+  collection,
+  onSnapshot,
+  doc,
+  updateDoc,
   deleteDoc,
   serverTimestamp,
   query,
@@ -90,10 +90,10 @@ const MessageNotification = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   useEffect(() => {
     if (!user) return;
-    
+
     const checkAdminStatus = async () => {
       try {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
@@ -101,7 +101,7 @@ const MessageNotification = () => {
           setError('Admin access required');
           return;
         }
-        
+
         const messagesRef = collection(db, 'contact_messages');
         const q = query(messagesRef, where('status', '==', 'unread'));
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -114,7 +114,7 @@ const MessageNotification = () => {
           }
           setLoading(false);
         });
-        
+
         return () => unsubscribe();
       } catch (error) {
         console.error('Error checking admin status:', error);
@@ -122,10 +122,10 @@ const MessageNotification = () => {
         setLoading(false);
       }
     };
-    
+
     checkAdminStatus();
   }, [user]);
-  
+
   if (error) {
     return (
       <div className="relative">
@@ -138,7 +138,7 @@ const MessageNotification = () => {
       </div>
     );
   }
-  
+
   if (loading) {
     return (
       <div className="relative">
@@ -146,7 +146,7 @@ const MessageNotification = () => {
       </div>
     );
   }
-  
+
   return (
     <Link
       href="/admin/messages"
@@ -156,7 +156,7 @@ const MessageNotification = () => {
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
       </svg>
-      
+
       {unreadCount > 0 && (
         <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full min-w-[20px]">
           {unreadCount > 99 ? '99+' : unreadCount}
@@ -171,7 +171,7 @@ const OrdersNavigation = () => {
   const [orderCount, setOrderCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   useEffect(() => {
     const ordersRef = collection(db, 'orders');
     const unsubscribe = onSnapshot(ordersRef, (snapshot) => {
@@ -184,10 +184,10 @@ const OrdersNavigation = () => {
       }
       setLoading(false);
     });
-    
+
     return () => unsubscribe();
   }, []);
-  
+
   if (error) {
     return (
       <div className="relative">
@@ -197,7 +197,7 @@ const OrdersNavigation = () => {
       </div>
     );
   }
-  
+
   if (loading) {
     return (
       <div className="relative">
@@ -205,7 +205,7 @@ const OrdersNavigation = () => {
       </div>
     );
   }
-  
+
   return (
     <Link
       href="/admin/orders"
@@ -215,7 +215,7 @@ const OrdersNavigation = () => {
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 01-8 0v4M5 9h14l1 12M4 6h16M4 6h16" />
       </svg>
-      
+
       {orderCount > 0 && (
         <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-blue-600 rounded-full min-w-[20px]">
           {orderCount > 99 ? '99+' : orderCount}
@@ -236,7 +236,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
   const [status, setStatus] = useState(order.status);
   const [notes, setNotes] = useState(order.adminNotes || "");
   const [isProcessing, setIsProcessing] = useState(false);
-  
+
   // Yeni state'ler tracking için
   const [trackingNumber, setTrackingNumber] = useState("");
   const [carrier, setCarrier] = useState("usps");
@@ -244,7 +244,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
   const [trackingLoading, setTrackingLoading] = useState(false);
   const [trackingError, setTrackingError] = useState("");
   const [trackingSuccess, setTrackingSuccess] = useState("");
-  
+
   const handleUpdateStatus = async () => {
     setIsProcessing(true);
     try {
@@ -261,30 +261,30 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
       setIsProcessing(false);
     }
   };
-  
+
   // Tracking ekleme fonksiyonu
   const handleAddTracking = async () => {
     if (!trackingNumber.trim()) {
       setTrackingError("Tracking number is required");
       return;
     }
-    
+
     setTrackingLoading(true);
     setTrackingError("");
     setTrackingSuccess("");
-    
+
     try {
       const user = auth.currentUser;
       if (!user) {
         setTrackingError("You must be logged in to add tracking information");
         return;
       }
-      
+
       console.log("Mevcut kullanıcı:", user.email);
-      
+
       const token = await user.getIdToken();
       console.log("Token alındı:", token.substring(0, 20) + "...");
-      
+
       const response = await fetch(`/api/orders/${order.id}/add-tracking`, {
         method: 'POST',
         headers: {
@@ -296,16 +296,16 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
           carrier: carrier
         })
       });
-      
+
       console.log("İstek gönderildi. Status:", response.status);
-      
+
       const data = await response.json();
-      
+
       if (response.ok) {
         setTrackingSuccess(`Tracking added successfully! ${data.emailSent ? 'Email sent.' : ''}`);
         setTrackingNumber("");
         setShowTrackingForm(false);
-        
+
         // Modal'ı kapat - real-time listener güncel data'yı alacak
         setTimeout(() => {
           onClose();
@@ -320,13 +320,13 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
       setTrackingLoading(false);
     }
   };
-  
+
   const formatDate = (timestamp: Timestamp | Date | undefined): string => {
     if (!timestamp) return "N/A";
     const date = timestamp instanceof Timestamp ? timestamp.toDate() : new Date(timestamp);
     return date.toLocaleDateString() + " " + date.toLocaleTimeString();
   };
-  
+
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
       <div className="relative mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white max-h-[90vh] overflow-y-auto">
@@ -341,7 +341,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
             ✕
           </button>
         </div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left column - Order information */}
           <div className="space-y-4">
@@ -356,7 +356,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                 <p><strong>Created:</strong> {formatDate(order.createdAt)}</p>
                 <p><strong>Last Updated:</strong> {formatDate(order.updatedAt)}</p>
                 <p><strong>Status:</strong> {getOrderStatusBadge(order.status)}</p>
-                
+
                 {/* Tracking bilgisi varsa göster */}
                 {order.trackingNumber && (
                   <div className="mt-2 pt-2 border-t border-gray-200">
@@ -364,10 +364,10 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                     <p><strong>Carrier:</strong> {order.carrier?.toUpperCase() || "N/A"}</p>
                     {order.trackingUrl && (
                       <p>
-                        <strong>Tracking URL:</strong> 
-                        <a 
-                          href={order.trackingUrl} 
-                          target="_blank" 
+                        <strong>Tracking URL:</strong>
+                        <a
+                          href={order.trackingUrl}
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:text-blue-800 ml-1"
                         >
@@ -379,7 +379,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                 )}
               </div>
             </div>
-            
+
             {/* Shipping Information */}
             <div>
               <h4 className="text-sm font-medium text-gray-900 mb-2">Shipping Address</h4>
@@ -391,7 +391,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                 </p>
               </div>
             </div>
-            
+
             {/* Order Items */}
             <div>
               <h4 className="text-sm font-medium text-gray-900 mb-2">
@@ -415,7 +415,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
               </div>
             </div>
           </div>
-          
+
           {/* Right column - Admin actions */}
           <div className="space-y-4">
             <div>
@@ -426,12 +426,12 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                 value={status}
                 onChange={(e) => setStatus(e.target.value as Order['status'])}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >             
+              >
                 <option value="confirmed">Confirmed</option>
                 <option value="cancelled">Cancelled</option>
               </select>
             </div>
-            
+
             {/* Tracking Ekleme Bölümü */}
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
               <div className="flex justify-between items-center mb-3">
@@ -445,7 +445,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                   </button>
                 )}
               </div>
-              
+
               {order.trackingNumber ? (
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
@@ -459,9 +459,9 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                   {order.trackingUrl && (
                     <div className="flex justify-between items-center">
                       <span className="text-sm font-medium">Tracking URL:</span>
-                      <a 
-                        href={order.trackingUrl} 
-                        target="_blank" 
+                      <a
+                        href={order.trackingUrl}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="text-sm text-blue-600 hover:text-blue-800"
                       >
@@ -484,7 +484,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                       placeholder="Enter tracking number"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
                       Carrier
@@ -501,20 +501,20 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                       <option value="shippo">Shippo Test</option>
                     </select>
                   </div>
-                  
+
                   {/* Hata ve başarı mesajları */}
                   {trackingError && (
                     <div className="text-red-600 text-xs bg-red-50 p-2 rounded">
                       {trackingError}
                     </div>
                   )}
-                  
+
                   {trackingSuccess && (
                     <div className="text-green-600 text-xs bg-green-50 p-2 rounded">
                       {trackingSuccess}
                     </div>
                   )}
-                  
+
                   <button
                     onClick={handleAddTracking}
                     disabled={trackingLoading}
@@ -529,7 +529,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                 </p>
               )}
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Admin Notes
@@ -542,7 +542,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                 placeholder="Add notes about this order..."
               />
             </div>
-            
+
             <div className="bg-blue-50 p-4 rounded-lg">
               <h4 className="text-sm font-medium text-gray-900 mb-2">Order Summary</h4>
               <div className="space-y-1 text-sm">
@@ -568,7 +568,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-yellow-50 p-4 rounded-lg">
               <h4 className="text-sm font-medium text-gray-900 mb-2">Vendor Breakdown</h4>
               <div className="space-y-2 text-sm">
@@ -580,7 +580,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                 ))}
               </div>
             </div>
-            
+
             <button
               onClick={handleUpdateStatus}
               disabled={isProcessing}
@@ -605,16 +605,16 @@ const getOrderStatusBadge = (status: Order['status']) => {
     delivered: "bg-green-100 text-green-800 border-green-200",
     cancelled: "bg-red-100 text-red-800 border-red-200"
   };
-  
-  const icons = { 
-    pending: "⏳", 
-    confirmed: "✅", 
-    processing: "🔄", 
-    shipped: "🚚", 
-    delivered: "✅", 
-    cancelled: "❌" 
+
+  const icons = {
+    pending: "⏳",
+    confirmed: "✅",
+    processing: "🔄",
+    shipped: "🚚",
+    delivered: "✅",
+    cancelled: "❌"
   };
-  
+
   return (
     <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${styles[status]}`}>
       {icons[status]} <span className="ml-1 capitalize">{status}</span>
@@ -644,7 +644,7 @@ export default function AdminListingsPage() {
     }
     return true;
   };
-  
+
   // 📊 State management
   const [listings, setListings] = useState<any[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -661,7 +661,7 @@ export default function AdminListingsPage() {
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState<"listings" | "orders" | "sellers">("listings");
-  
+
   // 🆕 Yeni state'ler - shipping label ve tracking için
   const [shippingLabel, setShippingLabel] = useState<File | null>(null);
   const [shippingLabelPreview, setShippingLabelPreview] = useState<string | null>(null);
@@ -670,18 +670,27 @@ export default function AdminListingsPage() {
   const [labelUploadSuccess, setLabelUploadSuccess] = useState("");
   const [trackingNumber, setTrackingNumber] = useState("");
   const [carrier, setCarrier] = useState("usps");
-  
+
   // 📄 Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [orderCurrentPage, setOrderCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  
+
   // 🆕 Yeni state'ler - toplu seçim ve silme için
   const [selectedListings, setSelectedListings] = useState<Set<string>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
-  
+
+  // Payment için state'ler
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentTransactionId, setPaymentTransactionId] = useState("");
+  const [paymentNotes, setPaymentNotes] = useState("");
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
+  const [paymentSuccess, setPaymentSuccess] = useState("");
+
   // 🔐 Admin Authentication Check
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -689,7 +698,7 @@ export default function AdminListingsPage() {
         router.push("/login");
         return;
       }
-      
+
       if (user) {
         try {
           const userDoc = await getDoc(doc(db, 'users', user.uid));
@@ -706,28 +715,28 @@ export default function AdminListingsPage() {
         }
       }
     };
-    
+
     checkAdminStatus();
   }, [user, loading, router]);
-  
+
   // 🔥 Real-time Firebase listener for listings
   useEffect(() => {
     if (!user || !isAdmin || activeTab !== "listings") return;
-    
+
     let unsubscribe: () => void;
-    
+
     const setupListener = () => {
       try {
         const listingsRef = collection(db, "listings");
         const q = query(listingsRef, orderBy("createdAt", "desc"));
-        
-        unsubscribe = onSnapshot(q, 
+
+        unsubscribe = onSnapshot(q,
           (querySnapshot) => {
             const listingsData: any[] = [];
-            
+
             querySnapshot.forEach((docSnapshot) => {
               const data = docSnapshot.data();
-              
+
               listingsData.push({
                 id: docSnapshot.id,
                 title: data.title || "Untitled Bundle",
@@ -750,10 +759,16 @@ export default function AdminListingsPage() {
                 // Yeni alanlar eklendi
                 shippingLabelUrl: data.shippingLabelUrl || null,
                 trackingNumber: data.trackingNumber || null,
-                carrier: data.carrier || null
+                carrier: data.carrier || null,
+                paymentSent: data.paymentSent || false,
+                paymentAmount: data.paymentAmount || null,
+                paymentTransactionId: data.paymentTransactionId || null,
+                paymentNotes: data.paymentNotes || null,
+                paymentSentAt: data.paymentSentAt || null,
+                paymentSentBy: data.paymentSentBy || null
               });
             });
-            
+
             setListings(listingsData);
             setLoadingListings(false);
             console.log(`✅ Loaded ${listingsData.length} listings from Firebase`);
@@ -763,17 +778,17 @@ export default function AdminListingsPage() {
             if (error.code === 'permission-denied') {
               setPermissionError("You don't have permission to access listings. Please contact administrator.");
             }
-            
+
             if (error.code === 'failed-precondition') {
               console.log("Index not found, trying fallback query...");
               const fallbackQuery = collection(db, "listings");
-              
+
               unsubscribe = onSnapshot(fallbackQuery, (querySnapshot) => {
                 const listingsData: any[] = [];
-                
+
                 querySnapshot.forEach((docSnapshot) => {
                   const data = docSnapshot.data();
-                  
+
                   listingsData.push({
                     id: docSnapshot.id,
                     title: data.title || "Untitled Bundle",
@@ -796,12 +811,18 @@ export default function AdminListingsPage() {
                     // Yeni alanlar eklendi
                     shippingLabelUrl: data.shippingLabelUrl || null,
                     trackingNumber: data.trackingNumber || null,
-                    carrier: data.carrier || null
+                    carrier: data.carrier || null,
+                    paymentSent: data.paymentSent || false,
+                    paymentAmount: data.paymentAmount || null,
+                    paymentTransactionId: data.paymentTransactionId || null,
+                    paymentNotes: data.paymentNotes || null,
+                    paymentSentAt: data.paymentSentAt || null,
+                    paymentSentBy: data.paymentSentBy || null
                   });
                 });
-                
+
                 listingsData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-                
+
                 setListings(listingsData);
                 setLoadingListings(false);
                 console.log(`✅ Loaded ${listingsData.length} listings (fallback mode)`);
@@ -816,34 +837,34 @@ export default function AdminListingsPage() {
         setLoadingListings(false);
       }
     };
-    
+
     setupListener();
-    
+
     return () => {
       if (unsubscribe) {
         unsubscribe();
       }
     };
   }, [user, isAdmin, activeTab]);
-  
+
   // 🔥 Real-time Firebase listener for orders
   useEffect(() => {
     if (!user || !isAdmin || activeTab !== "orders") return;
-    
+
     let unsubscribe: () => void;
-    
+
     const setupOrdersListener = () => {
       try {
         const ordersRef = collection(db, "orders");
         const q = query(ordersRef, orderBy("createdAt", "desc"));
-        
-        unsubscribe = onSnapshot(q, 
+
+        unsubscribe = onSnapshot(q,
           (querySnapshot) => {
             const ordersData: Order[] = [];
-            
+
             querySnapshot.forEach((docSnapshot) => {
               const data = docSnapshot.data();
-              
+
               ordersData.push({
                 id: docSnapshot.id,
                 orderNumber: data.orderNumber || "",
@@ -872,7 +893,7 @@ export default function AdminListingsPage() {
                 lastTracked: data.lastTracked
               });
             });
-            
+
             setOrders(ordersData);
             setLoadingOrders(false);
             console.log(`✅ Loaded ${ordersData.length} orders from Firebase`);
@@ -882,17 +903,17 @@ export default function AdminListingsPage() {
             if (error.code === 'permission-denied') {
               setPermissionError("You don't have permission to access orders. Please contact administrator.");
             }
-            
+
             if (error.code === 'failed-precondition') {
               console.log("Index not found, trying fallback query...");
               const fallbackQuery = collection(db, "orders");
-              
+
               unsubscribe = onSnapshot(fallbackQuery, (querySnapshot) => {
                 const ordersData: Order[] = [];
-                
+
                 querySnapshot.forEach((docSnapshot) => {
                   const data = docSnapshot.data();
-                  
+
                   ordersData.push({
                     id: docSnapshot.id,
                     orderNumber: data.orderNumber || "",
@@ -921,13 +942,13 @@ export default function AdminListingsPage() {
                     lastTracked: data.lastTracked
                   });
                 });
-                
+
                 ordersData.sort((a, b) => {
                   const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toDate() : new Date(a.createdAt);
                   const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toDate() : new Date(b.createdAt);
                   return dateB.getTime() - dateA.getTime();
                 });
-                
+
                 setOrders(ordersData);
                 setLoadingOrders(false);
                 console.log(`✅ Loaded ${ordersData.length} orders (fallback mode)`);
@@ -942,21 +963,21 @@ export default function AdminListingsPage() {
         setLoadingOrders(false);
       }
     };
-    
+
     setupOrdersListener();
-    
+
     return () => {
       if (unsubscribe) {
         unsubscribe();
       }
     };
   }, [user, isAdmin, activeTab]);
-  
+
   // 📈 Computed values for listings
   const pendingListings = listings.filter(l => l.status === "pending");
   const approvedListings = listings.filter(l => l.status === "approved");
   const rejectedListings = listings.filter(l => l.status === "rejected");
-  
+
   // 📈 Computed values for orders
   const pendingOrders = orders.filter(o => o.status === "pending");
   const confirmedOrders = orders.filter(o => o.status === "confirmed");
@@ -964,60 +985,60 @@ export default function AdminListingsPage() {
   const shippedOrders = orders.filter(o => o.status === "shipped");
   const deliveredOrders = orders.filter(o => o.status === "delivered");
   const cancelledOrders = orders.filter(o => o.status === "cancelled");
-  
+
   // 🔍 Filtering and search logic for listings
   let filteredListings = listings;
-  
+
   if (filterStatus !== "all") {
     filteredListings = filteredListings.filter(listing => listing.status === filterStatus);
   }
-  
+
   if (searchTerm) {
-    filteredListings = filteredListings.filter(listing => 
+    filteredListings = filteredListings.filter(listing =>
       listing.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       listing.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       listing.vendorName.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }
-  
+
   // 🔍 Filtering and search logic for orders
   let filteredOrders = orders;
-  
+
   if (orderFilterStatus !== "all") {
     filteredOrders = filteredOrders.filter(order => order.status === orderFilterStatus);
   }
-  
+
   if (orderSearchTerm) {
-    filteredOrders = filteredOrders.filter(order => 
+    filteredOrders = filteredOrders.filter(order =>
       order.orderNumber.toLowerCase().includes(orderSearchTerm.toLowerCase()) ||
       order.id.toLowerCase().includes(orderSearchTerm.toLowerCase()) ||
       order.customerInfo.email.toLowerCase().includes(orderSearchTerm.toLowerCase()) ||
       (order.customerInfo.fullName && order.customerInfo.fullName.toLowerCase().includes(orderSearchTerm.toLowerCase()))
     );
   }
-  
+
   // 📄 Pagination calculations for listings
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredListings.slice(indexOfFirstItem, indexOfLastItem);
-  
+
   const pageNumbers = [];
   for (let i = 1; i <= Math.ceil(filteredListings.length / itemsPerPage); i++) {
     pageNumbers.push(i);
   }
-  
+
   // 📄 Pagination calculations for orders
   const indexOfLastOrder = orderCurrentPage * itemsPerPage;
   const indexOfFirstOrder = indexOfLastOrder - itemsPerPage;
   const currentOrders = filteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
-  
+
   const orderPageNumbers = [];
   for (let i = 1; i <= Math.ceil(filteredOrders.length / itemsPerPage); i++) {
     orderPageNumbers.push(i);
   }
-  
+
   // 🆕 Yeni fonksiyonlar - toplu seçim ve silme için
-  
+
   // Tümünü seç / seçimi kaldır
   const toggleSelectAll = () => {
     if (selectAll) {
@@ -1030,7 +1051,7 @@ export default function AdminListingsPage() {
     }
     setSelectAll(!selectAll);
   };
-  
+
   // Tekil seçim toggle
   const toggleListingSelection = (listingId: string) => {
     const newSelected = new Set(selectedListings);
@@ -1040,41 +1061,41 @@ export default function AdminListingsPage() {
       newSelected.add(listingId);
     }
     setSelectedListings(newSelected);
-    
+
     // Tümü seçili mi kontrol et
     const allCurrentSelected = currentItems.every(item => newSelected.has(item.id));
     setSelectAll(allCurrentSelected && newSelected.size > 0);
   };
-  
+
   // Toplu silme
   const bulkDeleteListings = async () => {
     if (selectedListings.size === 0) {
       alert("No listings selected for deletion");
       return;
     }
-    
+
     // Rate limit kontrolü
     if (!checkRateLimit('bulk deleting listings')) return;
-    
+
     adminRateLimit.recordAttempt();
     setIsBulkDeleting(true);
-    
+
     try {
       const batch = writeBatch(db);
-      
+
       selectedListings.forEach(listingId => {
         const listingRef = doc(db, "listings", listingId);
         batch.delete(listingRef);
       });
-      
+
       await batch.commit();
-      
+
       console.log(`🗑️ Deleted ${selectedListings.size} listings in bulk`);
-      
+
       setSelectedListings(new Set());
       setSelectAll(false);
       setShowBulkDeleteConfirm(false);
-      
+
       alert(`✅ Successfully deleted ${selectedListings.size} listings!`);
     } catch (error: any) {
       console.error("Error bulk deleting listings:", error);
@@ -1084,23 +1105,23 @@ export default function AdminListingsPage() {
         alert(`❌ Error occurred while deleting listings: ${error.message}`);
       }
     }
-    
+
     setIsBulkDeleting(false);
   };
 
-  
+
   // Tekil silme
   const deleteSingleListing = async (listingId: string) => {
     if (!confirm("Are you sure you want to delete this listing? This action cannot be undone.")) {
       return;
     }
-    
+
     try {
       const listingRef = doc(db, "listings", listingId);
       await deleteDoc(listingRef);
-      
+
       console.log(`🗑️ Listing ${listingId} deleted`);
-      
+
       alert("✅ Listing deleted successfully!");
     } catch (error: any) {
       console.error("Error deleting listing:", error);
@@ -1111,29 +1132,29 @@ export default function AdminListingsPage() {
       }
     }
   };
-  
+
   // ✅ Approve listing only - GÜNCELLENDİ
   const approveListingOnly = async (listingId: string) => {
     // Rate limit kontrolü
     if (!checkRateLimit('approving listings')) return;
-    
+
     adminRateLimit.recordAttempt();
     setIsProcessing(true);
-    
+
     try {
       const listingRef = doc(db, "listings", listingId);
-      
+
       await updateDoc(listingRef, {
         status: "approved",
         reviewedDate: serverTimestamp(),
         reviewedBy: user?.email || "admin",
         adminNotes: sanitizeInput(adminNotes) // Sanitize eklendi
       });
-      
+
       console.log(`✅ Listing ${listingId} approved by ${user?.email}`);
-      
+
       setAdminNotes("");
-      
+
       if (selectedListing && selectedListing.id === listingId) {
         setSelectedListing({
           ...selectedListing,
@@ -1142,9 +1163,9 @@ export default function AdminListingsPage() {
           reviewedBy: user?.email || "admin"
         });
       }
-      
+
       alert("✅ Listing approved successfully! You can now send the shipping label and tracking information.");
-      
+
     } catch (error: any) {
       console.error("Error approving listing:", error);
       if (error.code === 'permission-denied') {
@@ -1153,10 +1174,94 @@ export default function AdminListingsPage() {
         alert("❌ Error occurred while approving listing: " + error.message);
       }
     }
-    
+
     setIsProcessing(false);
   };
-  
+  // Payment kaydetme fonksiyonu
+  const recordPaymentSent = async (listingId: string) => {
+    if (!paymentAmount.trim() || parseFloat(paymentAmount) <= 0) {
+      setPaymentError("Please enter a valid payment amount");
+      return;
+    }
+
+    if (!paymentTransactionId.trim()) {
+      setPaymentError("Please enter PayPal transaction ID");
+      return;
+    }
+
+    // Rate limit kontrolü
+    if (!checkRateLimit('recording payments')) return;
+
+    adminRateLimit.recordAttempt();
+    setPaymentLoading(true);
+    setPaymentError("");
+    setPaymentSuccess("");
+
+    try {
+      const amount = parseFloat(paymentAmount);
+
+      // Update listing with payment info
+      const listingRef = doc(db, "listings", listingId);
+      await updateDoc(listingRef, {
+        paymentSent: true,
+        paymentAmount: amount,
+        paymentTransactionId: sanitizeInput(paymentTransactionId),
+        paymentNotes: sanitizeInput(paymentNotes),
+        paymentSentAt: serverTimestamp(),
+        paymentSentBy: user?.email || "admin",
+        paymentStatus: "sent",
+        paymentMethod: "paypal_manual"
+      });
+
+      // Update selected listing state to reflect the change immediately
+      setSelectedListing({
+        ...selectedListing,
+        paymentSent: true,
+        paymentAmount: amount,
+        paymentTransactionId: paymentTransactionId,
+        paymentNotes: paymentNotes,
+        paymentSentAt: new Date(),
+        paymentSentBy: user?.email || "admin"
+      });
+
+      // Get seller info for email
+      const listingDoc = await getDoc(listingRef);
+      const sellerEmail = listingDoc.data()?.vendorEmail;
+
+      if (sellerEmail) {
+        // Send payment notification email
+        const emailResponse = await fetch('/api/send-payment-notification', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: sellerEmail,
+            listingTitle: selectedListing.title,
+            paymentAmount: amount,
+            transactionId: paymentTransactionId,
+            listingId: listingId,
+            sellerName: selectedListing.vendorName,
+            notes: paymentNotes
+          }),
+        });
+
+        console.log("Email notification sent to seller");
+      }
+
+      // Clear form data
+      setPaymentAmount("");
+      setPaymentTransactionId("");
+      setPaymentNotes("");
+
+    } catch (error: any) {
+      console.error("Error recording payment:", error);
+      setPaymentError("Failed to record payment: " + error.message);
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
   // 📦 Send shipping label and tracking - YENİ FONKSİYON
   const sendShippingLabelAndTracking = async (listingId: string) => {
     // File validation
@@ -1164,81 +1269,81 @@ export default function AdminListingsPage() {
       alert("Please upload a shipping label");
       return;
     }
-    
-    // Gelişmiş dosya güvenlik kontrolü
-const validateFile = async (file: File): Promise<boolean> => {
-  // Dosya boyutu kontrolü (max 10MB)
-  if (file.size > 10 * 1024 * 1024) {
-    throw new Error('Dosya boyutu çok büyük (max 10MB)');
-  }
-  
-  // MIME type kontrolü
-  const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-  if (!allowedTypes.includes(file.type)) {
-    throw new Error('İzin verilmeyen dosya türü');
-  }
-  
-  // Dosya imzası kontrolü (magic numbers)
-  const buffer = await file.arrayBuffer();
-  const uint8Array = new Uint8Array(buffer.slice(0, 4));
-  const hex = Array.from(uint8Array).map(b => b.toString(16).padStart(2, '0')).join('');
-  
-  const validSignatures: Record<string, string> = {
-    'ffd8ffe0': 'image/jpeg',
-    'ffd8ffe1': 'image/jpeg',
-    '89504e47': 'image/png',
-    '25504446': 'application/pdf'
-  };
-  
-  if (!validSignatures[hex]) {
-    throw new Error('Dosya imzası geçersiz');
-  }
-  
-  return true;
-};
 
-// Dosya kontrolü yap
-try {
-  await validateFile(shippingLabel);
-} catch (error: any) {
-  alert(error.message);
-  return;
-}
-    
+    // Gelişmiş dosya güvenlik kontrolü
+    const validateFile = async (file: File): Promise<boolean> => {
+      // Dosya boyutu kontrolü (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error('Dosya boyutu çok büyük (max 10MB)');
+      }
+
+      // MIME type kontrolü
+      const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        throw new Error('İzin verilmeyen dosya türü');
+      }
+
+      // Dosya imzası kontrolü (magic numbers)
+      const buffer = await file.arrayBuffer();
+      const uint8Array = new Uint8Array(buffer.slice(0, 4));
+      const hex = Array.from(uint8Array).map(b => b.toString(16).padStart(2, '0')).join('');
+
+      const validSignatures: Record<string, string> = {
+        'ffd8ffe0': 'image/jpeg',
+        'ffd8ffe1': 'image/jpeg',
+        '89504e47': 'image/png',
+        '25504446': 'application/pdf'
+      };
+
+      if (!validSignatures[hex]) {
+        throw new Error('Dosya imzası geçersiz');
+      }
+
+      return true;
+    };
+
+    // Dosya kontrolü yap
+    try {
+      await validateFile(shippingLabel);
+    } catch (error: any) {
+      alert(error.message);
+      return;
+    }
+
     // File size kontrolü (max 10MB)
     if (shippingLabel.size > 10 * 1024 * 1024) {
       alert("File size must be less than 10MB");
       return;
     }
-    
+
     // Tracking number validation
     const sanitizedTracking = sanitizeInput(trackingNumber);
     if (!sanitizedTracking.trim() || sanitizedTracking.length < 5) {
       alert("Please provide a valid tracking number (minimum 5 characters)");
       return;
     }
-    
+
     // Rate limit kontrolü
     if (!checkRateLimit('uploading shipping labels')) return;
-    
+
     adminRateLimit.recordAttempt();
-    
+
     setIsProcessing(true);
     setUploadingLabel(true);
     setLabelUploadError("");
     setLabelUploadSuccess("");
-    
+
     try {
       // Filename sanitization
       const fileExtension = shippingLabel.name.split('.').pop();
       const sanitizedFileName = `${listingId}_${Date.now()}.${fileExtension}`;
       const storageRef = ref(storage, `shipping-labels/${sanitizedFileName}`);
-      
+
       await uploadBytes(storageRef, shippingLabel);
       const shippingLabelUrl = await getDownloadURL(storageRef);
-      
+
       const listingRef = doc(db, "listings", listingId);
-      
+
       await updateDoc(listingRef, {
         shippingLabelUrl: shippingLabelUrl,
         trackingNumber: sanitizedTracking,
@@ -1246,15 +1351,15 @@ try {
         shippingLabelName: sanitizedFileName,
         shippingLabelType: shippingLabel.type
       });
-      
+
       // Get seller's email
       const listingDoc = await getDoc(listingRef);
       const sellerId = listingDoc.data()?.vendorId;
-      
+
       if (sellerId) {
         const sellerDoc = await getDoc(doc(db, 'users', sellerId));
         const sellerEmail = sellerDoc.data()?.email;
-        
+
         if (sellerEmail) {
           // Send email with shipping label and tracking info
           const emailResponse = await fetch('/api/send-shipping-label-email', {
@@ -1271,7 +1376,7 @@ try {
               listingId: listingId
             }),
           });
-          
+
           if (emailResponse.ok) {
             console.log(`📧 Email sent to ${sellerEmail} with shipping label and tracking info`);
           } else {
@@ -1279,24 +1384,24 @@ try {
           }
         }
       }
-      
+
       setLabelUploadSuccess("Shipping label and tracking sent successfully!");
-      
+
       // Reset form
       setShippingLabel(null);
       setShippingLabelPreview(null);
       setTrackingNumber("");
       setCarrier("usps");
-      
+
       // Close modal after a short delay
       setTimeout(() => {
         setSelectedListing(null);
       }, 2000);
-      
+
     } catch (error: any) {
       console.error("Error sending shipping label and tracking:", error);
       let errorMessage = "Error occurred while sending shipping label and tracking";
-      
+
       if (error.code === 'storage/unauthorized') {
         errorMessage = "You don't have permission to upload files. Please check your Firebase Storage rules.";
       } else if (error.code === 'storage/canceled') {
@@ -1306,7 +1411,7 @@ try {
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       setLabelUploadError(errorMessage);
       alert("❌ " + errorMessage);
     } finally {
@@ -1314,23 +1419,23 @@ try {
       setUploadingLabel(false);
     }
   };
-  
+
   // ❌ Reject listing function
   const rejectListing = async (listingId: string) => {
     if (!sanitizeInput(rejectionReason).trim()) {
       alert("⚠️ Please provide a rejection reason");
       return;
     }
-    
+
     // Rate limit kontrolü
     if (!checkRateLimit('rejecting listings')) return;
-    
+
     adminRateLimit.recordAttempt();
     setIsProcessing(true);
-    
+
     try {
       const listingRef = doc(db, "listings", listingId);
-      
+
       await updateDoc(listingRef, {
         status: "rejected",
         reviewedDate: serverTimestamp(),
@@ -1338,15 +1443,15 @@ try {
         rejectionReason: sanitizeInput(rejectionReason), // Sanitize eklendi
         adminNotes: sanitizeInput(adminNotes) // Sanitize eklendi
       });
-      
+
       console.log(`❌ Listing ${listingId} rejected by ${user?.email}`);
-      
+
       setSelectedListing(null);
       setRejectionReason("");
       setAdminNotes("");
-      
+
       alert("❌ Listing rejected successfully!");
-      
+
     } catch (error: any) {
       console.error("Error rejecting listing:", error);
       if (error.code === 'permission-denied') {
@@ -1355,28 +1460,28 @@ try {
         alert("❌ Error occurred while rejecting listing: " + error.message);
       }
     }
-    
+
     setIsProcessing(false);
   };
   // 🗑️ Delete listing function
   const deleteListing = async (listingId: string) => {
     // Rate limit kontrolü
     if (!checkRateLimit('deleting listings')) return;
-    
+
     adminRateLimit.recordAttempt();
     setIsProcessing(true);
-    
+
     try {
       const listingRef = doc(db, "listings", listingId);
       await deleteDoc(listingRef);
-      
+
       console.log(`🗑️ Listing ${listingId} deleted by ${user?.email}`);
-      
+
       setSelectedListing(null);
       setShowDeleteConfirm(false);
-      
+
       alert("🗑️ Listing deleted successfully!");
-      
+
     } catch (error: any) {
       console.error("Error deleting listing:", error);
       if (error.code === 'permission-denied') {
@@ -1385,33 +1490,33 @@ try {
         alert("❌ Error occurred while deleting listing: " + error.message);
       }
     }
-    
+
     setIsProcessing(false);
   };
 
-  
+
   // 🔄 Update order status function
   const updateOrderStatus = async (orderId: string, status: string, notes: string) => {
     // Rate limit kontrolü
     if (!checkRateLimit('updating orders')) return;
-    
+
     adminRateLimit.recordAttempt();
     setIsProcessing(true);
-    
+
     try {
       const orderRef = doc(db, "orders", orderId);
-      
+
       await updateDoc(orderRef, {
         status: status,
         updatedAt: serverTimestamp(),
         updatedBy: user?.email || "admin",
         adminNotes: sanitizeInput(notes) // Sanitize eklendi
       });
-      
+
       console.log(`🔄 Order ${orderId} status updated to ${status} by ${user?.email}`);
-      
+
       alert(`✅ Order status updated to ${status} successfully!`);
-      
+
     } catch (error: any) {
       console.error("Error updating order status:", error);
       if (error.code === 'permission-denied') {
@@ -1421,7 +1526,7 @@ try {
       }
       throw error;
     }
-    
+
     setIsProcessing(false);
   };
 
@@ -1434,19 +1539,19 @@ try {
       sold: "bg-purple-100 text-purple-800 border-purple-200"
     };
     const icons = { pending: "⏳", approved: "✅", rejected: "❌", sold: "💰" };
-    
+
     return (
       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${styles[status as keyof typeof styles]}`}>
         {icons[status as keyof typeof icons]} <span className="ml-1 capitalize">{status}</span>
       </span>
     );
   };
-  
+
   const getCategoryIcon = (category: string) => {
     const icons = { book: "📚", cd: "💿", dvd: "📀", game: "🎮", mix: "📦" };
     return icons[category as keyof typeof icons] || "📦";
   };
-  
+
   // Loading state
   if (loading || checkingAdmin) {
     return (
@@ -1458,7 +1563,7 @@ try {
       </div>
     );
   }
-  
+
   // Permission error state
   if (permissionError) {
     return (
@@ -1477,7 +1582,7 @@ try {
       </div>
     );
   }
-  
+
   // Unauthorized access
   if (!user || !isAdmin) {
     return (
@@ -1490,29 +1595,29 @@ try {
       </div>
     );
   }
-  
+
   return (
     <div className="min-h-screen bg-gray-50">
-  {/* Rate limit warning - BURAYA */}
-  <RateLimitWarning 
-    isBlocked={adminRateLimit.isBlocked}
-    remainingTime={adminRateLimit.remainingTime}
-    attempts={adminRateLimit.attempts}
-    maxAttempts={15}
-  />
-  
-  <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-    {/* 🏠 Navigation Header */}
-    <div className="mb-6 flex justify-between items-center">
-      <div className="flex items-center space-x-4">
-        <Link 
-          href="/"
-          className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
-        >
-          ← Back to Home
-        </Link>
-      </div>
-          
+      {/* Rate limit warning - BURAYA */}
+      <RateLimitWarning
+        isBlocked={adminRateLimit.isBlocked}
+        remainingTime={adminRateLimit.remainingTime}
+        attempts={adminRateLimit.attempts}
+        maxAttempts={15}
+      />
+
+      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        {/* 🏠 Navigation Header */}
+        <div className="mb-6 flex justify-between items-center">
+          <div className="flex items-center space-x-4">
+            <Link
+              href="/"
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+            >
+              ← Back to Home
+            </Link>
+          </div>
+
           {/* Admin Info & Notifications */}
           <div className="flex items-center space-x-4">
             <MessageNotification />
@@ -1522,51 +1627,48 @@ try {
             </div>
           </div>
         </div>
-        
+
         {/* 📊 Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
           <p className="text-gray-600">Manage listings, orders and sellers in real-time</p>
         </div>
-        
+
         {/* Tab Navigation */}
         <div className="mb-6">
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-8">
               <button
                 onClick={() => setActiveTab("listings")}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "listings"
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "listings"
                     ? "border-blue-500 text-blue-600"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
+                  }`}
               >
                 Listings
               </button>
               <button
                 onClick={() => setActiveTab("orders")}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "orders"
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "orders"
                     ? "border-blue-500 text-blue-600"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
+                  }`}
               >
                 Orders
               </button>
               <button
                 onClick={() => setActiveTab("sellers")}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "sellers"
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "sellers"
                     ? "border-blue-500 text-blue-600"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
+                  }`}
               >
                 Sellers
               </button>
             </nav>
           </div>
         </div>
-        
+
         {activeTab === "listings" && (
           <>
             {/* Quick Actions Bar */}
@@ -1587,7 +1689,7 @@ try {
                 </div>
               </div>
             </div>
-            
+
             {/* 🔍 Search and Filter Controls */}
             <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1620,7 +1722,7 @@ try {
                 </div>
               </div>
             </div>
-            
+
             {/* 📈 Statistics Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
               <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-yellow-400">
@@ -1632,7 +1734,7 @@ try {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-400">
                 <div className="flex items-center">
                   <div className="text-3xl mr-4">✅</div>
@@ -1642,7 +1744,7 @@ try {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-red-400">
                 <div className="flex items-center">
                   <div className="text-3xl mr-4">❌</div>
@@ -1652,7 +1754,7 @@ try {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-purple-400">
                 <div className="flex items-center">
                   <div className="text-3xl mr-4">💰</div>
@@ -1662,7 +1764,7 @@ try {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-400">
                 <div className="flex items-center">
                   <div className="text-3xl mr-4">📦</div>
@@ -1673,7 +1775,7 @@ try {
                 </div>
               </div>
             </div>
-            
+
             {/* 🆕 Toplu İşlem Butonları */}
             {selectedListings.size > 0 && (
               <div className="bg-blue-50 rounded-lg shadow-sm p-4 mb-6 flex justify-between items-center">
@@ -1701,7 +1803,7 @@ try {
                 </div>
               </div>
             )}
-            
+
             {/* 📋 Listings Table */}
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
@@ -1712,7 +1814,7 @@ try {
                   Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredListings.length)} of {filteredListings.length}
                 </div>
               </div>
-              
+
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
@@ -1749,7 +1851,7 @@ try {
                       </th>
                     </tr>
                   </thead>
-                  
+
                   <tbody className="bg-white divide-y divide-gray-200">
                     {currentItems.map((listing) => (
                       <tr key={listing.id} className="hover:bg-gray-50 transition-colors">
@@ -1762,7 +1864,7 @@ try {
                             className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
                           />
                         </td>
-                        
+
                         <td className="px-6 py-4">
                           <div>
                             <div className="text-sm font-medium text-gray-900 max-w-xs truncate">
@@ -1779,7 +1881,7 @@ try {
                             )}
                           </div>
                         </td>
-                        
+
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-900">
                             {listing.vendorName}
@@ -1788,7 +1890,7 @@ try {
                             {listing.vendorId}
                           </div>
                         </td>
-                        
+
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-900">
                             📦 {listing.totalItems} items
@@ -1797,7 +1899,7 @@ try {
                             💰 ${listing.totalValue.toFixed(2)}
                           </div>
                         </td>
-                        
+
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-900">
                             🚚 Shipping Info
@@ -1806,15 +1908,15 @@ try {
                             {listing.shippingInfo ? "Provided" : "Not provided"}
                           </div>
                         </td>
-                        
+
                         <td className="px-6 py-4">
                           {getStatusBadge(listing.status)}
                         </td>
-                        
+
                         <td className="px-6 py-4 text-sm text-gray-500">
                           {listing.submittedDate}
                         </td>
-                        
+
                         <td className="px-6 py-4">
                           <div className="flex space-x-2">
                             <button
@@ -1837,21 +1939,21 @@ try {
                   </tbody>
                 </table>
               </div>
-              
+
               {/* Empty state */}
               {filteredListings.length === 0 && (
                 <div className="text-center py-12">
                   <div className="text-6xl mb-4">📭</div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No listings found</h3>
                   <p className="text-gray-500">
-                    {searchTerm || filterStatus !== "all" 
+                    {searchTerm || filterStatus !== "all"
                       ? "Try adjusting your search or filter criteria."
                       : "No listings have been submitted yet."
                     }
                   </p>
                 </div>
               )}
-              
+
               {/* Pagination */}
               {filteredListings.length > itemsPerPage && (
                 <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
@@ -1894,11 +1996,10 @@ try {
                           <button
                             key={number}
                             onClick={() => setCurrentPage(number)}
-                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                              currentPage === number
+                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === number
                                 ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
                                 : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                            }`}
+                              }`}
                           >
                             {number}
                           </button>
@@ -1916,21 +2017,21 @@ try {
                 </div>
               )}
             </div>
-            
+
             {/* 🆕 Toplu Silme Onay Modalı */}
             {showBulkDeleteConfirm && (
               <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
                 <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-medium text-gray-900">Confirm Bulk Deletion</h3>
-                    <button 
+                    <button
                       onClick={() => setShowBulkDeleteConfirm(false)}
                       className="text-gray-400 hover:text-gray-600 text-2xl"
                     >
                       ✕
                     </button>
                   </div>
-                  
+
                   <div className="mb-4">
                     <p className="text-sm text-gray-600 mb-2">
                       Are you sure you want to delete <strong>{selectedListings.size}</strong> listing{selectedListings.size !== 1 ? 's' : ''}?
@@ -1941,7 +2042,7 @@ try {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex justify-end space-x-3">
                     <button
                       onClick={() => setShowBulkDeleteConfirm(false)}
@@ -1962,7 +2063,7 @@ try {
             )}
           </>
         )}
-        
+
         {activeTab === "orders" && (
           <>
             {/* Quick Actions Bar for Orders */}
@@ -1983,7 +2084,7 @@ try {
                 </div>
               </div>
             </div>
-            
+
             {/* 🔍 Search and Filter Controls for Orders */}
             <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2018,7 +2119,7 @@ try {
                 </div>
               </div>
             </div>
-            
+
             {/* 📈 Order Statistics Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
               <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-yellow-400">
@@ -2030,7 +2131,7 @@ try {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-400">
                 <div className="flex items-center">
                   <div className="text-3xl mr-4">✅</div>
@@ -2040,7 +2141,7 @@ try {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-purple-400">
                 <div className="flex items-center">
                   <div className="text-3xl mr-4">🔄</div>
@@ -2050,7 +2151,7 @@ try {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-indigo-400">
                 <div className="flex items-center">
                   <div className="text-3xl mr-4">🚚</div>
@@ -2060,7 +2161,7 @@ try {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-400">
                 <div className="flex items-center">
                   <div className="text-3xl mr-4">✅</div>
@@ -2070,7 +2171,7 @@ try {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-red-400">
                 <div className="flex items-center">
                   <div className="text-3xl mr-4">❌</div>
@@ -2081,7 +2182,7 @@ try {
                 </div>
               </div>
             </div>
-            
+
             {/* 📋 Orders Table */}
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
@@ -2092,7 +2193,7 @@ try {
                   Showing {indexOfFirstOrder + 1}-{Math.min(indexOfLastOrder, filteredOrders.length)} of {filteredOrders.length}
                 </div>
               </div>
-              
+
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
@@ -2117,7 +2218,7 @@ try {
                       </th>
                     </tr>
                   </thead>
-                  
+
                   <tbody className="bg-white divide-y divide-gray-200">
                     {currentOrders.map((order) => (
                       <tr key={order.id} className="hover:bg-gray-50 transition-colors">
@@ -2137,7 +2238,7 @@ try {
                             )}
                           </div>
                         </td>
-                        
+
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-900">
                             {order.customerInfo.fullName || "Guest User"}
@@ -2146,7 +2247,7 @@ try {
                             {order.customerInfo.email}
                           </div>
                         </td>
-                        
+
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-900">
                             📦 {order.items.length} items
@@ -2155,15 +2256,15 @@ try {
                             💰 ${order.totalAmount.toFixed(2)}
                           </div>
                         </td>
-                        
+
                         <td className="px-6 py-4">
                           {getOrderStatusBadge(order.status)}
                         </td>
-                        
+
                         <td className="px-6 py-4 text-sm text-gray-500">
                           {order.orderDate}
                         </td>
-                        
+
                         <td className="px-6 py-4">
                           <button
                             onClick={() => setSelectedOrder(order)}
@@ -2177,21 +2278,21 @@ try {
                   </tbody>
                 </table>
               </div>
-              
+
               {/* Empty state */}
               {filteredOrders.length === 0 && (
                 <div className="text-center py-12">
                   <div className="text-6xl mb-4">📭</div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No orders found</h3>
                   <p className="text-gray-500">
-                    {orderSearchTerm || orderFilterStatus !== "all" 
+                    {orderSearchTerm || orderFilterStatus !== "all"
                       ? "Try adjusting your search or filter criteria."
                       : "No orders have been placed yet."
                     }
                   </p>
                 </div>
               )}
-              
+
               {/* Pagination */}
               {filteredOrders.length > itemsPerPage && (
                 <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
@@ -2234,11 +2335,10 @@ try {
                           <button
                             key={number}
                             onClick={() => setOrderCurrentPage(number)}
-                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                              orderCurrentPage === number
+                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${orderCurrentPage === number
                                 ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
                                 : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                            }`}
+                              }`}
                           >
                             {number}
                           </button>
@@ -2258,16 +2358,16 @@ try {
             </div>
           </>
         )}
-        
+
         {activeTab === "sellers" && (
           <SellerManagement />
         )}
-        
+
         {/* 🔍 Review Modal for Listings - GÜNCELLENDİ */}
         {selectedListing && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
             <div className="relative mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white max-h-[90vh] overflow-y-auto">
-              
+
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-medium text-gray-900">
                   Review Listing: {selectedListing.title}
@@ -2282,9 +2382,9 @@ try {
                   ✕
                 </button>
               </div>
-              
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                
+
                 {/* Left column - Listing information */}
                 <div className="space-y-4">
                   <div>
@@ -2308,15 +2408,15 @@ try {
                       <p><strong>Current Status:</strong> {getStatusBadge(selectedListing.status)}</p>
                     </div>
                   </div>
-                  
+
                   {/* Description Section */}
                   <div>
                     <h4 className="text-sm font-medium text-gray-900 mb-2">Description</h4>
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
                       {selectedListing.description ? (
                         <p className="text-sm text-gray-700 leading-relaxed break-words overflow-hidden">
-                        {selectedListing.description}
-                      </p>
+                          {selectedListing.description}
+                        </p>
                       ) : (
                         <p className="text-sm text-gray-500 italic">
                           No description provided by the seller.
@@ -2324,7 +2424,7 @@ try {
                       )}
                     </div>
                   </div>
-                  
+
                   {/* Shipping Information Section */}
                   <div>
                     <h4 className="text-sm font-medium text-gray-900 mb-2">Shipping Information</h4>
@@ -2339,7 +2439,7 @@ try {
                               {selectedListing.shippingInfo.address.country}
                             </p>
                           </div>
-                          
+
                           <div>
                             <h5 className="text-sm font-medium text-purple-800 mb-1">Package Dimensions</h5>
                             <p className="text-sm text-gray-700">
@@ -2349,7 +2449,7 @@ try {
                               Weight: {selectedListing.shippingInfo.packageDimensions.weight} lb
                             </p>
                           </div>
-                          
+
                           {/* PayPal Account bilgisi eklendi */}
                           {selectedListing.shippingInfo.paypalAccount && (
                             <div>
@@ -2367,7 +2467,7 @@ try {
                       )}
                     </div>
                   </div>
-                  
+
                   {/* Bundle items preview */}
                   {selectedListing.bundleItems && selectedListing.bundleItems.length > 0 && (
                     <div>
@@ -2393,7 +2493,7 @@ try {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Right column - Admin actions */}
                 <div className="space-y-4">
                   {/* For pending listings */}
@@ -2409,7 +2509,7 @@ try {
                             </span>
                           )}
                         </div>
-                        
+
                         {/* Shipping Label Upload */}
                         <div className="mb-4">
                           <h5 className="text-sm font-medium text-gray-700 mb-2">Shipping Label</h5>
@@ -2417,9 +2517,9 @@ try {
                             {shippingLabelPreview ? (
                               <div className="space-y-3">
                                 <div className="flex justify-center">
-                                  <img 
-                                    src={shippingLabelPreview} 
-                                    alt="Shipping label preview" 
+                                  <img
+                                    src={shippingLabelPreview}
+                                    alt="Shipping label preview"
                                     className="max-h-40 object-contain"
                                   />
                                 </div>
@@ -2462,16 +2562,16 @@ try {
                                 <div className="flex text-sm text-gray-600 justify-center">
                                   <label className={`relative cursor-pointer ${selectedListing.status === "pending" ? "pointer-events-none" : "bg-white rounded-md font-medium text-blue-600 hover:text-blue-500"}`}>
                                     <span>Upload a shipping label</span>
-                                    <input 
-                                      type="file" 
-                                      className="sr-only" 
+                                    <input
+                                      type="file"
+                                      className="sr-only"
                                       accept="image/*,.pdf"
                                       disabled={selectedListing.status === "pending"}
                                       onChange={(e) => {
                                         if (e.target.files && e.target.files[0]) {
                                           const file = e.target.files[0];
                                           setShippingLabel(file);
-                                          
+
                                           if (file.type.startsWith('image/')) {
                                             const reader = new FileReader();
                                             reader.onload = (e) => {
@@ -2491,7 +2591,7 @@ try {
                             )}
                           </div>
                         </div>
-                        
+
                         {/* Tracking Information */}
                         <div className="mb-4">
                           <h5 className="text-sm font-medium text-gray-700 mb-2">Tracking Information</h5>
@@ -2509,7 +2609,7 @@ try {
                                 disabled={selectedListing.status === "pending"}
                               />
                             </div>
-                            
+
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1">
                                 Carrier
@@ -2528,20 +2628,20 @@ try {
                             </div>
                           </div>
                         </div>
-                        
+
                         {/* Error and success messages */}
                         {labelUploadError && (
                           <div className="mb-4 text-red-600 text-sm bg-red-50 p-2 rounded">
                             {labelUploadError}
                           </div>
                         )}
-                        
+
                         {labelUploadSuccess && (
                           <div className="mb-4 text-green-600 text-sm bg-green-50 p-2 rounded">
                             {labelUploadSuccess}
                           </div>
                         )}
-                        
+
                         {/* Send button - Disabled until approved */}
                         <button
                           onClick={() => sendShippingLabelAndTracking(selectedListing.id)}
@@ -2551,7 +2651,7 @@ try {
                           {isProcessing ? "Sending..." : "📦 Send Label & Tracking"}
                         </button>
                       </div>
-                      
+
                       {/* Admin Notes */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -2565,7 +2665,7 @@ try {
                           placeholder="Add any notes about this listing..."
                         />
                       </div>
-                      
+
                       {/* Rejection Reason */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -2579,7 +2679,7 @@ try {
                           placeholder="Provide reason for rejection..."
                         />
                       </div>
-                      
+
                       {/* Action Buttons */}
                       <div className="flex space-x-3">
                         <button
@@ -2589,7 +2689,7 @@ try {
                         >
                           {isProcessing ? "Processing..." : "✅ Approve Listing"}
                         </button>
-                        
+
                         <button
                           onClick={() => rejectListing(selectedListing.id)}
                           disabled={isProcessing || !rejectionReason.trim()}
@@ -2600,7 +2700,7 @@ try {
                       </div>
                     </>
                   )}
-                  
+
                   {/* For approved listings without tracking */}
                   {selectedListing.status === "approved" && !selectedListing.trackingNumber && (
                     <>
@@ -2611,7 +2711,7 @@ try {
                             Ready to send
                           </span>
                         </div>
-                        
+
                         {/* Shipping Label Upload */}
                         <div className="mb-4">
                           <h5 className="text-sm font-medium text-gray-700 mb-2">Shipping Label</h5>
@@ -2619,9 +2719,9 @@ try {
                             {shippingLabelPreview ? (
                               <div className="space-y-3">
                                 <div className="flex justify-center">
-                                  <img 
-                                    src={shippingLabelPreview} 
-                                    alt="Shipping label preview" 
+                                  <img
+                                    src={shippingLabelPreview}
+                                    alt="Shipping label preview"
                                     className="max-h-40 object-contain"
                                   />
                                 </div>
@@ -2664,15 +2764,15 @@ try {
                                 <div className="flex text-sm text-gray-600 justify-center">
                                   <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500">
                                     <span>Upload a shipping label</span>
-                                    <input 
-                                      type="file" 
-                                      className="sr-only" 
+                                    <input
+                                      type="file"
+                                      className="sr-only"
                                       accept="image/*,.pdf"
                                       onChange={(e) => {
                                         if (e.target.files && e.target.files[0]) {
                                           const file = e.target.files[0];
                                           setShippingLabel(file);
-                                          
+
                                           if (file.type.startsWith('image/')) {
                                             const reader = new FileReader();
                                             reader.onload = (e) => {
@@ -2692,7 +2792,7 @@ try {
                             )}
                           </div>
                         </div>
-                        
+
                         {/* Tracking Information */}
                         <div className="mb-4">
                           <h5 className="text-sm font-medium text-gray-700 mb-2">Tracking Information</h5>
@@ -2709,7 +2809,7 @@ try {
                                 placeholder="Enter tracking number"
                               />
                             </div>
-                            
+
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1">
                                 Carrier
@@ -2727,20 +2827,20 @@ try {
                             </div>
                           </div>
                         </div>
-                        
+
                         {/* Error and success messages */}
                         {labelUploadError && (
                           <div className="mb-4 text-red-600 text-sm bg-red-50 p-2 rounded">
                             {labelUploadError}
                           </div>
                         )}
-                        
+
                         {labelUploadSuccess && (
                           <div className="mb-4 text-green-600 text-sm bg-green-50 p-2 rounded">
                             {labelUploadSuccess}
                           </div>
                         )}
-                        
+
                         {/* Send button */}
                         <button
                           onClick={() => sendShippingLabelAndTracking(selectedListing.id)}
@@ -2752,9 +2852,9 @@ try {
                       </div>
                     </>
                   )}
-                  
-                  {/* For approved listings with tracking */}
-                  {selectedListing.status === "approved" && selectedListing.trackingNumber && (
+
+                  {/* For approved and sold listings with tracking */}
+                  {(selectedListing.status === "approved" || selectedListing.status === "sold") && selectedListing.trackingNumber && (
                     <>
                       {/* Shipping Label Display */}
                       <div>
@@ -2764,7 +2864,7 @@ try {
                             <span className="text-sm font-medium text-green-800">Uploaded Label</span>
                             <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Sent</span>
                           </div>
-                          
+
                           {selectedListing.shippingLabelUrl && (
                             <div className="space-y-3">
                               <div className="flex items-center justify-center">
@@ -2776,18 +2876,18 @@ try {
                                     </div>
                                   </div>
                                 ) : (
-                                  <img 
-                                    src={selectedListing.shippingLabelUrl} 
-                                    alt="Shipping label" 
+                                  <img
+                                    src={selectedListing.shippingLabelUrl}
+                                    alt="Shipping label"
                                     className="max-h-40 object-contain"
                                   />
                                 )}
                               </div>
-                              
+
                               <div className="text-center">
-                                <a 
-                                  href={selectedListing.shippingLabelUrl} 
-                                  target="_blank" 
+                                <a
+                                  href={selectedListing.shippingLabelUrl}
+                                  target="_blank"
                                   rel="noopener noreferrer"
                                   className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors"
                                 >
@@ -2798,7 +2898,7 @@ try {
                           )}
                         </div>
                       </div>
-                      
+
                       {/* Tracking Information Display */}
                       <div>
                         <h4 className="text-sm font-medium text-gray-900 mb-2">Tracking Information</h4>
@@ -2815,7 +2915,7 @@ try {
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Status Information */}
                       <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                         <div className="flex items-center">
@@ -2834,7 +2934,90 @@ try {
                       </div>
                     </>
                   )}
-                  
+                  {/* Payment Section - For approved listings with tracking */}
+                  {/* Payment Section - For approved listings with tracking */}
+                  <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-medium text-gray-900">Payment to Seller</h4>
+                      {selectedListing.paymentSent && (
+                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                          Payment Sent
+                        </span>
+                      )}
+                    </div>
+
+                    {selectedListing.paymentSent ? (
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-yellow-800">Amount Sent:</span>
+                          <span className="text-sm font-mono">${selectedListing.paymentAmount?.toFixed(2) || "0.00"}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-yellow-800">PayPal Email:</span>
+                          <span className="text-sm font-mono">{selectedListing.shippingInfo?.paypalAccount || selectedListing.vendorEmail || "N/A"}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-yellow-800">Transaction ID:</span>
+                          <span className="text-sm font-mono">{selectedListing.paymentTransactionId || "N/A"}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-yellow-800">Sent At:</span>
+                          <span className="text-sm">
+                            {selectedListing.paymentSentAt?.toDate?.().toLocaleDateString() || "N/A"}
+                          </span>
+                        </div>
+                        {selectedListing.paymentNotes && (
+                          <div className="pt-2 border-t border-yellow-200">
+                            <span className="text-sm font-medium text-yellow-800">Notes:</span>
+                            <p className="text-sm text-gray-700 mt-1">{selectedListing.paymentNotes}</p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={paymentAmount}
+                            onChange={(e) => setPaymentAmount(e.target.value)}
+                            className="w-full p-2 border border-gray-300 rounded text-sm"
+                            placeholder="Payment amount ($)"
+                          />
+                        </div>
+
+                        <div>
+                          <input
+                            type="text"
+                            value={paymentTransactionId}
+                            onChange={(e) => setPaymentTransactionId(e.target.value)}
+                            className="w-full p-2 border border-gray-300 rounded text-sm"
+                            placeholder="PayPal Transaction ID"
+                          />
+                        </div>
+
+                        <div>
+                          <textarea
+                            value={paymentNotes}
+                            onChange={(e) => setPaymentNotes(e.target.value)}
+                            rows={2}
+                            className="w-full p-2 border border-gray-300 rounded text-sm"
+                            placeholder="Notes (optional)"
+                          />
+                        </div>
+
+                        <button
+                          onClick={() => recordPaymentSent(selectedListing.id)}
+                          disabled={paymentLoading || !paymentAmount.trim() || !paymentTransactionId.trim()}
+                          className="w-full bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium py-2 px-4 rounded transition-colors disabled:opacity-50"
+                        >
+                          {paymentLoading ? "Recording..." : "Record Payment"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Delete button for all listings */}
                   {!showDeleteConfirm ? (
                     <button
@@ -2868,7 +3051,7 @@ try {
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Show rejection info if rejected */}
                   {selectedListing.status === "rejected" && (
                     <div className="bg-red-50 p-4 rounded-lg">
@@ -2894,7 +3077,7 @@ try {
                   )}
                 </div>
               </div>
-              
+
               {/* Modal footer with additional actions */}
               <div className="mt-6 pt-4 border-t border-gray-200">
                 <div className="flex justify-between items-center">
@@ -2911,6 +3094,10 @@ try {
                       setShippingLabelPreview(null);
                       setTrackingNumber("");
                       setCarrier("usps");
+                      // Payment state'lerini temizle
+
+                      setPaymentError("");
+                      setPaymentSuccess("");
                     }}
                     className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                   >
@@ -2921,16 +3108,16 @@ try {
             </div>
           </div>
         )}
-        
+
         {/* Order Detail Modal */}
         {selectedOrder && (
-          <OrderDetailModal 
-            order={selectedOrder} 
-            onClose={() => setSelectedOrder(null)} 
-            onUpdateStatus={updateOrderStatus} 
+          <OrderDetailModal
+            order={selectedOrder}
+            onClose={() => setSelectedOrder(null)}
+            onUpdateStatus={updateOrderStatus}
           />
         )}
-        
+
         {/* 📊 Real-time connection indicator */}
         <div className="fixed bottom-4 right-4 z-40">
           <div className="bg-green-100 border border-green-200 rounded-lg px-3 py-2 shadow-sm">

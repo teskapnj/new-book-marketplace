@@ -132,7 +132,7 @@ export default function ListingsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { cartItems } = useCart();
-  // GÜVENLİ
+  
   const rawCategory = searchParams.get('category');
   const categoryFromUrl = rawCategory && ['all', 'book', 'cd', 'dvd', 'game', 'mix'].includes(rawCategory)
     ? DOMPurify.sanitize(rawCategory)
@@ -306,7 +306,7 @@ export default function ListingsPage() {
                 }
               }
 
-              // GÜVENLİ
+              
               listingsData.push({
                 id: doc.id,
                 title: DOMPurify.sanitize(data.title || "Untitled Bundle").substring(0, 200),
@@ -620,7 +620,7 @@ export default function ListingsPage() {
           <div className="pb-4">
             <div className="relative max-w-md">
               <SearchIcon size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              // GÜVENLİ
+              
               <input
                 type="text"
                 placeholder="Search bundles..."
@@ -1092,7 +1092,7 @@ function ProductListItem({ product, onSelect }: ProductListItemProps) {
         </div>
 
         <div className="flex-1 min-w-0">
-        // GÜVENLİ
+        
           <h3 className="font-bold text-xl text-gray-900 mb-2 truncate">{DOMPurify.sanitize(product.title)}</h3>
           <p className="text-gray-600 text-sm mb-2">by {DOMPurify.sanitize(product.sellerName || product.seller)}</p>
 

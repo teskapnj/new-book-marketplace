@@ -543,10 +543,10 @@ export default function CreateListingPage() {
 
   const loadFromStorage = useCallback(() => {
     if (!isMounted || isPrivateMode || isInitializing) return;
-    
+
     const userKey = getStorageKey();
     const guestKey = getGuestStorageKey();
-    
+
     if (user) {
       try {
         // First try to load user-specific data
@@ -564,7 +564,7 @@ export default function CreateListingPage() {
             localStorage.removeItem(userKey);
           }
         }
-        
+
         // If no user data, try to migrate from guest data
         const guestData = localStorage.getItem(guestKey);
         if (guestData) {
@@ -646,12 +646,12 @@ export default function CreateListingPage() {
     if (prevUser && !user) {
       saveToStorage();
     }
-    
+
     // Load data when user logs in
     if (!prevUser && user) {
       loadFromStorage();
     }
-    
+
     // Update previous user state
     setPrevUser(user);
   }, [user, prevUser, saveToStorage, loadFromStorage]);
@@ -991,45 +991,87 @@ export default function CreateListingPage() {
       <main className="font-sans antialiased">
         <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
-            <div className={`grid gap-3 max-w-4xl mx-auto ${user ? 'grid-cols-5' : 'grid-cols-4'}`}>
-              <Link
-                href="/"
-                className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-blue-600 hover:text-blue-700 hover:shadow-md transition-all duration-200"
-              >
-                <FiHome className="mr-2 h-4 w-4" />
-                Back to Home
-              </Link>
-              <Link
-                href="/condition-guidelines"
-                className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-purple-600 hover:text-purple-700 hover:shadow-md transition-all duration-200"
-              >
-                <FiBookOpen className="mr-2 h-4 w-4" />
-                Condition Guidelines
-              </Link>
-              <Link
-                href="/contact"
-                className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-green-600 hover:text-green-700 hover:shadow-md transition-all duration-200"
-              >
-                <FiMessageSquare className="mr-2 h-4 w-4" />
-                Contact Us
-              </Link>
-              {user && (
+            <div className="max-w-4xl mx-auto">
+              {/* Mobile Navigation - 2x2 Grid */}
+              <div className="block sm:hidden">
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <Link
+                    href="/"
+                    className="flex items-center justify-center px-3 py-2 bg-white rounded-lg shadow-sm text-xs font-medium text-blue-600 hover:text-blue-700 transition-all"
+                  >
+                    <FiHome className="mr-1 h-3 w-3" />
+                    Home
+                  </Link>
+                  <Link
+                    href="/contact"
+                    className="flex items-center justify-center px-3 py-2 bg-white rounded-lg shadow-sm text-xs font-medium text-green-600 hover:text-green-700 transition-all"
+                  >
+                    <FiMessageSquare className="mr-1 h-3 w-3" />
+                    Contact
+                  </Link>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <Link
+                    href="/condition-guidelines"
+                    className="flex items-center justify-center px-3 py-2 bg-white rounded-lg shadow-sm text-xs font-medium text-purple-600 hover:text-purple-700 transition-all"
+                  >
+                    <FiBookOpen className="mr-1 h-3 w-3" />
+                    Guidelines
+                  </Link>
+                  {user && (
+                    <Link
+                      href="/dashboard/settings"
+                      className="flex items-center justify-center px-3 py-2 bg-white rounded-lg shadow-sm text-xs font-medium text-gray-600 hover:text-gray-700 transition-all"
+                    >
+                      <FiSettings className="mr-1 h-3 w-3" />
+                      Settings
+                    </Link>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 gap-2">
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="flex items-center justify-center px-3 py-2 bg-white rounded-lg shadow-sm text-xs font-medium text-red-600 hover:text-red-700 transition-all"
+                  >
+                    <FiX className="mr-1 h-3 w-3" />
+                    Reset All
+                  </button>
+                </div>
+              </div>
+
+              {/* Desktop Navigation - Horizontal */}
+              <div className="hidden sm:grid grid-cols-4 gap-3">
                 <Link
-                  href="/dashboard/settings"
-                  className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-gray-600 hover:text-gray-700 hover:shadow-md transition-all duration-200"
+                  href="/"
+                  className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-blue-600 hover:text-blue-700 hover:shadow-md transition-all duration-200"
                 >
-                  <FiSettings className="mr-2 h-4 w-4" />
-                  Settings
+                  <FiHome className="mr-2 h-4 w-4" />
+                  Back to Home
                 </Link>
-              )}
-              <button
-                type="button"
-                onClick={resetForm}
-                className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-red-600 hover:text-red-700 hover:shadow-md transition-all duration-200"
-              >
-                <FiX className="mr-2 h-4 w-4" />
-                Reset All
-              </button>
+                <Link
+                  href="/condition-guidelines"
+                  className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-purple-600 hover:text-purple-700 hover:shadow-md transition-all duration-200"
+                >
+                  <FiBookOpen className="mr-2 h-4 w-4" />
+                  Condition Guidelines
+                </Link>
+                <Link
+                  href="/contact"
+                  className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-green-600 hover:text-green-700 hover:shadow-md transition-all duration-200"
+                >
+                  <FiMessageSquare className="mr-2 h-4 w-4" />
+                  Contact Us
+                </Link>
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-red-600 hover:text-red-700 hover:shadow-md transition-all duration-200"
+                >
+                  <FiX className="mr-2 h-4 w-4" />
+                  Reset All
+                </button>
+              </div>
             </div>
           </div>
           {!isMobile && (
