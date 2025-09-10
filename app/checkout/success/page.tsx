@@ -1,26 +1,23 @@
 "use client";
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import DOMPurify from 'isomorphic-dompurify'; // Bu satırı ekleyin
+import DOMPurify from 'isomorphic-dompurify';
 
-
-export default function CheckoutSuccessPage() {
+// useSearchParams kullanan component
+function CheckoutSuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  // GÜVENLİ
+  
   const rawOrderId = searchParams.get('orderId');
   const orderId = rawOrderId && /^[a-zA-Z0-9-_]{10,50}$/.test(rawOrderId)
     ? DOMPurify.sanitize(rawOrderId)
     : null;
 
   const [countdown, setCountdown] = useState(10);
-
-  // Email gönderiminin tek seferde yapılması için ref kullan
   const emailSentRef = useRef(false);
 
   const sendOrderConfirmation = useCallback(async (orderIdParam: string) => {
-    // Email daha önce gönderildiyse tekrar gönderme
     if (emailSentRef.current) {
       console.log('Email already sent, skipping...');
       return;
@@ -28,10 +25,8 @@ export default function CheckoutSuccessPage() {
 
     try {
       console.log('Sending order confirmation email for:', orderIdParam);
-      emailSentRef.current = true; // Email gönderilmeye başladığını işaretle
+      emailSentRef.current = true;
 
-      // GÜVENLİ
-      // Önce orderIdParam'ı validate et
       if (!orderIdParam || !/^[a-zA-Z0-9-_]{10,50}$/.test(orderIdParam)) {
         console.error('Invalid order ID format');
         return;
@@ -46,34 +41,28 @@ export default function CheckoutSuccessPage() {
       if (response.ok) {
         console.log('Order confirmation email sent successfully');
       } else {
-        // Hata durumunda tekrar deneme imkanı için reset
         emailSentRef.current = false;
         console.error('Failed to send confirmation email:', response.status);
       }
     } catch (error) {
-      // Hata durumunda tekrar deneme imkanı için reset
       emailSentRef.current = false;
       console.error('Failed to send confirmation email:', error);
     }
   }, []);
 
-  // Email gönderimi için ayrı useEffect
   useEffect(() => {
     if (!orderId || emailSentRef.current) {
       return;
     }
-
     sendOrderConfirmation(orderId);
-  }, [orderId, sendOrderConfirmation]); // sendOrderConfirmation useCallback olduğu için stable
+  }, [orderId, sendOrderConfirmation]);
 
-  // Countdown ve redirect için ayrı useEffect
   useEffect(() => {
     if (!orderId) {
       router.push('/');
       return;
     }
 
-    // Countdown timer
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -88,7 +77,7 @@ export default function CheckoutSuccessPage() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [orderId, router]); // Router stable olduğu için sorun yok
+  }, [orderId, router]);
 
   if (!orderId) {
     return null;
@@ -121,11 +110,10 @@ export default function CheckoutSuccessPage() {
             <div className="space-y-4">
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span className="font-medium text-gray-700">Order ID:</span>
-                // GÜVENLİ
                 <span className="font-mono text-sm text-blue-600">
                   {orderId ? `${DOMPurify.sanitize(orderId.slice(0, 8))}...` : 'Invalid'}
                 </span>
-              </div>ß
+              </div>
 
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span className="font-medium text-gray-700">Status:</span>
@@ -141,7 +129,6 @@ export default function CheckoutSuccessPage() {
                 </span>
               </div>
 
-              {/* Email durumu gösterici (opsiyonel) */}
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span className="font-medium text-gray-700">Confirmation Email:</span>
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${emailSentRef.current
@@ -193,7 +180,6 @@ export default function CheckoutSuccessPage() {
                 } else {
                   alert('Invalid order ID');
                 }
-                alert('Order ID copied to clipboard!');
               }}
               className="inline-flex items-center px-6 py-4 bg-white text-gray-700 font-medium rounded-2xl border-2 border-gray-200 hover:bg-gray-50 transition-all duration-200"
             >
@@ -212,5 +198,21 @@ export default function CheckoutSuccessPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Ana component - Suspense ile sarılmış
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <CheckoutSuccessContent />
+    </Suspense>
   );
 }
