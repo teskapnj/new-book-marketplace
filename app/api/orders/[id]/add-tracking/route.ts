@@ -5,13 +5,15 @@ import { initializeShippoTracking, getTrackingUrl } from '@/lib/shippo';
 import { FieldValue } from 'firebase-admin/firestore';
 import nodemailer from 'nodemailer';
 
-// Nodemailer transporter'ı oluştur
+// Nodemailer transporter'ı Namecheap için oluştur
 const createEmailTransporter = () => {
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: 'mail.privateemail.com', // Namecheap Private Email SMTP sunucusu
+    port: 465, // SSL için port
+    secure: true, // SSL kullanımı için true
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
+      user: process.env.EMAIL_USER, // Namecheap e-posta adresiniz
+      pass: process.env.EMAIL_PASS  // Namecheap e-posta şifreniz
     }
   });
 };
@@ -35,7 +37,7 @@ const sendTrackingEmail = async ({
   const transporter = createEmailTransporter();
   
   const mailOptions = {
-    from: `"Your Store" <${process.env.EMAIL_USER}>`,
+    from: `"Your Store" <${process.env.EMAIL_USER}>`, // Namecheap e-posta adresiniz
     to: customerEmail,
     subject: `Your Order #${orderNumber} Has Shipped!`,
     html: `
@@ -198,8 +200,8 @@ export async function POST(
      const customerEmail = orderData?.customerInfo?.email;
      const customerName = orderData?.customerInfo?.fullName || 'Customer';
      const orderNumber = orderData?.orderNumber || id;
-
      let emailSent = false;
+     
      if (customerEmail) {
        try {
          console.log(`Sending tracking email to: ${customerEmail}`);

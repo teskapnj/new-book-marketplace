@@ -3,12 +3,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../../../lib/firebaseAdmin';
 import nodemailer from 'nodemailer';
 
-// Create a nodemailer transporter
+// Create a nodemailer transporter for Namecheap
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'mail.privateemail.com', // Namecheap Private Email SMTP sunucusu
+  port: 465, // SSL için port
+  secure: true, // SSL kullanımı için true
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+    user: process.env.EMAIL_USER, // Namecheap e-posta adresiniz
+    pass: process.env.EMAIL_PASS  // Namecheap e-posta şifreniz
   }
 });
 
@@ -37,7 +39,7 @@ async function sendOrderConfirmationEmail({
         <td style="padding: 8px; border-bottom: 1px solid #ddd;">$${(item.price || 0).toFixed(2)}</td>
       </tr>
     `).join('');
-
+    
     // Safely extract shipping address information with fallbacks
     // Updated to match the actual property names in the data
     const safeShippingAddress = {
@@ -49,7 +51,7 @@ async function sendOrderConfirmationEmail({
       zipCode: shippingAddress?.zip || shippingAddress?.zipCode || shippingAddress?.postalCode || '',
       country: shippingAddress?.country || 'USA'
     };
-
+    
     // Email content
     const emailHtml = `
     <!DOCTYPE html>
@@ -151,30 +153,24 @@ async function sendOrderConfirmationEmail({
     
     // Send the email
     await transporter.sendMail({
-      from: process.env.ADMIN_EMAIL || process.env.EMAIL_USER,
+      from: process.env.ADMIN_EMAIL || process.env.EMAIL_USER, // Namecheap e-posta adresiniz
       to: customerEmail,
       subject: `Order Confirmation #${orderNumber}`,
       html: emailHtml,
       text: `Order Confirmation
     
 Thank you for your order, ${customerName}!
-
 Your order #${orderNumber} has been confirmed.
-
 Order Details:
 ${items.map((item: any) => `- ${item.title || 'Item'} (Qty: ${item.quantity || 1}) - $${(item.price || 0).toFixed(2)}`).join('\n')}
-
 Total: $${totalAmount.toFixed(2)}
-
 Shipping Address:
 ${safeShippingAddress.fullName}
 ${safeShippingAddress.addressLine1}
 ${safeShippingAddress.addressLine2 ? `${safeShippingAddress.addressLine2}\n` : ''}
 ${safeShippingAddress.city}, ${safeShippingAddress.state} ${safeShippingAddress.zipCode}
 ${safeShippingAddress.country}
-
 If you have any questions about your order, please contact our support team.
-
 Thank you for shopping with SecondLife Media!`
     });
     

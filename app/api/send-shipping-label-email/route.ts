@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 
+// Namecheap için transporter yapılandırması
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'mail.privateemail.com', // Namecheap Private Email SMTP sunucusu
+  port: 465, // SSL için port
+  secure: true, // SSL kullanımı için true
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+    user: process.env.EMAIL_USER, // Namecheap e-posta adresiniz
+    pass: process.env.EMAIL_PASS  // Namecheap e-posta şifreniz
   }
 });
 
@@ -114,7 +117,7 @@ export async function POST(request: NextRequest) {
     `;
     
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: process.env.EMAIL_USER, // Namecheap e-posta adresiniz
       to: email,
       subject: `✅ Your listing "${listingTitle}" has been approved! Shipping label inside`,
       html: emailHtml,

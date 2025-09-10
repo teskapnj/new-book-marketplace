@@ -13,16 +13,18 @@ export async function POST(request: NextRequest) {
       sellerName, 
       notes 
     } = body;
-
-    // Nodemailer transporter setup
+    
+    // Nodemailer transporter setup for Namecheap
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'mail.privateemail.com', // Namecheap Private Email SMTP sunucusu
+      port: 465, // SSL için port
+      secure: true, // SSL kullanımı için true
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+        user: process.env.EMAIL_USER, // Namecheap e-posta adresiniz
+        pass: process.env.EMAIL_PASS  // Namecheap e-posta şifreniz
       }
     });
-
+    
     const emailHTML = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 20px;">
         <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
@@ -100,24 +102,22 @@ export async function POST(request: NextRequest) {
         </div>
       </div>
     `;
-
+    
     // Send email
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: process.env.EMAIL_USER, // Namecheap e-posta adresiniz
       to: email,
       subject: `Payment Sent - $${paymentAmount} for "${listingTitle}"`,
       html: emailHTML
     };
-
+    
     await transporter.sendMail(mailOptions);
-
     console.log(`Payment notification email sent to: ${email}`);
-
+    
     return NextResponse.json({ 
       success: true, 
       message: 'Payment notification email sent successfully' 
     });
-
   } catch (error: any) {
     console.error('Error sending payment notification:', error);
     return NextResponse.json({ 

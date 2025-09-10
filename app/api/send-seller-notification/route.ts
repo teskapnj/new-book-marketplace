@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 
+// Namecheap için transporter yapılandırması
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'mail.privateemail.com', // Namecheap Private Email SMTP sunucusu
+  port: 465, // SSL için port
+  secure: true, // SSL kullanımı için true
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+    user: process.env.EMAIL_USER, // Namecheap e-posta adresiniz (örn: yourname@yourdomain.com)
+    pass: process.env.EMAIL_PASS  // Namecheap e-posta şifreniz
   }
 });
 
@@ -13,6 +16,7 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
     
+    // HTML içeriği aynı kalabilir
     const emailHtml = `
     <!DOCTYPE html>
     <html>
@@ -52,7 +56,6 @@ export async function POST(request: NextRequest) {
               <span class="value">${data.sellerEmail}</span>
             </div>
           </div>
-
           <div class="card">
             <h3 style="margin-top: 0; color: #374151;">📊 Submission Summary</h3>
             <div class="info-row">
@@ -72,7 +75,6 @@ export async function POST(request: NextRequest) {
               <span class="value">#${data.submissionId.substring(0, 8)}</span>
             </div>
           </div>
-
           ${data.shippingInfo ? `
           <div class="card">
             <h3 style="margin-top: 0; color: #374151;">🚚 Shpping/Pickup Address</h3>
@@ -88,13 +90,11 @@ export async function POST(request: NextRequest) {
             </div>
           </div>
           ` : ''}
-
           <div style="text-align: center; margin: 30px 0;">
             <a href="${data.dashboardUrl}" class="button">
               Review in Admin Dashboard
             </a>
           </div>
-
           <div class="card" style="background: #fef3c7; border-left-color: #f59e0b;">
             <h4 style="margin-top: 0; color: #92400e;">⚡ Next Steps</h4>
             <p style="margin: 0;">
@@ -105,7 +105,6 @@ export async function POST(request: NextRequest) {
             </p>
           </div>
         </div>
-
         <div class="footer">
           <p><strong>Seller Submission Notification</strong></p>
           <p>Submission: #${data.submissionId.substring(0, 8)} | ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })}</p>
@@ -116,20 +115,17 @@ export async function POST(request: NextRequest) {
     `;
     
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: process.env.EMAIL_USER, // Namecheap e-posta adresiniz
       to: process.env.ADMIN_EMAIL,
       subject: `📦 NEW SUBMISSION - ${data.totalItems} items - $${data.totalValue.toFixed(2)} - ${data.sellerName}`,
       html: emailHtml,
       text: `New Seller Submission
-
 Seller: ${data.sellerName} (${data.sellerEmail})
 Items: ${data.totalItems}
 Value: $${data.totalValue.toFixed(2)}
 Average: $${(data.totalValue / data.totalItems).toFixed(2)} per item
-
 Submission ID: #${data.submissionId.substring(0, 8)}
 Time: ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })}
-
 Review: ${data.dashboardUrl}`
     });
     

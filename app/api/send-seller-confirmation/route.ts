@@ -10,17 +10,20 @@ export async function POST(request: NextRequest) {
       totalValue, 
       submissionId 
     } = await request.json();
-
+    
+    // Namecheap için transporter yapılandırması
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'mail.privateemail.com', // Namecheap Private Email SMTP sunucusu
+      port: 465,
+      secure: true, // SSL kullanımı için true
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+        user: process.env.EMAIL_USER, // Namecheap e-posta adresiniz
+        pass: process.env.EMAIL_PASS  // Namecheap e-posta şifreniz
       }
     });
-
+    
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: process.env.EMAIL_USER, // Namecheap e-posta adresiniz
       to: sellerEmail,
       subject: 'Your Items Submitted Successfully - SecondLife Media',
       html: `
@@ -57,7 +60,7 @@ export async function POST(request: NextRequest) {
         </div>
       `
     };
-
+    
     await transporter.sendMail(mailOptions);
     
     return NextResponse.json({ success: true });
