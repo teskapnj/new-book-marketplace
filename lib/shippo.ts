@@ -142,3 +142,46 @@ export const TEST_TRACKING_NUMBERS = {
   dhl: "SHippoTest",
   generic: "10000000000000000"
 };
+
+// Build hatalarını düzeltmek için eklenen fonksiyonlar
+
+// Parcel bilgilerini sayılara çevir
+export function convertParcelToNumbers(parcel: any) {
+  return {
+    length: parseFloat(parcel.length) || 0,
+    width: parseFloat(parcel.width) || 0,
+    height: parseFloat(parcel.height) || 0,
+    weight: parseFloat(parcel.weight) || 0,
+    distance_unit: parcel.distance_unit || 'in',
+    mass_unit: parcel.mass_unit || 'lb'
+  };
+}
+
+// Kargo oranlarını al
+export async function getShippingRates(addressFrom: any, addressTo: any, parcel: any) {
+  try {
+    console.log('Getting shipping rates...');
+    
+    const shipmentData = {
+      address_from: addressFrom,
+      address_to: addressTo,
+      parcels: [convertParcelToNumbers(parcel)],
+      async: false
+    };
+    
+    const response = await shippoRequest('/shipments/', 'POST', shipmentData);
+    console.log('Shipping rates retrieved:', response);
+    
+    return response.rates || [];
+  } catch (error) {
+    console.error('Failed to get shipping rates:', error);
+    throw error;
+  }
+}
+
+// Test modunun aktif olup olmadığını kontrol et
+export function isTestModeEnabled(): boolean {
+  return process.env.NODE_ENV === 'development' || 
+         process.env.SHIPPO_TEST_MODE === 'true' ||
+         SHIPPO_API_KEY.includes('test');
+}
