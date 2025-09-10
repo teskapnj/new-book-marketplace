@@ -4,6 +4,7 @@ import { CartProvider } from '../contexts/CartContext'
 import { WishlistProvider } from '../contexts/WishlistContext'
 import { AuthProvider } from '../contexts/AuthContext'
 import { StoreProvider } from '@/lib/store'
+import { SpeedInsights } from "@vercel/speed-insights/next"  // ✅ buraya import et
 
 export default function RootLayout({
   children,
@@ -19,6 +20,7 @@ export default function RootLayout({
               <StoreProvider>
                 {children}
                 <AuthDebug />
+                <SpeedInsights /> {/* ✅ buraya ekle */}
               </StoreProvider>
             </CartProvider>
           </WishlistProvider>

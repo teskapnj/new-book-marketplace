@@ -4,9 +4,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db, storage } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { FiHome, FiSave, FiCamera, FiDollarSign, FiPackage, FiX, FiCheck, FiAlertCircle, FiSearch, FiStar, FiTrendingUp, FiFileText, FiTruck, FiBookOpen, FiUser, FiLogIn, FiSettings, FiMessageSquare, FiMail, FiClock, FiCheckCircle } from "react-icons/fi";
+import { FiHome, FiSave, FiCamera, FiDollarSign, FiPackage, FiX, FiCheck, FiAlertCircle, FiSearch, FiStar, FiTrendingUp, FiFileText, FiTruck, FiBookOpen, FiUser, FiLogIn, FiSettings, FiMessageSquare, FiMail, FiClock, FiCheckCircle, FiList } from "react-icons/fi";
 import Link from "next/link";
 import Head from "next/head";
 import axios from "axios";
@@ -14,6 +14,7 @@ import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { smartOptimizeImage, formatFileSize } from "@/utils/imageOptimization";
 import { AmazonProduct, PricingResult } from "@/lib/pricingEngine";
 import DOMPurify from 'isomorphic-dompurify';
+import UserListingsSection from "@/components/UserListingsSection";
 
 interface BundleItem {
   id: string;
@@ -30,7 +31,6 @@ interface BundleItem {
   originalPrice?: number;
   imageUrl?: string | null;
 }
-
 interface Address {
   street: string;
   city: string;
@@ -38,14 +38,12 @@ interface Address {
   zip: string;
   country: string;
 }
-
 interface PackageDimensions {
   length: number;
   width: number;
   height: number;
   weight: number;
 }
-
 interface ShippingInfo {
   firstName: string;
   lastName: string;
@@ -53,7 +51,6 @@ interface ShippingInfo {
   packageDimensions: PackageDimensions;
   paypalAccount: string;
 }
-
 export default function CreateListingPage() {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
@@ -117,11 +114,11 @@ export default function CreateListingPage() {
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [popupTimer, setPopupTimer] = useState<NodeJS.Timeout | null>(null);
   const [prevUser, setPrevUser] = useState(user); // Track previous user state
+  const [showUserListings, setShowUserListings] = useState(false); // Yeni state eklendi
 
   const totalOurPrice = bundleItems.reduce((total, item) => {
     return total + (item.price * item.quantity);
   }, 0);
-
   const totalAmazonValue = bundleItems.reduce((total, item) => {
     return total + ((item.originalPrice || 0) * item.quantity);
   }, 0);
@@ -129,7 +126,6 @@ export default function CreateListingPage() {
   const getStorageKey = useCallback(() => {
     return user ? `bundleListingDraft_${user.uid}` : 'bundleListingDraft_guest';
   }, [user]);
-
   const getGuestStorageKey = useCallback(() => {
     return 'bundleListingDraft_guest';
   }, []);
@@ -543,10 +539,8 @@ export default function CreateListingPage() {
 
   const loadFromStorage = useCallback(() => {
     if (!isMounted || isPrivateMode || isInitializing) return;
-
     const userKey = getStorageKey();
     const guestKey = getGuestStorageKey();
-
     if (user) {
       try {
         // First try to load user-specific data
@@ -564,7 +558,6 @@ export default function CreateListingPage() {
             localStorage.removeItem(userKey);
           }
         }
-
         // If no user data, try to migrate from guest data
         const guestData = localStorage.getItem(guestKey);
         if (guestData) {
@@ -646,12 +639,10 @@ export default function CreateListingPage() {
     if (prevUser && !user) {
       saveToStorage();
     }
-
     // Load data when user logs in
     if (!prevUser && user) {
       loadFromStorage();
     }
-
     // Update previous user state
     setPrevUser(user);
   }, [user, prevUser, saveToStorage, loadFromStorage]);
@@ -697,7 +688,8 @@ export default function CreateListingPage() {
       game: "Game",
       mix: "Mixed Media"
     };
-    return `${totalItems} ${categoryNames[dominantCategory as keyof typeof categoryNames]} Collection in Used Condition`;  };
+    return `${totalItems} ${categoryNames[dominantCategory as keyof typeof categoryNames]} Collection in Used Condition`;
+  };
 
   const uploadImageToStorage = async (item: BundleItem, userId: string): Promise<string | null> => {
     if (!item.imageBlob) return null;
@@ -855,7 +847,7 @@ export default function CreateListingPage() {
       } catch (error) {
         console.error("Admin email error:", error);
       }
-      
+
       // Seller confirmation email
       try {
         await fetch('/api/send-seller-confirmation', {
@@ -1035,17 +1027,6 @@ export default function CreateListingPage() {
                     <FiBookOpen className="mr-1 h-3 w-3" />
                     Guidelines
                   </Link>
-                  {user && (
-                    <Link
-                      href="/dashboard/settings"
-                      className="flex items-center justify-center px-3 py-2 bg-white rounded-lg shadow-sm text-xs font-medium text-gray-600 hover:text-gray-700 transition-all"
-                    >
-                      <FiSettings className="mr-1 h-3 w-3" />
-                      Settings
-                    </Link>
-                  )}
-                </div>
-                <div className="grid grid-cols-1 gap-2">
                   <button
                     type="button"
                     onClick={resetForm}
@@ -1055,10 +1036,30 @@ export default function CreateListingPage() {
                     Reset All
                   </button>
                 </div>
-              </div>
+                {user && (
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <button
+                      onClick={() => setShowUserListings(!showUserListings)}
+                      className="flex items-center justify-center px-3 py-2 bg-white rounded-lg shadow-sm text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-all"
+                    >
+                      <FiList className="mr-1 h-3 w-3" />
+                      Submissions
+                    </button>
+                    <Link
+                      href="/dashboard/settings"
+                      className="flex items-center justify-center px-3 py-2 bg-white rounded-lg shadow-sm text-xs font-medium text-gray-600 hover:text-gray-700 transition-all"
+                    >
+                      <FiSettings className="mr-1 h-3 w-3" />
+                      Settings
+                    </Link>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 gap-2">
 
+                </div>
+              </div>
               {/* Desktop Navigation - Horizontal */}
-              <div className={`hidden sm:grid gap-3 ${user ? 'grid-cols-5' : 'grid-cols-4'}`}>
+              <div className={`hidden sm:grid gap-3 ${user ? 'grid-cols-6' : 'grid-cols-4'}`}>
                 <Link
                   href="/"
                   className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-blue-600 hover:text-blue-700 hover:shadow-md transition-all duration-200"
@@ -1081,13 +1082,22 @@ export default function CreateListingPage() {
                   Contact Us
                 </Link>
                 {user && (
-                  <Link
-                    href="/dashboard/settings"
-                    className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-gray-600 hover:text-gray-700 hover:shadow-md transition-all duration-200"
-                  >
-                    <FiSettings className="mr-2 h-4 w-4" />
-                    Settings
-                  </Link>
+                  <>
+                    <button
+                      onClick={() => setShowUserListings(!showUserListings)}
+                      className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-indigo-600 hover:text-indigo-700 hover:shadow-md transition-all duration-200"
+                    >
+                      <FiList className="mr-2 h-4 w-4" />
+                      Submissions
+                    </button>
+                    <Link
+                      href="/dashboard/settings"
+                      className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-gray-600 hover:text-gray-700 hover:shadow-md transition-all duration-200"
+                    >
+                      <FiSettings className="mr-2 h-4 w-4" />
+                      Settings
+                    </Link>
+                  </>
                 )}
                 <button
                   type="button"
@@ -1100,6 +1110,15 @@ export default function CreateListingPage() {
               </div>
             </div>
           </div>
+
+          {/* User Listings Section Component */}
+          {user && (
+            <UserListingsSection
+              isVisible={showUserListings}
+              onClose={() => setShowUserListings(false)}
+            />
+          )}
+
           {!isMobile && (
             <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg shadow-sm">
               <div className="flex">

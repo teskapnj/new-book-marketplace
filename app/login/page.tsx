@@ -91,31 +91,29 @@ const PasswordInputHold = ({
 };
 
 // Çift kontrollü admin kontrolü - PAYLAŞILAN FONKSİYON
+// Sadece Firestore role kontrolü - GÜVENLİ
 const isAdminUser = async (email: string, uid: string): Promise<boolean> => {
   try {
-    // 1. Firestore'dan user verilerini al
     const userDoc = await getDoc(doc(db, "users", uid));
 
     if (!userDoc.exists()) {
+      console.log("User document not found for admin check");
       return false;
     }
 
     const userData = userDoc.data();
     const userRole = userData.role;
-    const userEmail = userData.email;
-
-    // 2. Firestore'da role kontrol et
-    if (userRole !== "admin") {
-      return false;
-    }
-
-    // 3. Environment variable ile karşılaştır
-    const envAdminEmail = process.env.ADMIN_EMAIL;
-    if (envAdminEmail && userEmail === envAdminEmail) {
+    
+    console.log("Checking admin role for user:", email);
+    console.log("User role from Firestore:", userRole);
+    
+    // Sadece Firestore'daki role bilgisine bak
+    if (userRole === "admin") {
+      console.log("Admin role confirmed");
       return true;
     }
-
-    console.log("Admin role var ama environment email uyuşmuyor:", userEmail, "vs", envAdminEmail);
+    
+    console.log("Not an admin user");
     return false;
 
   } catch (error) {

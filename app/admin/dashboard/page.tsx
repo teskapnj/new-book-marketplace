@@ -7,7 +7,6 @@ import { sanitizeInput } from '@/lib/auth-utils';
 import { auth, db, storage } from "@/lib/firebase";
 import { useRateLimit } from '@/hooks/useRateLimit';
 import { RateLimitWarning } from '@/components/RateLimitWarning';
-
 import {
   collection,
   onSnapshot,
@@ -104,6 +103,7 @@ const MessageNotification = () => {
 
         const messagesRef = collection(db, 'contact_messages');
         const q = query(messagesRef, where('status', '==', 'unread'));
+        
         const unsubscribe = onSnapshot(q, (snapshot) => {
           setUnreadCount(snapshot.size);
           setLoading(false);
@@ -156,7 +156,6 @@ const MessageNotification = () => {
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
       </svg>
-
       {unreadCount > 0 && (
         <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full min-w-[20px]">
           {unreadCount > 99 ? '99+' : unreadCount}
@@ -215,7 +214,6 @@ const OrdersNavigation = () => {
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 01-8 0v4M5 9h14l1 12M4 6h16M4 6h16" />
       </svg>
-
       {orderCount > 0 && (
         <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-blue-600 rounded-full min-w-[20px]">
           {orderCount > 99 ? '99+' : orderCount}
@@ -236,7 +234,6 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
   const [status, setStatus] = useState(order.status);
   const [notes, setNotes] = useState(order.adminNotes || "");
   const [isProcessing, setIsProcessing] = useState(false);
-
   // Yeni state'ler tracking için
   const [trackingNumber, setTrackingNumber] = useState("");
   const [carrier, setCarrier] = useState("usps");
@@ -272,19 +269,18 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
     setTrackingLoading(true);
     setTrackingError("");
     setTrackingSuccess("");
-
+    
     try {
       const user = auth.currentUser;
       if (!user) {
         setTrackingError("You must be logged in to add tracking information");
         return;
       }
-
+      
       console.log("Mevcut kullanıcı:", user.email);
-
       const token = await user.getIdToken();
       console.log("Token alındı:", token.substring(0, 20) + "...");
-
+      
       const response = await fetch(`/api/orders/${order.id}/add-tracking`, {
         method: 'POST',
         headers: {
@@ -296,16 +292,14 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
           carrier: carrier
         })
       });
-
+      
       console.log("İstek gönderildi. Status:", response.status);
-
       const data = await response.json();
-
+      
       if (response.ok) {
         setTrackingSuccess(`Tracking added successfully! ${data.emailSent ? 'Email sent.' : ''}`);
         setTrackingNumber("");
         setShowTrackingForm(false);
-
         // Modal'ı kapat - real-time listener güncel data'yı alacak
         setTimeout(() => {
           onClose();
@@ -341,7 +335,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
             ✕
           </button>
         </div>
-
+        
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left column - Order information */}
           <div className="space-y-4">
@@ -356,7 +350,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                 <p><strong>Created:</strong> {formatDate(order.createdAt)}</p>
                 <p><strong>Last Updated:</strong> {formatDate(order.updatedAt)}</p>
                 <p><strong>Status:</strong> {getOrderStatusBadge(order.status)}</p>
-
+                
                 {/* Tracking bilgisi varsa göster */}
                 {order.trackingNumber && (
                   <div className="mt-2 pt-2 border-t border-gray-200">
@@ -379,7 +373,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                 )}
               </div>
             </div>
-
+            
             {/* Shipping Information */}
             <div>
               <h4 className="text-sm font-medium text-gray-900 mb-2">Shipping Address</h4>
@@ -391,7 +385,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                 </p>
               </div>
             </div>
-
+            
             {/* Order Items */}
             <div>
               <h4 className="text-sm font-medium text-gray-900 mb-2">
@@ -415,7 +409,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
               </div>
             </div>
           </div>
-
+          
           {/* Right column - Admin actions */}
           <div className="space-y-4">
             <div>
@@ -431,7 +425,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                 <option value="cancelled">Cancelled</option>
               </select>
             </div>
-
+            
             {/* Tracking Ekleme Bölümü */}
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
               <div className="flex justify-between items-center mb-3">
@@ -445,7 +439,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                   </button>
                 )}
               </div>
-
+              
               {order.trackingNumber ? (
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
@@ -484,7 +478,6 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                       placeholder="Enter tracking number"
                     />
                   </div>
-
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
                       Carrier
@@ -501,20 +494,19 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                       <option value="shippo">Shippo Test</option>
                     </select>
                   </div>
-
+                  
                   {/* Hata ve başarı mesajları */}
                   {trackingError && (
                     <div className="text-red-600 text-xs bg-red-50 p-2 rounded">
                       {trackingError}
                     </div>
                   )}
-
                   {trackingSuccess && (
                     <div className="text-green-600 text-xs bg-green-50 p-2 rounded">
                       {trackingSuccess}
                     </div>
                   )}
-
+                  
                   <button
                     onClick={handleAddTracking}
                     disabled={trackingLoading}
@@ -529,7 +521,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                 </p>
               )}
             </div>
-
+            
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Admin Notes
@@ -542,7 +534,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                 placeholder="Add notes about this order..."
               />
             </div>
-
+            
             <div className="bg-blue-50 p-4 rounded-lg">
               <h4 className="text-sm font-medium text-gray-900 mb-2">Order Summary</h4>
               <div className="space-y-1 text-sm">
@@ -568,7 +560,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                 </div>
               </div>
             </div>
-
+            
             <div className="bg-yellow-50 p-4 rounded-lg">
               <h4 className="text-sm font-medium text-gray-900 mb-2">Vendor Breakdown</h4>
               <div className="space-y-2 text-sm">
@@ -580,7 +572,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                 ))}
               </div>
             </div>
-
+            
             <button
               onClick={handleUpdateStatus}
               disabled={isProcessing}
@@ -605,7 +597,7 @@ const getOrderStatusBadge = (status: Order['status']) => {
     delivered: "bg-green-100 text-green-800 border-green-200",
     cancelled: "bg-red-100 text-red-800 border-red-200"
   };
-
+  
   const icons = {
     pending: "⏳",
     confirmed: "✅",
@@ -614,7 +606,7 @@ const getOrderStatusBadge = (status: Order['status']) => {
     delivered: "✅",
     cancelled: "❌"
   };
-
+  
   return (
     <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${styles[status]}`}>
       {icons[status]} <span className="ml-1 capitalize">{status}</span>
@@ -631,11 +623,13 @@ export default function AdminListingsPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [checkingAdmin, setCheckingAdmin] = useState(true);
   const [permissionError, setPermissionError] = useState<string | null>(null);
+  
   const adminRateLimit = useRateLimit({
     maxAttempts: 15, // 15 admin aksiyonu
     windowMs: 60 * 1000, // 1 dakika içinde
     storageKey: 'admin-actions'
   });
+
   // Rate limit kontrolü için helper function
   const checkRateLimit = (actionName: string): boolean => {
     if (adminRateLimit.isBlocked) {
@@ -661,7 +655,7 @@ export default function AdminListingsPage() {
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState<"listings" | "orders" | "sellers">("listings");
-
+  
   // 🆕 Yeni state'ler - shipping label ve tracking için
   const [shippingLabel, setShippingLabel] = useState<File | null>(null);
   const [shippingLabelPreview, setShippingLabelPreview] = useState<string | null>(null);
@@ -670,18 +664,18 @@ export default function AdminListingsPage() {
   const [labelUploadSuccess, setLabelUploadSuccess] = useState("");
   const [trackingNumber, setTrackingNumber] = useState("");
   const [carrier, setCarrier] = useState("usps");
-
+  
   // 📄 Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [orderCurrentPage, setOrderCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-
+  
   // 🆕 Yeni state'ler - toplu seçim ve silme için
   const [selectedListings, setSelectedListings] = useState<Set<string>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
-
+  
   // Payment için state'ler
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentTransactionId, setPaymentTransactionId] = useState("");
@@ -698,7 +692,7 @@ export default function AdminListingsPage() {
         router.push("/login");
         return;
       }
-
+      
       if (user) {
         try {
           const userDoc = await getDoc(doc(db, 'users', user.uid));
@@ -715,28 +709,26 @@ export default function AdminListingsPage() {
         }
       }
     };
-
+    
     checkAdminStatus();
   }, [user, loading, router]);
 
   // 🔥 Real-time Firebase listener for listings
   useEffect(() => {
     if (!user || !isAdmin || activeTab !== "listings") return;
-
+    
     let unsubscribe: () => void;
-
+    
     const setupListener = () => {
       try {
         const listingsRef = collection(db, "listings");
         const q = query(listingsRef, orderBy("createdAt", "desc"));
-
+        
         unsubscribe = onSnapshot(q,
           (querySnapshot) => {
             const listingsData: any[] = [];
-
             querySnapshot.forEach((docSnapshot) => {
               const data = docSnapshot.data();
-
               listingsData.push({
                 id: docSnapshot.id,
                 title: data.title || "Untitled Bundle",
@@ -768,7 +760,7 @@ export default function AdminListingsPage() {
                 paymentSentBy: data.paymentSentBy || null
               });
             });
-
+            
             setListings(listingsData);
             setLoadingListings(false);
             console.log(`✅ Loaded ${listingsData.length} listings from Firebase`);
@@ -778,17 +770,13 @@ export default function AdminListingsPage() {
             if (error.code === 'permission-denied') {
               setPermissionError("You don't have permission to access listings. Please contact administrator.");
             }
-
             if (error.code === 'failed-precondition') {
               console.log("Index not found, trying fallback query...");
               const fallbackQuery = collection(db, "listings");
-
               unsubscribe = onSnapshot(fallbackQuery, (querySnapshot) => {
                 const listingsData: any[] = [];
-
                 querySnapshot.forEach((docSnapshot) => {
                   const data = docSnapshot.data();
-
                   listingsData.push({
                     id: docSnapshot.id,
                     title: data.title || "Untitled Bundle",
@@ -820,9 +808,8 @@ export default function AdminListingsPage() {
                     paymentSentBy: data.paymentSentBy || null
                   });
                 });
-
+                
                 listingsData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
                 setListings(listingsData);
                 setLoadingListings(false);
                 console.log(`✅ Loaded ${listingsData.length} listings (fallback mode)`);
@@ -837,9 +824,9 @@ export default function AdminListingsPage() {
         setLoadingListings(false);
       }
     };
-
+    
     setupListener();
-
+    
     return () => {
       if (unsubscribe) {
         unsubscribe();
@@ -850,21 +837,19 @@ export default function AdminListingsPage() {
   // 🔥 Real-time Firebase listener for orders
   useEffect(() => {
     if (!user || !isAdmin || activeTab !== "orders") return;
-
+    
     let unsubscribe: () => void;
-
+    
     const setupOrdersListener = () => {
       try {
         const ordersRef = collection(db, "orders");
         const q = query(ordersRef, orderBy("createdAt", "desc"));
-
+        
         unsubscribe = onSnapshot(q,
           (querySnapshot) => {
             const ordersData: Order[] = [];
-
             querySnapshot.forEach((docSnapshot) => {
               const data = docSnapshot.data();
-
               ordersData.push({
                 id: docSnapshot.id,
                 orderNumber: data.orderNumber || "",
@@ -893,7 +878,7 @@ export default function AdminListingsPage() {
                 lastTracked: data.lastTracked
               });
             });
-
+            
             setOrders(ordersData);
             setLoadingOrders(false);
             console.log(`✅ Loaded ${ordersData.length} orders from Firebase`);
@@ -903,17 +888,13 @@ export default function AdminListingsPage() {
             if (error.code === 'permission-denied') {
               setPermissionError("You don't have permission to access orders. Please contact administrator.");
             }
-
             if (error.code === 'failed-precondition') {
               console.log("Index not found, trying fallback query...");
               const fallbackQuery = collection(db, "orders");
-
               unsubscribe = onSnapshot(fallbackQuery, (querySnapshot) => {
                 const ordersData: Order[] = [];
-
                 querySnapshot.forEach((docSnapshot) => {
                   const data = docSnapshot.data();
-
                   ordersData.push({
                     id: docSnapshot.id,
                     orderNumber: data.orderNumber || "",
@@ -942,13 +923,13 @@ export default function AdminListingsPage() {
                     lastTracked: data.lastTracked
                   });
                 });
-
+                
                 ordersData.sort((a, b) => {
                   const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toDate() : new Date(a.createdAt);
                   const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toDate() : new Date(b.createdAt);
                   return dateB.getTime() - dateA.getTime();
                 });
-
+                
                 setOrders(ordersData);
                 setLoadingOrders(false);
                 console.log(`✅ Loaded ${ordersData.length} orders (fallback mode)`);
@@ -963,9 +944,9 @@ export default function AdminListingsPage() {
         setLoadingOrders(false);
       }
     };
-
+    
     setupOrdersListener();
-
+    
     return () => {
       if (unsubscribe) {
         unsubscribe();
@@ -976,7 +957,10 @@ export default function AdminListingsPage() {
   // 📈 Computed values for listings
   const pendingListings = listings.filter(l => l.status === "pending");
   const approvedListings = listings.filter(l => l.status === "approved");
+  const shippedToListings = listings.filter(l => l.status === "shipped_to_seller");
+  const paymentSentListings = listings.filter(l => l.status === "payment_sent");
   const rejectedListings = listings.filter(l => l.status === "rejected");
+  const soldListings = listings.filter(l => l.status === "sold");
 
   // 📈 Computed values for orders
   const pendingOrders = orders.filter(o => o.status === "pending");
@@ -988,11 +972,9 @@ export default function AdminListingsPage() {
 
   // 🔍 Filtering and search logic for listings
   let filteredListings = listings;
-
   if (filterStatus !== "all") {
     filteredListings = filteredListings.filter(listing => listing.status === filterStatus);
   }
-
   if (searchTerm) {
     filteredListings = filteredListings.filter(listing =>
       listing.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1003,11 +985,9 @@ export default function AdminListingsPage() {
 
   // 🔍 Filtering and search logic for orders
   let filteredOrders = orders;
-
   if (orderFilterStatus !== "all") {
     filteredOrders = filteredOrders.filter(order => order.status === orderFilterStatus);
   }
-
   if (orderSearchTerm) {
     filteredOrders = filteredOrders.filter(order =>
       order.orderNumber.toLowerCase().includes(orderSearchTerm.toLowerCase()) ||
@@ -1021,7 +1001,6 @@ export default function AdminListingsPage() {
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredListings.slice(indexOfFirstItem, indexOfLastItem);
-
   const pageNumbers = [];
   for (let i = 1; i <= Math.ceil(filteredListings.length / itemsPerPage); i++) {
     pageNumbers.push(i);
@@ -1031,14 +1010,12 @@ export default function AdminListingsPage() {
   const indexOfLastOrder = orderCurrentPage * itemsPerPage;
   const indexOfFirstOrder = indexOfLastOrder - itemsPerPage;
   const currentOrders = filteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
-
   const orderPageNumbers = [];
   for (let i = 1; i <= Math.ceil(filteredOrders.length / itemsPerPage); i++) {
     orderPageNumbers.push(i);
   }
 
   // 🆕 Yeni fonksiyonlar - toplu seçim ve silme için
-
   // Tümünü seç / seçimi kaldır
   const toggleSelectAll = () => {
     if (selectAll) {
@@ -1061,7 +1038,7 @@ export default function AdminListingsPage() {
       newSelected.add(listingId);
     }
     setSelectedListings(newSelected);
-
+    
     // Tümü seçili mi kontrol et
     const allCurrentSelected = currentItems.every(item => newSelected.has(item.id));
     setSelectAll(allCurrentSelected && newSelected.size > 0);
@@ -1073,29 +1050,24 @@ export default function AdminListingsPage() {
       alert("No listings selected for deletion");
       return;
     }
-
+    
     // Rate limit kontrolü
     if (!checkRateLimit('bulk deleting listings')) return;
-
     adminRateLimit.recordAttempt();
+    
     setIsBulkDeleting(true);
-
     try {
       const batch = writeBatch(db);
-
       selectedListings.forEach(listingId => {
         const listingRef = doc(db, "listings", listingId);
         batch.delete(listingRef);
       });
-
+      
       await batch.commit();
-
       console.log(`🗑️ Deleted ${selectedListings.size} listings in bulk`);
-
       setSelectedListings(new Set());
       setSelectAll(false);
       setShowBulkDeleteConfirm(false);
-
       alert(`✅ Successfully deleted ${selectedListings.size} listings!`);
     } catch (error: any) {
       console.error("Error bulk deleting listings:", error);
@@ -1105,23 +1077,19 @@ export default function AdminListingsPage() {
         alert(`❌ Error occurred while deleting listings: ${error.message}`);
       }
     }
-
     setIsBulkDeleting(false);
   };
-
 
   // Tekil silme
   const deleteSingleListing = async (listingId: string) => {
     if (!confirm("Are you sure you want to delete this listing? This action cannot be undone.")) {
       return;
     }
-
+    
     try {
       const listingRef = doc(db, "listings", listingId);
       await deleteDoc(listingRef);
-
       console.log(`🗑️ Listing ${listingId} deleted`);
-
       alert("✅ Listing deleted successfully!");
     } catch (error: any) {
       console.error("Error deleting listing:", error);
@@ -1137,24 +1105,21 @@ export default function AdminListingsPage() {
   const approveListingOnly = async (listingId: string) => {
     // Rate limit kontrolü
     if (!checkRateLimit('approving listings')) return;
-
     adminRateLimit.recordAttempt();
+    
     setIsProcessing(true);
-
     try {
       const listingRef = doc(db, "listings", listingId);
-
       await updateDoc(listingRef, {
         status: "approved",
         reviewedDate: serverTimestamp(),
         reviewedBy: user?.email || "admin",
         adminNotes: sanitizeInput(adminNotes) // Sanitize eklendi
       });
-
+      
       console.log(`✅ Listing ${listingId} approved by ${user?.email}`);
-
       setAdminNotes("");
-
+      
       if (selectedListing && selectedListing.id === listingId) {
         setSelectedListing({
           ...selectedListing,
@@ -1163,9 +1128,8 @@ export default function AdminListingsPage() {
           reviewedBy: user?.email || "admin"
         });
       }
-
+      
       alert("✅ Listing approved successfully! You can now send the shipping label and tracking information.");
-
     } catch (error: any) {
       console.error("Error approving listing:", error);
       if (error.code === 'permission-denied') {
@@ -1174,35 +1138,36 @@ export default function AdminListingsPage() {
         alert("❌ Error occurred while approving listing: " + error.message);
       }
     }
-
     setIsProcessing(false);
   };
-  // Payment kaydetme fonksiyonu
+
+  // Payment kaydetme fonksiyonu - GÜNCELLENDİ
   const recordPaymentSent = async (listingId: string) => {
     if (!paymentAmount.trim() || parseFloat(paymentAmount) <= 0) {
       setPaymentError("Please enter a valid payment amount");
       return;
     }
-
+    
     if (!paymentTransactionId.trim()) {
       setPaymentError("Please enter PayPal transaction ID");
       return;
     }
-
+    
     // Rate limit kontrolü
     if (!checkRateLimit('recording payments')) return;
-
     adminRateLimit.recordAttempt();
+    
     setPaymentLoading(true);
     setPaymentError("");
     setPaymentSuccess("");
-
+    
     try {
       const amount = parseFloat(paymentAmount);
-
-      // Update listing with payment info
+      
+      // Update listing with payment info and change status
       const listingRef = doc(db, "listings", listingId);
       await updateDoc(listingRef, {
+        status: "payment_sent", // Durumu güncelle
         paymentSent: true,
         paymentAmount: amount,
         paymentTransactionId: sanitizeInput(paymentTransactionId),
@@ -1212,10 +1177,11 @@ export default function AdminListingsPage() {
         paymentStatus: "sent",
         paymentMethod: "paypal_manual"
       });
-
+      
       // Update selected listing state to reflect the change immediately
       setSelectedListing({
         ...selectedListing,
+        status: "payment_sent", // Durumu güncelle
         paymentSent: true,
         paymentAmount: amount,
         paymentTransactionId: paymentTransactionId,
@@ -1223,11 +1189,11 @@ export default function AdminListingsPage() {
         paymentSentAt: new Date(),
         paymentSentBy: user?.email || "admin"
       });
-
+      
       // Get seller info for email
       const listingDoc = await getDoc(listingRef);
       const sellerEmail = listingDoc.data()?.vendorEmail;
-
+      
       if (sellerEmail) {
         // Send payment notification email
         const emailResponse = await fetch('/api/send-payment-notification', {
@@ -1245,15 +1211,15 @@ export default function AdminListingsPage() {
             notes: paymentNotes
           }),
         });
-
+        
         console.log("Email notification sent to seller");
       }
-
+      
       // Clear form data
       setPaymentAmount("");
       setPaymentTransactionId("");
       setPaymentNotes("");
-
+      setPaymentSuccess("Payment recorded successfully!");
     } catch (error: any) {
       console.error("Error recording payment:", error);
       setPaymentError("Failed to record payment: " + error.message);
@@ -1262,46 +1228,46 @@ export default function AdminListingsPage() {
     }
   };
 
-  // 📦 Send shipping label and tracking - YENİ FONKSİYON
+  // 📦 Send shipping label and tracking - YENİ FONKSİYON - GÜNCELLENDİ
   const sendShippingLabelAndTracking = async (listingId: string) => {
     // File validation
     if (!shippingLabel) {
       alert("Please upload a shipping label");
       return;
     }
-
+    
     // Gelişmiş dosya güvenlik kontrolü
     const validateFile = async (file: File): Promise<boolean> => {
       // Dosya boyutu kontrolü (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
         throw new Error('Dosya boyutu çok büyük (max 10MB)');
       }
-
+      
       // MIME type kontrolü
       const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
       if (!allowedTypes.includes(file.type)) {
         throw new Error('İzin verilmeyen dosya türü');
       }
-
+      
       // Dosya imzası kontrolü (magic numbers)
       const buffer = await file.arrayBuffer();
       const uint8Array = new Uint8Array(buffer.slice(0, 4));
       const hex = Array.from(uint8Array).map(b => b.toString(16).padStart(2, '0')).join('');
-
+      
       const validSignatures: Record<string, string> = {
         'ffd8ffe0': 'image/jpeg',
         'ffd8ffe1': 'image/jpeg',
         '89504e47': 'image/png',
         '25504446': 'application/pdf'
       };
-
+      
       if (!validSignatures[hex]) {
         throw new Error('Dosya imzası geçersiz');
       }
-
+      
       return true;
     };
-
+    
     // Dosya kontrolü yap
     try {
       await validateFile(shippingLabel);
@@ -1309,57 +1275,56 @@ export default function AdminListingsPage() {
       alert(error.message);
       return;
     }
-
+    
     // File size kontrolü (max 10MB)
     if (shippingLabel.size > 10 * 1024 * 1024) {
       alert("File size must be less than 10MB");
       return;
     }
-
+    
     // Tracking number validation
     const sanitizedTracking = sanitizeInput(trackingNumber);
     if (!sanitizedTracking.trim() || sanitizedTracking.length < 5) {
       alert("Please provide a valid tracking number (minimum 5 characters)");
       return;
     }
-
+    
     // Rate limit kontrolü
     if (!checkRateLimit('uploading shipping labels')) return;
-
     adminRateLimit.recordAttempt();
-
+    
     setIsProcessing(true);
     setUploadingLabel(true);
     setLabelUploadError("");
     setLabelUploadSuccess("");
-
+    
     try {
       // Filename sanitization
       const fileExtension = shippingLabel.name.split('.').pop();
       const sanitizedFileName = `${listingId}_${Date.now()}.${fileExtension}`;
       const storageRef = ref(storage, `shipping-labels/${sanitizedFileName}`);
-
+      
       await uploadBytes(storageRef, shippingLabel);
       const shippingLabelUrl = await getDownloadURL(storageRef);
-
+      
       const listingRef = doc(db, "listings", listingId);
-
       await updateDoc(listingRef, {
+        status: "shipped_to_seller", // Durumu güncelle
         shippingLabelUrl: shippingLabelUrl,
         trackingNumber: sanitizedTracking,
         carrier: sanitizeInput(carrier),
         shippingLabelName: sanitizedFileName,
         shippingLabelType: shippingLabel.type
       });
-
+      
       // Get seller's email
       const listingDoc = await getDoc(listingRef);
       const sellerId = listingDoc.data()?.vendorId;
-
+      
       if (sellerId) {
         const sellerDoc = await getDoc(doc(db, 'users', sellerId));
         const sellerEmail = sellerDoc.data()?.email;
-
+        
         if (sellerEmail) {
           // Send email with shipping label and tracking info
           const emailResponse = await fetch('/api/send-shipping-label-email', {
@@ -1376,7 +1341,7 @@ export default function AdminListingsPage() {
               listingId: listingId
             }),
           });
-
+          
           if (emailResponse.ok) {
             console.log(`📧 Email sent to ${sellerEmail} with shipping label and tracking info`);
           } else {
@@ -1384,24 +1349,23 @@ export default function AdminListingsPage() {
           }
         }
       }
-
+      
       setLabelUploadSuccess("Shipping label and tracking sent successfully!");
-
+      
       // Reset form
       setShippingLabel(null);
       setShippingLabelPreview(null);
       setTrackingNumber("");
       setCarrier("usps");
-
+      
       // Close modal after a short delay
       setTimeout(() => {
         setSelectedListing(null);
       }, 2000);
-
     } catch (error: any) {
       console.error("Error sending shipping label and tracking:", error);
       let errorMessage = "Error occurred while sending shipping label and tracking";
-
+      
       if (error.code === 'storage/unauthorized') {
         errorMessage = "You don't have permission to upload files. Please check your Firebase Storage rules.";
       } else if (error.code === 'storage/canceled') {
@@ -1411,7 +1375,7 @@ export default function AdminListingsPage() {
       } else if (error.message) {
         errorMessage = error.message;
       }
-
+      
       setLabelUploadError(errorMessage);
       alert("❌ " + errorMessage);
     } finally {
@@ -1426,16 +1390,14 @@ export default function AdminListingsPage() {
       alert("⚠️ Please provide a rejection reason");
       return;
     }
-
+    
     // Rate limit kontrolü
     if (!checkRateLimit('rejecting listings')) return;
-
     adminRateLimit.recordAttempt();
+    
     setIsProcessing(true);
-
     try {
       const listingRef = doc(db, "listings", listingId);
-
       await updateDoc(listingRef, {
         status: "rejected",
         reviewedDate: serverTimestamp(),
@@ -1443,15 +1405,12 @@ export default function AdminListingsPage() {
         rejectionReason: sanitizeInput(rejectionReason), // Sanitize eklendi
         adminNotes: sanitizeInput(adminNotes) // Sanitize eklendi
       });
-
+      
       console.log(`❌ Listing ${listingId} rejected by ${user?.email}`);
-
       setSelectedListing(null);
       setRejectionReason("");
       setAdminNotes("");
-
       alert("❌ Listing rejected successfully!");
-
     } catch (error: any) {
       console.error("Error rejecting listing:", error);
       if (error.code === 'permission-denied') {
@@ -1460,28 +1419,24 @@ export default function AdminListingsPage() {
         alert("❌ Error occurred while rejecting listing: " + error.message);
       }
     }
-
     setIsProcessing(false);
   };
+
   // 🗑️ Delete listing function
   const deleteListing = async (listingId: string) => {
     // Rate limit kontrolü
     if (!checkRateLimit('deleting listings')) return;
-
     adminRateLimit.recordAttempt();
+    
     setIsProcessing(true);
-
     try {
       const listingRef = doc(db, "listings", listingId);
       await deleteDoc(listingRef);
-
+      
       console.log(`🗑️ Listing ${listingId} deleted by ${user?.email}`);
-
       setSelectedListing(null);
       setShowDeleteConfirm(false);
-
       alert("🗑️ Listing deleted successfully!");
-
     } catch (error: any) {
       console.error("Error deleting listing:", error);
       if (error.code === 'permission-denied') {
@@ -1490,33 +1445,27 @@ export default function AdminListingsPage() {
         alert("❌ Error occurred while deleting listing: " + error.message);
       }
     }
-
     setIsProcessing(false);
   };
-
 
   // 🔄 Update order status function
   const updateOrderStatus = async (orderId: string, status: string, notes: string) => {
     // Rate limit kontrolü
     if (!checkRateLimit('updating orders')) return;
-
     adminRateLimit.recordAttempt();
+    
     setIsProcessing(true);
-
     try {
       const orderRef = doc(db, "orders", orderId);
-
       await updateDoc(orderRef, {
         status: status,
         updatedAt: serverTimestamp(),
         updatedBy: user?.email || "admin",
         adminNotes: sanitizeInput(notes) // Sanitize eklendi
       });
-
+      
       console.log(`🔄 Order ${orderId} status updated to ${status} by ${user?.email}`);
-
       alert(`✅ Order status updated to ${status} successfully!`);
-
     } catch (error: any) {
       console.error("Error updating order status:", error);
       if (error.code === 'permission-denied') {
@@ -1526,23 +1475,32 @@ export default function AdminListingsPage() {
       }
       throw error;
     }
-
     setIsProcessing(false);
   };
 
-  // 🎨 Helper functions
+  // 🎨 Helper functions - GÜNCELLENDİ
   const getStatusBadge = (status: string) => {
     const styles = {
       pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
       approved: "bg-green-100 text-green-800 border-green-200",
+      shipped_to_seller: "bg-blue-100 text-blue-800 border-blue-200",
+      payment_sent: "bg-purple-100 text-purple-800 border-purple-200",
       rejected: "bg-red-100 text-red-800 border-red-200",
-      sold: "bg-purple-100 text-purple-800 border-purple-200"
+      sold: "bg-indigo-100 text-indigo-800 border-indigo-200"
     };
-    const icons = { pending: "⏳", approved: "✅", rejected: "❌", sold: "💰" };
-
+    
+    const icons = { 
+      pending: "⏳", 
+      approved: "✅", 
+      shipped_to_seller: "📦", 
+      payment_sent: "💳", 
+      rejected: "❌", 
+      sold: "💰" 
+    };
+    
     return (
       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${styles[status as keyof typeof styles]}`}>
-        {icons[status as keyof typeof icons]} <span className="ml-1 capitalize">{status}</span>
+        {icons[status as keyof typeof icons]} <span className="ml-1 capitalize">{status.replace('_', ' ')}</span>
       </span>
     );
   };
@@ -1598,14 +1556,14 @@ export default function AdminListingsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Rate limit warning - BURAYA */}
+      {/* Rate limit warning */}
       <RateLimitWarning
         isBlocked={adminRateLimit.isBlocked}
         remainingTime={adminRateLimit.remainingTime}
         attempts={adminRateLimit.attempts}
         maxAttempts={15}
       />
-
+      
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {/* 🏠 Navigation Header */}
         <div className="mb-6 flex justify-between items-center">
@@ -1617,7 +1575,7 @@ export default function AdminListingsPage() {
               ← Back to Home
             </Link>
           </div>
-
+          
           {/* Admin Info & Notifications */}
           <div className="flex items-center space-x-4">
             <MessageNotification />
@@ -1627,13 +1585,13 @@ export default function AdminListingsPage() {
             </div>
           </div>
         </div>
-
+        
         {/* 📊 Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
           <p className="text-gray-600">Manage listings, orders and sellers in real-time</p>
         </div>
-
+        
         {/* Tab Navigation */}
         <div className="mb-6">
           <div className="border-b border-gray-200">
@@ -1668,7 +1626,7 @@ export default function AdminListingsPage() {
             </nav>
           </div>
         </div>
-
+        
         {activeTab === "listings" && (
           <>
             {/* Quick Actions Bar */}
@@ -1689,7 +1647,7 @@ export default function AdminListingsPage() {
                 </div>
               </div>
             </div>
-
+            
             {/* 🔍 Search and Filter Controls */}
             <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1716,25 +1674,27 @@ export default function AdminListingsPage() {
                     <option value="all">All Status ({listings.length})</option>
                     <option value="pending">⏳ Pending ({pendingListings.length})</option>
                     <option value="approved">✅ Approved ({approvedListings.length})</option>
+                    <option value="shipped_to_seller">📦 Shipped to Seller ({shippedToListings.length})</option>
+                    <option value="payment_sent">💳 Payment Sent ({paymentSentListings.length})</option>
                     <option value="rejected">❌ Rejected ({rejectedListings.length})</option>
-                    <option value="sold">💰 Sold ({listings.filter(l => l.status === "sold").length})</option>
+                    <option value="sold">💰 Sold ({soldListings.length})</option>
                   </select>
                 </div>
               </div>
             </div>
-
+            
             {/* 📈 Statistics Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
               <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-yellow-400">
                 <div className="flex items-center">
                   <div className="text-3xl mr-4">⏳</div>
                   <div>
                     <p className="text-2xl font-bold text-yellow-600">{pendingListings.length}</p>
-                    <p className="text-sm text-gray-600">Pending Review</p>
+                    <p className="text-sm text-gray-600">Pending</p>
                   </div>
                 </div>
               </div>
-
+              
               <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-400">
                 <div className="flex items-center">
                   <div className="text-3xl mr-4">✅</div>
@@ -1744,7 +1704,27 @@ export default function AdminListingsPage() {
                   </div>
                 </div>
               </div>
-
+              
+              <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-400">
+                <div className="flex items-center">
+                  <div className="text-3xl mr-4">📦</div>
+                  <div>
+                    <p className="text-2xl font-bold text-blue-600">{shippedToListings.length}</p>
+                    <p className="text-sm text-gray-600">Shipped to Seller</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-purple-400">
+                <div className="flex items-center">
+                  <div className="text-3xl mr-4">💳</div>
+                  <div>
+                    <p className="text-2xl font-bold text-purple-600">{paymentSentListings.length}</p>
+                    <p className="text-sm text-gray-600">Payment Sent</p>
+                  </div>
+                </div>
+              </div>
+              
               <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-red-400">
                 <div className="flex items-center">
                   <div className="text-3xl mr-4">❌</div>
@@ -1754,28 +1734,18 @@ export default function AdminListingsPage() {
                   </div>
                 </div>
               </div>
-
-              <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-purple-400">
+              
+              <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-indigo-400">
                 <div className="flex items-center">
                   <div className="text-3xl mr-4">💰</div>
                   <div>
-                    <p className="text-2xl font-bold text-purple-600">{listings.filter(l => l.status === "sold").length}</p>
+                    <p className="text-2xl font-bold text-indigo-600">{soldListings.length}</p>
                     <p className="text-sm text-gray-600">Sold</p>
                   </div>
                 </div>
               </div>
-
-              <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-400">
-                <div className="flex items-center">
-                  <div className="text-3xl mr-4">📦</div>
-                  <div>
-                    <p className="text-2xl font-bold text-blue-600">{listings.length}</p>
-                    <p className="text-sm text-gray-600">Total Listings</p>
-                  </div>
-                </div>
-              </div>
             </div>
-
+            
             {/* 🆕 Toplu İşlem Butonları */}
             {selectedListings.size > 0 && (
               <div className="bg-blue-50 rounded-lg shadow-sm p-4 mb-6 flex justify-between items-center">
@@ -1803,7 +1773,7 @@ export default function AdminListingsPage() {
                 </div>
               </div>
             )}
-
+            
             {/* 📋 Listings Table */}
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
@@ -1814,7 +1784,7 @@ export default function AdminListingsPage() {
                   Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredListings.length)} of {filteredListings.length}
                 </div>
               </div>
-
+              
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
@@ -1851,7 +1821,6 @@ export default function AdminListingsPage() {
                       </th>
                     </tr>
                   </thead>
-
                   <tbody className="bg-white divide-y divide-gray-200">
                     {currentItems.map((listing) => (
                       <tr key={listing.id} className="hover:bg-gray-50 transition-colors">
@@ -1864,7 +1833,6 @@ export default function AdminListingsPage() {
                             className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
                           />
                         </td>
-
                         <td className="px-6 py-4">
                           <div>
                             <div className="text-sm font-medium text-gray-900 max-w-xs truncate">
@@ -1881,7 +1849,6 @@ export default function AdminListingsPage() {
                             )}
                           </div>
                         </td>
-
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-900">
                             {listing.vendorName}
@@ -1890,7 +1857,6 @@ export default function AdminListingsPage() {
                             {listing.vendorId}
                           </div>
                         </td>
-
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-900">
                             📦 {listing.totalItems} items
@@ -1899,7 +1865,6 @@ export default function AdminListingsPage() {
                             💰 ${listing.totalValue.toFixed(2)}
                           </div>
                         </td>
-
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-900">
                             🚚 Shipping Info
@@ -1908,15 +1873,12 @@ export default function AdminListingsPage() {
                             {listing.shippingInfo ? "Provided" : "Not provided"}
                           </div>
                         </td>
-
                         <td className="px-6 py-4">
                           {getStatusBadge(listing.status)}
                         </td>
-
                         <td className="px-6 py-4 text-sm text-gray-500">
                           {listing.submittedDate}
                         </td>
-
                         <td className="px-6 py-4">
                           <div className="flex space-x-2">
                             <button
@@ -1939,7 +1901,7 @@ export default function AdminListingsPage() {
                   </tbody>
                 </table>
               </div>
-
+              
               {/* Empty state */}
               {filteredListings.length === 0 && (
                 <div className="text-center py-12">
@@ -1953,7 +1915,7 @@ export default function AdminListingsPage() {
                   </p>
                 </div>
               )}
-
+              
               {/* Pagination */}
               {filteredListings.length > itemsPerPage && (
                 <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
@@ -2017,7 +1979,7 @@ export default function AdminListingsPage() {
                 </div>
               )}
             </div>
-
+            
             {/* 🆕 Toplu Silme Onay Modalı */}
             {showBulkDeleteConfirm && (
               <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
@@ -2031,7 +1993,7 @@ export default function AdminListingsPage() {
                       ✕
                     </button>
                   </div>
-
+                  
                   <div className="mb-4">
                     <p className="text-sm text-gray-600 mb-2">
                       Are you sure you want to delete <strong>{selectedListings.size}</strong> listing{selectedListings.size !== 1 ? 's' : ''}?
@@ -2042,7 +2004,7 @@ export default function AdminListingsPage() {
                       </p>
                     </div>
                   </div>
-
+                  
                   <div className="flex justify-end space-x-3">
                     <button
                       onClick={() => setShowBulkDeleteConfirm(false)}
@@ -2063,7 +2025,7 @@ export default function AdminListingsPage() {
             )}
           </>
         )}
-
+        
         {activeTab === "orders" && (
           <>
             {/* Quick Actions Bar for Orders */}
@@ -2084,7 +2046,7 @@ export default function AdminListingsPage() {
                 </div>
               </div>
             </div>
-
+            
             {/* 🔍 Search and Filter Controls for Orders */}
             <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2119,7 +2081,7 @@ export default function AdminListingsPage() {
                 </div>
               </div>
             </div>
-
+            
             {/* 📈 Order Statistics Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
               <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-yellow-400">
@@ -2131,7 +2093,7 @@ export default function AdminListingsPage() {
                   </div>
                 </div>
               </div>
-
+              
               <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-400">
                 <div className="flex items-center">
                   <div className="text-3xl mr-4">✅</div>
@@ -2141,7 +2103,7 @@ export default function AdminListingsPage() {
                   </div>
                 </div>
               </div>
-
+              
               <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-purple-400">
                 <div className="flex items-center">
                   <div className="text-3xl mr-4">🔄</div>
@@ -2151,7 +2113,7 @@ export default function AdminListingsPage() {
                   </div>
                 </div>
               </div>
-
+              
               <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-indigo-400">
                 <div className="flex items-center">
                   <div className="text-3xl mr-4">🚚</div>
@@ -2161,7 +2123,7 @@ export default function AdminListingsPage() {
                   </div>
                 </div>
               </div>
-
+              
               <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-400">
                 <div className="flex items-center">
                   <div className="text-3xl mr-4">✅</div>
@@ -2171,7 +2133,7 @@ export default function AdminListingsPage() {
                   </div>
                 </div>
               </div>
-
+              
               <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-red-400">
                 <div className="flex items-center">
                   <div className="text-3xl mr-4">❌</div>
@@ -2182,7 +2144,7 @@ export default function AdminListingsPage() {
                 </div>
               </div>
             </div>
-
+            
             {/* 📋 Orders Table */}
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
@@ -2193,7 +2155,7 @@ export default function AdminListingsPage() {
                   Showing {indexOfFirstOrder + 1}-{Math.min(indexOfLastOrder, filteredOrders.length)} of {filteredOrders.length}
                 </div>
               </div>
-
+              
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
@@ -2218,7 +2180,6 @@ export default function AdminListingsPage() {
                       </th>
                     </tr>
                   </thead>
-
                   <tbody className="bg-white divide-y divide-gray-200">
                     {currentOrders.map((order) => (
                       <tr key={order.id} className="hover:bg-gray-50 transition-colors">
@@ -2238,7 +2199,6 @@ export default function AdminListingsPage() {
                             )}
                           </div>
                         </td>
-
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-900">
                             {order.customerInfo.fullName || "Guest User"}
@@ -2247,7 +2207,6 @@ export default function AdminListingsPage() {
                             {order.customerInfo.email}
                           </div>
                         </td>
-
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-900">
                             📦 {order.items.length} items
@@ -2256,15 +2215,12 @@ export default function AdminListingsPage() {
                             💰 ${order.totalAmount.toFixed(2)}
                           </div>
                         </td>
-
                         <td className="px-6 py-4">
                           {getOrderStatusBadge(order.status)}
                         </td>
-
                         <td className="px-6 py-4 text-sm text-gray-500">
                           {order.orderDate}
                         </td>
-
                         <td className="px-6 py-4">
                           <button
                             onClick={() => setSelectedOrder(order)}
@@ -2278,7 +2234,7 @@ export default function AdminListingsPage() {
                   </tbody>
                 </table>
               </div>
-
+              
               {/* Empty state */}
               {filteredOrders.length === 0 && (
                 <div className="text-center py-12">
@@ -2292,7 +2248,7 @@ export default function AdminListingsPage() {
                   </p>
                 </div>
               )}
-
+              
               {/* Pagination */}
               {filteredOrders.length > itemsPerPage && (
                 <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
@@ -2358,16 +2314,15 @@ export default function AdminListingsPage() {
             </div>
           </>
         )}
-
+        
         {activeTab === "sellers" && (
           <SellerManagement />
         )}
-
+        
         {/* 🔍 Review Modal for Listings - GÜNCELLENDİ */}
         {selectedListing && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
             <div className="relative mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white max-h-[90vh] overflow-y-auto">
-
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-medium text-gray-900">
                   Review Listing: {selectedListing.title}
@@ -2382,9 +2337,8 @@ export default function AdminListingsPage() {
                   ✕
                 </button>
               </div>
-
+              
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
                 {/* Left column - Listing information */}
                 <div className="space-y-4">
                   <div>
@@ -2408,7 +2362,7 @@ export default function AdminListingsPage() {
                       <p><strong>Current Status:</strong> {getStatusBadge(selectedListing.status)}</p>
                     </div>
                   </div>
-
+                  
                   {/* Description Section */}
                   <div>
                     <h4 className="text-sm font-medium text-gray-900 mb-2">Description</h4>
@@ -2424,7 +2378,7 @@ export default function AdminListingsPage() {
                       )}
                     </div>
                   </div>
-
+                  
                   {/* Shipping Information Section */}
                   <div>
                     <h4 className="text-sm font-medium text-gray-900 mb-2">Shipping Information</h4>
@@ -2439,7 +2393,6 @@ export default function AdminListingsPage() {
                               {selectedListing.shippingInfo.address.country}
                             </p>
                           </div>
-
                           <div>
                             <h5 className="text-sm font-medium text-purple-800 mb-1">Package Dimensions</h5>
                             <p className="text-sm text-gray-700">
@@ -2449,7 +2402,6 @@ export default function AdminListingsPage() {
                               Weight: {selectedListing.shippingInfo.packageDimensions.weight} lb
                             </p>
                           </div>
-
                           {/* PayPal Account bilgisi eklendi */}
                           {selectedListing.shippingInfo.paypalAccount && (
                             <div>
@@ -2467,7 +2419,7 @@ export default function AdminListingsPage() {
                       )}
                     </div>
                   </div>
-
+                  
                   {/* Bundle items preview */}
                   {selectedListing.bundleItems && selectedListing.bundleItems.length > 0 && (
                     <div>
@@ -2493,7 +2445,7 @@ export default function AdminListingsPage() {
                     </div>
                   )}
                 </div>
-
+                
                 {/* Right column - Admin actions */}
                 <div className="space-y-4">
                   {/* For pending listings */}
@@ -2509,7 +2461,7 @@ export default function AdminListingsPage() {
                             </span>
                           )}
                         </div>
-
+                        
                         {/* Shipping Label Upload */}
                         <div className="mb-4">
                           <h5 className="text-sm font-medium text-gray-700 mb-2">Shipping Label</h5>
@@ -2571,7 +2523,6 @@ export default function AdminListingsPage() {
                                         if (e.target.files && e.target.files[0]) {
                                           const file = e.target.files[0];
                                           setShippingLabel(file);
-
                                           if (file.type.startsWith('image/')) {
                                             const reader = new FileReader();
                                             reader.onload = (e) => {
@@ -2591,7 +2542,7 @@ export default function AdminListingsPage() {
                             )}
                           </div>
                         </div>
-
+                        
                         {/* Tracking Information */}
                         <div className="mb-4">
                           <h5 className="text-sm font-medium text-gray-700 mb-2">Tracking Information</h5>
@@ -2609,7 +2560,6 @@ export default function AdminListingsPage() {
                                 disabled={selectedListing.status === "pending"}
                               />
                             </div>
-
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1">
                                 Carrier
@@ -2628,20 +2578,19 @@ export default function AdminListingsPage() {
                             </div>
                           </div>
                         </div>
-
+                        
                         {/* Error and success messages */}
                         {labelUploadError && (
                           <div className="mb-4 text-red-600 text-sm bg-red-50 p-2 rounded">
                             {labelUploadError}
                           </div>
                         )}
-
                         {labelUploadSuccess && (
                           <div className="mb-4 text-green-600 text-sm bg-green-50 p-2 rounded">
                             {labelUploadSuccess}
                           </div>
                         )}
-
+                        
                         {/* Send button - Disabled until approved */}
                         <button
                           onClick={() => sendShippingLabelAndTracking(selectedListing.id)}
@@ -2651,7 +2600,7 @@ export default function AdminListingsPage() {
                           {isProcessing ? "Sending..." : "📦 Send Label & Tracking"}
                         </button>
                       </div>
-
+                      
                       {/* Admin Notes */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -2665,7 +2614,7 @@ export default function AdminListingsPage() {
                           placeholder="Add any notes about this listing..."
                         />
                       </div>
-
+                      
                       {/* Rejection Reason */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -2679,7 +2628,7 @@ export default function AdminListingsPage() {
                           placeholder="Provide reason for rejection..."
                         />
                       </div>
-
+                      
                       {/* Action Buttons */}
                       <div className="flex space-x-3">
                         <button
@@ -2689,7 +2638,6 @@ export default function AdminListingsPage() {
                         >
                           {isProcessing ? "Processing..." : "✅ Approve Listing"}
                         </button>
-
                         <button
                           onClick={() => rejectListing(selectedListing.id)}
                           disabled={isProcessing || !rejectionReason.trim()}
@@ -2700,10 +2648,72 @@ export default function AdminListingsPage() {
                       </div>
                     </>
                   )}
-
+                  
                   {/* For approved listings without tracking */}
                   {selectedListing.status === "approved" && !selectedListing.trackingNumber && (
                     <>
+                      {/* Ödeme bölümü - GÜNCELLENDİ */}
+                      <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-sm font-medium text-gray-900">Payment to Seller</h4>
+                          <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                            Ready to send
+                          </span>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          <div>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={paymentAmount}
+                              onChange={(e) => setPaymentAmount(e.target.value)}
+                              className="w-full p-2 border border-gray-300 rounded text-sm"
+                              placeholder="Payment amount ($)"
+                            />
+                          </div>
+                          <div>
+                            <input
+                              type="text"
+                              value={paymentTransactionId}
+                              onChange={(e) => setPaymentTransactionId(e.target.value)}
+                              className="w-full p-2 border border-gray-300 rounded text-sm"
+                              placeholder="PayPal Transaction ID"
+                            />
+                          </div>
+                          <div>
+                            <textarea
+                              value={paymentNotes}
+                              onChange={(e) => setPaymentNotes(e.target.value)}
+                              rows={2}
+                              className="w-full p-2 border border-gray-300 rounded text-sm"
+                              placeholder="Notes (optional)"
+                            />
+                          </div>
+                          
+                          {/* Error and success messages */}
+                          {paymentError && (
+                            <div className="text-red-600 text-sm bg-red-50 p-2 rounded">
+                              {paymentError}
+                            </div>
+                          )}
+                          {paymentSuccess && (
+                            <div className="text-green-600 text-sm bg-green-50 p-2 rounded">
+                              {paymentSuccess}
+                            </div>
+                          )}
+                          
+                          <button
+                            onClick={() => recordPaymentSent(selectedListing.id)}
+                            disabled={paymentLoading || !paymentAmount.trim() || !paymentTransactionId.trim()}
+                            className="w-full bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium py-2 px-4 rounded transition-colors disabled:opacity-50"
+                          >
+                            {paymentLoading ? "Recording..." : "💳 Record Payment"}
+                          </button>
+                        </div>
+                      </div>
+                      
                       <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                         <div className="flex items-center justify-between mb-3">
                           <h4 className="text-sm font-medium text-gray-900">Shipping Label & Tracking</h4>
@@ -2711,7 +2721,7 @@ export default function AdminListingsPage() {
                             Ready to send
                           </span>
                         </div>
-
+                        
                         {/* Shipping Label Upload */}
                         <div className="mb-4">
                           <h5 className="text-sm font-medium text-gray-700 mb-2">Shipping Label</h5>
@@ -2772,7 +2782,6 @@ export default function AdminListingsPage() {
                                         if (e.target.files && e.target.files[0]) {
                                           const file = e.target.files[0];
                                           setShippingLabel(file);
-
                                           if (file.type.startsWith('image/')) {
                                             const reader = new FileReader();
                                             reader.onload = (e) => {
@@ -2792,7 +2801,7 @@ export default function AdminListingsPage() {
                             )}
                           </div>
                         </div>
-
+                        
                         {/* Tracking Information */}
                         <div className="mb-4">
                           <h5 className="text-sm font-medium text-gray-700 mb-2">Tracking Information</h5>
@@ -2809,7 +2818,6 @@ export default function AdminListingsPage() {
                                 placeholder="Enter tracking number"
                               />
                             </div>
-
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1">
                                 Carrier
@@ -2827,20 +2835,19 @@ export default function AdminListingsPage() {
                             </div>
                           </div>
                         </div>
-
+                        
                         {/* Error and success messages */}
                         {labelUploadError && (
                           <div className="mb-4 text-red-600 text-sm bg-red-50 p-2 rounded">
                             {labelUploadError}
                           </div>
                         )}
-
                         {labelUploadSuccess && (
                           <div className="mb-4 text-green-600 text-sm bg-green-50 p-2 rounded">
                             {labelUploadSuccess}
                           </div>
                         )}
-
+                        
                         {/* Send button */}
                         <button
                           onClick={() => sendShippingLabelAndTracking(selectedListing.id)}
@@ -2852,9 +2859,9 @@ export default function AdminListingsPage() {
                       </div>
                     </>
                   )}
-
-                  {/* For approved and sold listings with tracking */}
-                  {(selectedListing.status === "approved" || selectedListing.status === "sold") && selectedListing.trackingNumber && (
+                  
+                  {/* For shipped_to_seller listings without payment */}
+                  {selectedListing.status === "shipped_to_seller" && !selectedListing.paymentSent && (
                     <>
                       {/* Shipping Label Display */}
                       <div>
@@ -2864,7 +2871,6 @@ export default function AdminListingsPage() {
                             <span className="text-sm font-medium text-green-800">Uploaded Label</span>
                             <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Sent</span>
                           </div>
-
                           {selectedListing.shippingLabelUrl && (
                             <div className="space-y-3">
                               <div className="flex items-center justify-center">
@@ -2883,7 +2889,6 @@ export default function AdminListingsPage() {
                                   />
                                 )}
                               </div>
-
                               <div className="text-center">
                                 <a
                                   href={selectedListing.shippingLabelUrl}
@@ -2898,7 +2903,7 @@ export default function AdminListingsPage() {
                           )}
                         </div>
                       </div>
-
+                      
                       {/* Tracking Information Display */}
                       <div>
                         <h4 className="text-sm font-medium text-gray-900 mb-2">Tracking Information</h4>
@@ -2915,7 +2920,7 @@ export default function AdminListingsPage() {
                           </div>
                         </div>
                       </div>
-
+                      
                       {/* Status Information */}
                       <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                         <div className="flex items-center">
@@ -2932,92 +2937,184 @@ export default function AdminListingsPage() {
                           </div>
                         </div>
                       </div>
-                    </>
-                  )}
-                  {/* Payment Section - For approved listings with tracking */}
-                  {/* Payment Section - For approved listings with tracking */}
-                  <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-sm font-medium text-gray-900">Payment to Seller</h4>
-                      {selectedListing.paymentSent && (
-                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                          Payment Sent
-                        </span>
-                      )}
-                    </div>
-
-                    {selectedListing.paymentSent ? (
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium text-yellow-800">Amount Sent:</span>
-                          <span className="text-sm font-mono">${selectedListing.paymentAmount?.toFixed(2) || "0.00"}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium text-yellow-800">PayPal Email:</span>
-                          <span className="text-sm font-mono">{selectedListing.shippingInfo?.paypalAccount || selectedListing.vendorEmail || "N/A"}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium text-yellow-800">Transaction ID:</span>
-                          <span className="text-sm font-mono">{selectedListing.paymentTransactionId || "N/A"}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium text-yellow-800">Sent At:</span>
-                          <span className="text-sm">
-                            {selectedListing.paymentSentAt?.toDate?.().toLocaleDateString() || "N/A"}
+                      
+                      {/* Ödeme bölümü - GÜNCELLENDİ */}
+                      <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-sm font-medium text-gray-900">Payment to Seller</h4>
+                          <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                            Ready to send
                           </span>
                         </div>
-                        {selectedListing.paymentNotes && (
-                          <div className="pt-2 border-t border-yellow-200">
-                            <span className="text-sm font-medium text-yellow-800">Notes:</span>
-                            <p className="text-sm text-gray-700 mt-1">{selectedListing.paymentNotes}</p>
+                        
+                        <div className="space-y-3">
+                          <div>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={paymentAmount}
+                              onChange={(e) => setPaymentAmount(e.target.value)}
+                              className="w-full p-2 border border-gray-300 rounded text-sm"
+                              placeholder="Payment amount ($)"
+                            />
                           </div>
-                        )}
+                          <div>
+                            <input
+                              type="text"
+                              value={paymentTransactionId}
+                              onChange={(e) => setPaymentTransactionId(e.target.value)}
+                              className="w-full p-2 border border-gray-300 rounded text-sm"
+                              placeholder="PayPal Transaction ID"
+                            />
+                          </div>
+                          <div>
+                            <textarea
+                              value={paymentNotes}
+                              onChange={(e) => setPaymentNotes(e.target.value)}
+                              rows={2}
+                              className="w-full p-2 border border-gray-300 rounded text-sm"
+                              placeholder="Notes (optional)"
+                            />
+                          </div>
+                          
+                          {/* Error and success messages */}
+                          {paymentError && (
+                            <div className="text-red-600 text-sm bg-red-50 p-2 rounded">
+                              {paymentError}
+                            </div>
+                          )}
+                          {paymentSuccess && (
+                            <div className="text-green-600 text-sm bg-green-50 p-2 rounded">
+                              {paymentSuccess}
+                            </div>
+                          )}
+                          
+                          <button
+                            onClick={() => recordPaymentSent(selectedListing.id)}
+                            disabled={paymentLoading || !paymentAmount.trim() || !paymentTransactionId.trim()}
+                            className="w-full bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium py-2 px-4 rounded transition-colors disabled:opacity-50"
+                          >
+                            {paymentLoading ? "Recording..." : "💳 Record Payment"}
+                          </button>
+                        </div>
                       </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <div>
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={paymentAmount}
-                            onChange={(e) => setPaymentAmount(e.target.value)}
-                            className="w-full p-2 border border-gray-300 rounded text-sm"
-                            placeholder="Payment amount ($)"
-                          />
+                    </>
+                  )}
+                  
+                  {/* For payment_sent listings */}
+                  {selectedListing.status === "payment_sent" && (
+                    <>
+                      {/* Shipping Label Display */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">Shipping Label</h4>
+                        <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-medium text-green-800">Uploaded Label</span>
+                            <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Sent</span>
+                          </div>
+                          {selectedListing.shippingLabelUrl && (
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-center">
+                                {selectedListing.shippingLabelType?.includes('pdf') ? (
+                                  <div className="text-center">
+                                    <div className="text-4xl mb-2">📄</div>
+                                    <div className="text-sm font-medium text-gray-900">
+                                      {selectedListing.shippingLabelName || "Shipping Label.pdf"}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <img
+                                    src={selectedListing.shippingLabelUrl}
+                                    alt="Shipping label"
+                                    className="max-h-40 object-contain"
+                                  />
+                                )}
+                              </div>
+                              <div className="text-center">
+                                <a
+                                  href={selectedListing.shippingLabelUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors"
+                                >
+                                  View Full Label
+                                </a>
+                              </div>
+                            </div>
+                          )}
                         </div>
-
-                        <div>
-                          <input
-                            type="text"
-                            value={paymentTransactionId}
-                            onChange={(e) => setPaymentTransactionId(e.target.value)}
-                            className="w-full p-2 border border-gray-300 rounded text-sm"
-                            placeholder="PayPal Transaction ID"
-                          />
-                        </div>
-
-                        <div>
-                          <textarea
-                            value={paymentNotes}
-                            onChange={(e) => setPaymentNotes(e.target.value)}
-                            rows={2}
-                            className="w-full p-2 border border-gray-300 rounded text-sm"
-                            placeholder="Notes (optional)"
-                          />
-                        </div>
-
-                        <button
-                          onClick={() => recordPaymentSent(selectedListing.id)}
-                          disabled={paymentLoading || !paymentAmount.trim() || !paymentTransactionId.trim()}
-                          className="w-full bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium py-2 px-4 rounded transition-colors disabled:opacity-50"
-                        >
-                          {paymentLoading ? "Recording..." : "Record Payment"}
-                        </button>
                       </div>
-                    )}
-                  </div>
-
+                      
+                      {/* Tracking Information Display */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">Tracking Information</h4>
+                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-blue-800">Tracking Number:</span>
+                              <span className="text-sm font-mono">{selectedListing.trackingNumber}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-blue-800">Carrier:</span>
+                              <span className="text-sm">{selectedListing.carrier?.toUpperCase()}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Payment Information Display */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">Payment Information</h4>
+                        <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-yellow-800">Amount Sent:</span>
+                              <span className="text-sm font-mono">${selectedListing.paymentAmount?.toFixed(2) || "0.00"}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-yellow-800">PayPal Email:</span>
+                              <span className="text-sm font-mono">{selectedListing.shippingInfo?.paypalAccount || selectedListing.vendorEmail || "N/A"}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-yellow-800">Transaction ID:</span>
+                              <span className="text-sm font-mono">{selectedListing.paymentTransactionId || "N/A"}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-yellow-800">Sent At:</span>
+                              <span className="text-sm">
+                                {selectedListing.paymentSentAt?.toDate?.().toLocaleDateString() || "N/A"}
+                              </span>
+                            </div>
+                            {selectedListing.paymentNotes && (
+                              <div className="pt-2 border-t border-yellow-200">
+                                <span className="text-sm font-medium text-yellow-800">Notes:</span>
+                                <p className="text-sm text-gray-700 mt-1">{selectedListing.paymentNotes}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Status Information */}
+                      <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0">
+                            <svg className="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <div className="ml-3">
+                            <h3 className="text-sm font-medium text-green-800">Payment Sent</h3>
+                            <div className="mt-2 text-sm text-green-700">
+                              <p>The payment has been sent to the seller and the process is complete.</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  
                   {/* Delete button for all listings */}
                   {!showDeleteConfirm ? (
                     <button
@@ -3051,7 +3148,7 @@ export default function AdminListingsPage() {
                       </div>
                     </div>
                   )}
-
+                  
                   {/* Show rejection info if rejected */}
                   {selectedListing.status === "rejected" && (
                     <div className="bg-red-50 p-4 rounded-lg">
@@ -3077,7 +3174,7 @@ export default function AdminListingsPage() {
                   )}
                 </div>
               </div>
-
+              
               {/* Modal footer with additional actions */}
               <div className="mt-6 pt-4 border-t border-gray-200">
                 <div className="flex justify-between items-center">
@@ -3095,7 +3192,6 @@ export default function AdminListingsPage() {
                       setTrackingNumber("");
                       setCarrier("usps");
                       // Payment state'lerini temizle
-
                       setPaymentError("");
                       setPaymentSuccess("");
                     }}
@@ -3108,7 +3204,7 @@ export default function AdminListingsPage() {
             </div>
           </div>
         )}
-
+        
         {/* Order Detail Modal */}
         {selectedOrder && (
           <OrderDetailModal
@@ -3117,7 +3213,7 @@ export default function AdminListingsPage() {
             onUpdateStatus={updateOrderStatus}
           />
         )}
-
+        
         {/* 📊 Real-time connection indicator */}
         <div className="fixed bottom-4 right-4 z-40">
           <div className="bg-green-100 border border-green-200 rounded-lg px-3 py-2 shadow-sm">
