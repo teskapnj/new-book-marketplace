@@ -1,7 +1,7 @@
 // app/browse/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -41,7 +41,8 @@ function ListIcon({ size = 24, className = "" }) {
   );
 }
 
-export default function BrowsePage() {
+// useSearchParams kullanan ana component
+function BrowseContent() {
   const searchParams = useSearchParams();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -350,7 +351,6 @@ export default function BrowsePage() {
                           onChange={() => setSelectedCategory(category.id)}
                           className="mr-2"
                         />
-                        // GÜVENLİ
                         <span>{DOMPurify.sanitize(category.name)}</span>
                       </div>
                       <span className="text-gray-500 text-sm">({category.count})</span>
@@ -367,7 +367,6 @@ export default function BrowsePage() {
                     <span>${priceRange[0]}</span>
                     <span>${priceRange[1]}</span>
                   </div>
-                  // GÜVENLİ
                   <input
                     type="range"
                     min="0"
@@ -387,7 +386,6 @@ export default function BrowsePage() {
               {/* Sort By */}
               <div>
                 <h3 className="font-medium mb-3">Sort By</h3>
-                // GÜVENLİ
                 <select
                   value={sortBy}
                   onChange={(e) => {
@@ -497,5 +495,21 @@ export default function BrowsePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Ana component - Suspense ile sarılmış
+export default function BrowsePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <BrowseContent />
+    </Suspense>
   );
 }
