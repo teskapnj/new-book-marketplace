@@ -103,16 +103,16 @@ const isAdminUser = async (email: string, uid: string): Promise<boolean> => {
 
     const userData = userDoc.data();
     const userRole = userData.role;
-    
+
     console.log("Checking admin role for user:", email);
     console.log("User role from Firestore:", userRole);
-    
+
     // Sadece Firestore'daki role bilgisine bak
     if (userRole === "admin") {
       console.log("Admin role confirmed");
       return true;
     }
-    
+
     console.log("Not an admin user");
     return false;
 
@@ -609,13 +609,14 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+          
 
           {/* Social Login Component */}
-          {/* <SocialLogin 
+           <SocialLogin
             isLogin={true}
             onSuccess={handleSocialLoginSuccess}
             onError={handleSocialLoginError}
-          /> */}
+          />
         </div>
 
         {/* Sign Up Link */}
@@ -628,7 +629,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <div className="mt-8 text-center text-xs text-gray-500">
-          <p>© 2024 SecondLife Media. All rights reserved.</p>
+          <p>© 2024 SellBook Media. All rights reserved.</p>
           <div className="mt-2 space-x-4">
             <Link href="/terms" className="hover:text-gray-700">Terms</Link>
             <Link href="/privacy" className="hover:text-gray-700">Privacy</Link>

@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
         <div class="header">
           <h1>📦 New Seller Submission</h1>
           <p>A seller has submitted items for review</p>
+           <p style="margin: 0; font-size: 14px; opacity: 0.9;">SellBook Media Admin</p>
         </div>
         
         <div class="content">
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
           </div>
           ${data.shippingInfo ? `
           <div class="card">
-            <h3 style="margin-top: 0; color: #374151;">🚚 Shpping/Pickup Address</h3>
+            <h3 style="margin-top: 0; color: #374151;">🚚 Shipping/Pickup Address</h3>
             <div class="address">
               ${data.shippingInfo.firstName} ${data.shippingInfo.lastName}<br>
               ${data.shippingInfo.address.street}<br>
@@ -106,9 +107,9 @@ export async function POST(request: NextRequest) {
           </div>
         </div>
         <div class="footer">
-          <p><strong>Seller Submission Notification</strong></p>
-          <p>Submission: #${data.submissionId.substring(0, 8)} | ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })}</p>
-        </div>
+  <p><strong>SellBook Media - Seller Submission Notification</strong></p>
+  <p>Submission: #${data.submissionId.substring(0, 8)} | ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })}</p>
+</div>
       </div>
     </body>
     </html>

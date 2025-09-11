@@ -142,10 +142,10 @@ async function sendOrderConfirmationEmail({
         </div>
         
         <div class="footer">
-          <p><strong>SecondLife Media</strong></p>
-          <p>Order: #${orderNumber} | ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })}</p>
-          <p>Questions? Contact our support team</p>
-        </div>
+  <p><strong>SellBook Media</strong></p>
+  <p>Order: #${orderNumber} | ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })}</p>
+  <p>Questions? Contact our support team</p>
+</div>
       </div>
     </body>
     </html>
@@ -171,7 +171,7 @@ ${safeShippingAddress.addressLine2 ? `${safeShippingAddress.addressLine2}\n` : '
 ${safeShippingAddress.city}, ${safeShippingAddress.state} ${safeShippingAddress.zipCode}
 ${safeShippingAddress.country}
 If you have any questions about your order, please contact our support team.
-Thank you for shopping with SecondLife Media!`
+Thank you for shopping with SellBook Media!`
     });
     
     console.log(`Order confirmation email sent to ${customerEmail} for order #${orderNumber}`);

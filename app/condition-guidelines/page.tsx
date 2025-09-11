@@ -1,12 +1,14 @@
 'use client';
 
+import Link from "next/link";
+
 export default function ConditionGuidelines() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         {/* Back Button */}
         <div className="mb-8">
-          <button 
+          <button
             onClick={() => window.history.back()}
             className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
@@ -23,7 +25,7 @@ export default function ConditionGuidelines() {
             Product Condition Guidelines
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            We only accept items in <strong>very good condition</strong>. 
+            We only accept items in <strong>very good condition</strong>.
             Please review these simple criteria carefully before sending your items.
           </p>
         </div>
@@ -31,7 +33,7 @@ export default function ConditionGuidelines() {
         {/* Main Guidelines */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-12">
           <div className="p-8">
-            
+
             {/* Quality Standard */}
             <div className="bg-blue-50 border-l-4 border-blue-400 p-6 mb-8">
               <div className="flex">
@@ -53,7 +55,7 @@ export default function ConditionGuidelines() {
 
             {/* Unified Guidelines */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-              
+
               {/* What We Accept */}
               <div className="bg-green-50 p-6 rounded-xl border border-green-200">
                 <h3 className="text-xl font-bold text-green-800 mb-4 flex items-center">
@@ -144,7 +146,7 @@ export default function ConditionGuidelines() {
                     Important: No Writing or Markings
                   </h4>
                   <p className="text-yellow-700">
-                    We do not accept any items with writing, highlighting, underlining, marker stains, or any kind of markings. 
+                    We do not accept any items with writing, highlighting, underlining, marker stains, or any kind of markings.
                     This is strictly enforced for all product categories.
                   </p>
                 </div>
@@ -205,7 +207,7 @@ export default function ConditionGuidelines() {
                     Remember: No Returns!
                   </h4>
                   <p className="text-red-700">
-                    Items that don't meet our very good condition standard will be recycled and not returned to you. 
+                    Items that don't meet our very good condition standard will be recycled and not returned to you.
                     Please check your items carefully before sending.
                   </p>
                 </div>
@@ -218,12 +220,14 @@ export default function ConditionGuidelines() {
         <div className="text-center bg-white rounded-xl shadow-lg p-8">
           <h3 className="text-xl font-semibold text-gray-800 mb-4">Questions About Item Condition?</h3>
           <p className="text-gray-600 mb-6">
-            If you're unsure whether your items meet our very good condition standard, 
+            If you're unsure whether your items meet our very good condition standard,
             please contact us before sending them.
           </p>
-          <button className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-            Contact Support
-          </button>
+          <Link href="/contact">
+            <button className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+              Contact Support
+            </button>
+          </Link>
         </div>
       </div>
     </div>

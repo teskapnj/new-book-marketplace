@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     const mailOptions = {
       from: process.env.EMAIL_USER, // Namecheap e-posta adresiniz
       to: sellerEmail,
-      subject: 'Your Items Submitted Successfully - SecondLife Media',
+      subject: 'Your Items Submitted Successfully - SellBook Media',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #2563eb;">Thank you for submitting your items!</h2>
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
           
           <p>If you have any questions, please contact our support team.</p>
           
-          <p>Best regards,<br>SecondLife Media Team</p>
+          <p>Best regards,<br>SellBokk Media Team</p>
         </div>
       `
     };

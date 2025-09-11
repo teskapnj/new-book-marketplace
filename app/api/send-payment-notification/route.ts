@@ -4,16 +4,16 @@ import nodemailer from 'nodemailer';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { 
-      email, 
-      listingTitle, 
-      paymentAmount, 
-      transactionId, 
-      listingId, 
-      sellerName, 
-      notes 
+    const {
+      email,
+      listingTitle,
+      paymentAmount,
+      transactionId,
+      listingId,
+      sellerName,
+      notes
     } = body;
-    
+
     // Nodemailer transporter setup for Namecheap
     const transporter = nodemailer.createTransport({
       host: 'mail.privateemail.com', // Namecheap Private Email SMTP sunucusu
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
         pass: process.env.EMAIL_PASS  // Namecheap e-posta şifreniz
       }
     });
-    
+
     const emailHTML = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 20px;">
         <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
@@ -32,8 +32,7 @@ export async function POST(request: NextRequest) {
           <!-- Header -->
           <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 30px; text-align: center;">
             <h1 style="margin: 0; font-size: 24px;">Payment Sent!</h1>
-            <p style="margin: 10px 0 0 0; opacity: 0.9;">Your BookHub payment has been processed</p>
-          </div>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Your SellBook Media payment has been processed</p>          </div>
           
           <!-- Content -->
           <div style="padding: 30px;">
@@ -88,21 +87,21 @@ export async function POST(request: NextRequest) {
             </div>
             
             <p style="color: #374151; font-size: 16px; line-height: 1.6; margin-top: 25px;">
-              Thank you for selling with BookHub! We appreciate your business and look forward to working with you again.
+              Thank you for selling with SellBook Media! We appreciate your business and look forward to working with you again.
             </p>
           </div>
           
           <!-- Footer -->
           <div style="background: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
             <p style="margin: 0; color: #6b7280; font-size: 12px;">
-              This email was sent from BookHub Admin Panel<br>
-              © 2025 BookHub. All rights reserved.
+                This email was sent from SellBook Media Admin Panel<br>
+  © 2025 SellBook Media. All rights reserved.
             </p>
           </div>
         </div>
       </div>
     `;
-    
+
     // Send email
     const mailOptions = {
       from: process.env.EMAIL_USER, // Namecheap e-posta adresiniz
@@ -110,19 +109,19 @@ export async function POST(request: NextRequest) {
       subject: `Payment Sent - $${paymentAmount} for "${listingTitle}"`,
       html: emailHTML
     };
-    
+
     await transporter.sendMail(mailOptions);
     console.log(`Payment notification email sent to: ${email}`);
-    
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Payment notification email sent successfully' 
+
+    return NextResponse.json({
+      success: true,
+      message: 'Payment notification email sent successfully'
     });
   } catch (error: any) {
     console.error('Error sending payment notification:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: 'Failed to send payment notification: ' + error.message 
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to send payment notification: ' + error.message
     }, { status: 500 });
   }
 }

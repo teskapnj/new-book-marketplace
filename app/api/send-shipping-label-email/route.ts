@@ -16,14 +16,14 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
     const { email, listingTitle, shippingLabelUrl, trackingNumber, carrier, listingId } = data;
-    
+
     if (!email || !listingTitle || !shippingLabelUrl || !trackingNumber || !carrier) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Missing required fields' 
+      return NextResponse.json({
+        success: false,
+        error: 'Missing required fields'
       }, { status: 400 });
     }
-    
+
     const emailHtml = `
     <!DOCTYPE html>
     <html>
@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
         <div class="header">
           <h1>✅ Listing Approved</h1>
           <p>Your listing has been approved and is ready to ship</p>
+           <p style="margin: 0; font-size: 14px; opacity: 0.9;">SellBook Media</p>
         </div>
         
         <div class="content">
@@ -108,14 +109,14 @@ export async function POST(request: NextRequest) {
         </div>
         
         <div class="footer">
-          <p><strong>Shipping Label Notification</strong></p>
-          <p>Listing: #${listingId.substring(0, 8)} | ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })}</p>
-        </div>
+  <p><strong>SellBook Media - Shipping Label Notification</strong></p>
+  <p>Listing: #${listingId.substring(0, 8)} | ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })}</p>
+</div>
       </div>
     </body>
     </html>
     `;
-    
+
     await transporter.sendMail({
       from: process.env.EMAIL_USER, // Namecheap e-posta adresiniz
       to: email,
@@ -141,14 +142,14 @@ View your listing: ${process.env.NEXT_PUBLIC_BASE_URL}/listings/${listingId}
       
 Thank you for using our platform!`
     });
-    
+
     console.log(`Email sent to ${email} for listing ${listingId}`);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Email error:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: error.message 
+    return NextResponse.json({
+      success: false,
+      error: error.message
     }, { status: 500 });
   }
 }
