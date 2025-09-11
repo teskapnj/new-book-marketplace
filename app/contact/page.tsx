@@ -59,7 +59,7 @@ const ContactInfo = () => (
         </div>
         <div>
           <h3 className="font-bold text-lg mb-1">Email</h3>
-          <p className="text-gray-700">support@marketplace.com</p>
+          <p className="text-gray-700">support@sellbookmedia.com</p>
           <p className="text-gray-700">We respond within 24 hours</p>
         </div>
       </div>

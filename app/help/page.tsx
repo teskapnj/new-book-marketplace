@@ -130,7 +130,7 @@ export default function HelpCenterPage() {
             {/* Search Bar */}
             <div className="max-w-2xl mx-auto">
               <div className="relative">
-              // GÜVENLİ
+             
                 <input
                   type="text"
                   placeholder="Search for help articles..."
@@ -158,7 +158,7 @@ export default function HelpCenterPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {quickHelp.map((item, index) => (
                 <div key={index} className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-                  // GÜVENLİ
+                  
                   <h3 className="font-semibold text-gray-800 mb-3">{DOMPurify.sanitize(item.question)}</h3>
                   <p className="text-gray-600 text-sm">{DOMPurify.sanitize(item.answer)}</p>
                 </div>
@@ -197,7 +197,7 @@ export default function HelpCenterPage() {
             {/* Search Results */}
             {searchQuery !== '' && (
               <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
-                // GÜVENLİ
+               
                 <h2 className="text-2xl font-bold mb-6">
                   Search Results for "{DOMPurify.sanitize(searchQuery)}"
                 </h2>

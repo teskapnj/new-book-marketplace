@@ -305,7 +305,6 @@ const SellerGuidePage: NextPage = () => {
                       <h4 className="font-medium text-gray-800 mb-2">📦 Packing Instructions</h4>
                       <ul className="text-gray-600 text-sm space-y-1">
                         <li>• Use a sturdy box or padded envelope</li>
-                        <li>• Wrap fragile items (CDs, DVDs) in bubble wrap</li>
                         <li>• Include all items from your submission</li>
                         <li>• No extra packing materials needed inside</li>
                       </ul>
