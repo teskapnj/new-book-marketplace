@@ -9,22 +9,46 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1,
     },
     {
-      url: 'https://www.sellbookmedia.com/sell-books',
+      url: 'https://www.sellbookmedia.com/create-listing',
       lastModified: new Date(),
       changeFrequency: 'weekly',
-      priority: 0.9,
+      priority: 0.8,
     },
     {
-      url: 'https://www.sellbookmedia.com/how-it-works',
+      url: 'https://www.sellbookmedia.com/login',
       lastModified: new Date(),
       changeFrequency: 'monthly',
-      priority: 0.8,
+      priority: 0.5,
+    },
+    {
+      url: 'https://www.sellbookmedia.com/register',
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.5,
     },
     {
       url: 'https://www.sellbookmedia.com/contact',
       lastModified: new Date(),
       changeFrequency: 'yearly',
       priority: 0.5,
+    },
+    {
+      url: 'https://www.sellbookmedia.com/how-to-buy',
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+    {
+      url: 'https://www.sellbookmedia.com/terms',
+      lastModified: new Date(),
+      changeFrequency: 'yearly',
+      priority: 0.3,
+    },
+    {
+      url: 'https://www.sellbookmedia.com/condition-guidelines',
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.6,
     },
   ]
 }
