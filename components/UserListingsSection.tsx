@@ -3,8 +3,7 @@ import { useState, useEffect } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "@/lib/firebase";
 import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
-import { FiPackage, FiList, FiX, FiDollarSign, FiCheck, FiClock, FiTruck, FiSettings, FiEye } from "react-icons/fi";
-import Link from "next/link";
+import { FiPackage, FiList, FiX, FiDollarSign, FiCheck, FiClock, FiTruck } from "react-icons/fi";
 
 interface UserListing {
   id: string;
@@ -80,42 +79,6 @@ export default function UserListingsSection({ isVisible, onClose }: UserListings
       fetchUserListings();
     }
   }, [isVisible, user]);
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "pending": return "bg-yellow-100 text-yellow-800";
-      case "approved": return "bg-green-100 text-green-800";
-      case "shipped_to_seller": return "bg-blue-100 text-blue-800";
-      case "payment_sent": return "bg-purple-100 text-purple-800";
-      case "rejected": return "bg-red-100 text-red-800";
-      case "sold": return "bg-indigo-100 text-indigo-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "pending": return "In Review";
-      case "approved": return "Approved";
-      case "shipped_to_seller": return "Shipped to Seller";
-      case "payment_sent": return "Payment Sent";
-      case "rejected": return "Rejected";
-      case "sold": return "Sold";
-      default: return "Unknown";
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "pending": return <FiClock className="h-4 w-4" />;
-      case "approved": return <FiCheck className="h-4 w-4" />;
-      case "shipped_to_seller": return <FiTruck className="h-4 w-4" />;
-      case "payment_sent": return <FiDollarSign className="h-4 w-4" />;
-      case "rejected": return <FiX className="h-4 w-4" />;
-      case "sold": return <FiPackage className="h-4 w-4" />;
-      default: return <FiClock className="h-4 w-4" />;
-    }
-  };
 
   const getPaymentStatus = (listing: UserListing) => {
     if (listing.paymentSent) {
@@ -209,9 +172,6 @@ export default function UserListingsSection({ isVisible, onClose }: UserListings
                     Listing Details
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Items & Value
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -235,12 +195,6 @@ export default function UserListingsSection({ isVisible, onClose }: UserListings
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{listing.title}</div>
                         <div className="text-sm text-gray-500">ID: {listing.id}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(listing.status)}`}>
-                          {getStatusIcon(listing.status)}
-                          <span className="ml-1">{getStatusText(listing.status)}</span>
-                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{listing.totalItems} items</div>

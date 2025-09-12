@@ -5,9 +5,10 @@ import { WishlistProvider } from '../contexts/WishlistContext'
 import { AuthProvider } from '../contexts/AuthContext'
 import { StoreProvider } from '@/lib/store'
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Analytics } from '@vercel/analytics/react'
 import type { Metadata } from 'next'
 
-// ✅ SEO Metadata ekleyin
+// SEO Metadata
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.sellbookmedia.com'),
   title: {
@@ -52,7 +53,7 @@ export const metadata: Metadata = {
     siteName: 'SellBook Media',
     images: [
       {
-        url: '/og-image.jpg', // Bu dosyayı public klasörüne ekleyin
+        url: '/og-image.jpg',
         width: 1200,
         height: 630,
         alt: 'SellBook Media - Sell Your Media for Cash',
@@ -63,10 +64,10 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'SellBook Media - Sell Your Books for Cash',
     description: 'Turn your books into cash! Free shipping & best prices guaranteed.',
-    images: ['/twitter-image.jpg'], // Bu dosyayı da public klasörüne ekleyin
+    images: ['/twitter-image.jpg'],
   },
   verification: {
-    google: 'your-google-verification-code', // Google Search Console'dan alacaksınız
+    google: 'your-google-verification-code',
   },
   alternates: {
     canonical: 'https://www.sellbookmedia.com',
@@ -92,6 +93,7 @@ export default function RootLayout({
                 {children}
                 <AuthDebug />
                 <SpeedInsights />
+                <Analytics />
               </StoreProvider>
             </CartProvider>
           </WishlistProvider>

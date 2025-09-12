@@ -1296,7 +1296,7 @@ export default function CreateListingPage() {
               <div className="mx-6 mt-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg shadow-sm">
                 <div className="flex items-center">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-3"></div>
-                  <p className="text-sm text-blue-700">Searching for the product on Amazon and checking price...</p>
+                  <p className="text-sm text-blue-700">Evaluating product against our buying criteria...</p>
                 </div>
               </div>
             )}
@@ -1355,8 +1355,9 @@ export default function CreateListingPage() {
                         placeholder="Enter ISBN/UPC or scan barcode"
                         className="flex-1 block w-full px-4 py-3 border-0 focus:ring-0 text-base"
                         disabled={isCheckingAmazon}
-                        onKeyPress={(e) => {
+                        onKeyDown={(e) => {
                           if (e.key === 'Enter' && currentItem.isbn.trim()) {
+                            e.preventDefault(); // Bu satır ÖNEMLİ - form submit'i engeller
                             handleBarcodeScanned(currentItem.isbn);
                           }
                         }}

@@ -258,7 +258,7 @@ async function executeParallelAnalysis(asin: string, username: string, password:
   const apiConfig = {
     auth: { username, password },
     headers: { 'Content-Type': 'application/json' },
-    timeout: 5000  // 6 saniyeden 4 saniyeye düşürüldü
+    timeout: 6000  // 6 saniyeden 4 saniyeye düşürüldü
   };
 
   // HER ZAMAN İKİ API CALL - PRİCİNG + PRODUCT
@@ -405,7 +405,7 @@ export async function POST(request: NextRequest) {
         {
           auth: { username, password },
           headers: { 'Content-Type': 'application/json' },
-          timeout: 4000  // 6 saniyeden 4 saniyeye düşürüldü
+          timeout: 5000  // 6 saniyeden 4 saniyeye düşürüldü
         }
       );
 
