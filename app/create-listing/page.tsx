@@ -304,6 +304,17 @@ export default function CreateListingPage() {
     setError("");
     setScannerError("");
   }, []);
+  const clearAmazonCard = () => {
+    setAmazonResult(null);
+    setError("");
+    setCurrentItem(prev => ({
+      ...prev,
+      isbn: "",
+      image: null,
+      imageUrl: null,
+      amazonData: undefined
+    }));
+  };
 
   const autoAddAcceptedItem = (isbn: string, product: AmazonProduct, pricing: PricingResult) => {
     if (!pricing.accepted || !pricing.ourPrice) return;
@@ -335,7 +346,7 @@ export default function CreateListingPage() {
       category: "book",
       imageUrl: null
     });
-    clearAmazonResults();
+
     console.log(`✅ Auto-added item with Amazon image: ${product.image}`);
   };
 
@@ -403,9 +414,22 @@ export default function CreateListingPage() {
         }
 
         if (pricing.accepted && pricing.ourPrice) {
+
+          autoAddAcceptedItem(code, product, pricing);
+
+          // Bu satırları ekleyin:
           setTimeout(() => {
-            autoAddAcceptedItem(code, product, pricing);
-          }, 2000);
+            setAmazonResult(null);
+            setError("");
+            setCurrentItem(prev => ({
+              ...prev,
+              isbn: "",
+              image: null,
+              imageUrl: null,
+              amazonData: undefined
+            }));
+          }, 10000); // 10 saniye sonra temizle
+
         } else {
           setTimeout(() => {
             setAmazonResult(null);
@@ -417,7 +441,7 @@ export default function CreateListingPage() {
               imageUrl: null,
               amazonData: undefined
             }));
-          }, 3000);
+          }, 10000);
         }
       } else {
         setError(response.data.error || 'Amazon check failed');
@@ -1476,7 +1500,14 @@ export default function CreateListingPage() {
                   <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
                     <div className="p-4 h-full">
                       {amazonResult ? (
-                        <div className="flex flex-col h-full">
+                        <div className="flex flex-col h-full relative">
+                          <button
+                            type="button"
+                            onClick={clearAmazonCard}
+                            className="absolute top-1 right-1 z-10 p-1 rounded-full bg-white shadow-sm border border-gray-200 text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"
+                          >
+                            <FiX className="h-3 w-3" />
+                          </button>
                           <div className="flex items-start justify-between mb-3">
                             <h4 className="text-sm font-medium text-gray-900 line-clamp-2">
                               {amazonResult.product.title || "Product Title"}
@@ -1535,7 +1566,7 @@ export default function CreateListingPage() {
                           </div>
                           {amazonResult.pricing.accepted && (
                             <div className="mt-2 text-xs text-green-600">
-                              ⏱️ This product will be automatically added to the list in 2 seconds...
+                              ✅ Product added to your list! Card will disappear in 5 seconds...
                             </div>
                           )}
                           {!amazonResult.pricing.accepted && (
