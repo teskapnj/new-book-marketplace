@@ -478,7 +478,7 @@ export default function CreateListingPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    
+
     const initializeStorage = async () => {
       try {
         localStorage.setItem('test', 'test');
@@ -491,7 +491,7 @@ export default function CreateListingPage() {
         setIsInitializing(false);
       }
     };
-    
+
     initializeStorage();
   }, []);
 
@@ -773,14 +773,14 @@ export default function CreateListingPage() {
   const handleContinueToShipping = () => {
     // Form verilerini localStorage'a kaydet
     saveToStorage();
-    
+
     // Shipping sayfasına yönlendir
     router.push('/create-listing/shipping');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!user) {
       setError("Please login or sign up to create a listing");
       return;
@@ -814,7 +814,7 @@ export default function CreateListingPage() {
       const uploadedItems = await Promise.all(
         bundleItems.map(async (item, index) => {
           setUploadProgress(`Processing image ${index + 1} of ${bundleItems.length}...`);
-          
+
           let finalImageUrl = null;
           if (item.amazonData?.image) {
             finalImageUrl = item.amazonData.image;
@@ -1171,7 +1171,7 @@ export default function CreateListingPage() {
                   <>
                     <button
                       onClick={() => setShowUserListings(!showUserListings)}
-                      className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-indigo-600 hover:text-indigo-700 hover:shadow-md transition-all duration-200"
+                      className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-indigo-600 hover:text-indigo-700 hover:shadow-md transition-all duration-200 cursor-pointer"
                     >
                       <FiList className="mr-2 h-4 w-4" />
                       Submissions
@@ -1196,6 +1196,13 @@ export default function CreateListingPage() {
               </div>
             </div>
           </div>
+          {/* User Listings Section Component */}
+          {user && (
+            <UserListingsSection
+              isVisible={showUserListings}
+              onClose={() => setShowUserListings(false)}
+            />
+          )}
 
           {!isMobile && (
             <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg shadow-sm">
