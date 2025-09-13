@@ -6,7 +6,7 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db, storage } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { FiHome, FiSave, FiCamera, FiDollarSign, FiPackage, FiX, FiCheck, FiAlertCircle, FiSearch, FiStar, FiTrendingUp, FiFileText, FiTruck, FiBookOpen, FiUser, FiLogIn, FiSettings, FiMessageSquare, FiMail, FiClock, FiCheckCircle, FiList } from "react-icons/fi";
+import { FiHome, FiSave, FiCamera, FiDollarSign, FiPackage, FiX, FiCheck, FiAlertCircle, FiSearch, FiStar, FiTrendingUp, FiFileText, FiTruck, FiBookOpen, FiUser, FiLogIn, FiSettings, FiMessageSquare, FiMail, FiClock, FiCheckCircle, FiList, FiArrowRight } from "react-icons/fi";
 import Link from "next/link";
 import Head from "next/head";
 import axios from "axios";
@@ -31,6 +31,7 @@ interface BundleItem {
   originalPrice?: number;
   imageUrl?: string | null;
 }
+
 interface Address {
   street: string;
   city: string;
@@ -38,12 +39,14 @@ interface Address {
   zip: string;
   country: string;
 }
+
 interface PackageDimensions {
   length: number;
   width: number;
   height: number;
   weight: number;
 }
+
 interface ShippingInfo {
   firstName: string;
   lastName: string;
@@ -51,6 +54,7 @@ interface ShippingInfo {
   packageDimensions: PackageDimensions;
   paypalAccount: string;
 }
+
 export default function CreateListingPage() {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
@@ -119,6 +123,7 @@ export default function CreateListingPage() {
   const totalOurPrice = bundleItems.reduce((total, item) => {
     return total + (item.price * item.quantity);
   }, 0);
+
   const totalAmazonValue = bundleItems.reduce((total, item) => {
     return total + ((item.originalPrice || 0) * item.quantity);
   }, 0);
@@ -126,6 +131,7 @@ export default function CreateListingPage() {
   const getStorageKey = useCallback(() => {
     return user ? `bundleListingDraft_${user.uid}` : 'bundleListingDraft_guest';
   }, [user]);
+
   const getGuestStorageKey = useCallback(() => {
     return 'bundleListingDraft_guest';
   }, []);
@@ -146,47 +152,58 @@ export default function CreateListingPage() {
       height: '',
       weight: ''
     });
+
     if (!shippingInfo.firstName.trim() || !shippingInfo.lastName.trim()) {
       setShippingError("Please enter your first and last name");
       return false;
     }
+
     if (!shippingInfo.paypalAccount.trim()) {
       setShippingError("Please enter your PayPal account email");
       return false;
     }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(shippingInfo.paypalAccount)) {
       setShippingError("Please enter a valid PayPal email address");
       return false;
     }
+
     if (!shippingInfo.address.street || !shippingInfo.address.city ||
       !shippingInfo.address.state || !shippingInfo.address.zip) {
       setShippingError("Please fill in all address fields");
       return false;
     }
+
     if (shippingInfo.packageDimensions.length <= 0 || shippingInfo.packageDimensions.width <= 0 ||
       shippingInfo.packageDimensions.height <= 0 || shippingInfo.packageDimensions.weight <= 0) {
       setShippingError("Please enter valid package dimensions and weight");
       return false;
     }
+
     if (shippingInfo.packageDimensions.weight > 50) {
       setDimensionErrors(prev => ({ ...prev, weight: "Weight cannot exceed 50 pounds" }));
       setShippingError("Package weight cannot exceed 50 pounds");
       return false;
     }
+
     if (shippingInfo.packageDimensions.length > 18) {
       setDimensionErrors(prev => ({ ...prev, length: "Length cannot exceed 18 inches" }));
     }
+
     if (shippingInfo.packageDimensions.width > 16) {
       setDimensionErrors(prev => ({ ...prev, width: "Width cannot exceed 16 inches" }));
     }
+
     if (shippingInfo.packageDimensions.height > 16) {
       setDimensionErrors(prev => ({ ...prev, height: "Height cannot exceed 16 inches" }));
     }
+
     if (shippingInfo.packageDimensions.length > 18 || shippingInfo.packageDimensions.width > 16 || shippingInfo.packageDimensions.height > 16) {
       setShippingError("Package dimensions cannot exceed 18x16x16 inches");
       return false;
     }
+
     setShippingError("");
     return true;
   };
@@ -230,6 +247,7 @@ export default function CreateListingPage() {
         [field]: numValue
       }
     }));
+
     const newErrors = { ...dimensionErrors };
     switch (field) {
       case 'weight':
@@ -261,7 +279,9 @@ export default function CreateListingPage() {
         }
         break;
     }
+
     setDimensionErrors(newErrors);
+
     if (newErrors.length || newErrors.width || newErrors.height || newErrors.weight) {
       setShippingError("Package exceeds size or weight limits");
     } else if (shippingError === "Package exceeds size or weight limits") {
@@ -287,6 +307,7 @@ export default function CreateListingPage() {
 
   const autoAddAcceptedItem = (isbn: string, product: AmazonProduct, pricing: PricingResult) => {
     if (!pricing.accepted || !pricing.ourPrice) return;
+
     const newItem: BundleItem = {
       id: Date.now().toString(),
       isbn: isbn,
@@ -301,6 +322,7 @@ export default function CreateListingPage() {
       ourPrice: pricing.ourPrice,
       originalPrice: product.price
     };
+
     setBundleItems(prev => [...prev, newItem]);
     setCurrentItem({
       id: "",
@@ -328,9 +350,11 @@ export default function CreateListingPage() {
         ...prev,
         isbn: code
       }));
+
       const response = await axios.post('/api/amazon-check', {
         isbn_upc: code
       });
+
       if (response.data.success) {
         const { product, pricing, message } = response.data.data;
         const sanitizedProduct = {
@@ -347,11 +371,13 @@ export default function CreateListingPage() {
           ourPrice: typeof pricing?.ourPrice === 'number' ? pricing.ourPrice : 0
         };
         const sanitizedMessage = message ? DOMPurify.sanitize(message).substring(0, 500) : '';
+
         setAmazonResult({
           product: sanitizedProduct,
           pricing: sanitizedPricing,
           message: sanitizedMessage
         });
+
         setCurrentItem(prev => ({
           ...prev,
           isbn: DOMPurify.sanitize(code).substring(0, 50),
@@ -361,18 +387,21 @@ export default function CreateListingPage() {
           originalPrice: sanitizedProduct.price,
           ourPrice: sanitizedPricing.ourPrice
         }));
+
         const categoryMap: Record<string, "book" | "cd" | "dvd" | "game"> = {
           'books': 'book',
           'cds': 'cd',
           'dvds': 'dvd',
           'games': 'game'
         };
+
         if (pricing.category && categoryMap[pricing.category]) {
           setCurrentItem(prev => ({
             ...prev,
             category: categoryMap[pricing.category]
           }));
         }
+
         if (pricing.accepted && pricing.ourPrice) {
           setTimeout(() => {
             autoAddAcceptedItem(code, product, pricing);
@@ -449,6 +478,7 @@ export default function CreateListingPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    
     const initializeStorage = async () => {
       try {
         localStorage.setItem('test', 'test');
@@ -461,13 +491,29 @@ export default function CreateListingPage() {
         setIsInitializing(false);
       }
     };
+    
     initializeStorage();
+  }, []);
+
+  // YENİ EKLENEN KOD: Shipping sayfasından gelen popup flag'ini kontrol et
+  useEffect(() => {
+    try {
+      const showPopup = localStorage.getItem('showSuccessPopup');
+      if (showPopup === 'true') {
+        setShowSuccessPopup(true);
+        // Flag'i temizle ki sayfa yenilendiğinde tekrar gösterilmesin
+        localStorage.removeItem('showSuccessPopup');
+      }
+    } catch (error) {
+      console.error("Error checking success popup flag:", error);
+    }
   }, []);
 
   const validateAndSanitizeData = (parsed: any) => {
     if (!parsed || typeof parsed !== 'object') {
       return null;
     }
+
     let sanitizedBundleItems: BundleItem[] = [];
     if (Array.isArray(parsed.bundleItems)) {
       sanitizedBundleItems = parsed.bundleItems.map((item: any) => ({
@@ -488,10 +534,12 @@ export default function CreateListingPage() {
         } : undefined
       }));
     }
+
     let sanitizedDescription = '';
     if (typeof parsed.description === 'string') {
       sanitizedDescription = DOMPurify.sanitize(parsed.description).substring(0, 500);
     }
+
     let sanitizedShippingInfo: ShippingInfo = {
       firstName: '',
       lastName: '',
@@ -510,6 +558,7 @@ export default function CreateListingPage() {
         weight: 0
       }
     };
+
     if (parsed.shippingInfo && typeof parsed.shippingInfo === 'object') {
       sanitizedShippingInfo = {
         firstName: parsed.shippingInfo.firstName ? DOMPurify.sanitize(parsed.shippingInfo.firstName).substring(0, 50) : '',
@@ -530,6 +579,7 @@ export default function CreateListingPage() {
         }
       };
     }
+
     return {
       bundleItems: sanitizedBundleItems,
       description: sanitizedDescription,
@@ -539,8 +589,10 @@ export default function CreateListingPage() {
 
   const loadFromStorage = useCallback(() => {
     if (!isMounted || isPrivateMode || isInitializing) return;
+
     const userKey = getStorageKey();
     const guestKey = getGuestStorageKey();
+
     if (user) {
       try {
         // First try to load user-specific data
@@ -558,6 +610,7 @@ export default function CreateListingPage() {
             localStorage.removeItem(userKey);
           }
         }
+
         // If no user data, try to migrate from guest data
         const guestData = localStorage.getItem(guestKey);
         if (guestData) {
@@ -607,6 +660,7 @@ export default function CreateListingPage() {
 
   const saveToStorage = useCallback(() => {
     if (!isMounted || isPrivateMode || isInitializing) return;
+
     try {
       const dataToSave = {
         bundleItems: bundleItems.map(item => ({
@@ -625,6 +679,7 @@ export default function CreateListingPage() {
         shippingInfo: shippingInfo,
         timestamp: Date.now()
       };
+
       const storageKey = getStorageKey();
       localStorage.setItem(storageKey, JSON.stringify(dataToSave));
       console.log(`✅ Saved to localStorage`);
@@ -679,8 +734,10 @@ export default function CreateListingPage() {
     bundleItems.forEach(item => {
       categoryCounts[item.category] = (categoryCounts[item.category] || 0) + 1;
     });
+
     const dominantCategory = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0][0];
     const totalItems = bundleItems.reduce((sum, item) => sum + item.quantity, 0);
+
     const categoryNames = {
       book: "Book",
       cd: "CD",
@@ -688,19 +745,23 @@ export default function CreateListingPage() {
       game: "Game",
       mix: "Mixed Media"
     };
+
     return `${totalItems} ${categoryNames[dominantCategory as keyof typeof categoryNames]} Collection in Used Condition`;
   };
 
   const uploadImageToStorage = async (item: BundleItem, userId: string): Promise<string | null> => {
     if (!item.imageBlob) return null;
+
     try {
       const timestamp = Date.now();
       const randomString = Math.random().toString(36).substring(7);
       const imagePath = `listings/${userId}/${timestamp}_${item.isbn}_${randomString}.jpg`;
+
       console.log(`Uploading image for ISBN ${item.isbn}`);
       const storageRef = ref(storage, imagePath);
       const snapshot = await uploadBytes(storageRef, item.imageBlob);
       const downloadURL = await getDownloadURL(snapshot.ref);
+
       console.log(`✅ Image uploaded successfully`);
       return downloadURL;
     } catch (error) {
@@ -709,35 +770,51 @@ export default function CreateListingPage() {
     }
   };
 
+  const handleContinueToShipping = () => {
+    // Form verilerini localStorage'a kaydet
+    saveToStorage();
+    
+    // Shipping sayfasına yönlendir
+    router.push('/create-listing/shipping');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!user) {
       setError("Please login or sign up to create a listing");
       return;
     }
+
     setIsSubmitting(true);
     setError("");
     setUploadProgress("");
+
     try {
       if (!validateDescription(description)) {
         setIsSubmitting(false);
         return;
       }
+
       if (!validateShippingInfo()) {
         setIsSubmitting(false);
         return;
       }
+
       if (bundleItems.length < 5) {
         setError("Please add at least 5 items to create a bundle listing");
         setIsSubmitting(false);
         return;
       }
+
       const title = generateTitle();
       setGeneratedTitle(title);
+
       setUploadProgress("Processing images...");
       const uploadedItems = await Promise.all(
         bundleItems.map(async (item, index) => {
           setUploadProgress(`Processing image ${index + 1} of ${bundleItems.length}...`);
+          
           let finalImageUrl = null;
           if (item.amazonData?.image) {
             finalImageUrl = item.amazonData.image;
@@ -750,6 +827,7 @@ export default function CreateListingPage() {
           else {
             console.log(`⚠️ No image available for ISBN ${item.isbn}`);
           }
+
           return {
             id: item.id,
             isbn: item.isbn,
@@ -771,9 +849,11 @@ export default function CreateListingPage() {
           };
         })
       );
+
       setUploadProgress("Saving listing to database...");
       const totalValue = uploadedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const totalItems = uploadedItems.reduce((sum, item) => sum + item.quantity, 0);
+
       const listingData = {
         title: DOMPurify.sanitize(title).substring(0, 200),
         description: DOMPurify.sanitize(description).substring(0, 500),
@@ -825,8 +905,11 @@ export default function CreateListingPage() {
           item.imageUrl && typeof item.imageUrl === 'string' && item.imageUrl.includes('amazon.com')
         )
       };
+
       const docRef = await addDoc(collection(db, "listings"), listingData);
       console.log("✅ Document written with ID: ", docRef.id);
+
+      // Admin notification email
       try {
         await fetch('/api/send-seller-notification', {
           method: 'POST',
@@ -865,15 +948,18 @@ export default function CreateListingPage() {
       } catch (error) {
         console.error("Seller email error:", error);
       }
+
       setSuccess(true);
       setShowSuccessPopup(true);
       setIsSubmitting(false);
       setUploadProgress("");
+
       if (!isPrivateMode) {
         const storageKey = getStorageKey();
         localStorage.removeItem(storageKey);
         console.log("✅ Draft cleared from localStorage");
       }
+
       setBundleItems([]);
       setCurrentItem({
         id: "",
@@ -912,6 +998,7 @@ export default function CreateListingPage() {
         weight: ''
       });
       clearAmazonResults();
+
       if (popupTimer) clearTimeout(popupTimer);
       const timer = setTimeout(() => {
         setShowSuccessPopup(false);
@@ -1055,7 +1142,6 @@ export default function CreateListingPage() {
                   </div>
                 )}
                 <div className="grid grid-cols-1 gap-2">
-
                 </div>
               </div>
               {/* Desktop Navigation - Horizontal */}
@@ -1111,14 +1197,6 @@ export default function CreateListingPage() {
             </div>
           </div>
 
-          {/* User Listings Section Component */}
-          {user && (
-            <UserListingsSection
-              isVisible={showUserListings}
-              onClose={() => setShowUserListings(false)}
-            />
-          )}
-
           {!isMobile && (
             <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg shadow-sm">
               <div className="flex">
@@ -1134,6 +1212,7 @@ export default function CreateListingPage() {
               </div>
             </div>
           )}
+
           {showScanner && (
             <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
               <div className="bg-white rounded-lg p-6 m-4 max-w-sm w-full">
@@ -1181,6 +1260,7 @@ export default function CreateListingPage() {
               </div>
             </div>
           )}
+
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl">
             <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 py-6">
               <div className="flex items-center justify-between">
@@ -1197,6 +1277,7 @@ export default function CreateListingPage() {
                 </div>
               </div>
             </div>
+
             {showSuccessPopup && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                 <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 transform transition-all duration-300 scale-95 animate-in fade-in-90 zoom-in-90">
@@ -1270,6 +1351,7 @@ export default function CreateListingPage() {
                 </div>
               </div>
             )}
+
             {showSuccess && (
               <div className="mx-6 mt-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-lg shadow-sm">
                 <div className="flex items-center">
@@ -1284,6 +1366,7 @@ export default function CreateListingPage() {
                 </div>
               </div>
             )}
+
             {uploadProgress && (
               <div className="mx-6 mt-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg shadow-sm">
                 <div className="flex items-center">
@@ -1292,6 +1375,7 @@ export default function CreateListingPage() {
                 </div>
               </div>
             )}
+
             {isCheckingAmazon && (
               <div className="mx-6 mt-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg shadow-sm">
                 <div className="flex items-center">
@@ -1300,6 +1384,7 @@ export default function CreateListingPage() {
                 </div>
               </div>
             )}
+
             {error && (
               <div className="mx-6 mt-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm">
                 <div className="flex items-start">
@@ -1312,6 +1397,7 @@ export default function CreateListingPage() {
                 </div>
               </div>
             )}
+
             <form onSubmit={handleSubmit} className="px-6 py-6 space-y-8">
               <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 shadow-sm">
                 <div className="flex items-center mb-5">
@@ -1466,6 +1552,7 @@ export default function CreateListingPage() {
                   </div>
                 </div>
               </div>
+
               <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center">
@@ -1480,6 +1567,7 @@ export default function CreateListingPage() {
                     </span>
                   </div>
                 </div>
+
                 {bundleItems.length < 5 && (
                   <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-lg shadow-sm">
                     <div className="flex">
@@ -1494,6 +1582,7 @@ export default function CreateListingPage() {
                     </div>
                   </div>
                 )}
+
                 {bundleItems.length > 0 ? (
                   <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
                     {bundleItems.map((item) => (
@@ -1577,6 +1666,7 @@ export default function CreateListingPage() {
                   </div>
                 )}
               </div>
+
               <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
@@ -1598,289 +1688,9 @@ export default function CreateListingPage() {
                   </div>
                 </div>
               </div>
-              {user && (
-                <>
-                  <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 shadow-sm">
-                    <div className="flex items-center mb-4">
-                      <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
-                        <FiFileText className="h-5 w-5 text-blue-600" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-900">Additional Notes</h3>
-                    </div>
-                    <div className="space-y-2">
-                      <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                        Description <span className="text-gray-500">(Optional)</span>
-                      </label>
-                      <div className="relative">
-                        <textarea
-                          id="description"
-                          name="description"
-                          rows={4}
-                          value={description || ''}
-                          onChange={handleDescriptionChange}
-                          maxLength={500}
-                          placeholder="Describe your items... Mention any special features, condition details, or other relevant information."
-                          className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
-                        />
-                        <div className="absolute bottom-2 right-2 text-xs text-gray-500 bg-white/80 px-2 py-1 rounded">
-                          {description.length}/500
-                        </div>
-                      </div>
-                      {descriptionError && (
-                        <p className="text-sm text-red-600 mt-1">{descriptionError}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 shadow-sm">
-                    <div className="flex items-center mb-4">
-                      <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
-                        <FiTruck className="h-5 w-5 text-blue-600" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-900">Shipping Information</h3>
-                    </div>
-                    {shippingError && (
-                      <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm">
-                        <div className="flex">
-                          <div className="flex-shrink-0">
-                            <FiAlertCircle className="h-5 w-5 text-red-500" />
-                          </div>
-                          <div className="ml-3">
-                            <p className="text-sm text-red-700">{shippingError}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    <div className="space-y-6">
-                      <div>
-                        <h4 className="text-md font-medium text-gray-900 mb-3">Contact Information</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-                              First Name
-                            </label>
-                            <input
-                              type="text"
-                              id="firstName"
-                              value={shippingInfo.firstName || ''}
-                              onChange={(e) => handleNameChange('firstName', e.target.value)}
-                              placeholder="John"
-                              className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                            />
-                          </div>
-                          <div>
-                            <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-                              Last Name
-                            </label>
-                            <input
-                              type="text"
-                              id="lastName"
-                              value={shippingInfo.lastName || ''}
-                              onChange={(e) => handleNameChange('lastName', e.target.value)}
-                              placeholder="Doe"
-                              className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                            />
-                          </div>
-                          <div className="md:col-span-2">
-                            <label htmlFor="paypalAccount" className="block text-sm font-medium text-gray-700 mb-1">
-                              PayPal Account Email
-                            </label>
-                            <div className="relative">
-                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <FiMail className="h-5 w-5 text-gray-400" />
-                              </div>
-                              <input
-                                type="email"
-                                id="paypalAccount"
-                                value={shippingInfo.paypalAccount || ''}
-                                onChange={(e) => handlePaypalAccountChange(e.target.value)}
-                                placeholder="your-paypal-email@example.com"
-                                className="block w-full pl-10 px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                              />
-                            </div>
-                            <p className="mt-1 text-sm text-gray-500">
-                              We'll send your payment to this PayPal account after your items are processed
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="text-md font-medium text-gray-900 mb-3">Shipping Address</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="md:col-span-2">
-                            <label htmlFor="street" className="block text-sm font-medium text-gray-700 mb-1">
-                              Street Address
-                            </label>
-                            <input
-                              type="text"
-                              id="street"
-                              value={shippingInfo.address.street || ''}
-                              onChange={(e) => handleAddressChange('street', e.target.value)}
-                              placeholder="123 Main St"
-                              className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                            />
-                          </div>
-                          <div>
-                            <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
-                              City
-                            </label>
-                            <input
-                              type="text"
-                              id="city"
-                              value={shippingInfo.address.city || ''}
-                              onChange={(e) => handleAddressChange('city', e.target.value)}
-                              placeholder="New York"
-                              className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                            />
-                          </div>
-                          <div>
-                            <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
-                              State/Province
-                            </label>
-                            <input
-                              type="text"
-                              id="state"
-                              value={shippingInfo.address.state || ''}
-                              onChange={(e) => handleAddressChange('state', e.target.value)}
-                              placeholder="NY"
-                              className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                            />
-                          </div>
-                          <div>
-                            <label htmlFor="zip" className="block text-sm font-medium text-gray-700 mb-1">
-                              ZIP/Postal Code
-                            </label>
-                            <input
-                              type="text"
-                              id="zip"
-                              value={shippingInfo.address.zip || ''}
-                              onChange={(e) => handleAddressChange('zip', e.target.value)}
-                              placeholder="10001"
-                              className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                            />
-                          </div>
-                          <div>
-                            <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
-                              Country
-                            </label>
-                            <div className="relative">
-                              <select
-                                id="country"
-                                value={shippingInfo.address.country || 'US'}
-                                onChange={(e) => handleAddressChange('country', e.target.value)}
-                                className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none bg-white"
-                              >
-                                <option value="US">United States</option>
-                              </select>
-                              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                                </svg>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="text-md font-medium text-gray-900 mb-3">Package Dimensions</h4>
-                        <div className="mb-3 bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded-lg shadow-sm">
-                          <div className="flex">
-                            <div className="flex-shrink-0">
-                              <FiAlertCircle className="h-5 w-5 text-yellow-400" />
-                            </div>
-                            <div className="ml-3">
-                              <p className="text-sm text-yellow-700">
-                                Package must not exceed 18x16x16 inches and 50 pounds in weight.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                          <div>
-                            <label htmlFor="length" className="block text-sm font-medium text-gray-700 mb-1">
-                              Length (in)
-                            </label>
-                            <input
-                              type="number"
-                              id="length"
-                              value={shippingInfo.packageDimensions.length || ''}
-                              onChange={(e) => handlePackageDimensionsChange('length', parseFloat(e.target.value) || 0)}
-                              min="0"
-                              max="18"
-                              step="0.1"
-                              placeholder="0.0"
-                              className={`block w-full px-4 py-3 text-base border ${dimensionErrors.length ? 'border-red-500' : 'border-gray-300'
-                                } rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200`}
-                            />
-                            {dimensionErrors.length && (
-                              <p className="text-xs text-red-600 mt-1">{dimensionErrors.length}</p>
-                            )}
-                          </div>
-                          <div>
-                            <label htmlFor="width" className="block text-sm font-medium text-gray-700 mb-1">
-                              Width (in)
-                            </label>
-                            <input
-                              type="number"
-                              id="width"
-                              value={shippingInfo.packageDimensions.width || ''}
-                              onChange={(e) => handlePackageDimensionsChange('width', parseFloat(e.target.value) || 0)}
-                              min="0"
-                              max="16"
-                              step="0.1"
-                              placeholder="0.0"
-                              className={`block w-full px-4 py-3 text-base border ${dimensionErrors.width ? 'border-red-500' : 'border-gray-300'
-                                } rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200`}
-                            />
-                            {dimensionErrors.width && (
-                              <p className="text-xs text-red-600 mt-1">{dimensionErrors.width}</p>
-                            )}
-                          </div>
-                          <div>
-                            <label htmlFor="height" className="block text-sm font-medium text-gray-700 mb-1">
-                              Height (in)
-                            </label>
-                            <input
-                              type="number"
-                              id="height"
-                              value={shippingInfo.packageDimensions.height || ''}
-                              onChange={(e) => handlePackageDimensionsChange('height', parseFloat(e.target.value) || 0)}
-                              min="0"
-                              max="16"
-                              step="0.1"
-                              placeholder="0.0"
-                              className={`block w-full px-4 py-3 text-base border ${dimensionErrors.height ? 'border-red-500' : 'border-gray-300'
-                                } rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200`}
-                            />
-                            {dimensionErrors.height && (
-                              <p className="text-xs text-red-600 mt-1">{dimensionErrors.height}</p>
-                            )}
-                          </div>
-                          <div>
-                            <label htmlFor="weight" className="block text-sm font-medium text-gray-700 mb-1">
-                              Weight (lb)
-                            </label>
-                            <input
-                              type="number"
-                              id="weight"
-                              value={shippingInfo.packageDimensions.weight || ''}
-                              onChange={(e) => handlePackageDimensionsChange('weight', parseFloat(e.target.value) || 0)}
-                              min="0"
-                              max="50"
-                              step="0.1"
-                              placeholder="0.0"
-                              className={`block w-full px-4 py-3 text-base border ${dimensionErrors.weight ? 'border-red-500' : 'border-gray-300'
-                                } rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200`}
-                            />
-                            {dimensionErrors.weight && (
-                              <p className="text-xs text-red-600 mt-1">{dimensionErrors.weight}</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
+
+              {/* Shipping Information bölümü kaldırıldı - bu artık ayrı bir sayfada olacak */}
+
               <div className="pt-5">
                 {!user ? (
                   <div className="space-y-4">
@@ -1906,24 +1716,15 @@ export default function CreateListingPage() {
                   </div>
                 ) : (
                   <button
-                    type="submit"
-                    disabled={isSubmitting || bundleItems.length < 5}
+                    type="button"
+                    onClick={handleContinueToShipping}
+                    disabled={bundleItems.length < 5}
                     className="w-full flex justify-center py-4 px-6 border border-transparent shadow-lg text-base font-medium rounded-xl text-white bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-all duration-200 transform hover:-translate-y-0.5"
                   >
-                    {isSubmitting ? (
-                      <div className="flex items-center">
-                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Submitting Items...
-                      </div>
-                    ) : (
-                      <div className="flex items-center">
-                        <FiSave className="mr-2 h-5 w-5" />
-                        Submit Items for Sale ({bundleItems.length}/5 items)
-                      </div>
-                    )}
+                    <div className="flex items-center">
+                      Continue to Shipping Information
+                      <FiArrowRight className="ml-2 h-5 w-5" />
+                    </div>
                   </button>
                 )}
               </div>
