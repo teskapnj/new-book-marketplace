@@ -465,13 +465,9 @@ export async function POST(request: NextRequest) {
 
     let message = '';
     if (pricingResult.accepted && pricingResult.ourPrice) {
-      if (!pricingAnalysis.hasNewPrice) {
-        message = `Accepted! No new price, priced based on rank: $${pricingResult.ourPrice}`;
-      } else {
-        message = `Accepted! Our Price: $${pricingResult.ourPrice}`;
-      }
+      message = `Accepted`;
     } else {
-      message = `Rejected: ${pricingResult.reason}`;
+      message = `${pricingResult.reason}`;
     }
 
     const totalTime = Date.now() - totalStartTime;

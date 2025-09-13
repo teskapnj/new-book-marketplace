@@ -463,7 +463,7 @@ export default function CreateListingPage() {
           imageUrl: null,
           amazonData: undefined
         }));
-      }, 3000);
+      }, 10000);
     } finally {
       setIsCheckingAmazon(false);
     }
@@ -1551,7 +1551,7 @@ export default function CreateListingPage() {
                                 </div>
                               </div>
                               <div className="mt-2">
-                                <div className={`text-xs inline-flex items-center px-2 py-1 rounded-full font-medium ${amazonResult.pricing.accepted
+                                <div className={`text-base inline-flex items-center px-2 py-1 rounded-full font-bold ${amazonResult.pricing.accepted
                                   ? 'bg-green-100 text-green-800'
                                   : 'bg-red-100 text-red-800'
                                   }`}>
@@ -1571,7 +1571,7 @@ export default function CreateListingPage() {
                           )}
                           {!amazonResult.pricing.accepted && (
                             <div className="mt-2 text-xs text-red-600">
-                              ❌ This result will disappear in 3 seconds...
+                              ❌ This result will disappear in 10 seconds...
                             </div>
                           )}
                         </div>

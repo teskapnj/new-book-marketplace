@@ -49,7 +49,7 @@ function calculateBookPrice(price: number, salesRank: number): PricingResult {
   if (salesRank > 2000000) {
     return {
       accepted: false,
-      reason: "Sales rank too low (over 2 million)",
+      reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
       category: 'books',
       rankRange: "> 2,000,000"
     };
@@ -81,7 +81,7 @@ function calculateBookPrice(price: number, salesRank: number): PricingResult {
     
     return {
       accepted: false,
-      reason: "Price doesn't fit our range (minimum $24)",
+      reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
       category: 'books',
       priceRange: `$${price} (min: $24)`
     };
@@ -104,9 +104,9 @@ function calculateBookPrice(price: number, salesRank: number): PricingResult {
     
     return {
       accepted: false,
-      reason: "Price doesn't fit our range (minimum $51)",
+      reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
       category: 'books',
-      priceRange: `$${price} (min: $51)`
+      priceRange: `$${price}`
     };
   }
   
@@ -124,7 +124,7 @@ function calculateCDPrice(price: number, salesRank: number): PricingResult {
   if (salesRank > 300000) {
     return {
       accepted: false,
-      reason: "Sales rank too low (over 300k)",
+      reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
       category: 'cds',
       rankRange: "> 300,000"
     };
@@ -147,9 +147,9 @@ function calculateCDPrice(price: number, salesRank: number): PricingResult {
     
     return {
       accepted: false,
-      reason: "Price doesn't fit our range (minimum $25)",
+      reason: "Does not meet our purchasing criteria",
       category: 'cds',
-      priceRange: `$${price} (min: $25)`
+      priceRange: `$${price}`
     };
   }
   
@@ -167,9 +167,9 @@ function calculateCDPrice(price: number, salesRank: number): PricingResult {
     
     return {
       accepted: false,
-      reason: "Price doesn't fit our range (minimum $25)",
+      reason: "Does not meet our purchasing criteria",
       category: 'cds',
-      priceRange: `$${price} (min: $25)`
+      priceRange: `$${price}`
     };
   }
   
@@ -181,9 +181,9 @@ function calculateCDPrice(price: number, salesRank: number): PricingResult {
     
     return {
       accepted: false,
-      reason: "Price doesn't fit our range (minimum $50)",
+      reason: "Does not meet our purchasing criteria",
       category: 'cds',
-      priceRange: `$${price} (min: $50)`
+      priceRange: `$${price} `
     };
   }
   
@@ -239,7 +239,7 @@ function handleNoPriceScenario(category: ProductCategory, salesRank: number): Pr
       }
       return {
         accepted: false,
-        reason: "Rank too low (over 2M)",
+        reason: "Rank too low ",
         category: 'books',
         rankRange: "> 2M"
       };
@@ -267,7 +267,7 @@ function handleNoPriceScenario(category: ProductCategory, salesRank: number): Pr
       }
       return {
         accepted: false,
-        reason: "Rank too low (over 200K)",
+        reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
         category,
         rankRange: "> 200K"
       };
@@ -290,7 +290,7 @@ export function calculateOurPrice(product: AmazonProduct): PricingResult {
   if (!product.sales_rank || product.sales_rank <= 0) {
     return {
       accepted: false,
-      reason: "Sales rank information not found",
+      reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
       category
     };
   }
@@ -313,7 +313,7 @@ export function calculateOurPrice(product: AmazonProduct): PricingResult {
     default:
       return {
         accepted: false,
-        reason: "Unsupported category",
+        reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
         category: 'unknown'
       };
   }
@@ -323,7 +323,7 @@ export function calculateOurPrice(product: AmazonProduct): PricingResult {
  */
 export function formatPricingMessage(result: PricingResult): string {
   if (result.accepted && result.ourPrice) {
-    return `✅ Accepted! Our price: $${result.ourPrice} (${result.priceRange}, Rank: ${result.rankRange})`;
+    return `✅ Accepted! `;
   }
   
   return `❌ ${result.reason}`;
