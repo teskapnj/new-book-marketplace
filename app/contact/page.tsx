@@ -460,16 +460,6 @@ export default function ContactPage() {
           </Link>
         </div>
       </div>
-
-      {/* Real-time connection indicator */}
-      <div className="fixed bottom-4 right-4 z-40">
-        <div className="bg-green-100 border border-green-200 rounded-lg px-3 py-2 shadow-sm">
-          <div className="flex items-center text-sm text-green-800">
-            <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-            Connected to Firebase
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
