@@ -132,7 +132,7 @@ export default function HomePage() {
   // Rate limiting konfigürasyonu
   const rateLimitConfig = {
     maxAttempts: 5,
-    windowMs: 5 * 60 * 1000, // 5 dakika
+    windowMs: 5 * 60 * 1000, // 5 minutes
     storageKey: 'auth-rate-limit'
   };
   
@@ -169,7 +169,7 @@ export default function HomePage() {
         logSecurityAttempt('role_check', true, user.uid);
       } catch (error) {
         recordAttempt();
-        setRoleError('Rol kontrolü başarısız oldu');
+        setRoleError('Role verification failed');
         setUserRole(UserRole.SELLER); // Güvenli varsayılan (SELLER)
         logSecurityAttempt('role_check', false, user.uid);
         console.error('Güvenli rol kontrolü başarısız');
@@ -213,7 +213,7 @@ export default function HomePage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600 font-medium">
-            {loading ? 'Kimlik doğrulanıyor...' : 'Yetkilendirme kontrol ediliyor...'}
+            {loading ? 'Authenticating...' : 'Checking authorization...'}
           </p>
         </div>
       </div>
@@ -620,7 +620,7 @@ export default function HomePage() {
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Get Paid Fast</h3>
                 <p className="text-gray-600 leading-relaxed">
                   We inspect each item against our condition standards. Once your items are delivered to us, 
-                  payment is processed within 2 business days directly to your account.
+                  payment is processed within 2 business days directly to your paypal account.
                 </p>
               </div>
             </div>

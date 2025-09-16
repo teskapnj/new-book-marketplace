@@ -98,6 +98,11 @@ export default function ConditionGuidelines() {
                     <span className="font-medium mr-2">✓</span>
                     <span>removable Price stickers </span>
                   </li>
+                  <li className="flex items-start">
+                    <span className="font-medium mr-2">✓</span>
+                    <span>We do not consider case condition. Only artwork
+                       and disc condition must meet our quality standards.  </span>
+                  </li>
                 </ul>
               </div>
 

@@ -71,6 +71,7 @@ interface Order {
   createdAt: Date;
   updatedAt: Date;
 }
+
 export default function DashboardPage() {
   const [authUser, authLoading, authError] = useAuthState(auth);
   const router = useRouter();
@@ -78,6 +79,7 @@ export default function DashboardPage() {
   const [userName, setUserName] = useState<string>("");
   const [roleLoading, setRoleLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
+  const [redirectingToListings, setRedirectingToListings] = useState(false); // Yeni state
   const [userListings, setUserListings] = useState<Listing[]>([]);
   const [listingsLoading, setListingsLoading] = useState(true);
   const [purchases, setPurchases] = useState<Order[]>([]);
@@ -95,7 +97,7 @@ export default function DashboardPage() {
     } : null;
   }, [authUser]);
   
-  // Check user role and redirect admin to admin panel
+  // Check user role and redirect admin to admin panel, seller to listings
   useEffect(() => {
     const checkUserRoleAndRedirect = async () => {
       console.log("Dashboard: Checking user role...");
@@ -138,13 +140,25 @@ export default function DashboardPage() {
               return;
             }
             
-            console.log("Regular user, staying on dashboard");
+            // YENİ: Redirect seller to listings page
+            if (role === "seller") {
+              console.log("Seller detected, redirecting to listings page...");
+              setRedirectingToListings(true);
+              
+              // Show message and redirect
+              setTimeout(() => {
+                window.location.href = "/create-listing";
+              }, 2000);
+              return;
+            }
+            
+            console.log("Buyer user, staying on dashboard");
           } else {
             // User document doesn't exist yet - create default user data
             console.warn("User document not found, creating default profile...");
             
             // Set default values
-            const defaultRole = "seller";
+            const defaultRole = "seller"; // Varsayılan rol seller olarak ayarlandı
             const defaultName = user.displayName || user.email?.split('@')[0] || "User";
             
             setUserRole(defaultRole);
@@ -166,7 +180,7 @@ export default function DashboardPage() {
                 createdAt: new Date(),
                 lastLogin: new Date()
               });
-
+              
               // >>>>>>>>>>>>>> KONUŞMAYI OTOMATİK OLUŞTURAN KOD <<<<<<<<<<<<<<
               // Yeni satıcı için admin ile bir konuşma başlat
               await setDoc(doc(db, 'conversations', user.uid), {
@@ -175,7 +189,12 @@ export default function DashboardPage() {
                 lastUpdated: serverTimestamp()
               }, { merge: true }); // merge: true, eğer konuşma zaten varsa hata vermez
               console.log("User profile and conversation created successfully");
-
+              
+              // YENİ: Varsayılan rol seller olduğu için listings sayfasına yönlendir
+              setRedirectingToListings(true);
+              setTimeout(() => {
+                window.location.href = "/create-listing";
+              }, 2000);
             } catch (error) {
               console.error("Error creating user profile or conversation:", error);
             }
@@ -518,6 +537,42 @@ export default function DashboardPage() {
     );
   }
   
+  // YENİ: Seller redirect screen
+  if (redirectingToListings || userRole === "seller") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
+        <div className="text-center max-w-md mx-auto p-8">
+          <div className="text-6xl mb-6">📦</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Seller Account Detected</h1>
+          <p className="text-gray-600 mb-6">
+            Welcome <strong>{userName}</strong>! You have a seller account. 
+            Redirecting you to the create listing page...
+          </p>
+          
+          <div className="flex items-center justify-center mb-6">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+            <span className="text-blue-600 font-medium">Redirecting to Create Listing...</span>
+          </div>
+          
+          <div className="space-y-3">
+            <Link 
+              href="/create-listing"
+              className="block w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              Go to Create Listing Now
+            </Link>
+            <Link 
+              href="/listings"
+              className="block w-full bg-gray-600 text-white py-2 px-6 rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Browse Listings Instead
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   // Not logged in
   if (!user) {
     return (
@@ -587,7 +642,7 @@ export default function DashboardPage() {
   const pendingSalesCount = sales.filter(order => order.status === 'pending').length;
   const completedSalesCount = sales.filter(order => order.status === 'delivered').length;
   
-  // Regular seller dashboard
+  // Regular buyer dashboard - sadece buyer rolündeki kullanıcılar için gösterilir
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
@@ -599,7 +654,9 @@ export default function DashboardPage() {
               <h1 className="text-3xl font-bold text-gray-900">
                 Welcome back, {userName}!
               </h1>
-              {/* Removed subtitle here */}
+              <p className="mt-1 text-sm text-gray-600">
+                Buyer Dashboard • Manage your purchases and account
+              </p>
             </div>
             
             {/* Navigation Links - Better styled */}
@@ -631,80 +688,46 @@ export default function DashboardPage() {
         
         {/* Mobile View */}
         <div className="md:hidden">
-          {/* Mobile Statistics Cards - All 8 but smaller */}
+          {/* Mobile Statistics Cards - Buyer focused */}
           <div className="grid grid-cols-4 gap-2 mb-6">
-            <div className="bg-white rounded-lg shadow-sm p-2 border border-gray-200">
-              <div className="flex flex-col items-center">
-                <div className="text-lg mb-1">📊</div>
-                <p className="text-sm font-bold text-blue-600">{userListings.length}</p>
-                <p className="text-[9px] text-gray-600 text-center">Listings</p>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow-sm p-2 border border-gray-200">
-              <div className="flex flex-col items-center">
-                <div className="text-lg mb-1">💰</div>
-                <p className="text-sm font-bold text-green-600">
-                  ${userListings.reduce((sum, listing) => sum + (listing.price || 0), 0).toFixed(0)}
-                </p>
-                <p className="text-[9px] text-gray-600 text-center">Listings Value</p>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow-sm p-2 border border-gray-200">
-              <div className="flex flex-col items-center">
-                <div className="text-lg mb-1">👁️</div>
-                <p className="text-sm font-bold text-purple-600">
-                  {userListings.reduce((sum, listing) => sum + (listing.views || 0), 0)}
-                </p>
-                <p className="text-[9px] text-gray-600 text-center">Views</p>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow-sm p-2 border border-gray-200">
-              <div className="flex flex-col items-center">
-                <div className="text-lg mb-1">⭐</div>
-                <p className="text-sm font-bold text-yellow-600">5.0</p>
-                <p className="text-[9px] text-gray-600 text-center">Rating</p>
-              </div>
-            </div>
-            
             <div className="bg-white rounded-lg shadow-sm p-2 border border-gray-200">
               <div className="flex flex-col items-center">
                 <div className="text-lg mb-1">🛒</div>
                 <p className="text-sm font-bold text-orange-600">{purchases.length}</p>
-                <p className="text-[9px] text-gray-600 text-center">Purchases</p>
+                <p className="text-[9px] text-gray-600 text-center">Orders</p>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm p-2 border border-gray-200">
+              <div className="flex flex-col items-center">
+                <div className="text-lg mb-1">✅</div>
+                <p className="text-sm font-bold text-green-600">{completedOrdersCount}</p>
+                <p className="text-[9px] text-gray-600 text-center">Completed</p>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm p-2 border border-gray-200">
+              <div className="flex flex-col items-center">
+                <div className="text-lg mb-1">⏳</div>
+                <p className="text-sm font-bold text-yellow-600">{pendingOrdersCount}</p>
+                <p className="text-[9px] text-gray-600 text-center">Pending</p>
               </div>
             </div>
             
             <div className="bg-white rounded-lg shadow-sm p-2 border border-gray-200">
               <div className="flex flex-col items-center">
                 <div className="text-lg mb-1">💰</div>
-                <p className="text-sm font-bold text-teal-600">{sales.length}</p>
-                <p className="text-[9px] text-gray-600 text-center">Sales</p>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow-sm p-2 border border-gray-200">
-              <div className="flex flex-col items-center">
-                <div className="text-lg mb-1">💸</div>
-                <p className="text-sm font-bold text-indigo-600">${totalSalesAmount.toFixed(0)}</p>
-                <p className="text-[9px] text-gray-600 text-center">Amount</p>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow-sm p-2 border border-gray-200">
-              <div className="flex flex-col items-center">
-                <div className="text-lg mb-1">💬</div>
-                <p className="text-sm font-bold text-pink-600">0</p>
-                <p className="text-[9px] text-gray-600 text-center">Messages</p>
+                <p className="text-sm font-bold text-indigo-600">
+                  ${purchases.reduce((sum, order) => sum + (order.totalAmount || 0), 0).toFixed(0)}
+                </p>
+                <p className="text-[9px] text-gray-600 text-center">Spent</p>
               </div>
             </div>
           </div>
           
-          {/* Mobile Quick Actions - 2x2 Grid */}
+          {/* Mobile Quick Actions */}
           <div className="grid grid-cols-2 gap-4 mb-6">
-            {/* My Orders Card - Moved to top */}
+            {/* My Orders Card */}
             <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full">
               <div className="flex flex-col items-center mb-2">
                 <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center mb-2">
@@ -722,56 +745,20 @@ export default function DashboardPage() {
               </div>
             </div>
             
-            {/* My Sales Card - Moved to top */}
-            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full">
-              <div className="flex flex-col items-center mb-2">
-                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mb-2">
-                  <span className="text-xl">💰</span>
-                </div>
-                <h3 className="text-sm font-semibold text-gray-900 text-center">My Sales</h3>
-              </div>
-              <div className="mt-auto">
-                <Link 
-                  href="/dashboard/my-sales"
-                  className="w-full bg-purple-600 text-white py-2 px-3 rounded-lg hover:bg-purple-700 transition-colors text-xs font-medium text-center block"
-                >
-                  View
-                </Link>
-              </div>
-            </div>
-            
-            {/* Create Listing Card */}
-            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full">
-              <div className="flex flex-col items-center mb-2">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-2">
-                  <span className="text-xl">📝</span>
-                </div>
-                <h3 className="text-sm font-semibold text-gray-900 text-center">Create Listing</h3>
-              </div>
-              <div className="mt-auto">
-                <Link 
-                  href="/create-listing"
-                  className="w-full bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium text-center block"
-                >
-                  Create
-                </Link>
-              </div>
-            </div>
-            
-            {/* View Listings Card */}
+            {/* Browse Listings Card */}
             <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full">
               <div className="flex flex-col items-center mb-2">
                 <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mb-2">
                   <span className="text-xl">📦</span>
                 </div>
-                <h3 className="text-sm font-semibold text-gray-900 text-center">My Listings</h3>
+                <h3 className="text-sm font-semibold text-gray-900 text-center">Browse Listings</h3>
               </div>
               <div className="mt-auto">
                 <Link 
-                  href="/my-listings"
+                  href="/listings"
                   className="w-full bg-green-600 text-white py-2 px-3 rounded-lg hover:bg-green-700 transition-colors text-xs font-medium text-center block"
                 >
-                  View
+                  Browse
                 </Link>
               </div>
             </div>
@@ -789,7 +776,7 @@ export default function DashboardPage() {
               className={`flex-1 py-3 px-4 text-center font-medium text-sm ${activeTab === 'sales' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-gray-500'}`}
               onClick={() => setActiveTab('sales')}
             >
-              Sales
+              Recommendations
             </button>
           </div>
           
@@ -853,103 +840,54 @@ export default function DashboardPage() {
           {activeTab === 'sales' && (
             <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-md font-semibold text-gray-900">💰 Recent Sales</h3>
+                <h3 className="text-md font-semibold text-gray-900">🔍 Recommended for You</h3>
                 <Link 
-                  href="/dashboard/my-sales"
+                  href="/listings"
                   className="text-purple-600 hover:text-purple-800 font-medium text-xs"
                 >
                   View All →
                 </Link>
               </div>
               
-              {ordersLoading ? (
-                <div className="flex justify-center items-center py-6">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mr-2"></div>
-                  <span className="text-gray-600 text-sm">Loading...</span>
-                </div>
-              ) : sales.length > 0 ? (
-                <div className="space-y-3">
-                  {sales.slice(0, 2).map((sale) => (
-                    <div key={sale.id} className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-medium text-gray-900 text-sm">Sale #{sale.id ? sale.id.slice(-6).toUpperCase() : 'UNKNOWN'}</h4>
-                          <p className="text-xs text-gray-600">
-                            {formatDate(sale.createdAt)} • {sale.items?.length || 0} items
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-gray-900 text-sm">${(sale.totalAmount || 0).toFixed(2)}</p>
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(sale.status || '')}`}>
-                            {sale.status || 'Unknown'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-6">
-                  <div className="text-4xl mb-2">💰</div>
-                  <h4 className="text-md font-medium text-gray-900 mb-2">No sales yet</h4>
-                  <p className="text-gray-600 text-sm mb-3">
-                    You haven't made any sales yet
-                  </p>
-                  <Link 
-                    href="/create-listing"
-                    className="inline-block bg-purple-600 text-white px-3 py-1 rounded-lg hover:bg-purple-700 transition-colors text-xs"
-                  >
-                    Create Listing
-                  </Link>
-                </div>
-              )}
+              <div className="text-center py-6">
+                <div className="text-4xl mb-2">🔍</div>
+                <h4 className="text-md font-medium text-gray-900 mb-2">Personalized Recommendations</h4>
+                <p className="text-gray-600 text-sm mb-3">
+                  Based on your purchase history and preferences
+                </p>
+                <Link 
+                  href="/listings"
+                  className="inline-block bg-purple-600 text-white px-3 py-1 rounded-lg hover:bg-purple-700 transition-colors text-xs"
+                >
+                  Browse Now
+                </Link>
+              </div>
             </div>
           )}
         </div>
         
-        {/* Desktop View - Unchanged */}
+        {/* Desktop View - Buyer focused */}
         <div className="hidden md:block">
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             
-            {/* Create Listing Card */}
-            <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
-                  <span className="text-2xl">📝</span>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Create New Listing</h3>
-                  <p className="text-sm text-gray-600">Add items to your marketplace</p>
-                </div>
-              </div>
-              <div className="mt-auto pt-4">
-                <Link 
-                  href="/create-listing"
-                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium text-center block"
-                >
-                  Create Listing
-                </Link>
-              </div>
-            </div>
-            
-            {/* View Listings Card */}
+            {/* Browse Listings Card */}
             <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full">
               <div className="flex items-center mb-4">
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
                   <span className="text-2xl">📦</span>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">My Listings</h3>
-                  <p className="text-sm text-gray-600">Manage your active listings</p>
+                  <h3 className="text-lg font-semibold text-gray-900">Browse Listings</h3>
+                  <p className="text-sm text-gray-600">Discover new products</p>
                 </div>
               </div>
               <div className="mt-auto pt-4">
                 <Link 
-                  href="/my-listings"
+                  href="/listings"
                   className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium text-center block"
                 >
-                  View My Listings
+                  Browse Now
                 </Link>
               </div>
             </div>
@@ -975,55 +913,100 @@ export default function DashboardPage() {
               </div>
             </div>
             
-            {/* My Sales Card */}
+            {/* Saved Items Card */}
             <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full">
               <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
-                  <span className="text-2xl">💰</span>
+                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
+                  <span className="text-2xl">❤️</span>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">My Sales</h3>
-                  <p className="text-sm text-gray-600">Manage your sales</p>
+                  <h3 className="text-lg font-semibold text-gray-900">Saved Items</h3>
+                  <p className="text-sm text-gray-600">Your wishlist</p>
                 </div>
               </div>
               <div className="mt-auto pt-4">
                 <Link 
-                  href="/dashboard/my-sales"
-                  className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors font-medium text-center block"
+                  href="/dashboard/saved-items"
+                  className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors font-medium text-center block"
                 >
-                  View Sales
+                  View Saved
+                </Link>
+              </div>
+            </div>
+            
+            {/* Account Settings Card */}
+            <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
+                  <span className="text-2xl">⚙️</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Account Settings</h3>
+                  <p className="text-sm text-gray-600">Manage your profile</p>
+                </div>
+              </div>
+              <div className="mt-auto pt-4">
+                <Link 
+                  href="/dashboard/settings"
+                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium text-center block"
+                >
+                  Settings
                 </Link>
               </div>
             </div>
           </div>
           
-          {/* Statistics Cards - Extended */}
+          {/* Statistics Cards - Buyer focused */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-4 mb-8">
             <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
               <div className="flex flex-col items-center">
-                <div className="text-2xl mb-2">📊</div>
-                <p className="text-xl font-bold text-blue-600">{userListings.length}</p>
-                <p className="text-xs text-gray-600 text-center">Active Listings</p>
+                <div className="text-2xl mb-2">🛒</div>
+                <p className="text-xl font-bold text-orange-600">{purchases.length}</p>
+                <p className="text-xs text-gray-600 text-center">Total Orders</p>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+              <div className="flex flex-col items-center">
+                <div className="text-2xl mb-2">✅</div>
+                <p className="text-xl font-bold text-green-600">{completedOrdersCount}</p>
+                <p className="text-xs text-gray-600 text-center">Completed</p>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+              <div className="flex flex-col items-center">
+                <div className="text-2xl mb-2">⏳</div>
+                <p className="text-xl font-bold text-yellow-600">{pendingOrdersCount}</p>
+                <p className="text-xs text-gray-600 text-center">Pending</p>
               </div>
             </div>
             
             <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
               <div className="flex flex-col items-center">
                 <div className="text-2xl mb-2">💰</div>
-                <p className="text-xl font-bold text-green-600">
-                  ${userListings.reduce((sum, listing) => sum + (listing.price || 0), 0).toFixed(2)}
+                <p className="text-xl font-bold text-indigo-600">
+                  ${purchases.reduce((sum, order) => sum + (order.totalAmount || 0), 0).toFixed(2)}
                 </p>
-                <p className="text-xs text-gray-600 text-center">Listings Value</p>
+                <p className="text-xs text-gray-600 text-center">Total Spent</p>
               </div>
             </div>
             
             <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
               <div className="flex flex-col items-center">
-                <div className="text-2xl mb-2">👁️</div>
+                <div className="text-2xl mb-2">📦</div>
                 <p className="text-xl font-bold text-purple-600">
-                  {userListings.reduce((sum, listing) => sum + (listing.views || 0), 0)}
+                  {purchases.reduce((sum, order) => sum + (order.items?.length || 0), 0)}
                 </p>
-                <p className="text-xs text-gray-600 text-center">Total Views</p>
+                <p className="text-xs text-gray-600 text-center">Items Bought</p>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+              <div className="flex flex-col items-center">
+                <div className="text-2xl mb-2">❤️</div>
+                <p className="text-xl font-bold text-red-600">0</p>
+                <p className="text-xs text-gray-600 text-center">Saved Items</p>
               </div>
             </div>
             
@@ -1031,158 +1014,98 @@ export default function DashboardPage() {
               <div className="flex flex-col items-center">
                 <div className="text-2xl mb-2">⭐</div>
                 <p className="text-xl font-bold text-yellow-600">5.0</p>
-                <p className="text-xs text-gray-600 text-center">Seller Rating</p>
+                <p className="text-xs text-gray-600 text-center">Buyer Rating</p>
               </div>
             </div>
             
-            {/* My Purchases Card */}
             <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
               <div className="flex flex-col items-center">
-                <div className="text-2xl mb-2">🛒</div>
-                <p className="text-xl font-bold text-orange-600">{purchases.length}</p>
-                <p className="text-xs text-gray-600 text-center">My Purchases</p>
-              </div>
-            </div>
-            
-            {/* My Sales Card */}
-            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-              <div className="flex flex-col items-center">
-                <div className="text-2xl mb-2">💰</div>
-                <p className="text-xl font-bold text-teal-600">{sales.length}</p>
-                <p className="text-xs text-gray-600 text-center">My Sales</p>
-              </div>
-            </div>
-            
-            {/* Sales Amount Card */}
-            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-              <div className="flex flex-col items-center">
-                <div className="text-2xl mb-2">💸</div>
-                <p className="text-xl font-bold text-indigo-600">${totalSalesAmount.toFixed(2)}</p>
-                <p className="text-xs text-gray-600 text-center">Sales Amount</p>
-              </div>
-            </div>
-            
-            {/* Messages Card */}
-            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-              <div className="flex flex-col items-center">
-                <div className="text-2xl mb-2">💬</div>
-                <p className="text-xl font-bold text-pink-600">0</p>
-                <p className="text-xs text-gray-600 text-center">Messages</p>
+                <div className="text-2xl mb-2">🎁</div>
+                <p className="text-xl font-bold text-teal-600">0</p>
+                <p className="text-xs text-gray-600 text-center">Rewards</p>
               </div>
             </div>
           </div>
           
-          {/* Orders and Sales Summary */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {/* Recent Orders */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">🛒 Recent Orders</h3>
-                <Link 
-                  href="/dashboard/my-orders"
-                  className="text-orange-600 hover:text-orange-800 font-medium text-sm"
-                >
-                  View All Orders →
-                </Link>
-              </div>
-              
-              {ordersLoading ? (
-                <div className="flex justify-center items-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mr-3"></div>
-                  <span className="text-gray-600">Loading your orders...</span>
-                </div>
-              ) : purchases.length > 0 ? (
-                <div className="space-y-4">
-                  {purchases.slice(0, 3).map((order) => (
-                    <div key={order.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-medium text-gray-900">Order #{order.id ? order.id.slice(-8).toUpperCase() : 'UNKNOWN'}</h4>
-                          <p className="text-sm text-gray-600">
-                            {formatDate(order.createdAt)} • {order.items?.length || 0} items
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">User ID: {order.userId}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-gray-900">${(order.totalAmount || 0).toFixed(2)}</p>
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(order.status || '')}`}>
-                            {order.status || 'Unknown'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="text-5xl mb-3">🛒</div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">No orders yet</h4>
-                  <p className="text-gray-600 mb-4">
-                    You haven't made any purchases yet
-                  </p>
-                  <Link 
-                    href="/listings"
-                    className="inline-block bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors text-sm"
-                  >
-                    Start Shopping
-                  </Link>
-                </div>
-              )}
+          {/* Orders Summary */}
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">🛒 Recent Orders</h3>
+              <Link 
+                href="/dashboard/my-orders"
+                className="text-orange-600 hover:text-orange-800 font-medium text-sm"
+              >
+                View All Orders →
+              </Link>
             </div>
             
-            {/* Recent Sales */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">💰 Recent Sales</h3>
-                <Link 
-                  href="/dashboard/my-sales"
-                  className="text-purple-600 hover:text-purple-800 font-medium text-sm"
-                >
-                  View All Sales →
-                </Link>
+            {ordersLoading ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mr-3"></div>
+                <span className="text-gray-600">Loading your orders...</span>
               </div>
-              
-              {ordersLoading ? (
-                <div className="flex justify-center items-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mr-3"></div>
-                  <span className="text-gray-600">Loading your sales...</span>
-                </div>
-              ) : sales.length > 0 ? (
-                <div className="space-y-4">
-                  {sales.slice(0, 3).map((sale) => (
-                    <div key={sale.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-medium text-gray-900">Sale #{sale.id ? sale.id.slice(-8).toUpperCase() : 'UNKNOWN'}</h4>
-                          <p className="text-sm text-gray-600">
-                            {formatDate(sale.createdAt)} • {sale.items?.length || 0} items
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-gray-900">${(sale.totalAmount || 0).toFixed(2)}</p>
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(sale.status || '')}`}>
-                            {sale.status || 'Unknown'}
-                          </span>
-                        </div>
+            ) : purchases.length > 0 ? (
+              <div className="space-y-4">
+                {purchases.slice(0, 5).map((order) => (
+                  <div key={order.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-medium text-gray-900">Order #{order.id ? order.id.slice(-8).toUpperCase() : 'UNKNOWN'}</h4>
+                        <p className="text-sm text-gray-600">
+                          {formatDate(order.createdAt)} • {order.items?.length || 0} items
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-gray-900">${(order.totalAmount || 0).toFixed(2)}</p>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(order.status || '')}`}>
+                          {order.status || 'Unknown'}
+                        </span>
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="text-5xl mb-3">💰</div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">No sales yet</h4>
-                  <p className="text-gray-600 mb-4">
-                    You haven't made any sales yet
-                  </p>
-                  <Link 
-                    href="/create-listing"
-                    className="inline-block bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm"
-                  >
-                    Create Listing
-                  </Link>
-                </div>
-              )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-5xl mb-3">🛒</div>
+                <h4 className="text-lg font-medium text-gray-900 mb-2">No orders yet</h4>
+                <p className="text-gray-600 mb-4">
+                  You haven't made any purchases yet
+                </p>
+                <Link 
+                  href="/listings"
+                  className="inline-block bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors text-sm"
+                >
+                  Start Shopping
+                </Link>
+              </div>
+            )}
+          </div>
+          
+          {/* Recommendations */}
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">🔍 Recommended for You</h3>
+              <Link 
+                href="/listings"
+                className="text-purple-600 hover:text-purple-800 font-medium text-sm"
+              >
+                View All →
+              </Link>
+            </div>
+            
+            <div className="text-center py-8">
+              <div className="text-5xl mb-3">🔍</div>
+              <h4 className="text-lg font-medium text-gray-900 mb-2">Personalized Recommendations</h4>
+              <p className="text-gray-600 mb-4">
+                Based on your purchase history and preferences
+              </p>
+              <Link 
+                href="/listings"
+                className="inline-block bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm"
+              >
+                Browse Now
+              </Link>
             </div>
           </div>
         </div>
