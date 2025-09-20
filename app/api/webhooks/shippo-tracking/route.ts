@@ -1,7 +1,56 @@
 // pages/api/webhooks/shippo-tracking.ts
 import { NextApiRequest, NextApiResponse } from 'next';
 import { db } from '../../../../lib/firebase';
-import { collection, query, where, getDocs, doc, updateDoc, serverTimestamp, Timestamp, addDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, updateDoc, serverTimestamp, Timestamp, addDoc } from 'firebase/firestore';
+
+// TypeScript arayüz tanımlamaları
+interface TrackingStatus {
+  status: string;
+  status_details?: string;
+}
+
+interface TrackingHistoryItem {
+  status: string;
+  status_details?: string;
+  status_date: string;
+  location?: {
+    city?: string;
+    state?: string;
+  };
+}
+
+interface TrackingData {
+  tracking_number: string;
+  tracking_status?: TrackingStatus;
+  tracking_history?: TrackingHistoryItem[];
+}
+
+interface OrderItem {
+  id: string;
+  title: string;
+  quantity: number;
+  price: number;
+  imageUrl?: string;
+  isbn?: string;
+  condition?: string;
+  category?: string;
+}
+
+interface VendorBreakdown {
+  sellerId: string;
+  subtotal: number;
+  shippingCost: number;
+  items: OrderItem[];
+}
+
+interface OrderData {
+  status: string;
+  vendorBreakdown?: VendorBreakdown[];
+  orderNumber?: string;
+  customerInfo?: {
+    email?: string;
+  };
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -14,7 +63,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('Received Shippo webhook:', { event, tracking_number: data?.tracking_number });
     
     if (event === 'track_updated') {
-      await handleTrackingUpdate(data);
+      await handleTrackingUpdate(data as TrackingData);
     }
     
     res.status(200).json({ received: true });
@@ -24,7 +73,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 }
 
-async function handleTrackingUpdate(trackingData: any) {
+async function handleTrackingUpdate(trackingData: TrackingData) {
   const { tracking_number, tracking_status, tracking_history } = trackingData;
   
   if (!tracking_number) {
@@ -45,11 +94,11 @@ async function handleTrackingUpdate(trackingData: any) {
 
     // Process each matching order
     for (const orderDoc of querySnapshot.docs) {
-      const currentOrderData = orderDoc.data();
+      const currentOrderData = orderDoc.data() as OrderData;
       
-      const updateData: any = {
+      const updateData: Record<string, unknown> = {
         trackingStatus: tracking_status?.status || 'UNKNOWN',
-        trackingHistory: tracking_history?.map((item: any) => ({
+        trackingHistory: tracking_history?.map((item: TrackingHistoryItem) => ({
           status: item.status,
           message: item.status_details || item.status,
           timestamp: item.status_date ? Timestamp.fromDate(new Date(item.status_date)) : serverTimestamp(),
@@ -97,7 +146,7 @@ async function handleTrackingUpdate(trackingData: any) {
   }
 }
 
-async function scheduleVendorPayout(orderId: string, orderData: any) {
+async function scheduleVendorPayout(orderId: string, orderData: OrderData) {
   try {
     // Check if payout already exists
     const existingPayout = await getDocs(

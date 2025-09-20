@@ -60,16 +60,19 @@ export async function POST(request: NextRequest) {
     console.log(`Listing ${listingId} marked as sold by API`);
     
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error marking listing as sold:', error);
     
+    // Get error message safely
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
     // Handle specific errors from the transaction and send appropriate HTTP status codes
-    if (error.message.includes('already been sold')) {
+    if (errorMessage.includes('already been sold')) {
       return NextResponse.json(
-        { error: error.message },
+        { error: errorMessage },
         { status: 409 } // 409 Conflict
       );
-    } else if (error.message.includes('not found')) {
+    } else if (errorMessage.includes('not found')) {
       return NextResponse.json(
         { error: 'Listing not found' },
         { status: 404 } // 404 Not Found

@@ -348,7 +348,7 @@ export default function ContactPage() {
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6">Contact Us</h1>
           <p className="text-xl mb-8 max-w-2xl mx-auto">
-            Have questions or feedback? We'd love to hear from you. Send us a message through our internal messaging system.
+            Have questions or feedback? We&apos;d love to hear from you. Send us a message through our internal messaging system.
           </p>
         </div>
       </section>
@@ -393,7 +393,7 @@ export default function ContactPage() {
                 </div>
               </div>
               <p className="text-gray-700 italic">
-                "Great customer service! They responded to my message within a few hours and resolved my issue quickly."
+                &ldquo;Great customer service! They responded to my message within a few hours and resolved my issue quickly.&rdquo;
               </p>
               <div className="flex items-center mt-4">
                 <div className="flex text-yellow-400">
@@ -413,7 +413,7 @@ export default function ContactPage() {
                 </div>
               </div>
               <p className="text-gray-700 italic">
-                "The internal messaging system makes communication so easy. No need for external emails!"
+                &ldquo;The internal messaging system makes communication so easy. No need for external emails!&rdquo;
               </p>
               <div className="flex items-center mt-4">
                 <div className="flex text-yellow-400">
@@ -433,7 +433,7 @@ export default function ContactPage() {
                 </div>
               </div>
               <p className="text-gray-700 italic">
-                "Professional and responsive support team. They helped me understand the platform better."
+                &ldquo;Professional and responsive support team. They helped me understand the platform better.&rdquo;
               </p>
               <div className="flex items-center mt-4">
                 <div className="flex text-yellow-400">

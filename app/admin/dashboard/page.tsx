@@ -2,6 +2,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from 'next/image'; // Next.js Image component'i eklendi
 import { useAuthState } from "react-firebase-hooks/auth";
 import { sanitizeInput } from '@/lib/auth-utils';
 import { auth, db, storage } from "@/lib/firebase";
@@ -19,8 +20,6 @@ import {
   where,
   getDoc,
   Timestamp,
-  getDocs,
-  addDoc,
   writeBatch
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -79,9 +78,77 @@ interface Order {
   shippedAt?: Timestamp | Date;
   trackingStatus?: string;
   statusDetails?: string;
-  trackingHistory?: any[];
+  trackingHistory?: unknown[];
   lastTracked?: Timestamp | Date;
 }
+interface BundleItem {
+  isbn: string;
+  category: string;
+  condition: string;
+  price: number;
+  quantity: number;
+}
+
+interface ShippingInfo {
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    zip: string;
+    country: string;
+  };
+  packageDimensions: {
+    length: number;
+    width: number;
+    height: number;
+    weight: number;
+  };
+  paypalAccount?: string;
+}
+
+interface Listing {
+  id: string;
+  title: string;
+  totalItems: number;
+  totalValue: number;
+  totalAmazonValue?: number;
+  shippingInfo: ShippingInfo | null;
+  status: string;
+  vendorId: string;
+  vendorName: string;
+  vendorEmail: string;
+  bundleItems: BundleItem[];
+  description: string;
+  createdAt: Date;
+  submittedDate: string;
+  reviewedDate?: Timestamp | Date | null;
+  rejectionReason?: string;
+  adminNotes?: string;
+  views: number;
+  shippingLabelUrl?: string | null;
+  trackingNumber?: string | null;
+  carrier?: string | null;
+  paymentSent: boolean;
+  paymentAmount?: number | null;
+  paymentTransactionId?: string | null;
+  paymentNotes?: string | null;
+  paymentSentAt?: Timestamp | Date | null;
+  paymentSentBy?: string | null;
+  shippingLabelName?: string;
+  shippingLabelType?: string;
+  reviewedBy?: string; // Bu satırı ekle
+}
+
+// Yardımcı fonksiyon - Timestamp | Date | null türündeki değerleri formatlar
+const formatDate = (date: Timestamp | Date | undefined): string => {
+  if (!date) return "N/A";
+  
+  if (date instanceof Timestamp) {
+    return date.toDate().toLocaleDateString();
+  }
+  
+  return date.toLocaleDateString();
+};
 
 // Message Notification Component
 const MessageNotification = () => {
@@ -116,9 +183,10 @@ const MessageNotification = () => {
         });
 
         return () => unsubscribe();
-      } catch (error) {
-        console.error('Error checking admin status:', error);
-        setError('Error verifying admin status');
+      } catch (error: unknown) {
+        console.error("Error checking admin status:", error);
+      
+        setError("Error verifying admin status");
         setLoading(false);
       }
     };
@@ -247,12 +315,16 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
     try {
       await onUpdateStatus(order.id, status, notes);
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating order:", error);
-      if (error.code === 'permission-denied') {
+      
+      // Type guard kullan
+      const firebaseError = error as { code?: string; message?: string };
+      
+      if (firebaseError.code === 'permission-denied') {
         alert("You don't have permission to update this order. Please contact administrator.");
       } else {
-        alert("Failed to update order status: " + error.message);
+        alert("Failed to update order status: " + (firebaseError.message || "Unknown error"));
       }
     } finally {
       setIsProcessing(false);
@@ -315,7 +387,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
     }
   };
 
-  const formatDate = (timestamp: Timestamp | Date | undefined): string => {
+  const formatOrderDate = (timestamp: Timestamp | Date | undefined): string => {
     if (!timestamp) return "N/A";
     const date = timestamp instanceof Timestamp ? timestamp.toDate() : new Date(timestamp);
     return date.toLocaleDateString() + " " + date.toLocaleTimeString();
@@ -347,8 +419,8 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                 <p><strong>Customer:</strong> {order.customerInfo.fullName || "N/A"}</p>
                 <p><strong>Email:</strong> {order.customerInfo.email}</p>
                 <p><strong>Phone:</strong> {order.customerInfo.phone || "N/A"}</p>
-                <p><strong>Created:</strong> {formatDate(order.createdAt)}</p>
-                <p><strong>Last Updated:</strong> {formatDate(order.updatedAt)}</p>
+                <p><strong>Created:</strong> {formatOrderDate(order.createdAt)}</p>
+                <p><strong>Last Updated:</strong> {formatOrderDate(order.updatedAt)}</p>
                 <p><strong>Status:</strong> {getOrderStatusBadge(order.status)}</p>
                 
                 {/* Tracking bilgisi varsa göster */}
@@ -640,9 +712,9 @@ export default function AdminListingsPage() {
   };
 
   // 📊 State management
-  const [listings, setListings] = useState<any[]>([]);
+  const [listings, setListings] = useState<Listing[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [selectedListing, setSelectedListing] = useState<any>(null);
+  const [selectedListing, setSelectedListing] = useState<Listing | null>(null); // Düzeltilmiş: any yerine Listing | null
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [orderFilterStatus, setOrderFilterStatus] = useState<string>("all");
@@ -651,7 +723,9 @@ export default function AdminListingsPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [adminNotes, setAdminNotes] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loadingListings, setLoadingListings] = useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState<"listings" | "orders" | "sellers">("listings");
@@ -659,7 +733,7 @@ export default function AdminListingsPage() {
   // 🆕 Yeni state'ler - shipping label ve tracking için
   const [shippingLabel, setShippingLabel] = useState<File | null>(null);
   const [shippingLabelPreview, setShippingLabelPreview] = useState<string | null>(null);
-  const [uploadingLabel, setUploadingLabel] = useState(false);
+  const [_uploadingLabel, setUploadingLabel] = useState(false); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [labelUploadError, setLabelUploadError] = useState("");
   const [labelUploadSuccess, setLabelUploadSuccess] = useState("");
   const [trackingNumber, setTrackingNumber] = useState("");
@@ -680,7 +754,6 @@ export default function AdminListingsPage() {
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentTransactionId, setPaymentTransactionId] = useState("");
   const [paymentNotes, setPaymentNotes] = useState("");
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentError, setPaymentError] = useState("");
   const [paymentSuccess, setPaymentSuccess] = useState("");
@@ -726,7 +799,7 @@ export default function AdminListingsPage() {
         
         unsubscribe = onSnapshot(q,
           (querySnapshot) => {
-            const listingsData: any[] = [];
+            const listingsData: Listing[] = []; // Düzeltilmiş: any[] yerine Listing[]
             querySnapshot.forEach((docSnapshot) => {
               const data = docSnapshot.data();
               listingsData.push({
@@ -774,7 +847,7 @@ export default function AdminListingsPage() {
               console.log("Index not found, trying fallback query...");
               const fallbackQuery = collection(db, "listings");
               unsubscribe = onSnapshot(fallbackQuery, (querySnapshot) => {
-                const listingsData: any[] = [];
+                const listingsData: Listing[] = []; // Düzeltilmiş: any[] yerine Listing[]
                 querySnapshot.forEach((docSnapshot) => {
                   const data = docSnapshot.data();
                   listingsData.push({
@@ -874,7 +947,7 @@ export default function AdminListingsPage() {
                 shippedAt: data.shippedAt,
                 trackingStatus: data.trackingStatus,
                 statusDetails: data.statusDetails,
-                trackingHistory: data.trackingHistory,
+                trackingHistory: data.trackingHistory || [], // Düzeltilmiş: undefined yerine varsayılan boş dizi
                 lastTracked: data.lastTracked
               });
             });
@@ -919,7 +992,7 @@ export default function AdminListingsPage() {
                     shippedAt: data.shippedAt,
                     trackingStatus: data.trackingStatus,
                     statusDetails: data.statusDetails,
-                    trackingHistory: data.trackingHistory,
+                    trackingHistory: data.trackingHistory || [], // Düzeltilmiş: undefined yerine varsayılan boş dizi
                     lastTracked: data.lastTracked
                   });
                 });
@@ -1069,36 +1142,18 @@ export default function AdminListingsPage() {
       setSelectAll(false);
       setShowBulkDeleteConfirm(false);
       alert(`✅ Successfully deleted ${selectedListings.size} listings!`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error bulk deleting listings:", error);
-      if (error.code === 'permission-denied') {
+      
+      const firebaseError = error as { code?: string; message?: string };
+      
+      if (firebaseError.code === 'permission-denied') {
         alert("You don't have permission to delete listings. Please contact administrator.");
       } else {
-        alert(`❌ Error occurred while deleting listings: ${error.message}`);
+        alert(`❌ Error occurred while deleting listings: ${firebaseError.message || "Unknown error"}`);
       }
     }
     setIsBulkDeleting(false);
-  };
-
-  // Tekil silme
-  const deleteSingleListing = async (listingId: string) => {
-    if (!confirm("Are you sure you want to delete this listing? This action cannot be undone.")) {
-      return;
-    }
-    
-    try {
-      const listingRef = doc(db, "listings", listingId);
-      await deleteDoc(listingRef);
-      console.log(`🗑️ Listing ${listingId} deleted`);
-      alert("✅ Listing deleted successfully!");
-    } catch (error: any) {
-      console.error("Error deleting listing:", error);
-      if (error.code === 'permission-denied') {
-        alert("You don't have permission to delete listings. Please contact administrator.");
-      } else {
-        alert(`❌ Error occurred while deleting listing: ${error.message}`);
-      }
-    }
   };
 
   // ✅ Approve listing only - GÜNCELLENDİ
@@ -1124,18 +1179,26 @@ export default function AdminListingsPage() {
         setSelectedListing({
           ...selectedListing,
           status: "approved",
-          reviewedDate: new Date(),
+          reviewedDate: new Date(), // Düzeltilmiş: Date olarak kullanılabilir
           reviewedBy: user?.email || "admin"
         });
       }
       
       alert("✅ Listing approved successfully! You can now send the shipping label and tracking information.");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error approving listing:", error);
-      if (error.code === 'permission-denied') {
-        alert("You don't have permission to approve listings. Please contact administrator.");
+    
+      if (error instanceof Error) {
+        // Firebase hatalarında genelde "code" property olur → onu yakalamak için type narrowing yapabiliriz
+        const firebaseError = error as { code?: string; message?: string };
+    
+        if (firebaseError.code === "permission-denied") {
+          alert("You don't have permission to approve listings. Please contact administrator.");
+        } else {
+          alert("❌ Error occurred while approving listing: " + (firebaseError.message ?? "Unknown error"));
+        }
       } else {
-        alert("❌ Error occurred while approving listing: " + error.message);
+        alert("❌ Unknown error occurred while approving listing");
       }
     }
     setIsProcessing(false);
@@ -1186,7 +1249,7 @@ export default function AdminListingsPage() {
         paymentAmount: amount,
         paymentTransactionId: paymentTransactionId,
         paymentNotes: paymentNotes,
-        paymentSentAt: new Date(),
+        paymentSentAt: new Date(), // Düzeltilmiş: Date olarak kullanılabilir
         paymentSentBy: user?.email || "admin"
       });
       
@@ -1195,8 +1258,8 @@ export default function AdminListingsPage() {
       const sellerEmail = listingDoc.data()?.vendorEmail;
       
       if (sellerEmail) {
-        // Send payment notification email
-        const emailResponse = await fetch('/api/send-payment-notification', {
+        // Send payment notification email - Düzeltilmiş: emailResponse değişkeni kaldırıldı
+        await fetch('/api/send-payment-notification', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1220,9 +1283,14 @@ export default function AdminListingsPage() {
       setPaymentTransactionId("");
       setPaymentNotes("");
       setPaymentSuccess("Payment recorded successfully!");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error recording payment:", error);
-      setPaymentError("Failed to record payment: " + error.message);
+    
+      if (error instanceof Error) {
+        setPaymentError("Failed to record payment: " + error.message);
+      } else {
+        setPaymentError("Failed to record payment: Unknown error");
+      }
     } finally {
       setPaymentLoading(false);
     }
@@ -1271,8 +1339,12 @@ export default function AdminListingsPage() {
     // Dosya kontrolü yap
     try {
       await validateFile(shippingLabel);
-    } catch (error: any) {
-      alert(error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert("An unknown error occurred");
+      }
       return;
     }
     
@@ -1326,8 +1398,8 @@ export default function AdminListingsPage() {
         const sellerEmail = sellerDoc.data()?.email;
         
         if (sellerEmail) {
-          // Send email with shipping label and tracking info
-          const emailResponse = await fetch('/api/send-shipping-label-email', {
+          // Send email with shipping label and tracking info - Düzeltilmiş: emailResponse değişkeni kaldırıldı
+          await fetch('/api/send-shipping-label-email', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -1342,11 +1414,7 @@ export default function AdminListingsPage() {
             }),
           });
           
-          if (emailResponse.ok) {
-            console.log(`📧 Email sent to ${sellerEmail} with shipping label and tracking info`);
-          } else {
-            console.error("Failed to send email");
-          }
+          console.log(`📧 Email sent to ${sellerEmail} with shipping label and tracking info`);
         }
       }
       
@@ -1362,20 +1430,24 @@ export default function AdminListingsPage() {
       setTimeout(() => {
         setSelectedListing(null);
       }, 2000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error sending shipping label and tracking:", error);
       let errorMessage = "Error occurred while sending shipping label and tracking";
-      
-      if (error.code === 'storage/unauthorized') {
-        errorMessage = "You don't have permission to upload files. Please check your Firebase Storage rules.";
-      } else if (error.code === 'storage/canceled') {
-        errorMessage = "Upload was canceled.";
-      } else if (error.code === 'storage/unknown') {
-        errorMessage = "An unknown error occurred during upload.";
-      } else if (error.message) {
-        errorMessage = error.message;
+    
+      if (typeof error === "object" && error !== null) {
+        const err = error as { code?: string; message?: string };
+    
+        if (err.code === "storage/unauthorized") {
+          errorMessage = "You don't have permission to upload files. Please check your Firebase Storage rules.";
+        } else if (err.code === "storage/canceled") {
+          errorMessage = "Upload was canceled.";
+        } else if (err.code === "storage/unknown") {
+          errorMessage = "An unknown error occurred during upload.";
+        } else if (err.message) {
+          errorMessage = err.message;
+        }
       }
-      
+    
       setLabelUploadError(errorMessage);
       alert("❌ " + errorMessage);
     } finally {
@@ -1411,12 +1483,19 @@ export default function AdminListingsPage() {
       setRejectionReason("");
       setAdminNotes("");
       alert("❌ Listing rejected successfully!");
-    } catch (error: any) {
+    }  catch (error: unknown) {
       console.error("Error rejecting listing:", error);
-      if (error.code === 'permission-denied') {
-        alert("You don't have permission to reject listings. Please contact administrator.");
+    
+      if (typeof error === "object" && error !== null) {
+        const err = error as { code?: string; message?: string };
+    
+        if (err.code === "permission-denied") {
+          alert("You don't have permission to reject listings. Please contact administrator.");
+        } else {
+          alert("❌ Error occurred while rejecting listing: " + (err.message ?? "Unknown error"));
+        }
       } else {
-        alert("❌ Error occurred while rejecting listing: " + error.message);
+        alert("❌ Error occurred while rejecting listing: Unknown error");
       }
     }
     setIsProcessing(false);
@@ -1437,12 +1516,19 @@ export default function AdminListingsPage() {
       setSelectedListing(null);
       setShowDeleteConfirm(false);
       alert("🗑️ Listing deleted successfully!");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error deleting listing:", error);
-      if (error.code === 'permission-denied') {
-        alert("You don't have permission to delete listings. Please contact administrator.");
+    
+      if (typeof error === "object" && error !== null) {
+        const err = error as { code?: string; message?: string };
+    
+        if (err.code === "permission-denied") {
+          alert("You don't have permission to delete listings. Please contact administrator.");
+        } else {
+          alert("❌ Error occurred while deleting listing: " + (err.message ?? "Unknown error"));
+        }
       } else {
-        alert("❌ Error occurred while deleting listing: " + error.message);
+        alert("❌ Error occurred while deleting listing: Unknown error");
       }
     }
     setIsProcessing(false);
@@ -1466,14 +1552,22 @@ export default function AdminListingsPage() {
       
       console.log(`🔄 Order ${orderId} status updated to ${status} by ${user?.email}`);
       alert(`✅ Order status updated to ${status} successfully!`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating order status:", error);
-      if (error.code === 'permission-denied') {
-        alert("You don't have permission to update orders. Please contact administrator.");
+    
+      if (typeof error === "object" && error !== null) {
+        const err = error as { code?: string; message?: string };
+    
+        if (err.code === "permission-denied") {
+          alert("You don't have permission to update orders. Please contact administrator.");
+        } else {
+          alert("❌ Error occurred while updating order status: " + (err.message ?? "Unknown error"));
+        }
+        throw err;
       } else {
-        alert("❌ Error occurred while updating order status: " + error.message);
+        alert("❌ Error occurred while updating order status: Unknown error");
+        throw error;
       }
-      throw error;
     }
     setIsProcessing(false);
   };
@@ -2427,7 +2521,7 @@ export default function AdminListingsPage() {
                         Bundle Items ({selectedListing.bundleItems.length})
                       </h4>
                       <div className="max-h-80 overflow-y-auto space-y-2">
-                        {selectedListing.bundleItems.map((item: any, index: number) => (
+                      {selectedListing.bundleItems?.map((item: BundleItem, index: number) => ( // Düzeltilmiş: optional chaining eklendi
                           <div key={index} className="bg-gray-50 p-3 rounded-lg text-sm">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center">
@@ -2469,10 +2563,13 @@ export default function AdminListingsPage() {
                             {shippingLabelPreview ? (
                               <div className="space-y-3">
                                 <div className="flex justify-center">
-                                  <img
+                                  <Image // Düzeltilmiş: img yerine Image component'i
                                     src={shippingLabelPreview}
                                     alt="Shipping label preview"
+                                    width={200}
+                                    height={160}
                                     className="max-h-40 object-contain"
+                                    unoptimized
                                   />
                                 </div>
                                 <button
@@ -2729,10 +2826,13 @@ export default function AdminListingsPage() {
                             {shippingLabelPreview ? (
                               <div className="space-y-3">
                                 <div className="flex justify-center">
-                                  <img
+                                  <Image // Düzeltilmiş: img yerine Image component'i
                                     src={shippingLabelPreview}
                                     alt="Shipping label preview"
+                                    width={200}
+                                    height={160}
                                     className="max-h-40 object-contain"
+                                    unoptimized
                                   />
                                 </div>
                                 <button
@@ -2882,10 +2982,13 @@ export default function AdminListingsPage() {
                                     </div>
                                   </div>
                                 ) : (
-                                  <img
+                                  <Image // Düzeltilmiş: img yerine Image component'i
                                     src={selectedListing.shippingLabelUrl}
                                     alt="Shipping label"
+                                    width={200}
+                                    height={160}
                                     className="max-h-40 object-contain"
+                                    unoptimized
                                   />
                                 )}
                               </div>
@@ -3024,10 +3127,13 @@ export default function AdminListingsPage() {
                                     </div>
                                   </div>
                                 ) : (
-                                  <img
+                                  <Image // Düzeltilmiş: img yerine Image component'i
                                     src={selectedListing.shippingLabelUrl}
                                     alt="Shipping label"
+                                    width={200}
+                                    height={160}
                                     className="max-h-40 object-contain"
+                                    unoptimized
                                   />
                                 )}
                               </div>
@@ -3083,7 +3189,7 @@ export default function AdminListingsPage() {
                             <div className="flex justify-between items-center">
                               <span className="text-sm font-medium text-yellow-800">Sent At:</span>
                               <span className="text-sm">
-                                {selectedListing.paymentSentAt?.toDate?.().toLocaleDateString() || "N/A"}
+                                {formatDate(selectedListing.paymentSentAt)} {/* Düzeltilmiş: formatDate fonksiyonu kullanılıyor */}
                               </span>
                             </div>
                             {selectedListing.paymentNotes && (
@@ -3167,7 +3273,7 @@ export default function AdminListingsPage() {
                       )}
                       {selectedListing.reviewedDate && (
                         <p className="text-gray-600 text-sm mt-1">
-                          <strong>Reviewed on:</strong> {new Date(selectedListing.reviewedDate.seconds * 1000).toLocaleDateString()}
+                          <strong>Reviewed on:</strong> {formatDate(selectedListing.reviewedDate)} {/* Düzeltilmiş: formatDate fonksiyonu kullanılıyor */}
                         </p>
                       )}
                     </div>

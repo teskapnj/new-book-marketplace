@@ -37,37 +37,37 @@ interface StatsResponse {
 
 /**
  * POST /api/cleanup-cache
- * Süresi dolmuş cache kayıtlarını temizler
+ * Cleans up expired cache entries
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    // Auth kontrolü (opsiyonel - admin kullanıcı kontrolü eklenebilir)
+    // Auth check (optional - admin user check can be added)
     const authHeader = request.headers.get('authorization');
     const expectedToken = process.env.CACHE_CLEANUP_TOKEN;
     
     if (expectedToken && authHeader !== `Bearer ${expectedToken}`) {
       return NextResponse.json({
         success: false,
-        error: 'Yetkisiz erişim - geçersiz token'
+        error: 'Unauthorized access - invalid token'
       } as CleanupResponse, { status: 401 });
     }
 
-    console.log('🧹 Cache temizleme işlemi başlatılıyor...');
+    console.log('🧹 Starting cache cleanup operation...');
     
-    // Temizlemeden önceki istatistikleri al
+    // Get statistics before cleanup
     const beforeStats = await productCache.getCacheStats();
-    console.log(`📊 Temizlemeden önce: ${beforeStats.total} toplam, ${beforeStats.expired} süresi dolmuş, ${beforeStats.valid} geçerli`);
+    console.log(`📊 Before cleanup: ${beforeStats.total} total, ${beforeStats.expired} expired, ${beforeStats.valid} valid`);
     
-    // Süresi dolmuş cache'leri temizle
+    // Clean expired caches
     const deletedCount = await productCache.cleanExpiredCache();
     
-    // Temizlemeden sonraki istatistikleri al
+    // Get statistics after cleanup
     const afterStats = await productCache.getCacheStats();
-    console.log(`📊 Temizlemeden sonra: ${afterStats.total} toplam, ${afterStats.expired} süresi dolmuş, ${afterStats.valid} geçerli`);
+    console.log(`📊 After cleanup: ${afterStats.total} total, ${afterStats.expired} expired, ${afterStats.valid} valid`);
     
     const message = deletedCount > 0 
-      ? `${deletedCount} süresi dolmuş cache kaydı başarıyla silindi`
-      : 'Silinecek süresi dolmuş cache kaydı bulunamadı';
+      ? `${deletedCount} expired cache entries successfully deleted`
+      : 'No expired cache entries found to delete';
     
     console.log(`✅ ${message}`);
     
@@ -81,31 +81,31 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
     } as CleanupResponse);
 
-  } catch (error: any) {
-    console.error('❌ Cache temizleme hatası:', error);
+  } catch (error: unknown) {
+    console.error('❌ Cache cleanup error:', error);
     
     return NextResponse.json({
       success: false,
-      error: 'Cache temizleme işlemi sırasında bir hata oluştu'
+      error: 'An error occurred during cache cleanup operation'
     } as CleanupResponse, { status: 500 });
   }
 }
 
 /**
  * GET /api/cleanup-cache
- * Cache istatistiklerini ve durumunu gösterir
+ * Shows cache statistics and status
  */
 export async function GET(): Promise<NextResponse> {
   try {
-    console.log('📊 Cache istatistikleri getiriliyor...');
+    console.log('📊 Getting cache statistics...');
     
-    // Cache sağlık kontrolü
+    // Cache health check
     const cacheHealth = await productCache.checkCacheHealth();
     
-    // Cache istatistikleri
+    // Cache statistics
     const stats = await productCache.getCacheStats();
     
-    const message = `Cache durumu: ${stats.total} toplam kayıt (${stats.valid} aktif, ${stats.expired} süresi dolmuş)`;
+    const message = `Cache status: ${stats.total} total entries (${stats.valid} active, ${stats.expired} expired)`;
     
     console.log(`📊 ${message}`);
     
@@ -118,19 +118,19 @@ export async function GET(): Promise<NextResponse> {
       }
     } as StatsResponse);
 
-  } catch (error: any) {
-    console.error('❌ Cache istatistikleri hatası:', error);
+  } catch (error: unknown) {
+    console.error('❌ Cache statistics error:', error);
     
     return NextResponse.json({
       success: false,
-      error: 'Cache istatistikleri alınırken bir hata oluştu'
+      error: 'An error occurred while getting cache statistics'
     } as StatsResponse, { status: 500 });
   }
 }
 
 /**
  * DELETE /api/cleanup-cache
- * Belirli bir identifier'a ait cache kaydını siler
+ * Deletes cache entry for a specific identifier
  */
 export async function DELETE(request: NextRequest): Promise<NextResponse> {
   try {
@@ -140,27 +140,27 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
     if (!identifier) {
       return NextResponse.json({
         success: false,
-        error: 'Silinecek identifier (id) parametresi gerekli'
+        error: 'Identifier (id) parameter is required for deletion'
       }, { status: 400 });
     }
 
-    console.log(`🗑️ Cache kaydı siliniyor: ${identifier}`);
+    console.log(`🗑️ Deleting cache entry: ${identifier}`);
     
     await productCache.removeFromCache(identifier);
     
     return NextResponse.json({
       success: true,
       data: {
-        message: `Cache kaydı başarıyla silindi: ${identifier}`
+        message: `Cache entry successfully deleted: ${identifier}`
       }
     });
 
-  } catch (error: any) {
-    console.error('❌ Cache silme hatası:', error);
+  } catch (error: unknown) {
+    console.error('❌ Cache deletion error:', error);
     
     return NextResponse.json({
       success: false,
-      error: 'Cache kaydı silinirken bir hata oluştu'
+      error: 'An error occurred while deleting cache entry'
     }, { status: 500 });
   }
 }

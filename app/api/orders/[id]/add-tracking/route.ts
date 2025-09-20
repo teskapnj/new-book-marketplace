@@ -178,14 +178,14 @@ export async function POST(
      }
      
      // Siparişi güncelle (Admin SDK ile)
-     const updateData: any = {
-       trackingNumber: trackingNumber.toUpperCase(),
-       carrier: carrier.toLowerCase(), // Orijinal carrier'ı sakla
-       status: 'shipped',
-       shippedAt: FieldValue.serverTimestamp(),
-       trackingUrl,
-       updatedAt: FieldValue.serverTimestamp()
-     };
+     const updateData: Record<string, string | ReturnType<typeof FieldValue.serverTimestamp>> = {
+      trackingNumber: trackingNumber.toUpperCase(),
+      carrier: carrier.toLowerCase(),
+      status: 'shipped',
+      shippedAt: FieldValue.serverTimestamp(),
+      trackingUrl,
+      updatedAt: FieldValue.serverTimestamp()
+    };
      
      if (shippoSuccess) {
        updateData.trackingStatus = 'UNKNOWN';

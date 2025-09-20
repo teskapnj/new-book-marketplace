@@ -1,16 +1,31 @@
 // app/create-listing/shipping/page.tsx
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db, storage } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { FiHome, FiSave, FiPackage, FiX, FiCheck, FiAlertCircle, FiTruck, FiFileText, FiArrowLeft, FiArrowRight, FiMail, FiClock, FiCheckCircle, FiLogIn } from "react-icons/fi";
+import { FiHome, FiPackage, FiAlertCircle, FiTruck, FiFileText, FiArrowLeft, FiArrowRight, FiMail, FiLogIn } from "react-icons/fi";
 import Link from "next/link";
 import Head from "next/head";
 import DOMPurify from 'isomorphic-dompurify';
 
+interface ImageStats {
+  width: number;
+  height: number;
+  size: number;
+  format: string;
+}
+
+interface AmazonData {
+  title: string;
+  asin: string;
+  price: number;
+  sales_rank: number;
+  category: string;
+  image: string | null;
+}
 // Gerekli arayüz tanımlamaları
 interface BundleItem {
   id: string;
@@ -20,9 +35,9 @@ interface BundleItem {
   price: number;
   image: string | null;
   imageBlob: Blob | null;
-  imageStats?: any;
+  imageStats?: ImageStats; // any yerine ImageStats
   category: "book" | "cd" | "dvd" | "game" | "mix";
-  amazonData?: any;
+  amazonData?: AmazonData; // any yerine AmazonData
   ourPrice?: number;
   originalPrice?: number;
   imageUrl?: string | null;
@@ -87,7 +102,6 @@ export default function ShippingInfoPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [generatedTitle, setGeneratedTitle] = useState("");
   const [isMounted, setIsMounted] = useState(false);
   const [isPrivateMode, setIsPrivateMode] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
@@ -109,7 +123,7 @@ export default function ShippingInfoPage() {
         localStorage.setItem('test', 'test');
         localStorage.removeItem('test');
         setIsPrivateMode(false);
-      } catch (e) {
+      } catch {
         setIsPrivateMode(true);
       } finally {
         setIsMounted(true);
@@ -353,9 +367,7 @@ export default function ShippingInfoPage() {
     setError("");
     
     try {
-      const title = generateTitle();
-      setGeneratedTitle(title);
-      
+      const title = generateTitle();      
       const uploadedItems = await Promise.all(
         bundleItems.map(async (item) => {
           let finalImageUrl = null;

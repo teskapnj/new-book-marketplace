@@ -100,7 +100,7 @@ function CheckoutSuccessContent() {
           </h1>
 
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Thank you for your order! We've received your order and will begin processing it shortly.
+            Thank you for your order! We&apos;ve received your order and will begin processing it shortly.
           </p>
 
           {/* Order Details Card */}
@@ -147,7 +147,7 @@ function CheckoutSuccessContent() {
             <div className="text-left space-y-2 text-blue-800">
               <div className="flex items-start">
                 <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">1</span>
-                <span>We'll send you an email confirmation shortly</span>
+                <span>We&apos;ll send you an email confirmation shortly</span>
               </div>
               <div className="flex items-start">
                 <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">2</span>
@@ -155,7 +155,7 @@ function CheckoutSuccessContent() {
               </div>
               <div className="flex items-start">
                 <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">3</span>
-                <span>You'll receive tracking information once shipped</span>
+                <span>You&apos;ll receive tracking information once shipped</span>
               </div>
             </div>
           </div>
@@ -185,7 +185,7 @@ function CheckoutSuccessContent() {
             >
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012-2v1"></path>
+                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
               </svg>
               Copy Order ID
             </button>

@@ -3,11 +3,12 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "@/lib/firebase";
-import { 
-  collection, 
-  onSnapshot, 
-  doc, 
-  updateDoc, 
+import { Timestamp } from "firebase/firestore";
+import {
+  collection,
+  onSnapshot,
+  doc,
+  updateDoc,
   serverTimestamp,
   query,
   orderBy,
@@ -18,10 +19,36 @@ import { useRouter } from "next/navigation";
 export default function AdminListingsPage() {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
-  
+
+  interface BundleItem {
+    isbn: string;
+    category: string;
+    condition: string;
+    price: number;
+    quantity: number;
+  }
+
+  interface Listing {
+    id: string;
+    title: string;
+    totalItems: number;
+    totalValue: number;
+    status: "pending" | "approved" | "rejected";
+    vendorId: string;
+    vendorName: string;
+    bundleItems: BundleItem[];
+    createdAt: Date;
+    submittedDate: string;
+    reviewedDate?: Timestamp | Date;
+    rejectionReason?: string;
+    adminNotes?: string;
+    reviewedBy?: string;
+    views: number;
+  }
+
   // 📊 State management
-  const [listings, setListings] = useState<any[]>([]);
-  const [selectedListing, setSelectedListing] = useState<any>(null);
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -31,49 +58,49 @@ export default function AdminListingsPage() {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
   const [userName, setUserName] = useState<string>("");
-  
+
   // 📄 Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  
+
   // 🔐 Admin Role Authentication Check
   useEffect(() => {
     const checkAdminRole = async () => {
       console.log("🔍 Checking admin authentication...");
-      
+
       if (!loading && !user) {
         console.log("❌ No user found, redirecting to login");
         router.push("/login");
         return;
       }
-      
+
       if (user) {
         try {
           console.log("👤 Checking role for user:", user.uid);
           const userDoc = await getDoc(doc(db, "users", user.uid));
-          
+
           if (userDoc.exists()) {
             const userData = userDoc.data();
             const role = userData.role || "seller";
             const name = userData.name || user.displayName || "User";
-            
+
             console.log("🔍 User role found:", role);
             setUserRole(role);
             setUserName(name);
-            
+
             // Update localStorage with correct role
             localStorage.setItem("userRole", role);
             localStorage.setItem("userEmail", user.email || "");
             localStorage.setItem("userName", name);
             localStorage.setItem("userId", user.uid);
-            
+
             if (role !== "admin") {
               console.log("❌ User is not admin (role: " + role + "), redirecting to dashboard");
               alert("❌ Admin access required! You will be redirected to dashboard.");
               router.push("/dashboard");
               return;
             }
-            
+
             console.log("✅ Admin access confirmed for:", user.email);
           } else {
             console.log("❌ User document not found, redirecting to dashboard");
@@ -90,33 +117,33 @@ export default function AdminListingsPage() {
           return;
         }
       }
-      
+
       setRoleLoading(false);
     };
-    
+
     checkAdminRole();
   }, [user, loading, router]);
-  
+
   // 🔥 Real-time Firebase listener for listings
   useEffect(() => {
     if (!user || userRole !== "admin" || roleLoading) return;
-    
+
     console.log("🔥 Setting up real-time listings listener...");
     let unsubscribe: () => void;
-    
+
     const setupListener = () => {
       try {
         // Create query to get all listings ordered by creation date
         const listingsRef = collection(db, "listings");
         const q = query(listingsRef, orderBy("createdAt", "desc"));
-        
-        unsubscribe = onSnapshot(q, 
+
+        unsubscribe = onSnapshot(q,
           (querySnapshot) => {
             const listingsData: any[] = [];
-            
+
             querySnapshot.forEach((docSnapshot) => {
               const data = docSnapshot.data();
-              
+
               // Process listing data
               listingsData.push({
                 id: docSnapshot.id,
@@ -136,25 +163,25 @@ export default function AdminListingsPage() {
                 views: data.views || 0
               });
             });
-            
+
             setListings(listingsData);
             setLoadingListings(false);
             console.log(`✅ Loaded ${listingsData.length} listings from Firebase`);
           },
           (error) => {
             console.error("❌ Error fetching listings:", error);
-            
+
             // Fallback: try without ordering
             if (error.code === 'failed-precondition') {
               console.log("⚠️ Index not found, trying fallback query...");
               const fallbackQuery = collection(db, "listings");
-              
+
               unsubscribe = onSnapshot(fallbackQuery, (querySnapshot) => {
                 const listingsData: any[] = [];
-                
+
                 querySnapshot.forEach((docSnapshot) => {
                   const data = docSnapshot.data();
-                  
+
                   listingsData.push({
                     id: docSnapshot.id,
                     title: data.title || "Untitled Bundle",
@@ -173,10 +200,10 @@ export default function AdminListingsPage() {
                     views: data.views || 0
                   });
                 });
-                
+
                 // Sort manually by creation date
                 listingsData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-                
+
                 setListings(listingsData);
                 setLoadingListings(false);
                 console.log(`✅ Loaded ${listingsData.length} listings (fallback mode)`);
@@ -193,9 +220,9 @@ export default function AdminListingsPage() {
         alert("❌ Error connecting to database. Please refresh the page.");
       }
     };
-    
+
     setupListener();
-    
+
     // Cleanup listener on unmount
     return () => {
       if (unsubscribe) {
@@ -204,88 +231,88 @@ export default function AdminListingsPage() {
       }
     };
   }, [user, userRole, roleLoading]);
-  
+
   // 📈 Computed values
   const pendingListings = listings.filter(l => l.status === "pending");
   const approvedListings = listings.filter(l => l.status === "approved");
   const rejectedListings = listings.filter(l => l.status === "rejected");
-  
+
   // 🔍 Filtering and search logic
   let filteredListings = listings;
-  
+
   if (filterStatus !== "all") {
     filteredListings = filteredListings.filter(listing => listing.status === filterStatus);
   }
-  
+
   if (searchTerm) {
-    filteredListings = filteredListings.filter(listing => 
+    filteredListings = filteredListings.filter(listing =>
       listing.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       listing.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       listing.vendorName.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }
-  
+
   // 📄 Pagination calculations
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredListings.slice(indexOfFirstItem, indexOfLastItem);
-  
+
   const pageNumbers = [];
   for (let i = 1; i <= Math.ceil(filteredListings.length / itemsPerPage); i++) {
     pageNumbers.push(i);
   }
-  
+
   // ✅ Approve listing function - Updates Firebase
   const approveListing = async (listingId: string) => {
     if (!window.confirm("Are you sure you want to approve this listing?")) {
       return;
     }
-    
+
     setIsProcessing(true);
-    
+
     try {
       const listingRef = doc(db, "listings", listingId);
-      
+
       await updateDoc(listingRef, {
         status: "approved",
         reviewedDate: serverTimestamp(),
         reviewedBy: user?.email || "admin",
         adminNotes: adminNotes.trim() || null
       });
-      
+
       console.log(`✅ Listing ${listingId} approved by ${user?.email}`);
-      
+
       // Reset modal state
       setSelectedListing(null);
       setAdminNotes("");
-      
+
       // Show success message
       alert("✅ Listing approved successfully!");
-      
+
     } catch (error) {
       console.error("❌ Error approving listing:", error);
       alert("❌ Error occurred while approving listing! Please try again.");
     }
-    
+
     setIsProcessing(false);
   };
-  
+
   // ❌ Reject listing function - Updates Firebase
   const rejectListing = async (listingId: string) => {
     if (!rejectionReason.trim()) {
       alert("⚠️ Please provide a rejection reason");
       return;
     }
-    
+
     if (!window.confirm("Are you sure you want to reject this listing?")) {
       return;
     }
-    
+
     setIsProcessing(true);
-    
+
     try {
       const listingRef = doc(db, "listings", listingId);
-      
+
       await updateDoc(listingRef, {
         status: "rejected",
         reviewedDate: serverTimestamp(),
@@ -293,24 +320,24 @@ export default function AdminListingsPage() {
         rejectionReason: rejectionReason.trim(),
         adminNotes: adminNotes.trim() || null
       });
-      
+
       console.log(`❌ Listing ${listingId} rejected by ${user?.email}`);
-      
+
       // Reset modal state
       setSelectedListing(null);
       setRejectionReason("");
       setAdminNotes("");
-      
+
       alert("❌ Listing rejected successfully!");
-      
+
     } catch (error) {
       console.error("❌ Error rejecting listing:", error);
       alert("❌ Error occurred while rejecting listing! Please try again.");
     }
-    
+
     setIsProcessing(false);
   };
-  
+
   // 🎨 Helper functions
   const getStatusBadge = (status: string) => {
     const styles = {
@@ -319,19 +346,19 @@ export default function AdminListingsPage() {
       rejected: "bg-red-100 text-red-800 border-red-200"
     };
     const icons = { pending: "⏳", approved: "✅", rejected: "❌" };
-    
+
     return (
       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${styles[status as keyof typeof styles]}`}>
         {icons[status as keyof typeof icons]} <span className="ml-1 capitalize">{status}</span>
       </span>
     );
   };
-  
+
   const getCategoryIcon = (category: string) => {
     const icons = { book: "📚", cd: "💿", dvd: "📀", game: "🎮", mix: "📦" };
     return icons[category as keyof typeof icons] || "📦";
   };
-  
+
   // Loading state
   if (loading || roleLoading) {
     return (
@@ -344,7 +371,7 @@ export default function AdminListingsPage() {
       </div>
     );
   }
-  
+
   // Unauthorized access
   if (!user || userRole !== "admin") {
     return (
@@ -354,14 +381,14 @@ export default function AdminListingsPage() {
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
           <p className="text-gray-600 mb-4">You need admin privileges to access this page.</p>
           <div className="space-x-4">
-            <Link 
-              href="/login" 
+            <Link
+              href="/login"
               className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
             >
               Login
             </Link>
-            <Link 
-              href="/dashboard" 
+            <Link
+              href="/dashboard"
               className="inline-block bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
             >
               Go to Dashboard
@@ -371,41 +398,41 @@ export default function AdminListingsPage() {
       </div>
     );
   }
-  
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto py-6 px-4">
-        
+
         {/* 🏠 Navigation Header */}
         <div className="mb-6 flex justify-between items-center">
           <div className="flex space-x-4">
-            <Link 
+            <Link
               href="/"
               className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
             >
               ← Back to Home
             </Link>
-            <Link 
+            <Link
               href="/dashboard"
               className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
             >
               Dashboard
             </Link>
-            <Link 
+            <Link
               href="/listings"
               className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
             >
               Browse Listings
             </Link>
           </div>
-          
+
           {/* 👤 Admin info display */}
           <div className="text-sm text-gray-600">
             🔧 Admin: <span className="font-medium text-red-600">{userName}</span>
             <span className="text-gray-400 ml-2">({user?.email})</span>
           </div>
         </div>
-        
+
         {/* 📊 Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">🔧 Admin - Listings Management</h1>
@@ -414,7 +441,7 @@ export default function AdminListingsPage() {
             <p className="text-blue-600 text-sm mt-2">🔄 Loading listings...</p>
           )}
         </div>
-        
+
         {/* 🔍 Search and Filter Controls */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -446,7 +473,7 @@ export default function AdminListingsPage() {
             </div>
           </div>
         </div>
-        
+
         {/* 📈 Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-yellow-400">
@@ -458,7 +485,7 @@ export default function AdminListingsPage() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-400">
             <div className="flex items-center">
               <div className="text-3xl mr-4">✅</div>
@@ -468,7 +495,7 @@ export default function AdminListingsPage() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-red-400">
             <div className="flex items-center">
               <div className="text-3xl mr-4">❌</div>
@@ -478,7 +505,7 @@ export default function AdminListingsPage() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-400">
             <div className="flex items-center">
               <div className="text-3xl mr-4">📦</div>
@@ -489,7 +516,7 @@ export default function AdminListingsPage() {
             </div>
           </div>
         </div>
-        
+
         {/* 📋 Listings Table */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
@@ -500,7 +527,7 @@ export default function AdminListingsPage() {
               Showing {Math.min(indexOfFirstItem + 1, filteredListings.length)}-{Math.min(indexOfLastItem, filteredListings.length)} of {filteredListings.length}
             </div>
           </div>
-          
+
           {loadingListings ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -532,7 +559,7 @@ export default function AdminListingsPage() {
                       </th>
                     </tr>
                   </thead>
-                  
+
                   <tbody className="bg-white divide-y divide-gray-200">
                     {currentItems.map((listing) => (
                       <tr key={listing.id} className="hover:bg-gray-50 transition-colors">
@@ -546,7 +573,7 @@ export default function AdminListingsPage() {
                             </div>
                           </div>
                         </td>
-                        
+
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-900">
                             {listing.vendorName}
@@ -555,7 +582,7 @@ export default function AdminListingsPage() {
                             {listing.vendorId}
                           </div>
                         </td>
-                        
+
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-900">
                             📦 {listing.totalItems} items
@@ -564,15 +591,15 @@ export default function AdminListingsPage() {
                             💰 ${listing.totalValue.toFixed(2)}
                           </div>
                         </td>
-                        
+
                         <td className="px-6 py-4">
                           {getStatusBadge(listing.status)}
                         </td>
-                        
+
                         <td className="px-6 py-4 text-sm text-gray-500">
                           {listing.submittedDate}
                         </td>
-                        
+
                         <td className="px-6 py-4">
                           <button
                             onClick={() => setSelectedListing(listing)}
@@ -586,21 +613,21 @@ export default function AdminListingsPage() {
                   </tbody>
                 </table>
               </div>
-              
+
               {/* Empty state */}
               {filteredListings.length === 0 && (
                 <div className="text-center py-12">
                   <div className="text-6xl mb-4">📭</div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No listings found</h3>
                   <p className="text-gray-500">
-                    {searchTerm || filterStatus !== "all" 
+                    {searchTerm || filterStatus !== "all"
                       ? "Try adjusting your search or filter criteria."
                       : "No listings have been submitted yet."
                     }
                   </p>
                 </div>
               )}
-              
+
               {/* Pagination */}
               {filteredListings.length > itemsPerPage && (
                 <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
@@ -643,11 +670,10 @@ export default function AdminListingsPage() {
                           <button
                             key={number}
                             onClick={() => setCurrentPage(number)}
-                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                              currentPage === number
-                                ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                            }`}
+                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === number
+                              ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                              : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                              }`}
                           >
                             {number}
                           </button>
@@ -667,12 +693,12 @@ export default function AdminListingsPage() {
             </>
           )}
         </div>
-        
+
         {/* 🔍 Review Modal */}
         {selectedListing && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
             <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
-              
+
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-medium text-gray-900">
                   🔍 Review Listing: {selectedListing.title}
@@ -688,9 +714,9 @@ export default function AdminListingsPage() {
                   ✕
                 </button>
               </div>
-              
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                
+
                 {/* Left column - Listing information */}
                 <div className="space-y-4">
                   <div>
@@ -710,7 +736,7 @@ export default function AdminListingsPage() {
                       )}
                     </div>
                   </div>
-                  
+
                   {/* Bundle items preview */}
                   {selectedListing.bundleItems && selectedListing.bundleItems.length > 0 && (
                     <div>
@@ -736,10 +762,10 @@ export default function AdminListingsPage() {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Right column - Admin actions */}
                 <div className="space-y-4">
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       📝 Admin Notes
@@ -753,7 +779,7 @@ export default function AdminListingsPage() {
                       disabled={selectedListing.status !== "pending"}
                     />
                   </div>
-                  
+
                   {selectedListing.status === "pending" && (
                     <>
                       <div>
@@ -768,7 +794,7 @@ export default function AdminListingsPage() {
                           placeholder="Provide detailed reason for rejection..."
                         />
                       </div>
-                      
+
                       <div className="flex space-x-3">
                         <button
                           onClick={() => approveListing(selectedListing.id)}
@@ -787,7 +813,7 @@ export default function AdminListingsPage() {
                             "✅ Approve"
                           )}
                         </button>
-                        
+
                         <button
                           onClick={() => rejectListing(selectedListing.id)}
                           disabled={isProcessing || !rejectionReason.trim()}
@@ -806,24 +832,22 @@ export default function AdminListingsPage() {
                           )}
                         </button>
                       </div>
-                      
+
                       <div className="bg-yellow-50 p-3 rounded-lg">
                         <p className="text-yellow-800 text-sm">
-                          ⚠️ <strong>Review Guidelines:</strong> Ensure all items meet marketplace standards. 
+                          ⚠️ <strong>Review Guidelines:</strong> Ensure all items meet marketplace standards.
                           Check for appropriate pricing, accurate descriptions, and policy compliance.
                         </p>
                       </div>
                     </>
                   )}
-                  
+
                   {/* Show status if already reviewed */}
                   {selectedListing.status !== "pending" && (
-                    <div className={`p-4 rounded-lg ${
-                      selectedListing.status === 'approved' ? 'bg-green-50' : 'bg-red-50'
-                    }`}>
-                      <p className={`font-medium ${
-                        selectedListing.status === 'approved' ? 'text-green-800' : 'text-red-800'
+                    <div className={`p-4 rounded-lg ${selectedListing.status === 'approved' ? 'bg-green-50' : 'bg-red-50'
                       }`}>
+                      <p className={`font-medium ${selectedListing.status === 'approved' ? 'text-green-800' : 'text-red-800'
+                        }`}>
                         {selectedListing.status === 'approved' ? '✅' : '❌'} This listing has been {selectedListing.status}
                       </p>
                       {selectedListing.rejectionReason && (
@@ -843,25 +867,29 @@ export default function AdminListingsPage() {
                       )}
                       {selectedListing.reviewedDate && (
                         <p className="text-gray-600 text-sm mt-2">
-                          <strong>Reviewed on:</strong> {selectedListing.reviewedDate.seconds 
-                            ? new Date(selectedListing.reviewedDate.seconds * 1000).toLocaleString()
-                            : new Date(selectedListing.reviewedDate).toLocaleString()
+                          <strong>Reviewed on:</strong> {selectedListing.reviewedDate
+                            ? (selectedListing.reviewedDate instanceof Date
+                              ? selectedListing.reviewedDate.toLocaleString()
+                              : (selectedListing.reviewedDate && typeof selectedListing.reviewedDate === 'object' && 'seconds' in selectedListing.reviewedDate)
+                                ? new Date((selectedListing.reviewedDate as Timestamp).seconds * 1000).toLocaleString()
+                                : 'Invalid date')
+                            : 'Not reviewed'
                           }
                         </p>
                       )}
                     </div>
                   )}
-                  
+
                   {/* Real-time status indicator */}
                   <div className="bg-blue-50 p-3 rounded-lg">
                     <p className="text-blue-800 text-sm">
-                      🔄 <strong>Real-time Updates:</strong> This listing is monitored in real-time. 
+                      🔄 <strong>Real-time Updates:</strong> This listing is monitored in real-time.
                       Changes are instantly reflected across all admin panels and user interfaces.
                     </p>
                   </div>
                 </div>
               </div>
-              
+
               {/* Modal footer */}
               <div className="mt-6 pt-4 border-t border-gray-200">
                 <div className="flex justify-between items-center">
@@ -884,7 +912,7 @@ export default function AdminListingsPage() {
             </div>
           </div>
         )}
-        
+
         {/* 📊 Real-time connection indicator */}
         <div className="fixed bottom-4 right-4 z-40">
           <div className="bg-green-100 border border-green-200 rounded-lg px-3 py-2 shadow-sm">
@@ -894,15 +922,15 @@ export default function AdminListingsPage() {
             </div>
           </div>
         </div>
-        
+
         {/* 🎯 Quick Stats Footer */}
         {!loadingListings && (
           <div className="mt-8 bg-white rounded-lg shadow-sm p-4">
             <div className="flex justify-between items-center text-sm text-gray-600">
               <div>
-                📊 Dashboard Stats: {listings.length} total listings • 
-                {pendingListings.length} awaiting review • 
-                {approvedListings.length} approved • 
+                📊 Dashboard Stats: {listings.length} total listings •
+                {pendingListings.length} awaiting review •
+                {approvedListings.length} approved •
                 {rejectedListings.length} rejected
               </div>
               <div>

@@ -3,9 +3,32 @@ import { useState } from "react";
 import Link from "next/link";
 import { useStore } from "@/lib/store";
 
+// Import'lardan sonra bu interface'leri ekleyin:
+interface BundleItem {
+  id?: string;
+  isbn: string;
+  category: string;
+  condition: string;
+  price: number;
+  quantity: number;
+}
+
+interface Listing {
+  id: string;
+  title: string;
+  totalItems: number;
+  totalValue: number;
+  status: "pending" | "approved" | "rejected";
+  submittedDate: string;
+  rejectionReason?: string;
+  adminNotes?: string;
+  reviewedDate?: string;
+  bundleItems: BundleItem[];
+}
+
 export default function SellerListingsPage() {
   const { listings } = useStore();
-  const [selectedListing, setSelectedListing] = useState<any>(null);
+  const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
 
   const pendingCount = listings.filter(l => l.status === "pending").length;
   const approvedCount = listings.filter(l => l.status === "approved").length;
@@ -244,7 +267,7 @@ export default function SellerListingsPage() {
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
-                            {selectedListing.bundleItems.map((item: any, index: number) => (
+                          {selectedListing.bundleItems.map((item: BundleItem, index: number) => (
                               <tr key={item.id || index} className="hover:bg-gray-50">
                                 <td className="px-4 py-3 whitespace-nowrap">
                                   <div className="flex items-center">
@@ -289,7 +312,7 @@ export default function SellerListingsPage() {
                                 Total:
                               </td>
                               <td className="px-4 py-3 text-sm font-bold text-gray-900">
-                                {selectedListing.bundleItems.reduce((sum: number, item: any) => sum + item.quantity, 0)} items
+                              {selectedListing.bundleItems.reduce((sum: number, item: BundleItem) => sum + item.quantity, 0)} items
                               </td>
                               <td className="px-4 py-3 text-sm font-bold text-gray-900">
                                 ${selectedListing.totalValue.toFixed(2)}

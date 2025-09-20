@@ -6,6 +6,7 @@ import { useCart } from '@/contexts/CartContext';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import DOMPurify from 'isomorphic-dompurify'; // Bu satırı ekleyin
+import Image from 'next/image'; // Image bileşenini import et
 
 
 // Temporary types - move to lib/firebase/orders.ts later
@@ -50,7 +51,7 @@ interface OrderItem {
 
 interface VendorOrderBreakdown {
   sellerId: string;
-  items: any[];
+  items: OrderItem[];
   subtotal: number;
   shippingCost: number;
   itemCount: number;
@@ -96,7 +97,7 @@ async function createOrder(orderData: Omit<Order, 'orderNumber' | 'createdAt' | 
     console.log('=== CREATE ORDER SUCCESS ===');
 
     return docRef.id;
-  } catch (error: any) {
+  } catch (error) {
     console.log('=== CREATE ORDER ERROR ===');
     console.log('Raw error:', error);
     console.log('Error type:', typeof error);
@@ -116,9 +117,15 @@ async function createOrder(orderData: Omit<Order, 'orderNumber' | 'createdAt' | 
     throw error;
   }
 }
-
+interface CartItem {
+  id: string;
+  title: string;
+  price: number;
+  image?: string;
+  sellerId: string;
+}
 interface CheckoutData {
-  cartItems: any[];
+  cartItems: CartItem[];
   shippingAddress: {
     street1: string;
     city: string;
@@ -136,7 +143,7 @@ interface CheckoutData {
   };
   vendorBreakdown: Array<{
     sellerId: string;
-    items: any[];
+    items: CartItem[];
     subtotal: number;
     shippingCost: number;
     itemCount: number;
@@ -157,7 +164,6 @@ export default function CheckoutPage() {
 
   const [checkoutData, setCheckoutData] = useState<CheckoutData | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal' | 'demo'>('demo');
   const [apiErrors, setApiErrors] = useState<string[]>([]);
 
   // Guest user info
@@ -217,11 +223,15 @@ export default function CheckoutPage() {
               zip: DOMPurify.sanitize(parsedData.shippingAddress.zip),
               country: DOMPurify.sanitize(parsedData.shippingAddress.country || 'US')
             },
-            cartItems: parsedData.cartItems.map((item: any) => ({
-              ...item,
-              title: DOMPurify.sanitize(item.title || ''),
-              sellerId: DOMPurify.sanitize(item.sellerId || 'default-seller')
-            }))
+            cartItems: parsedData.cartItems.map((item: unknown) => {
+              // Type guard ile güvenli dönüşüm
+              const safeItem = item as Record<string, unknown>;
+              return {
+                ...safeItem,
+                title: DOMPurify.sanitize(String(safeItem.title || '')),
+                sellerId: DOMPurify.sanitize(String(safeItem.sellerId || 'default-seller'))
+              };
+            })
           };
 
           setCheckoutData(sanitizedData);
@@ -273,8 +283,8 @@ export default function CheckoutPage() {
           image: item.image,
           shippingCost: checkoutData.vendorShipping[item.sellerId || 'default-seller']?.shippingCost || 0
         })),
-        vendorBreakdown: checkoutData.vendorBreakdown,
-        sellerIds: [...new Set(checkoutData.cartItems.map(item => item.sellerId || 'default-seller'))] // YENİ EKLENDİ
+        vendorBreakdown: checkoutData.vendorBreakdown as VendorOrderBreakdown[],
+        sellerIds: [...new Set(checkoutData.cartItems.map(item => item.sellerId || 'default-seller'))]
       };
 
       // Siparişi Firebase'e kaydet
@@ -332,13 +342,14 @@ export default function CheckoutPage() {
           }
           console.log(`Successfully marked listing ${item.id} as sold`);
           return { id: item.id, success: true };
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error(`Failed to mark listing ${item.id} as sold:`, error);
 
           // Hata mesajını state'e ekle
-          setApiErrors(prev => [...prev, `Item ${item.id}: ${error.message || 'Unknown error'}`]);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          setApiErrors(prev => [...prev, `Item ${item.id}: ${errorMessage}`]);
 
-          return { id: item.id, success: false, error: error.message };
+          return { id: item.id, success: false, error: errorMessage };
         }
       });
 
@@ -367,11 +378,11 @@ export default function CheckoutPage() {
       // Başarı sayfasına yönlendir
       router.push(`/checkout/success?orderId=${orderId}`);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Order creation failed:', error);
-
+    
       // Firebase hatası için özel mesaj
-      if (error.code === 'permission-denied') {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'permission-denied') {
         alert('Permission denied. Please try again later.');
       } else {
         alert('Order could not be placed. Please try again.');
@@ -409,7 +420,7 @@ export default function CheckoutPage() {
             <div className="flex items-start">
               <span className="text-red-600 text-xl mr-3">⚠️</span>
               <div>
-                <h3 className="font-medium text-red-900">Some items couldn't be updated</h3>
+                <h3 className="font-medium text-red-900">Some items couldn&apos;t be updated</h3>
                 <p className="text-red-700 text-sm mt-1">
                   Your order was placed successfully, but we encountered issues updating some items:
                 </p>
@@ -537,7 +548,13 @@ export default function CheckoutPage() {
                       <div key={item.id} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
                         <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
                           {item.image ? (
-                            <img src={item.image} alt={DOMPurify.sanitize(item.title)} className="w-full h-full object-cover" />
+                            <Image 
+                              src={item.image} 
+                              alt={DOMPurify.sanitize(item.title)} 
+                              width={64}
+                              height={64}
+                              className="w-full h-full object-cover" 
+                            />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
                               <span className="text-2xl">📦</span>

@@ -153,7 +153,7 @@ export default function CategoryNotFound() {
         {/* Güvenli Arama Formu */}
         <div className="bg-white rounded-lg shadow-sm p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">
-            Couldn't find what you were looking for?
+          Couldn&apos;t find what you were looking for?
           </h3>
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4">
             <input

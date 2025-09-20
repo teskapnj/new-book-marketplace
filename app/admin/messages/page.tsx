@@ -12,16 +12,34 @@ import {
   deleteDoc,
   serverTimestamp,
   query,
-  orderBy
+  orderBy,
+  Timestamp
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+
+// Type definitions
+interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: 'unread' | 'read' | 'replied';
+  replied: boolean;
+  replyMessage?: string;
+  createdAt: Timestamp | Date;
+  readAt?: Timestamp | Date;
+  readBy?: string;
+  repliedAt?: Timestamp | Date;
+  repliedBy?: string;
+}
 
 // Admin Messages Management Component
 const AdminMessagesManagement = () => {
   const [user] = useAuthState(auth);
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedMessage, setSelectedMessage] = useState<any>(null);
+  const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
   const [filter, setFilter] = useState('all');
@@ -33,13 +51,23 @@ const AdminMessagesManagement = () => {
     const q = query(messagesRef, orderBy('createdAt', 'desc'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const messageList: any[] = [];
+      const messageList: ContactMessage[] = [];
       snapshot.forEach((doc) => {
         const data = doc.data();
         messageList.push({
           id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate() || new Date()
+          name: data.name || '',
+          email: data.email || '',
+          subject: data.subject || '',
+          message: data.message || '',
+          status: data.status || 'unread',
+          replied: data.replied || false,
+          replyMessage: data.replyMessage,
+          createdAt: data.createdAt?.toDate() || new Date(),
+          readAt: data.readAt?.toDate(),
+          readBy: data.readBy,
+          repliedAt: data.repliedAt?.toDate(),
+          repliedBy: data.repliedBy
         });
       });
       setMessages(messageList);
@@ -112,9 +140,9 @@ const AdminMessagesManagement = () => {
     }
   };
 
-  const formatDate = (date: any) => {
+  const formatDate = (date: Timestamp | Date | undefined): string => {
     if (!date) return 'N/A';
-    const d = date instanceof Date ? date : date.toDate();
+    const d = date instanceof Date ? date : (date instanceof Timestamp ? date.toDate() : new Date(date));
     return d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
   };
 
@@ -358,10 +386,10 @@ const AdminMessagesManagement = () => {
                     onChange={(e) => setReplyText(e.target.value)}
                     rows={4}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Type your reply here... (This will be saved to Firebase and the user's email will be copied to clipboard for manual sending)"
+                    placeholder="Type your reply here... (This will be saved to Firebase and the user&apos;s email will be copied to clipboard for manual sending)"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    💡 Tip: After saving, the user's email will be copied to your clipboard so you can send them a manual email.
+                    💡 Tip: After saving, the user&apos;s email will be copied to your clipboard so you can send them a manual email.
                   </p>
                 </div>
               </div>

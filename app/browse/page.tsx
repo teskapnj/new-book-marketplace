@@ -8,15 +8,6 @@ import Image from "next/image";
 import ProductCard from "@/components/ProductCard";
 import DOMPurify from 'isomorphic-dompurify'; // Bu satırı ekleyin
 
-// SVG İkon Bileşenleri
-function FilterIcon({ size = 24, className = "" }) {
-  return (
-    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-    </svg>
-  );
-}
-
 function GridIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

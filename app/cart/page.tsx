@@ -7,6 +7,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import DOMPurify from 'isomorphic-dompurify'; // Bu satırı ekleyin
+import Image from 'next/image'; // Image bileşenini import et
 
 // USPS Media Mail pricing table (weight in lbs to cost in $)
 const uspsMediaMailPricing: Record<number, number> = {
@@ -609,7 +610,7 @@ export default function CartPage() {
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Your cart is empty</h2>
             <p className="text-gray-600 mb-8 max-w-md mx-auto">
-              Looks like you haven't added any items to your cart yet.
+              Looks like you haven&apos;t added any items to your cart yet.
             </p>
             <Link
               href="/"
@@ -665,9 +666,11 @@ export default function CartPage() {
                                 {/* Product Image */}
                                 <div className="flex-shrink-0 w-20 h-20 bg-gray-100 rounded-lg overflow-hidden">
                                   {item.image && !hasImageError ? (
-                                    <img
+                                    <Image
                                       src={item.image}
                                       alt={DOMPurify.sanitize(item.title)}
+                                      width={80}
+                                      height={80}
                                       className="w-full h-full object-cover hover:opacity-90 transition-opacity"
                                       onError={() => handleImageError(item.id, item.sellerId || "default-seller")}
                                     />

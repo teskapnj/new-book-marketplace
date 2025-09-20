@@ -1,20 +1,19 @@
-// app/create-listing/page.tsx
 "use client";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db, storage } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { FiHome, FiSave, FiCamera, FiDollarSign, FiPackage, FiX, FiCheck, FiAlertCircle, FiSearch, FiStar, FiTrendingUp, FiFileText, FiTruck, FiBookOpen, FiUser, FiLogIn, FiSettings, FiMessageSquare, FiMail, FiClock, FiCheckCircle, FiList, FiArrowRight } from "react-icons/fi";
+import { FiHome, FiCamera, FiDollarSign, FiPackage, FiX, FiCheck, FiAlertCircle, FiSearch, FiBookOpen, FiUser, FiLogIn, FiSettings, FiMessageSquare, FiMail, FiClock, FiCheckCircle, FiList, FiArrowRight } from "react-icons/fi";
 import Link from "next/link";
 import Head from "next/head";
 import axios from "axios";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
-import { smartOptimizeImage, formatFileSize } from "@/utils/imageOptimization";
 import { AmazonProduct, PricingResult } from "@/lib/pricingEngine";
 import DOMPurify from 'isomorphic-dompurify';
 import UserListingsSection from "@/components/UserListingsSection";
+import Image from 'next/image';
 
 interface BundleItem {
   id: string;
@@ -24,7 +23,12 @@ interface BundleItem {
   price: number;
   image: string | null;
   imageBlob: Blob | null;
-  imageStats?: any;
+  imageStats?: {
+    width: number;
+    height: number;
+    size: number;
+    format: string;
+  };
   category: "book" | "cd" | "dvd" | "game" | "mix";
   amazonData?: AmazonProduct;
   ourPrice?: number;
@@ -71,7 +75,6 @@ export default function CreateListingPage() {
   });
   const [bundleItems, setBundleItems] = useState<BundleItem[]>([]);
   const [description, setDescription] = useState<string>('');
-  const [descriptionError, setDescriptionError] = useState<string>('');
   const [shippingInfo, setShippingInfo] = useState<ShippingInfo>({
     firstName: "",
     lastName: "",
@@ -90,20 +93,10 @@ export default function CreateListingPage() {
     },
     paypalAccount: ""
   });
-  const [shippingError, setShippingError] = useState<string>('');
-  const [dimensionErrors, setDimensionErrors] = useState({
-    length: '',
-    width: '',
-    height: '',
-    weight: ''
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
-  const [generatedTitle, setGeneratedTitle] = useState("");
-  const [showSuccess, setShowSuccess] = useState(false);
+
   const [uploadProgress, setUploadProgress] = useState("");
-  const [imageProcessing, setImageProcessing] = useState(false);
   const [isPrivateMode, setIsPrivateMode] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
@@ -117,8 +110,8 @@ export default function CreateListingPage() {
   const [scannerError, setScannerError] = useState("");
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [popupTimer, setPopupTimer] = useState<NodeJS.Timeout | null>(null);
-  const [prevUser, setPrevUser] = useState(user); // Track previous user state
-  const [showUserListings, setShowUserListings] = useState(false); // Yeni state eklendi
+  const [prevUser, setPrevUser] = useState(user);
+  const [showUserListings, setShowUserListings] = useState(false);
 
   const totalOurPrice = bundleItems.reduce((total, item) => {
     return total + (item.price * item.quantity);
@@ -138,156 +131,13 @@ export default function CreateListingPage() {
 
   const validateDescription = (text: string): boolean => {
     if (text.length > 500) {
-      setDescriptionError("Description must be 500 characters or less");
+      setError("Description must be 500 characters or less");
       return false;
     }
-    setDescriptionError("");
+    setError("");
     return true;
   };
 
-  const validateShippingInfo = (): boolean => {
-    setDimensionErrors({
-      length: '',
-      width: '',
-      height: '',
-      weight: ''
-    });
-
-    if (!shippingInfo.firstName.trim() || !shippingInfo.lastName.trim()) {
-      setShippingError("Please enter your first and last name");
-      return false;
-    }
-
-    if (!shippingInfo.paypalAccount.trim()) {
-      setShippingError("Please enter your PayPal account email");
-      return false;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(shippingInfo.paypalAccount)) {
-      setShippingError("Please enter a valid PayPal email address");
-      return false;
-    }
-
-    if (!shippingInfo.address.street || !shippingInfo.address.city ||
-      !shippingInfo.address.state || !shippingInfo.address.zip) {
-      setShippingError("Please fill in all address fields");
-      return false;
-    }
-
-    if (shippingInfo.packageDimensions.length <= 0 || shippingInfo.packageDimensions.width <= 0 ||
-      shippingInfo.packageDimensions.height <= 0 || shippingInfo.packageDimensions.weight <= 0) {
-      setShippingError("Please enter valid package dimensions and weight");
-      return false;
-    }
-
-    if (shippingInfo.packageDimensions.weight > 50) {
-      setDimensionErrors(prev => ({ ...prev, weight: "Weight cannot exceed 50 pounds" }));
-      setShippingError("Package weight cannot exceed 50 pounds");
-      return false;
-    }
-
-    if (shippingInfo.packageDimensions.length > 18) {
-      setDimensionErrors(prev => ({ ...prev, length: "Length cannot exceed 18 inches" }));
-    }
-
-    if (shippingInfo.packageDimensions.width > 16) {
-      setDimensionErrors(prev => ({ ...prev, width: "Width cannot exceed 16 inches" }));
-    }
-
-    if (shippingInfo.packageDimensions.height > 16) {
-      setDimensionErrors(prev => ({ ...prev, height: "Height cannot exceed 16 inches" }));
-    }
-
-    if (shippingInfo.packageDimensions.length > 18 || shippingInfo.packageDimensions.width > 16 || shippingInfo.packageDimensions.height > 16) {
-      setShippingError("Package dimensions cannot exceed 18x16x16 inches");
-      return false;
-    }
-
-    setShippingError("");
-    return true;
-  };
-
-  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const text = e.target.value;
-    setDescription(text);
-    validateDescription(text);
-  };
-
-  const handleNameChange = (field: keyof Pick<ShippingInfo, 'firstName' | 'lastName'>, value: string) => {
-    setShippingInfo(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const handlePaypalAccountChange = (value: string) => {
-    setShippingInfo(prev => ({
-      ...prev,
-      paypalAccount: value
-    }));
-  };
-
-  const handleAddressChange = (field: keyof Address, value: string) => {
-    setShippingInfo(prev => ({
-      ...prev,
-      address: {
-        ...prev.address,
-        [field]: value
-      }
-    }));
-  };
-
-  const handlePackageDimensionsChange = (field: keyof PackageDimensions, value: number) => {
-    const numValue = isNaN(value) ? 0 : value;
-    setShippingInfo(prev => ({
-      ...prev,
-      packageDimensions: {
-        ...prev.packageDimensions,
-        [field]: numValue
-      }
-    }));
-
-    const newErrors = { ...dimensionErrors };
-    switch (field) {
-      case 'weight':
-        if (numValue > 50) {
-          newErrors.weight = "Weight cannot exceed 50 pounds";
-        } else {
-          newErrors.weight = '';
-        }
-        break;
-      case 'length':
-        if (numValue > 18) {
-          newErrors.length = "Length cannot exceed 18 inches";
-        } else {
-          newErrors.length = '';
-        }
-        break;
-      case 'width':
-        if (numValue > 16) {
-          newErrors.width = "Width cannot exceed 16 inches";
-        } else {
-          newErrors.width = '';
-        }
-        break;
-      case 'height':
-        if (numValue > 16) {
-          newErrors.height = "Height cannot exceed 16 inches";
-        } else {
-          newErrors.height = '';
-        }
-        break;
-    }
-
-    setDimensionErrors(newErrors);
-
-    if (newErrors.length || newErrors.width || newErrors.height || newErrors.weight) {
-      setShippingError("Package exceeds size or weight limits");
-    } else if (shippingError === "Package exceeds size or weight limits") {
-      setShippingError("");
-    }
-  };
 
   const getCategoryFromPricing = (pricingCategory: string): "book" | "cd" | "dvd" | "game" | "mix" => {
     switch (pricingCategory) {
@@ -304,6 +154,7 @@ export default function CreateListingPage() {
     setError("");
     setScannerError("");
   }, []);
+
   const clearAmazonCard = () => {
     setAmazonResult(null);
     setError("");
@@ -414,10 +265,8 @@ export default function CreateListingPage() {
         }
 
         if (pricing.accepted && pricing.ourPrice) {
-
           autoAddAcceptedItem(code, product, pricing);
 
-          // Bu satırları ekleyin:
           setTimeout(() => {
             setAmazonResult(null);
             setError("");
@@ -428,8 +277,7 @@ export default function CreateListingPage() {
               imageUrl: null,
               amazonData: undefined
             }));
-          }, 10000); // 10 saniye sonra temizle
-
+          }, 10000);
         } else {
           setTimeout(() => {
             setAmazonResult(null);
@@ -450,9 +298,10 @@ export default function CreateListingPage() {
           setAmazonResult(null);
         }, 3000);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Amazon API error:', err);
-      setError(err.response?.data?.error || 'Error occurred during Amazon check');
+      const errorMessage = err instanceof Error ? err.message : 'Error occurred during Amazon check';
+      setError(errorMessage);
       setTimeout(() => {
         setError("");
         setAmazonResult(null);
@@ -467,7 +316,9 @@ export default function CreateListingPage() {
     } finally {
       setIsCheckingAmazon(false);
     }
-  }, [autoAddAcceptedItem]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoAddAcceptedItem, clearAmazonResults]);
+
 
   const handleScanBarcode = () => {
     if (!isMobile) {
@@ -486,7 +337,6 @@ export default function CreateListingPage() {
   };
 
   const {
-    isScanning,
     isCameraReady,
     error: cameraError,
     startScanning,
@@ -508,7 +358,7 @@ export default function CreateListingPage() {
         localStorage.setItem('test', 'test');
         localStorage.removeItem('test');
         setIsPrivateMode(false);
-      } catch (e) {
+      } catch {
         setIsPrivateMode(true);
       } finally {
         setIsMounted(true);
@@ -519,13 +369,11 @@ export default function CreateListingPage() {
     initializeStorage();
   }, []);
 
-  // YENİ EKLENEN KOD: Shipping sayfasından gelen popup flag'ini kontrol et
   useEffect(() => {
     try {
       const showPopup = localStorage.getItem('showSuccessPopup');
       if (showPopup === 'true') {
         setShowSuccessPopup(true);
-        // Flag'i temizle ki sayfa yenilendiğinde tekrar gösterilmesin
         localStorage.removeItem('showSuccessPopup');
       }
     } catch (error) {
@@ -533,35 +381,46 @@ export default function CreateListingPage() {
     }
   }, []);
 
-  const validateAndSanitizeData = (parsed: any) => {
+  const validateAndSanitizeData = (parsed: unknown) => {
     if (!parsed || typeof parsed !== 'object') {
       return null;
     }
+    const parsedData = parsed as Record<string, unknown>; // Bu satırı ekle
 
     let sanitizedBundleItems: BundleItem[] = [];
-    if (Array.isArray(parsed.bundleItems)) {
-      sanitizedBundleItems = parsed.bundleItems.map((item: any) => ({
-        ...item,
-        id: item.id ? DOMPurify.sanitize(item.id.toString()).substring(0, 50) : '',
-        isbn: item.isbn ? DOMPurify.sanitize(item.isbn.toString()).substring(0, 50) : '',
-        condition: "very-good",
-        quantity: typeof item.quantity === 'number' ? Math.max(1, item.quantity) : 1,
-        price: typeof item.price === 'number' ? Math.max(0, item.price) : 0,
-        category: ['book', 'cd', 'dvd', 'game', 'mix'].includes(item.category) ? item.category : 'book',
-        imageUrl: item.imageUrl && typeof item.imageUrl === 'string' ? item.imageUrl : null,
-        amazonData: item.amazonData ? {
-          title: item.amazonData.title ? DOMPurify.sanitize(item.amazonData.title).substring(0, 200) : '',
-          asin: item.amazonData.asin ? DOMPurify.sanitize(item.amazonData.asin).substring(0, 50) : '',
-          price: typeof item.amazonData.price === 'number' ? item.amazonData.price : 0,
-          category: item.amazonData.category ? DOMPurify.sanitize(item.amazonData.category).substring(0, 50) : '',
-          image: item.amazonData.image && typeof item.amazonData.image === 'string' ? item.amazonData.image : null
-        } : undefined
-      }));
+    if (Array.isArray(parsedData.bundleItems)) {
+      sanitizedBundleItems = (parsedData.bundleItems as unknown[]).map((item: unknown) => {
+        const safeItem = item as Record<string, unknown>;
+        const safeAmazonData = safeItem.amazonData as Record<string, unknown> | undefined;
+
+        return {
+          ...safeItem,
+          id: safeItem.id ? DOMPurify.sanitize(safeItem.id.toString()).substring(0, 50) : '',
+          isbn: safeItem.isbn ? DOMPurify.sanitize(safeItem.isbn.toString()).substring(0, 50) : '',
+          condition: "very-good" as const,
+          quantity: typeof safeItem.quantity === 'number' ? Math.max(1, safeItem.quantity) : 1,
+          price: typeof safeItem.price === 'number' ? Math.max(0, safeItem.price) : 0,
+          category: ['book', 'cd', 'dvd', 'game', 'mix'].includes(safeItem.category as string)
+            ? (safeItem.category as "book" | "cd" | "dvd" | "game" | "mix")
+            : 'book' as const,
+          imageUrl: safeItem.imageUrl && typeof safeItem.imageUrl === 'string' ? safeItem.imageUrl : null,
+          amazonData: safeAmazonData ? {
+            title: safeAmazonData.title ? DOMPurify.sanitize(safeAmazonData.title.toString()).substring(0, 200) : '',
+            asin: safeAmazonData.asin ? DOMPurify.sanitize(safeAmazonData.asin.toString()).substring(0, 50) : '',
+            price: typeof safeAmazonData.price === 'number' ? safeAmazonData.price : 0,
+            sales_rank: typeof safeAmazonData.sales_rank === 'number' ? safeAmazonData.sales_rank : 0,
+            category: safeAmazonData.category ? DOMPurify.sanitize(safeAmazonData.category.toString()).substring(0, 50) : '',
+            image: safeAmazonData.image && typeof safeAmazonData.image === 'string' ? safeAmazonData.image : null
+          } : undefined,
+          image: null,
+          imageBlob: null
+        };
+      });
     }
 
     let sanitizedDescription = '';
-    if (typeof parsed.description === 'string') {
-      sanitizedDescription = DOMPurify.sanitize(parsed.description).substring(0, 500);
+    if (typeof parsedData.description === 'string') {
+      sanitizedDescription = DOMPurify.sanitize(parsedData.description).substring(0, 500);
     }
 
     let sanitizedShippingInfo: ShippingInfo = {
@@ -583,23 +442,27 @@ export default function CreateListingPage() {
       }
     };
 
-    if (parsed.shippingInfo && typeof parsed.shippingInfo === 'object') {
+    if (parsedData.shippingInfo && typeof parsedData.shippingInfo === 'object') {
+      const shippingData = parsedData.shippingInfo as Record<string, unknown>;
+      const addressData = shippingData.address as Record<string, unknown> | undefined;
+      const dimensionsData = shippingData.packageDimensions as Record<string, unknown> | undefined;
+      
       sanitizedShippingInfo = {
-        firstName: parsed.shippingInfo.firstName ? DOMPurify.sanitize(parsed.shippingInfo.firstName).substring(0, 50) : '',
-        lastName: parsed.shippingInfo.lastName ? DOMPurify.sanitize(parsed.shippingInfo.lastName).substring(0, 50) : '',
-        paypalAccount: parsed.shippingInfo.paypalAccount ? DOMPurify.sanitize(parsed.shippingInfo.paypalAccount).substring(0, 254) : '',
+        firstName: shippingData.firstName ? DOMPurify.sanitize(shippingData.firstName.toString()).substring(0, 50) : '',
+        lastName: shippingData.lastName ? DOMPurify.sanitize(shippingData.lastName.toString()).substring(0, 50) : '',
+        paypalAccount: shippingData.paypalAccount ? DOMPurify.sanitize(shippingData.paypalAccount.toString()).substring(0, 254) : '',
         address: {
-          street: parsed.shippingInfo.address?.street ? DOMPurify.sanitize(parsed.shippingInfo.address.street).substring(0, 200) : '',
-          city: parsed.shippingInfo.address?.city ? DOMPurify.sanitize(parsed.shippingInfo.address.city).substring(0, 100) : '',
-          state: parsed.shippingInfo.address?.state ? DOMPurify.sanitize(parsed.shippingInfo.address.state).substring(0, 50) : '',
-          zip: parsed.shippingInfo.address?.zip ? DOMPurify.sanitize(parsed.shippingInfo.address.zip).substring(0, 20) : '',
-          country: parsed.shippingInfo.address?.country === 'US' ? 'US' : 'US'
+          street: addressData?.street ? DOMPurify.sanitize(addressData.street.toString()).substring(0, 200) : '',
+          city: addressData?.city ? DOMPurify.sanitize(addressData.city.toString()).substring(0, 100) : '',
+          state: addressData?.state ? DOMPurify.sanitize(addressData.state.toString()).substring(0, 50) : '',
+          zip: addressData?.zip ? DOMPurify.sanitize(addressData.zip.toString()).substring(0, 20) : '',
+          country: addressData?.country === 'US' ? 'US' : 'US'
         },
         packageDimensions: {
-          length: typeof parsed.shippingInfo.packageDimensions?.length === 'number' ? Math.max(0, Math.min(18, parsed.shippingInfo.packageDimensions.length)) : 0,
-          width: typeof parsed.shippingInfo.packageDimensions?.width === 'number' ? Math.max(0, Math.min(16, parsed.shippingInfo.packageDimensions.width)) : 0,
-          height: typeof parsed.shippingInfo.packageDimensions?.height === 'number' ? Math.max(0, Math.min(16, parsed.shippingInfo.packageDimensions.height)) : 0,
-          weight: typeof parsed.shippingInfo.packageDimensions?.weight === 'number' ? Math.max(0, Math.min(50, parsed.shippingInfo.packageDimensions.weight)) : 0
+          length: typeof dimensionsData?.length === 'number' ? Math.max(0, Math.min(18, dimensionsData.length)) : 0,
+          width: typeof dimensionsData?.width === 'number' ? Math.max(0, Math.min(16, dimensionsData.width)) : 0,
+          height: typeof dimensionsData?.height === 'number' ? Math.max(0, Math.min(16, dimensionsData.height)) : 0,
+          weight: typeof dimensionsData?.weight === 'number' ? Math.max(0, Math.min(50, dimensionsData.weight)) : 0
         }
       };
     }
@@ -619,7 +482,6 @@ export default function CreateListingPage() {
 
     if (user) {
       try {
-        // First try to load user-specific data
         const userData = localStorage.getItem(userKey);
         if (userData) {
           const parsed = JSON.parse(userData);
@@ -635,7 +497,6 @@ export default function CreateListingPage() {
           }
         }
 
-        // If no user data, try to migrate from guest data
         const guestData = localStorage.getItem(guestKey);
         if (guestData) {
           const parsed = JSON.parse(guestData);
@@ -644,9 +505,7 @@ export default function CreateListingPage() {
             setBundleItems(data.bundleItems);
             setDescription(data.description);
             setShippingInfo(data.shippingInfo);
-            // Save guest data to user key
             localStorage.setItem(userKey, guestData);
-            // Remove guest data
             localStorage.removeItem(guestKey);
             console.log(`✅ Migrated data from guest to user localStorage`);
             return;
@@ -660,7 +519,6 @@ export default function CreateListingPage() {
         localStorage.removeItem(guestKey);
       }
     } else {
-      // User is not logged in, load guest data
       try {
         const guestData = localStorage.getItem(guestKey);
         if (guestData) {
@@ -680,7 +538,7 @@ export default function CreateListingPage() {
         localStorage.removeItem(guestKey);
       }
     }
-  }, [isMounted, isPrivateMode, isInitializing, getStorageKey, getGuestStorageKey]);
+  }, [isMounted, isPrivateMode, isInitializing, getStorageKey, getGuestStorageKey, user]);
 
   const saveToStorage = useCallback(() => {
     if (!isMounted || isPrivateMode || isInitializing) return;
@@ -712,28 +570,22 @@ export default function CreateListingPage() {
     }
   }, [bundleItems, currentItem, description, shippingInfo, isMounted, isPrivateMode, isInitializing, getStorageKey]);
 
-  // Handle user state changes - save data before logout and load after login
   useEffect(() => {
-    // Save data when user logs out
     if (prevUser && !user) {
       saveToStorage();
     }
-    // Load data when user logs in
     if (!prevUser && user) {
       loadFromStorage();
     }
-    // Update previous user state
     setPrevUser(user);
   }, [user, prevUser, saveToStorage, loadFromStorage]);
 
-  // Initial load when component mounts
   useEffect(() => {
     if (isMounted && !isPrivateMode && !isInitializing) {
       loadFromStorage();
     }
   }, [isMounted, isPrivateMode, isInitializing, loadFromStorage]);
 
-  // Save data when form data changes
   useEffect(() => {
     if (!isMounted || isInitializing) return;
     const timeoutId = setTimeout(() => {
@@ -795,10 +647,7 @@ export default function CreateListingPage() {
   };
 
   const handleContinueToShipping = () => {
-    // Form verilerini localStorage'a kaydet
     saveToStorage();
-
-    // Shipping sayfasına yönlendir
     router.push('/create-listing/shipping');
   };
 
@@ -810,29 +659,20 @@ export default function CreateListingPage() {
       return;
     }
 
-    setIsSubmitting(true);
-    setError("");
-    setUploadProgress("");
-
     try {
       if (!validateDescription(description)) {
-        setIsSubmitting(false);
         return;
       }
 
-      if (!validateShippingInfo()) {
-        setIsSubmitting(false);
-        return;
-      }
+
 
       if (bundleItems.length < 5) {
         setError("Please add at least 5 items to create a bundle listing");
-        setIsSubmitting(false);
         return;
       }
 
       const title = generateTitle();
-      setGeneratedTitle(title);
+
 
       setUploadProgress("Processing images...");
       const uploadedItems = await Promise.all(
@@ -933,7 +773,6 @@ export default function CreateListingPage() {
       const docRef = await addDoc(collection(db, "listings"), listingData);
       console.log("✅ Document written with ID: ", docRef.id);
 
-      // Admin notification email
       try {
         await fetch('/api/send-seller-notification', {
           method: 'POST',
@@ -955,7 +794,6 @@ export default function CreateListingPage() {
         console.error("Admin email error:", error);
       }
 
-      // Seller confirmation email
       try {
         await fetch('/api/send-seller-confirmation', {
           method: 'POST',
@@ -973,9 +811,7 @@ export default function CreateListingPage() {
         console.error("Seller email error:", error);
       }
 
-      setSuccess(true);
       setShowSuccessPopup(true);
-      setIsSubmitting(false);
       setUploadProgress("");
 
       if (!isPrivateMode) {
@@ -1015,12 +851,7 @@ export default function CreateListingPage() {
         },
         paypalAccount: ""
       });
-      setDimensionErrors({
-        length: '',
-        width: '',
-        height: '',
-        weight: ''
-      });
+
       clearAmazonResults();
 
       if (popupTimer) clearTimeout(popupTimer);
@@ -1031,7 +862,6 @@ export default function CreateListingPage() {
     } catch (err) {
       console.error("Error creating listing:", err);
       setError("Failed to create listing. Please try again.");
-      setIsSubmitting(false);
       setUploadProgress("");
     }
   };
@@ -1077,12 +907,6 @@ export default function CreateListingPage() {
         },
         paypalAccount: ""
       });
-      setDimensionErrors({
-        length: '',
-        width: '',
-        height: '',
-        weight: ''
-      });
       clearAmazonResults();
       if (typeof window !== 'undefined' && !isPrivateMode) {
         const storageKey = getStorageKey();
@@ -1106,13 +930,11 @@ export default function CreateListingPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Head>
         <title>Sell Your Items | SecondLife Media</title>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </Head>
       <main className="font-sans antialiased">
         <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
             <div className="max-w-4xl mx-auto">
-              {/* Mobile Navigation - 2x2 Grid */}
               <div className="block sm:hidden">
                 <div className="grid grid-cols-2 gap-2 mb-2">
                   <Link
@@ -1165,10 +987,7 @@ export default function CreateListingPage() {
                     </Link>
                   </div>
                 )}
-                <div className="grid grid-cols-1 gap-2">
-                </div>
               </div>
-              {/* Desktop Navigation - Horizontal */}
               <div className={`hidden sm:grid gap-3 ${user ? 'grid-cols-6' : 'grid-cols-4'}`}>
                 <Link
                   href="/"
@@ -1220,7 +1039,7 @@ export default function CreateListingPage() {
               </div>
             </div>
           </div>
-          {/* User Listings Section Component */}
+
           {user && (
             <UserListingsSection
               isVisible={showUserListings}
@@ -1347,7 +1166,7 @@ export default function CreateListingPage() {
                             </li>
                             <li className="flex items-start">
                               <FiCheck className="h-4 w-4 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
-                              <span>You'll receive a free shipping label via email</span>
+                              <span>You&apos;ll receive a free shipping label via email</span>
                             </li>
                             <li className="flex items-start">
                               <FiCheck className="h-4 w-4 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
@@ -1368,7 +1187,7 @@ export default function CreateListingPage() {
                           <h4 className="text-sm font-medium text-green-800 mb-1">Important Information</h4>
                           <p className="text-sm text-green-700">
                             Please check your email (including spam/junk folder) for the shipping label.
-                            If you don't receive it within 24 hours, please contact our support team.
+                            If you don&apos;t receive it within 24 hours, please contact our support team.
                           </p>
                         </div>
                       </div>
@@ -1378,21 +1197,6 @@ export default function CreateListingPage() {
                         This message will close automatically in 15 seconds...
                       </p>
                     </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {showSuccess && (
-              <div className="mx-6 mt-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-lg shadow-sm">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <FiCheck className="h-5 w-5 text-green-500" />
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-green-700 font-medium">
-                      Items "{generatedTitle}" submitted successfully! You'll receive your free shipping label and instructions within 24 hours via email.
-                    </p>
                   </div>
                 </div>
               </div>
@@ -1474,7 +1278,7 @@ export default function CreateListingPage() {
                         disabled={isCheckingAmazon}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && currentItem.isbn.trim()) {
-                            e.preventDefault(); // Bu satır ÖNEMLİ - form submit'i engeller
+                            e.preventDefault();
                             handleBarcodeScanned(currentItem.isbn);
                           }
                         }}
@@ -1523,9 +1327,11 @@ export default function CreateListingPage() {
                             <div className="flex-shrink-0">
                               <div className="w-16 h-20 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
                                 {amazonResult.product.image ? (
-                                  <img
+                                  <Image
                                     src={amazonResult.product.image}
                                     alt={amazonResult.product.title || "Product"}
+                                    width={64}
+                                    height={80}
                                     className="w-full h-full object-cover"
                                   />
                                 ) : (
@@ -1630,9 +1436,11 @@ export default function CreateListingPage() {
                             <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-md overflow-hidden flex-shrink-0 border border-gray-200 relative">
                               {item.imageUrl ? (
                                 <>
-                                  <img
+                                  <Image
                                     src={item.imageUrl}
                                     alt={`Item ${item.isbn}`}
+                                    width={64}
+                                    height={64}
                                     className="w-full h-full object-cover"
                                     onError={(e) => {
                                       const target = e.target as HTMLImageElement;
@@ -1726,8 +1534,6 @@ export default function CreateListingPage() {
                   </div>
                 </div>
               </div>
-
-              {/* Shipping Information bölümü kaldırıldı - bu artık ayrı bir sayfada olacak */}
 
               <div className="pt-5">
                 {!user ? (

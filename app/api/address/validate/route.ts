@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       valid: data.validation_results?.is_valid || false,
       suggested: data.validation_results?.suggested || null
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ valid: false }, { status: 500 });
   }
 }

@@ -117,11 +117,17 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Payment notification email sent successfully'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error sending payment notification:', error);
+    
+    let errorMessage = 'Unknown error occurred';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
     return NextResponse.json({
       success: false,
-      error: 'Failed to send payment notification: ' + error.message
+      error: 'Failed to send payment notification: ' + errorMessage
     }, { status: 500 });
   }
 }

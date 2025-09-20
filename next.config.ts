@@ -12,16 +12,7 @@ const nextConfig: NextConfig = {
   },
 
   images: {
-    domains: [
-      "firebasestorage.googleapis.com",
-      "m.media-amazon.com",
-      "images-na.ssl-images-amazon.com",
-      "ecx.images-amazon.com",
-      "g-ecx.images-amazon.com",
-    ],
-    formats: ["image/webp", "image/avif"],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    // domains kullanımı yerine sadece remotePatterns kullanın
     remotePatterns: [
       {
         protocol: "https",
@@ -30,9 +21,24 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "**.amazon.com",
+        hostname: "m.media-amazon.com",
+      },
+      {
+        protocol: "https",
+        hostname: "images-na.ssl-images-amazon.com",
+      },
+      {
+        protocol: "https",
+        hostname: "ecx.images-amazon.com",
+      },
+      {
+        protocol: "https",
+        hostname: "g-ecx.images-amazon.com",
       },
     ],
+    formats: ["image/webp", "image/avif"],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
 
   async headers() {
@@ -67,10 +73,6 @@ const nextConfig: NextConfig = {
                 https://va.vercel-scripts.com;
               style-src 'self' 'unsafe-inline';
               img-src 'self' data: https:
-                https://m.media-amazon.com
-                https://images-na.ssl-images-amazon.com
-                https://ecx.images-amazon.com
-                https://g-ecx.images-amazon.com
                 https://firebasestorage.googleapis.com
                 https://www.gstatic.com
                 https://www.google.com;

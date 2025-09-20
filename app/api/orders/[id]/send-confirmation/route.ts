@@ -3,6 +3,32 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../../../lib/firebaseAdmin';
 import nodemailer from 'nodemailer';
 
+// Order item interface
+interface OrderItem {
+  title?: string;
+  quantity?: number;
+  price?: number;
+}
+
+// Shipping address interface
+interface ShippingAddress {
+  fullName?: string;
+  name?: string;
+  street1?: string;
+  addressLine1?: string;
+  address?: string;
+  street?: string;
+  street2?: string;
+  addressLine2?: string;
+  address2?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  zipCode?: string;
+  postalCode?: string;
+  country?: string;
+}
+
 // Create a nodemailer transporter for Namecheap
 const transporter = nodemailer.createTransport({
   host: 'mail.privateemail.com', // Namecheap Private Email SMTP sunucusu
@@ -26,13 +52,13 @@ async function sendOrderConfirmationEmail({
   customerEmail: string;
   customerName: string;
   orderNumber: string;
-  items: any[];
+  items: OrderItem[];
   totalAmount: number;
-  shippingAddress: any;
+  shippingAddress: ShippingAddress;
 }) {
   try {
     // Format items for the email
-    const itemsList = items.map((item: any) => `
+    const itemsList = items.map((item: OrderItem) => `
       <tr>
         <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.title || 'Item'}</td>
         <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.quantity || 1}</td>
@@ -162,7 +188,7 @@ async function sendOrderConfirmationEmail({
 Thank you for your order, ${customerName}!
 Your order #${orderNumber} has been confirmed.
 Order Details:
-${items.map((item: any) => `- ${item.title || 'Item'} (Qty: ${item.quantity || 1}) - $${(item.price || 0).toFixed(2)}`).join('\n')}
+${items.map((item: OrderItem) => `- ${item.title || 'Item'} (Qty: ${item.quantity || 1}) - $${(item.price || 0).toFixed(2)}`).join('\n')}
 Total: $${totalAmount.toFixed(2)}
 Shipping Address:
 ${safeShippingAddress.fullName}
@@ -246,9 +272,9 @@ export async function POST(
       customerEmail,
       customerName: orderData?.customerInfo?.fullName || 'Customer',
       orderNumber,
-      items: orderData?.items || [],
+      items: (orderData?.items as OrderItem[]) || [],
       totalAmount: orderData?.totalAmount || 0,
-      shippingAddress: orderData?.shippingAddress || {}
+      shippingAddress: (orderData?.shippingAddress as ShippingAddress) || {}
     });
     
     // Order document'inde email gönderildi olarak işaretle

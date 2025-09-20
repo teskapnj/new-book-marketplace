@@ -1,7 +1,7 @@
 // app/api/shipping/rates/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getShippingRates, isTestModeEnabled, convertParcelToNumbers } from '@/lib/shippo';
-import type { ShippingAddress, ShippingParcel } from '@/lib/shippo';
+import type { ShippingAddress } from '@/lib/shippo'; // Removed ShippingParcel since it's not used
 
 export async function POST(request: NextRequest) {
   try {

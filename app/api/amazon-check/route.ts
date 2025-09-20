@@ -1,16 +1,19 @@
 // /app/api/amazon-check/route.ts
 // Oxylabs Amazon API - OPTIMIZED & CLEAN
 import { NextRequest, NextResponse } from 'next/server';
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import { productCache } from '@/lib/productCache';
+
 // Fiyat hesaplama motorunu içe aktarmaya çalışın
-let calculateOurPrice: any;
+let calculateOurPrice: ((product: AmazonProduct) => PricingResult) | null = null;
 try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const pricingEngine = require('@/lib/pricingEngine');
   calculateOurPrice = pricingEngine.calculateOurPrice;
 } catch (e) {
   console.error('Failed to import pricingEngine:', e);
 }
+
 // TypeScript tip tanımlamaları - Sadece kullanılan alanlar
 interface AmazonProduct {
   title: string;
@@ -20,6 +23,7 @@ interface AmazonProduct {
   category: string;
   asin: string;
 }
+
 interface PricingResult {
   accepted: boolean;
   ourPrice?: number;
@@ -28,25 +32,30 @@ interface PricingResult {
   priceRange?: string;
   rankRange?: string;
 }
+
 interface PricingOffer {
   price: number;
   seller: string;
   condition: string;
 }
+
 interface PricingContent {
   title: string;
   pricing: PricingOffer[];
 }
+
 interface SearchResult {
   asin?: string;
   title?: string;
 }
+
 interface SearchContent {
   results?: {
     organic?: SearchResult[];
     paid?: SearchResult[];
   };
 }
+
 interface ProductDetailResult {
   title?: string;
   images?: string[];
@@ -63,17 +72,20 @@ interface ProductDetailResult {
     }>;
   }>;
 }
+
 interface OxylabsResponse<T> {
   results: Array<{
     content: T;
   }>;
 }
+
 interface PriceAnalysisResult {
   bestPrice: number;
   bestCondition: string;
   analysisDetails: string;
   hasNewPrice: boolean; // Yeni eklenen: new fiyatı olup olmadığını belirtir
 }
+
 interface ApiResponse {
   success: boolean;
   data?: {
@@ -128,6 +140,7 @@ function detectCodeType(code: string): 'isbn' | 'upc' | 'asin' | 'unknown' {
 
   return 'unknown';
 }
+
 /**
  * Fiyat analizi - EN DÜŞÜK NEW, sonra EN DÜŞÜK USED
  */
@@ -196,6 +209,7 @@ function analyzePricingOffers(pricingData: PricingContent): PriceAnalysisResult 
   // 🔍 FINAL PRICE DEBUG EKLE - BİTİŞİ
   return { bestPrice, bestCondition, analysisDetails, hasNewPrice };
 }
+
 /**
  * Sales rank çıkarma
  */
@@ -228,6 +242,7 @@ function extractSalesRank(productData: ProductDetailResult): number {
 
   return 0;
 }
+
 /**
  * Kategori çıkarma
  */
@@ -249,6 +264,7 @@ function extractCategory(data: ProductDetailResult): string {
 
   return 'Unknown';
 }
+
 /**
  * PARALLEL API EXECUTION - HER ZAMAN PRİCİNG + PRODUCT
  */
@@ -315,6 +331,7 @@ async function executeParallelAnalysis(asin: string, username: string, password:
     timings: { parallelTime }
   };
 }
+
 /**
  * POST /api/amazon-check - CLEAN & OPTIMIZED
  */
@@ -461,6 +478,14 @@ export async function POST(request: NextRequest) {
       asin
     };
 
+    // Check if calculateOurPrice is available
+    if (!calculateOurPrice) {
+      return NextResponse.json({
+        success: false,
+        error: 'Pricing engine not available'
+      } as ApiResponse, { status: 500 });
+    }
+
     const pricingResult = calculateOurPrice(product);
 
     let message = '';
@@ -511,29 +536,36 @@ export async function POST(request: NextRequest) {
       }
     } as ApiResponse);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const totalTime = Date.now() - totalStartTime;
-    console.error(`ERROR [${totalTime}ms]: ${error.toString()}`);
+    console.error(`ERROR [${totalTime}ms]: ${error}`);
 
-    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-      return NextResponse.json({
-        success: false,
-        error: 'Please try again later.'
-      } as ApiResponse, { status: 408 });
+    if (error instanceof Error) {
+      if (error.message.includes('timeout')) {
+        return NextResponse.json({
+          success: false,
+          error: 'Please try again later.'
+        } as ApiResponse, { status: 408 });
+      }
     }
 
-    if (error.response?.status === 401) {
-      return NextResponse.json({
-        success: false,
-        error: 'Please try again later.'
-      } as ApiResponse, { status: 500 });
-    }
+    // Handle axios errors
+    if (typeof error === 'object' && error !== null && 'response' in error) {
+      const axiosError = error as { response?: { status?: number } };
+      
+      if (axiosError.response?.status === 401) {
+        return NextResponse.json({
+          success: false,
+          error: 'Please try again later.'
+        } as ApiResponse, { status: 500 });
+      }
 
-    if (error.response?.status === 429) {
-      return NextResponse.json({
-        success: false,
-        error: 'Please try again later.'
-      } as ApiResponse, { status: 429 });
+      if (axiosError.response?.status === 429) {
+        return NextResponse.json({
+          success: false,
+          error: 'Please try again later.'
+        } as ApiResponse, { status: 429 });
+      }
     }
 
     return NextResponse.json({
@@ -542,6 +574,7 @@ export async function POST(request: NextRequest) {
     } as ApiResponse, { status: 500 });
   }
 }
+
 export async function GET() {
   const hasConfig = !!(process.env.OXYLABS_USERNAME && process.env.OXYLABS_PASSWORD);
 

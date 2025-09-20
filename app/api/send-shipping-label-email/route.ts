@@ -99,13 +99,7 @@ export async function POST(request: NextRequest) {
               4. Drop off the package at ${carrier.toUpperCase()}<br>
               5. Track your package using: ${trackingNumber}
             </p>
-          </div>
-          
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${process.env.NEXT_PUBLIC_BASE_URL}/listings/${listingId}" style="display: inline-block; background: #f3f4f6; color: #10b981; padding: 10px 20px; text-decoration: none; border-radius: 6px; border: 1px solid #e5e7eb;">
-              View Your Listing
-            </a>
-          </div>
+          </div>         
         </div>
         
         <div class="footer">

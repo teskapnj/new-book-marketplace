@@ -5,9 +5,6 @@ import { auth, db } from "@/lib/firebase";
 import { doc, getDoc, collection, query, where, onSnapshot, DocumentData, setDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
-import { User as FirebaseUser } from "firebase/auth";
-// !!! YENİ EKLENEN İMPORT: Mesajlaşma widget bileşenini sayfaya dahil ediyoruz. !!!
 import SellerMessageWidget from '@/components/SellerMessageWidget';
 
 // TypeScript interfaces
@@ -16,14 +13,16 @@ interface AppUser {
   email: string | null;
   displayName: string | null;
 }
+
 interface UserData {
   uid: string;
   email: string | null;
   name: string;
   role: string;
-  createdAt?: any;
-  lastLogin?: any;
+  createdAt?: Date | { toDate: () => Date } | { seconds: number };
+  lastLogin?: Date | { toDate: () => Date } | { seconds: number };
 }
+
 interface Listing {
   id: string;
   title: string;
@@ -34,6 +33,7 @@ interface Listing {
   createdAt: Date;
   totalItems: number;
 }
+
 interface OrderItem {
   id: string;
   productId: string;
@@ -43,6 +43,7 @@ interface OrderItem {
   image?: string;
   shippingCost: number;
 }
+
 interface Order {
   id: string;
   userId: string;
@@ -66,7 +67,7 @@ interface Order {
     phone?: string;
   };
   items: OrderItem[];
-  vendorBreakdown: any[];
+  vendorBreakdown: Array<{sellerId: string, amount: number}>;
   sellerIds: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -79,16 +80,16 @@ export default function DashboardPage() {
   const [userName, setUserName] = useState<string>("");
   const [roleLoading, setRoleLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
-  const [redirectingToListings, setRedirectingToListings] = useState(false); // Yeni state
+  const [redirectingToListings, setRedirectingToListings] = useState(false);
   const [userListings, setUserListings] = useState<Listing[]>([]);
   const [listingsLoading, setListingsLoading] = useState(true);
   const [purchases, setPurchases] = useState<Order[]>([]);
   const [sales, setSales] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [debugInfo, setDebugInfo] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<'orders' | 'sales'>('orders'); // Tab state for mobile
+  const [activeTab, setActiveTab] = useState<'orders' | 'sales'>('orders');
   
-  // Convert Firebase user to our AppUser format with useMemo to prevent recreation
+  // Convert Firebase user to our AppUser format with useMemo
   const user = useMemo<AppUser | null>(() => {
     return authUser ? {
       uid: authUser.uid,
@@ -133,19 +134,17 @@ export default function DashboardPage() {
               console.log("Admin detected, redirecting to admin panel...");
               setRedirecting(true);
               
-              // Show message and redirect
               setTimeout(() => {
                 window.location.href = "/admin/listings";
               }, 2000);
               return;
             }
             
-            // YENİ: Redirect seller to listings page
+            // Redirect seller to listings page
             if (role === "seller") {
               console.log("Seller detected, redirecting to listings page...");
               setRedirectingToListings(true);
               
-              // Show message and redirect
               setTimeout(() => {
                 window.location.href = "/create-listing";
               }, 2000);
@@ -157,8 +156,7 @@ export default function DashboardPage() {
             // User document doesn't exist yet - create default user data
             console.warn("User document not found, creating default profile...");
             
-            // Set default values
-            const defaultRole = "seller"; // Varsayılan rol seller olarak ayarlandı
+            const defaultRole = "seller";
             const defaultName = user.displayName || user.email?.split('@')[0] || "User";
             
             setUserRole(defaultRole);
@@ -181,16 +179,14 @@ export default function DashboardPage() {
                 lastLogin: new Date()
               });
               
-              // >>>>>>>>>>>>>> KONUŞMAYI OTOMATİK OLUŞTURAN KOD <<<<<<<<<<<<<<
-              // Yeni satıcı için admin ile bir konuşma başlat
+              // Create conversation for new seller with admin
               await setDoc(doc(db, 'conversations', user.uid), {
                 participants: [user.uid, 'admin'],
                 lastMessage: 'Hoş geldiniz! Sorularınızı buradan iletebilirsiniz.',
                 lastUpdated: serverTimestamp()
-              }, { merge: true }); // merge: true, eğer konuşma zaten varsa hata vermez
+              }, { merge: true });
               console.log("User profile and conversation created successfully");
               
-              // YENİ: Varsayılan rol seller olduğu için listings sayfasına yönlendir
               setRedirectingToListings(true);
               setTimeout(() => {
                 window.location.href = "/create-listing";
@@ -210,7 +206,7 @@ export default function DashboardPage() {
     };
     
     checkUserRoleAndRedirect();
-  }, [authLoading, user]); // Removed router from dependencies
+  }, [authLoading, user]);
   
   // Fetch user listings
   useEffect(() => {
@@ -220,7 +216,6 @@ export default function DashboardPage() {
       try {
         setListingsLoading(true);
         
-        // orderBy olmadan sorgu yap
         const q = query(
           collection(db, "listings"),
           where("vendorId", "==", user.uid)
@@ -232,21 +227,17 @@ export default function DashboardPage() {
           querySnapshot.forEach((doc) => {
             const data = doc.data() as DocumentData;
             
-            // Get the first image from bundle items
             let firstItemImage = null;
             if (data.bundleItems && Array.isArray(data.bundleItems)) {
               for (const item of data.bundleItems) {
-                // imageUrl alanını kontrol et (öncelikli)
                 if (item.imageUrl) {
                   firstItemImage = item.imageUrl;
                   break;
                 }
-                // Eğer imageUrl yoksa, amazonData.image alanını kontrol et
                 if (item.amazonData && item.amazonData.image) {
                   firstItemImage = item.amazonData.image;
                   break;
                 }
-                // Eğer hiçbiri yoksa, image alanını kontrol et (geriye dönük uyum)
                 if (item.image) {
                   firstItemImage = item.image;
                   break;
@@ -266,7 +257,6 @@ export default function DashboardPage() {
             });
           });
           
-          // İstemci tarafında sırala (en yeni ilk)
           listingsData.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
           
           console.log(`Loaded ${listingsData.length} user listings`);
@@ -285,7 +275,7 @@ export default function DashboardPage() {
     };
     
     fetchUserListings();
-  }, [user, userRole]); // Fixed dependency array
+  }, [user, userRole]);
   
   // Fetch user orders (both purchases and sales)
   useEffect(() => {
@@ -296,7 +286,7 @@ export default function DashboardPage() {
         setOrdersLoading(true);
         setDebugInfo(`Fetching orders for user ID: ${user.uid}`);
         
-        // Fetch purchases (where user is buyer) - DOĞRU SORGU
+        // Fetch purchases (where user is buyer)
         const purchasesQuery = query(
           collection(db, "orders"),
           where("userId", "==", user.uid)
@@ -308,7 +298,6 @@ export default function DashboardPage() {
           querySnapshot.forEach((doc) => {
             const data = doc.data() as DocumentData;
             
-            // Handle different date formats
             let createdAtDate = new Date();
             let updatedAtDate = new Date();
             
@@ -362,7 +351,6 @@ export default function DashboardPage() {
             });
           });
           
-          // İstemci tarafında sırala (en yeni ilk)
           purchasesData.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
           
           console.log(`Loaded ${purchasesData.length} purchases for user ${user.uid}`);
@@ -374,7 +362,7 @@ export default function DashboardPage() {
           setOrdersLoading(false);
         });
         
-        // Fetch sales (where user is seller) - BU KISIM DOĞRU
+        // Fetch sales (where user is seller)
         const salesQuery = query(
           collection(db, "orders"),
           where("sellerIds", "array-contains", user.uid)
@@ -386,7 +374,6 @@ export default function DashboardPage() {
           querySnapshot.forEach((doc) => {
             const data = doc.data() as DocumentData;
             
-            // Handle different date formats
             let createdAtDate = new Date();
             let updatedAtDate = new Date();
             
@@ -440,7 +427,6 @@ export default function DashboardPage() {
             });
           });
           
-          // İstemci tarafında sırala (en yeni ilk)
           salesData.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
           
           console.log(`Loaded ${salesData.length} sales for user ${user.uid}`);
@@ -465,7 +451,7 @@ export default function DashboardPage() {
     };
     
     fetchOrders();
-  }, [user]); // Fixed dependency array - only user
+  }, [user]);
   
   // Loading state
   if (authLoading || roleLoading) {
@@ -537,7 +523,7 @@ export default function DashboardPage() {
     );
   }
   
-  // YENİ: Seller redirect screen
+  // Seller redirect screen
   if (redirectingToListings || userRole === "seller") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
@@ -642,7 +628,7 @@ export default function DashboardPage() {
   const pendingSalesCount = sales.filter(order => order.status === 'pending').length;
   const completedSalesCount = sales.filter(order => order.status === 'delivered').length;
   
-  // Regular buyer dashboard - sadece buyer rolündeki kullanıcılar için gösterilir
+  // Regular buyer dashboard
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
@@ -659,7 +645,7 @@ export default function DashboardPage() {
               </p>
             </div>
             
-            {/* Navigation Links - Better styled */}
+            {/* Navigation Links */}
             <div className="flex space-x-4">
               <Link 
                 href="/"
@@ -671,7 +657,6 @@ export default function DashboardPage() {
                 Home Page
               </Link>
               
-              {/* Account Settings Button */}
               <Link 
                 href="/dashboard/settings"
                 className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
@@ -688,7 +673,7 @@ export default function DashboardPage() {
         
         {/* Mobile View */}
         <div className="md:hidden">
-          {/* Mobile Statistics Cards - Buyer focused */}
+          {/* Mobile Statistics Cards */}
           <div className="grid grid-cols-4 gap-2 mb-6">
             <div className="bg-white rounded-lg shadow-sm p-2 border border-gray-200">
               <div className="flex flex-col items-center">
@@ -866,7 +851,7 @@ export default function DashboardPage() {
           )}
         </div>
         
-        {/* Desktop View - Buyer focused */}
+        {/* Desktop View */}
         <div className="hidden md:block">
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -956,7 +941,7 @@ export default function DashboardPage() {
             </div>
           </div>
           
-          {/* Statistics Cards - Buyer focused */}
+          {/* Statistics Cards */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-4 mb-8">
             <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
               <div className="flex flex-col items-center">
@@ -1117,8 +1102,8 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-      {/* !!! EN SONA, ANNA DIV'İN İÇİNE EKLEDİK !!! */}
-      {/* Bu bileşen, sayfanın sağ alt köşesinde sabitlenen mesajlaşma ikonunu ve widget'ını içerir. */}
+      
+      {/* Message Widget */}
       <SellerMessageWidget />
     </div>
   );

@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "@/lib/firebase";
-import { collection, query, where, onSnapshot, doc, updateDoc } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc, updateDoc, Timestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -53,19 +53,24 @@ interface Order {
 type OrderStatus = 'all' | 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 
 // Convert Firestore timestamp to Date
-function convertTimestamp(timestamp: any): Date {
+function convertTimestamp(timestamp: string | Date | Timestamp | null | undefined): Date {
   if (!timestamp) return new Date();
   
   if (typeof timestamp === 'string') {
     return new Date(timestamp);
   }
   
-  if (timestamp.toDate && typeof timestamp.toDate === 'function') {
+  if (timestamp instanceof Date) {
+    return timestamp;
+  }
+  
+  if (timestamp instanceof Timestamp) {
     return timestamp.toDate();
   }
   
-  if (timestamp.seconds) {
-    return new Date(timestamp.seconds * 1000);
+  // Firebase timestamp object with seconds property
+  if (typeof timestamp === 'object' && 'seconds' in timestamp) {
+    return new Date((timestamp as any).seconds * 1000);
   }
   
   return new Date();

@@ -23,13 +23,27 @@ interface RequestBody {
   requestedLevel: 'basic' | 'full';
 }
 
-interface ResponseData {
-  isAdmin: boolean;
-  adminLevel: 'none' | 'basic' | 'full';
-  verified: boolean;
-  permissions: string[];
+interface SecurityIncident {
+  type: string;
+  uid?: string;
+  email?: string;
+  ip?: string;
+  userAgent?: string;
+  requestedUid?: string;
+  tokenEmail?: string;
+  requestedEmail?: string;
+  requestedLevel?: string;
+  currentLevel?: string;
+  details?: Record<string, unknown>;
+}
+
+interface AdminAccessLog {
+  uid: string;
+  email: string;
+  adminLevel: string;
+  ip: string;
+  userAgent: string;
   sessionToken: string;
-  error?: string;
 }
 
 // Rate limiting store (in production, use Redis)
@@ -341,7 +355,7 @@ function generateSessionToken(uid: string, adminLevel: string): string {
 }
 
 // Helper function to log security incidents
-async function logSecurityIncident(incident: any) {
+async function logSecurityIncident(incident: SecurityIncident) {
   try {
     await db.collection('security_incidents').add({
       ...incident,
@@ -354,7 +368,7 @@ async function logSecurityIncident(incident: any) {
 }
 
 // Helper function to log admin access
-async function logAdminAccess(accessLog: any) {
+async function logAdminAccess(accessLog: AdminAccessLog) {
   try {
     await db.collection('admin_access_logs').add({
       ...accessLog,

@@ -80,7 +80,7 @@ export default function ConditionGuidelines() {
                   </li>
                   <li className="flex items-start">
                     <span className="font-medium mr-2">✓</span>
-                    <span>Minor surface wear or light scuffs that don't affect function</span>
+                    <span>Minor surface wear or light scuffs that don&apos;t affect function</span>
                   </li>
                   <li className="flex items-start">
                     <span className="font-medium mr-2">✓</span>
@@ -112,7 +112,7 @@ export default function ConditionGuidelines() {
                   <svg className="h-6 w-6 text-red-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                  What We Don't Accept
+                  What We Don&apos;t Accept
                 </h3>
                 <ul className="space-y-3 text-red-700">
                   <li className="flex items-start">
@@ -221,7 +221,7 @@ export default function ConditionGuidelines() {
                     Remember: No Returns!
                   </h4>
                   <p className="text-red-700">
-                    Items that don't meet our very good condition standard will be recycled and not returned to you.
+                    Items that don&apos;t meet our very good condition standard will be recycled and not returned to you.
                     Please check your items carefully before sending.
                   </p>
                 </div>
@@ -234,7 +234,7 @@ export default function ConditionGuidelines() {
         <div className="text-center bg-white rounded-xl shadow-lg p-8">
           <h3 className="text-xl font-semibold text-gray-800 mb-4">Questions About Item Condition?</h3>
           <p className="text-gray-600 mb-6">
-            If you're unsure whether your items meet our very good condition standard,
+            If you&apos;re unsure whether your items meet our very good condition standard,
             please contact us before sending them.
           </p>
           <Link href="/contact">
