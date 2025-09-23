@@ -9,13 +9,13 @@ import Head from 'next/head'
 // Güvenlik hooks ve utilities
 import { useRateLimit } from "@/hooks/useRateLimit";
 import { RateLimitWarning } from "@/components/RateLimitWarning";
-import { 
-  verifyUserRoleSecurely, 
-  UserRole, 
-  getCachedRole, 
+import {
+  verifyUserRoleSecurely,
+  UserRole,
+  getCachedRole,
   setCachedRole,
   secureLogout,
-  logSecurityAttempt 
+  logSecurityAttempt
 } from "@/lib/auth-utils";
 
 // SVG Icons
@@ -121,7 +121,7 @@ function PackageIcon({ size = 24, className = "" }) {
 export default function HomePage() {
   const { user, loading, error, logout } = useAuth();
   const router = useRouter();
-  
+
   // State yönetimi
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
@@ -135,7 +135,7 @@ export default function HomePage() {
     windowMs: 5 * 60 * 1000, // 5 minutes
     storageKey: 'auth-rate-limit'
   };
-  
+
   const { isBlocked, remainingTime, attempts, recordAttempt } = useRateLimit(rateLimitConfig);
 
   // Client-side rendering kontrolü
@@ -180,6 +180,17 @@ export default function HomePage() {
 
     checkUserRoleSecurely();
   }, [user, isBlocked, recordAttempt]);
+  // Diğer useEffect'lerinizden sonra ekleyin:
+  useEffect(() => {
+    if (isClient) {
+      // Google Ads conversion tracking
+      if (typeof window !== 'undefined' && 'gtag' in window) {
+        (window as any).gtag('event', 'manual_event_PAGE_VIEW', {
+          // event_parameters
+        });
+      }
+    }
+  }, [isClient]);
 
   // Güvenli logout işlemi
   const handleSecureLogout = async () => {
@@ -197,7 +208,7 @@ export default function HomePage() {
   // Rate limit kontrolü
   if (isBlocked) {
     return (
-      <RateLimitWarning 
+      <RateLimitWarning
         isBlocked={isBlocked}
         remainingTime={remainingTime}
         attempts={attempts}
@@ -228,7 +239,7 @@ export default function HomePage() {
         <title>Sell Books, CDs, DVDs & Games for Cash - Free Shipping | SellBook Media</title>
         <meta name="description" content="Get instant cash for your used books, CDs, DVDs, and video games. Free shipping labels, fast payments, best prices guaranteed. America's #1 media buyback service." />
         <link rel="canonical" href="https://www.sellbookmedia.com" />
-        
+
         {/* Open Graph Meta Tags */}
         <meta property="og:title" content="SellBook Media - Sell Books, CDs, DVDs & Games for Cash" />
         <meta property="og:description" content="Turn your books, CDs, DVDs & games into cash. Free shipping, instant quotes, secure payments." />
@@ -237,24 +248,24 @@ export default function HomePage() {
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="SellBook Media" />
         <meta property="og:locale" content="en_US" />
-        
+
         {/* Twitter Card Meta Tags */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="SellBook Media - Sell Your Books for Cash" />
         <meta name="twitter:description" content="Turn your books into cash! Free shipping & best prices guaranteed." />
         <meta name="twitter:image" content="https://www.sellbookmedia.com/twitter-image.jpg" />
-        
+
         {/* Additional SEO Meta Tags */}
         <meta name="keywords" content="sell books for cash, sell used books, sell CDs online, sell DVDs, sell video games, cash for books, textbook buyback, used media buyback, book resale, instant book quote" />
         <meta name="author" content="SellBook Media" />
         <meta name="robots" content="index, follow" />
         <meta name="language" content="English" />
         <meta name="revisit-after" content="7 days" />
-        
+
         {/* Mobile Optimization */}
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="theme-color" content="#2563eb" />
-        
+
         {/* Favicon */}
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -315,7 +326,7 @@ export default function HomePage() {
 
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
         {/* Rate Limit Uyarısı */}
-        <RateLimitWarning 
+        <RateLimitWarning
           isBlocked={isBlocked}
           remainingTime={remainingTime}
           attempts={attempts}
@@ -382,7 +393,7 @@ export default function HomePage() {
                 </button>
               </div>
             </div>
-            
+
             {/* Desktop Header */}
             <div className="hidden md:flex items-center justify-between py-4">
               <div className="flex items-center space-x-8">
@@ -390,7 +401,7 @@ export default function HomePage() {
                   SellBookMedia
                 </Link>
               </div>
-              
+
               <div className="flex items-center space-x-4">
                 {loading ? (
                   <div className="h-8 w-20 bg-gray-200 rounded-lg animate-pulse"></div>
@@ -414,7 +425,7 @@ export default function HomePage() {
                         Start Selling
                       </Link>
                     )}
-                    
+
                     {/* Shopping Cart Icon - Desktop (Only for buyer role) */}
                     {userRole === UserRole.BUYER && (
                       <Link href="/cart" className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors relative">
@@ -422,7 +433,7 @@ export default function HomePage() {
                         <span className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></span>
                       </Link>
                     )}
-                    
+
                     <button
                       onClick={handleSecureLogout}
                       className="font-medium text-gray-700 hover:text-gray-900 transition-colors"
@@ -443,7 +454,7 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-          
+
           {/* Mobile Menu */}
           {mobileMenuOpen && (
             <div className="md:hidden bg-white border-t border-gray-200 shadow-lg">
@@ -470,7 +481,7 @@ export default function HomePage() {
                         Start Selling
                       </Link>
                     )}
-                    
+
                     {/* Shopping Cart Link - Mobile Menu (Only for buyer role) */}
                     {userRole === UserRole.BUYER && (
                       <Link href="/cart" className="block font-medium text-gray-900 py-2 hover:text-green-600 transition-colors flex items-center">
@@ -478,7 +489,7 @@ export default function HomePage() {
                         My Cart
                       </Link>
                     )}
-                    
+
                     <button
                       onClick={handleSecureLogout}
                       className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors text-left w-full"
@@ -531,7 +542,7 @@ export default function HomePage() {
                   <div className="text-blue-200 text-sm sm:text-base">Satisfaction</div>
                 </div>
               </div>
-              
+
               {/* Secure CTA buttons based on role */}
               <div className="mt-12 sm:mt-16">
                 {userRole === UserRole.ADMIN ? (
@@ -565,7 +576,7 @@ export default function HomePage() {
             </div>
           </div>
         </section>
-        
+
         {/* How It Works */}
         <section className="py-16 sm:py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -589,7 +600,7 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Add Your Items</h3>
                 <p className="text-gray-600 leading-relaxed">
-                  Quick & Easy Selling - Just scan or type the barcode from your books, CDs, DVDs, or game discs. 
+                  Quick & Easy Selling - Just scan or type the barcode from your books, CDs, DVDs, or game discs.
                   Amazon ASIN codes work too. Get your quote instantly.
                 </p>
               </div>
@@ -604,7 +615,7 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Ship for Free</h3>
                 <p className="text-gray-600 leading-relaxed">
-                  Within 24 hours, receive your prepaid shipping label and packing instructions via email. 
+                  Within 24 hours, receive your prepaid shipping label and packing instructions via email.
                   Pack your items securely and safely - proper packaging protects your items during transit.
                 </p>
               </div>
@@ -619,14 +630,14 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Get Paid Fast</h3>
                 <p className="text-gray-600 leading-relaxed">
-                  We inspect each item against our condition standards. Once your items are delivered to us, 
+                  We inspect each item against our condition standards. Once your items are delivered to us,
                   payment is processed within 2 business days directly to your paypal account.
                 </p>
               </div>
             </div>
           </div>
         </section>
-        
+
         {/* CTA Section */}
         <section className="py-16 sm:py-20 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 relative overflow-hidden">
           <div className="absolute inset-0 bg-black/20"></div>
@@ -654,7 +665,7 @@ export default function HomePage() {
                 <span className="text-sm sm:text-base">Free Quotes</span>
               </div>
             </div>
-            
+
             {/* Secure CTA Section */}
             <div className="mt-12 flex justify-center">
               {userRole === UserRole.ADMIN ? (
@@ -687,7 +698,7 @@ export default function HomePage() {
             </div>
           </div>
         </section>
-        
+
         {/* Footer */}
         <footer className="bg-gray-900 text-white py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -720,7 +731,7 @@ export default function HomePage() {
                   <li><Link href="/seller-guide" className="text-gray-400 hover:text-white transition-colors">Seller Guide</Link></li>
                 </ul>
               </div>
-             
+
               <div>
                 <h4 className="font-bold text-lg mb-6 text-white">Support</h4>
                 <ul className="space-y-3">
