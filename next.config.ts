@@ -91,6 +91,15 @@ const nextConfig: NextConfig = {
     ];
   },
 
+  async rewrites() {
+    return [
+      {
+        source: '/sell',
+        destination: '/',
+      }
+    ]
+  },
+
   webpack: (config) => {
     return config;
   },
