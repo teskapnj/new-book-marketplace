@@ -307,13 +307,13 @@ async function executeParallelAnalysis(asin: string, username: string, password:
   const apiConfig = {
     auth: { username, password },
     headers: { 'Content-Type': 'application/json' },
-    timeout: 6000
+    timeout: 5500
   };
 
   const pricingRequest = {
     source: 'amazon_pricing',
     query: asin,
-    geo_location: '07440',
+    geo_location: '07866',
     domain: 'com',
     parse: true
   };
@@ -321,7 +321,7 @@ async function executeParallelAnalysis(asin: string, username: string, password:
   const productRequest = {
     source: 'amazon_product',
     query: asin,
-    geo_location: '07440',
+    geo_location: '07866',
     domain: 'com',
     parse: true
   };
@@ -446,7 +446,7 @@ export async function POST(request: NextRequest) {
       const searchRequest = {
         source: 'amazon_search',
         query: codeInfo.searchCode,
-        geo_location: '07440',
+        geo_location: '07866',
         domain: 'com',
         parse: true
       };
@@ -470,7 +470,7 @@ export async function POST(request: NextRequest) {
         console.log(`Product not found: ${codeInfo.searchCode}`);
         return NextResponse.json({
           success: false,
-          error: 'Please try again later.'
+          error: 'Product not found. Please check the barcode and try again later.'
         } as ApiResponse, { status: 404 });
       }
 
@@ -485,13 +485,14 @@ export async function POST(request: NextRequest) {
     callSequence.push(...parallelResult.callSequence);
     parallelTime = parallelResult.timings.parallelTime;
 
-    if (!parallelResult.pricingContent) {
-      console.log(`Pricing data could not be retrieved: ${asin}`);
+    if (!parallelResult.pricingContent || !parallelResult.productContent) {
       hasApiError = true;
+      console.log(`API call failed - Pricing: ${!!parallelResult.pricingContent}, Product: ${!!parallelResult.productContent}`);
+      
       return NextResponse.json({
         success: false,
-        error: 'Please try again later.'
-      } as ApiResponse, { status: 404 });
+        error: 'Unable to verify product details. Please try scanning again later.'
+      } as ApiResponse, { status: 500 });
     }
 
     // PROCESS DATA

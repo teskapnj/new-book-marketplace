@@ -300,7 +300,24 @@ export default function CreateListingPage() {
       }
     } catch (err: unknown) {
       console.error('Amazon API error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Error occurred during Amazon check';
+      
+      let errorMessage = 'Unable to check product. Please try again later.';
+      
+      if (axios.isAxiosError(err)) {
+        console.log('Is axios error: YES');
+        console.log('Response data:', err.response?.data);
+        
+        if (err.response?.data?.error) {
+          console.log('API error message found:', err.response.data.error);
+          errorMessage = err.response.data.error;
+        } else {
+          console.log('No error property in response data');
+        }
+      } else {
+        console.log('Is axios error: NO');
+      }
+      
+      console.log('Final error message:', errorMessage);
       setError(errorMessage);
       setTimeout(() => {
         setError("");
@@ -446,7 +463,7 @@ export default function CreateListingPage() {
       const shippingData = parsedData.shippingInfo as Record<string, unknown>;
       const addressData = shippingData.address as Record<string, unknown> | undefined;
       const dimensionsData = shippingData.packageDimensions as Record<string, unknown> | undefined;
-      
+
       sanitizedShippingInfo = {
         firstName: shippingData.firstName ? DOMPurify.sanitize(shippingData.firstName.toString()).substring(0, 50) : '',
         lastName: shippingData.lastName ? DOMPurify.sanitize(shippingData.lastName.toString()).substring(0, 50) : '',
