@@ -6,7 +6,7 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db, storage } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { FiHome, FiPackage, FiAlertCircle, FiTruck, FiFileText, FiArrowLeft, FiArrowRight, FiMail, FiLogIn } from "react-icons/fi";
+import { FiHome, FiPackage, FiAlertCircle, FiTruck, FiFileText, FiArrowLeft, FiArrowRight, FiMail, FiLogIn, FiCheckSquare, FiSquare } from "react-icons/fi";
 import Link from "next/link";
 import Head from "next/head";
 import DOMPurify from 'isomorphic-dompurify';
@@ -105,6 +105,8 @@ export default function ShippingInfoPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [isPrivateMode, setIsPrivateMode] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [termsError, setTermsError] = useState("");
   
   const totalOurPrice = bundleItems.reduce((total, item) => {
     return total + (item.price * item.quantity);
@@ -226,7 +228,13 @@ export default function ShippingInfoPage() {
       return false;
     }
     
+    if (!acceptedTerms) {
+      setTermsError("You must accept the terms and conditions to continue");
+      return false;
+    }
+    
     setShippingError("");
+    setTermsError("");
     return true;
   };
 
@@ -932,6 +940,61 @@ export default function ShippingInfoPage() {
                   </div>
                 </div>
               </div>
+              
+              {/* Terms and Conditions Section */}
+              <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 shadow-sm">
+                <div className="flex items-center mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
+                    <FiCheckSquare className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">Terms and Conditions</h3>
+                </div>
+                
+                {termsError && (
+                  <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <FiAlertCircle className="h-5 w-5 text-red-500" />
+                      </div>
+                      <div className="ml-3">
+                        <p className="text-sm text-red-700">{termsError}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="space-y-4">
+                  <div className="bg-white rounded-lg p-4 border border-gray-200">
+                    <div className="flex items-start">
+                      <div className="flex items-center h-5">
+                        <input
+                          id="terms-acceptance"
+                          name="terms-acceptance"
+                          type="checkbox"
+                          checked={acceptedTerms}
+                          onChange={(e) => setAcceptedTerms(e.target.checked)}
+                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="ml-3 text-sm">
+                        <label htmlFor="terms-acceptance" className="font-medium text-gray-700">
+                          I accept the terms and conditions
+                        </label>
+                        <div className="mt-2 text-gray-600">
+                          <p className="mb-2">By checking this box, you confirm that:</p>
+                          <ul className="list-disc pl-5 space-y-1">
+                            <li>You have accurately described the condition of your items according to our <Link href="/condition-guidelines" className="text-blue-600 hover:underline">Condition Guidelines</Link></li>
+                            <li>You agree to our <Link href="/terms" className="text-blue-600 hover:underline">Terms of Service</Link> and <Link href="/privacy-policy" className="text-blue-600 hover:underline">Privacy Policy</Link></li>
+                            <li>You understand that payment will be processed after your items are received and verified</li>
+                            <li>You confirm that all items belong to you and you have the right to sell them</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
               <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">

@@ -1,5 +1,5 @@
 // /app/api/amazon-check/route.ts
-// Oxylabs Amazon API - OPTIMIZED & CLEAN
+// Oxylabs Amazon API - SINGLE PRODUCT CALL OPTIMIZED
 import { NextRequest, NextResponse } from 'next/server';
 import axios, { AxiosError } from 'axios';
 import { productCache } from '@/lib/productCache';
@@ -13,7 +13,7 @@ try {
   console.error('Failed to import pricingEngine:', e);
 }
 
-// TypeScript tip tanımlamaları - Sadece kullanılan alanlar
+// TypeScript tip tanımlamaları - Basitleştirilmiş
 interface AmazonProduct {
   title: string;
   image: string;
@@ -32,17 +32,6 @@ interface PricingResult {
   rankRange?: string;
 }
 
-interface PricingOffer {
-  price: number;
-  seller: string;
-  condition: string;
-}
-
-interface PricingContent {
-  title: string;
-  pricing: PricingOffer[];
-}
-
 interface SearchResult {
   asin?: string;
   title?: string;
@@ -55,9 +44,19 @@ interface SearchContent {
   };
 }
 
+// Buybox bilgileri
+interface BuyboxInfo {
+  price: number;
+  stock?: string;
+  condition?: string;
+}
+
 interface ProductDetailResult {
   title?: string;
   images?: string[];
+  price?: number;
+  price_buybox?: number;
+  buybox?: BuyboxInfo[];
   sales_rank?: Array<{
     rank: number;
     ladder: Array<{
@@ -96,11 +95,11 @@ interface ApiResponse {
       apiCalls: number;
       hasRank: boolean;
       cacheHit?: boolean;
-      pricingAnalysis?: PriceAnalysisResult;
+      priceAnalysis?: PriceAnalysisResult;
       callSequence?: string[];
       timings?: {
         searchTime?: number;
-        parallelTime?: number;
+        productTime?: number;
         totalTime?: number;
       };
     };
@@ -108,7 +107,7 @@ interface ApiResponse {
   error?: string;
 }
 
-// Global kategori listesi
+// Global kategori listesi (Video Games geri eklendi)
 const MAIN_CATEGORIES = ['Books', 'CDs & Vinyl', 'Movies & TV', 'Video Games', 'Music', 'DVD'];
 
 /**
@@ -174,72 +173,78 @@ function detectCodeType(code: string): { type: 'isbn' | 'upc' | 'asin' | 'unknow
 }
 
 /**
- * Fiyat analizi - EN DÜŞÜK NEW, sonra EN DÜŞÜK USED
+ * Buybox ve price field'larından en iyi fiyatı çıkar
+ * Öncelik: NEW fiyat → USED fiyat → 0
  */
-function analyzePricingOffers(pricingData: PricingContent): PriceAnalysisResult {
-  console.log('Pricing Analysis Debug:');
-  console.log('Raw pricing data:', pricingData?.pricing);
+function extractBestPrice(productData: ProductDetailResult): PriceAnalysisResult {
+  console.log('Price Analysis Debug:');
+  console.log('price:', productData.price);
+  console.log('price_buybox:', productData.price_buybox);
+  console.log('buybox array:', productData.buybox);
 
-  if (pricingData?.pricing && Array.isArray(pricingData.pricing)) {
-    console.log('Total offers:', pricingData.pricing.length);
-    pricingData.pricing.forEach((offer, i) => {
-      console.log(`Offer ${i}: price=${offer.price}, condition="${offer.condition}", seller="${offer.seller}"`);
-    });
-  }
-  
-  if (!pricingData?.pricing || !Array.isArray(pricingData.pricing)) {
-    return {
-      bestPrice: 0,
-      bestCondition: 'unknown',
-      analysisDetails: 'Price data not found',
-      hasNewPrice: false
-    };
-  }
-  
-  const offers = pricingData.pricing;
-  const newOffers: PricingOffer[] = [];
-  const usedOffers: PricingOffer[] = [];
-  
-  offers.forEach(offer => {
-    if (!offer.price || offer.price <= 0) return;
-
-    const condition = (offer.condition || '').toLowerCase();
-
-    if (condition.includes('new') && !condition.includes('like') || condition === '' || condition.includes('neu')) {
-      newOffers.push(offer);
-    } else if (condition.includes('used') || condition.includes('gebraucht') ||
-      condition.includes('very good') || condition.includes('good') ||
-      condition.includes('acceptable') || condition.includes('like new')) {
-      usedOffers.push(offer);
-    }
-  });
-  
-  newOffers.sort((a, b) => a.price - b.price);
-  usedOffers.sort((a, b) => a.price - b.price);
-  
   let bestPrice = 0;
   let bestCondition = 'unknown';
   let analysisDetails = '';
-  const hasNewPrice = newOffers.length > 0;
+  let hasNewPrice = false;
 
-  if (hasNewPrice) {
-    bestPrice = newOffers[0].price;
-    bestCondition = 'new';
-    analysisDetails = `Lowest NEW: $${bestPrice} (${newOffers[0].seller})`;
-  } else if (usedOffers.length > 0) {
-    bestPrice = usedOffers[0].price;
-    bestCondition = 'used';
-    analysisDetails = `Lowest USED: $${bestPrice} (${usedOffers[0].seller})`;
-  } else {
-    analysisDetails = 'No valid offers found';
+  // 1. Önce buybox array'ini kontrol et - en güvenilir
+  if (productData.buybox && Array.isArray(productData.buybox) && productData.buybox.length > 0) {
+    const buybox = productData.buybox[0]; // İlk buybox'ı al
+    if (buybox.price && buybox.price > 0) {
+      bestPrice = buybox.price;
+      
+      // Buybox condition'ını kontrol et
+      if (buybox.condition) {
+        const conditionLower = buybox.condition.toLowerCase().trim();
+        if (conditionLower.includes('new') || conditionLower.includes('buy new')) {
+          bestCondition = 'new';
+          hasNewPrice = true;
+        } else if (conditionLower.includes('used') || conditionLower.includes('like new') || 
+                   conditionLower.includes('very good') || conditionLower.includes('good') || 
+                   conditionLower.includes('acceptable') || conditionLower.includes('save with used')) {
+          bestCondition = 'used';
+          hasNewPrice = false;
+        } else {
+          // Belirsiz condition, ama buybox genellikle new olur
+          bestCondition = 'new';
+          hasNewPrice = true;
+        }
+        analysisDetails = `Buybox: $${bestPrice} (${buybox.condition})`;
+      } else {
+        // Condition belirtilmemiş, varsayılan new
+        bestCondition = 'new';
+        hasNewPrice = true;
+        analysisDetails = `Buybox: $${bestPrice} (condition not specified, assumed new)`;
+      }
+      
+      console.log('Using buybox array price:', analysisDetails);
+      return { bestPrice, bestCondition, analysisDetails, hasNewPrice };
+    }
   }
-  
-  console.log('Final Pricing Decision:');
-  console.log(`NEW offers: ${newOffers.length}`);
-  console.log(`USED offers: ${usedOffers.length}`);
-  console.log(`Selected: ${bestCondition} - $${bestPrice}`);
-  console.log(`Analysis: ${analysisDetails}`);
-  console.log(`Has New Price: ${hasNewPrice}`);
+
+  // 2. price_buybox field'ını kontrol et
+  if (productData.price_buybox && productData.price_buybox > 0) {
+    bestPrice = productData.price_buybox;
+    bestCondition = 'new'; // price_buybox genellikle new condition
+    hasNewPrice = true;
+    analysisDetails = `price_buybox: $${bestPrice} (assumed new)`;
+    console.log('Using price_buybox field:', analysisDetails);
+    return { bestPrice, bestCondition, analysisDetails, hasNewPrice };
+  }
+
+  // 3. Ana price field'ını kontrol et
+  if (productData.price && productData.price > 0) {
+    bestPrice = productData.price;
+    bestCondition = 'new'; // Ana fiyat genellikle new
+    hasNewPrice = true;
+    analysisDetails = `main price: $${bestPrice} (assumed new)`;
+    console.log('Using main price field:', analysisDetails);
+    return { bestPrice, bestCondition, analysisDetails, hasNewPrice };
+  }
+
+  // Hiç fiyat bulunamadı
+  analysisDetails = 'No valid price found';
+  console.log('No price found in any field');
   
   return { bestPrice, bestCondition, analysisDetails, hasNewPrice };
 }
@@ -299,9 +304,9 @@ function extractCategory(data: ProductDetailResult): string {
 }
 
 /**
- * PARALLEL API EXECUTION - HER ZAMAN PRİCİNG + PRODUCT
+ * SINGLE PRODUCT API CALL - No Retry
  */
-async function executeParallelAnalysis(asin: string, username: string, password: string) {
+async function executeProductAnalysis(asin: string, username: string, password: string) {
   const startTime = Date.now();
 
   const apiConfig = {
@@ -310,67 +315,56 @@ async function executeParallelAnalysis(asin: string, username: string, password:
     timeout: 5500
   };
 
-  const pricingRequest = {
-    source: 'amazon_pricing',
-    query: asin,
-    geo_location: '07866',
-    domain: 'com',
-    parse: true
-  };
-
   const productRequest = {
     source: 'amazon_product',
     query: asin,
-    geo_location: '07866',
+    geo_location: '10001',
     domain: 'com',
-    parse: true
+    parse: true,
+    context: [
+      {
+        key: 'autoselect_variant',
+        value: true
+      }
+    ]
   };
 
-  const [pricingResponse, productResponse] = await Promise.all([
-    axios.post<OxylabsResponse<PricingContent>>(
-      'https://realtime.oxylabs.io/v1/queries',
-      pricingRequest,
-      apiConfig
-    ).catch(error => {
-      console.error('Pricing API error:', error.message);
-      return null;
-    }),
-    axios.post<OxylabsResponse<ProductDetailResult>>(
+  try {
+    const productResponse = await axios.post<OxylabsResponse<ProductDetailResult>>(
       'https://realtime.oxylabs.io/v1/queries',
       productRequest,
       apiConfig
-    ).catch(error => {
-      console.error('Product API error:', error.message);
-      return null;
-    })
-  ]);
+    );
 
-  const parallelTime = Date.now() - startTime;
+    const productTime = Date.now() - startTime;
+    const productContent = productResponse.data.results?.[0]?.content || null;
 
-  const pricingContent = pricingResponse?.data?.results?.[0]?.content || null;
-  const productContent = productResponse?.data?.results?.[0]?.content || null;
-
-  const apiCallCount = 2;
-  const callSequence = ['pricing', 'product'];
-
-  return {
-    pricingContent,
-    productContent,
-    apiCallCount,
-    callSequence,
-    timings: { parallelTime }
-  };
+    return {
+      productContent,
+      apiCallCount: 1,
+      callSequence: ['product'],
+      timings: { productTime }
+    };
+  } catch (error) {
+    console.error('Product API error:', error);
+    return {
+      productContent: null,
+      apiCallCount: 1,
+      callSequence: ['product'],
+      timings: { productTime: Date.now() - startTime }
+    };
+  }
 }
 
 /**
- * POST /api/amazon-check - CLEAN & OPTIMIZED
+ * POST /api/amazon-check - SINGLE PRODUCT OPTIMIZED
  */
 export async function POST(request: NextRequest) {
   const totalStartTime = Date.now();
   let apiCallCount = 0;
   const callSequence: string[] = [];
   let searchTime = 0;
-  let parallelTime = 0;
+  let productTime = 0;
   let hasApiError = false;
 
   try {
@@ -394,7 +388,7 @@ export async function POST(request: NextRequest) {
       } as ApiResponse, { status: 400 });
     }
 
-    console.log(`\nOXYLABS OPTIMIZED: ${cleanCode} (${codeInfo.type})`);
+    console.log(`\nOXYLABS SINGLE PRODUCT: ${cleanCode} (${codeInfo.type})`);
 
     // Cache kontrolü
     const cachedResult = await productCache.getFromCache(cleanCode);
@@ -446,7 +440,7 @@ export async function POST(request: NextRequest) {
       const searchRequest = {
         source: 'amazon_search',
         query: codeInfo.searchCode,
-        geo_location: '07866',
+        geo_location: '10001',
         domain: 'com',
         parse: true
       };
@@ -478,16 +472,16 @@ export async function POST(request: NextRequest) {
       console.log(`ASIN found: ${asin} (${searchTime}ms)`);
     }
 
-    // PARALLEL EXECUTION
-    const parallelResult = await executeParallelAnalysis(asin, username, password);
+    // SINGLE PRODUCT API CALL
+    const productResult = await executeProductAnalysis(asin, username, password);
 
-    apiCallCount += parallelResult.apiCallCount;
-    callSequence.push(...parallelResult.callSequence);
-    parallelTime = parallelResult.timings.parallelTime;
+    apiCallCount += productResult.apiCallCount;
+    callSequence.push(...productResult.callSequence);
+    productTime = productResult.timings.productTime;
 
-    if (!parallelResult.pricingContent || !parallelResult.productContent) {
+    if (!productResult.productContent) {
       hasApiError = true;
-      console.log(`API call failed - Pricing: ${!!parallelResult.pricingContent}, Product: ${!!parallelResult.productContent}`);
+      console.log('Product API call failed');
       
       return NextResponse.json({
         success: false,
@@ -496,14 +490,15 @@ export async function POST(request: NextRequest) {
     }
 
     // PROCESS DATA
-    const pricingAnalysis = analyzePricingOffers(parallelResult.pricingContent);
-    const salesRank = parallelResult.productContent ? extractSalesRank(parallelResult.productContent) : 0;
-    const category = parallelResult.productContent ? extractCategory(parallelResult.productContent) : 'Unknown';
+    const priceAnalysis = extractBestPrice(productResult.productContent);
+    const salesRank = extractSalesRank(productResult.productContent);
+    const category = extractCategory(productResult.productContent);
 
-    const title = parallelResult.productContent?.title || parallelResult.pricingContent?.title || 'Title not found';
-    const image = parallelResult.productContent?.images?.[0] || '';
+    const title = productResult.productContent.title || 'Title not found';
+    const image = productResult.productContent.images?.[0] || '';
 
-    const productPrice = pricingAnalysis.hasNewPrice ? pricingAnalysis.bestPrice : 0;
+    // Basit mantık: En iyi fiyatı gönder (NEW varsa NEW, yoksa USED, hiçbiri yoksa 0)
+    const productPrice = priceAnalysis.bestPrice;
 
     const product: AmazonProduct = {
       title,
@@ -526,15 +521,15 @@ export async function POST(request: NextRequest) {
     const totalTime = Date.now() - totalStartTime;
 
     const debugInfo = {
-      searchMethod: 'oxylabs-hybrid',
+      searchMethod: 'oxylabs-single-product',
       apiCalls: apiCallCount,
       hasRank: salesRank > 0,
       cacheHit: false,
-      pricingAnalysis,
+      priceAnalysis,
       callSequence,
       timings: {
         ...(searchTime > 0 && { searchTime }),
-        parallelTime,
+        productTime,
         totalTime
       }
     };
@@ -551,7 +546,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const speedLabel = totalTime < 3000 ? 'SUPER FAST' : totalTime < 5000 ? 'FAST' : 'NORMAL';
+    const speedLabel = totalTime < 2000 ? 'ULTRA FAST' : totalTime < 3000 ? 'SUPER FAST' : totalTime < 5000 ? 'FAST' : 'NORMAL';
     console.log(`[${speedLabel}] ${totalTime}ms, ${apiCallCount} calls: ${callSequence.join(' + ')}`);
 
     return NextResponse.json({
@@ -601,7 +596,7 @@ export async function GET() {
 
   return NextResponse.json({
     success: true,
-    message: 'Amazon API - Hybrid Optimized Version',
+    message: 'Amazon API - Single Product Optimized Version (Books, CDs, DVDs, Games, Music)',
     configured: hasConfig,
     timestamp: new Date().toISOString()
   });

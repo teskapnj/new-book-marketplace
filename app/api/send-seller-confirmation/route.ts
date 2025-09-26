@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
           <h3>What happens next?</h3>
           <ol>
             <li>Our team reviews your submission (within 24 hours)</li>
-            <li>You'll receive a FREE shipping label via email</li>
+            <li><strong>If approved : </strong>You'll receive a FREE shipping label via email</li>
             <li>Package your items securely</li>
             <li>Attach the shipping label and drop off at any authorized location</li>
             <li>We'll process your items and send payment to your PayPal account when we received your items</li>
