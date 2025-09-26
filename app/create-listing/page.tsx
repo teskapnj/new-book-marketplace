@@ -300,13 +300,13 @@ export default function CreateListingPage() {
       }
     } catch (err: unknown) {
       console.error('Amazon API error:', err);
-      
+
       let errorMessage = 'Unable to check product. Please try again later.';
-      
+
       if (axios.isAxiosError(err)) {
         console.log('Is axios error: YES');
         console.log('Response data:', err.response?.data);
-        
+
         if (err.response?.data?.error) {
           console.log('API error message found:', err.response.data.error);
           errorMessage = err.response.data.error;
@@ -316,7 +316,7 @@ export default function CreateListingPage() {
       } else {
         console.log('Is axios error: NO');
       }
-      
+
       console.log('Final error message:', errorMessage);
       setError(errorMessage);
       setTimeout(() => {
@@ -1269,23 +1269,14 @@ export default function CreateListingPage() {
                       ISBN/UPC
                     </label>
                     <div className="flex rounded-lg shadow-sm overflow-hidden border border-gray-300 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all duration-200">
-                      <button
-                        type="button"
-                        onClick={() => handleBarcodeScanned(currentItem.isbn)}
-                        disabled={isCheckingAmazon || !currentItem.isbn.trim()}
-                        className={`inline-flex items-center px-4 py-3 border-r border-gray-300 text-gray-700 hover:bg-gray-100 focus:outline-none transition-colors duration-200 ${!currentItem.isbn.trim() ? 'bg-gray-200 cursor-not-allowed' : 'bg-gray-50'
-                          }`}
-                        title="Check Amazon"
-                      >
-                        {isCheckingAmazon ? (
-                          <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                        ) : (
-                          <FiSearch className="h-5 w-5" />
-                        )}
-                      </button>
+                    <button
+  type="button"
+  disabled={true}
+  className="inline-flex items-center px-4 py-3 border-r border-gray-300 text-gray-400 bg-gray-200 cursor-not-allowed transition-colors duration-200"
+  title="Temporarily disabled"
+>
+  <FiSearch className="h-5 w-5" />
+</button>
                       <input
                         type="text"
                         value={currentItem.isbn || ''}
@@ -1301,22 +1292,17 @@ export default function CreateListingPage() {
                         }}
                       />
                       <button
-                        type="button"
-                        onClick={handleScanBarcode}
-                        disabled={isCheckingAmazon || !isMobile}
-                        className={`inline-flex items-center px-4 py-3 border-l border-gray-300 text-gray-700 hover:bg-gray-100 focus:outline-none transition-colors duration-200 ${!isMobile ? 'bg-gray-200 cursor-not-allowed' : 'bg-gray-50'
-                          }`}
-                        title="Scan Barcode"
-                      >
-                        <FiCamera className="h-5 w-5" />
-                      </button>
+  type="button"
+  disabled={true}
+  className="inline-flex items-center px-4 py-3 border-l border-gray-300 text-gray-400 bg-gray-200 cursor-not-allowed transition-colors duration-200"
+  title="Temporarily disabled"
+>
+  <FiCamera className="h-5 w-5" />
+</button>
                     </div>
                     <div className="flex justify-between text-xs text-gray-500 mt-1">
-                      <span>🔍 Press Enter or click Check button to verify</span>
-                      {!isMobile && (
-                        <span>📱 Barcode scanning only works on mobile devices</span>
-                      )}
-                    </div>
+  <span>Search and scanning features temporarily disabled</span>
+</div>
                   </div>
                   <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
                     <div className="p-4 h-full">
