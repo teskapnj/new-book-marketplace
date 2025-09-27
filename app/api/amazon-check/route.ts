@@ -13,7 +13,7 @@ try {
   console.error('Failed to import pricingEngine:', e);
 }
 
-// TypeScript tip tanımlamaları - Basitleştirilmiş
+// TypeScript tip tanımlamaları
 interface AmazonProduct {
   title: string;
   image: string;
@@ -44,7 +44,6 @@ interface SearchContent {
   };
 }
 
-// Buybox bilgileri
 interface BuyboxInfo {
   price: number;
   stock?: string;
@@ -56,6 +55,8 @@ interface ProductDetailResult {
   images?: string[];
   price?: number;
   price_buybox?: number;
+  price_shipping?: number;
+  pricing_str?: string;
   buybox?: BuyboxInfo[];
   sales_rank?: Array<{
     rank: number;
@@ -79,9 +80,13 @@ interface OxylabsResponse<T> {
 
 interface PriceAnalysisResult {
   bestPrice: number;
+  totalPrice: number;
+  shippingCost: number;
   bestCondition: string;
   analysisDetails: string;
   hasNewPrice: boolean;
+  pricingInfo?: string;
+  lowestAvailablePrice?: number;
 }
 
 interface ApiResponse {
@@ -107,7 +112,7 @@ interface ApiResponse {
   error?: string;
 }
 
-// Global kategori listesi (Video Games geri eklendi)
+// Global kategori listesi
 const MAIN_CATEGORIES = ['Books', 'CDs & Vinyl', 'Movies & TV', 'Video Games', 'Music', 'DVD'];
 
 /**
@@ -149,14 +154,12 @@ function detectCodeType(code: string): { type: 'isbn' | 'upc' | 'asin' | 'unknow
 
   if (cleanCode.length === 13 && /^97[89]\d{10}$/.test(cleanCode)) {
     if (cleanCode.startsWith('978')) {
-      // 978 prefix'li ISBN-13'ü ISBN-10'a dönüştür
       const isbn10 = convertISBN13toISBN10(cleanCode);
       if (isbn10) {
         console.log(`ISBN-13 converted: ${cleanCode} → ${isbn10}`);
         return { type: 'isbn', searchCode: isbn10, converted: true };
       }
     }
-    // 979 prefix'li veya dönüştürülemeyen ISBN-13'ler için search gerekli
     console.log(`ISBN-13 requires search: ${cleanCode} (979 prefix or conversion failed)`);
     return { type: 'isbn', searchCode: cleanCode, needsSearch: true };
   }
@@ -173,80 +176,228 @@ function detectCodeType(code: string): { type: 'isbn' | 'upc' | 'asin' | 'unknow
 }
 
 /**
+ * Pricing string'den en düşük fiyatı çıkar - DÜZELTİLMİŞ
+ */
+function parseLowestPriceFromPricingStr(pricingStr: string): number {
+  if (!pricingStr) return 0;
+  
+  console.log('Parsing pricing string:', pricingStr);
+  
+  // "from $17.70" kısmını yakala - shipping öncesi
+  const fromMatch = pricingStr.match(/from\s+\$(\d+\.?\d*)/i);
+  if (fromMatch) {
+    const price = parseFloat(fromMatch[1]);
+    console.log(`Found "from" price: $${price}`);
+    return price;
+  }
+  
+  // "from" bulunamazsa, ilk fiyatı al ama shipping ile karıştırma
+  const priceMatches = pricingStr.match(/\$(\d+\.?\d*)/g);
+  
+  if (!priceMatches || priceMatches.length === 0) {
+    console.log('No prices found in pricing string');
+    return 0;
+  }
+  
+  // İlk fiyatı al (genellikle ürün fiyatıdır)
+  const firstPrice = parseFloat(priceMatches[0].replace('$', ''));
+  
+  if (!isNaN(firstPrice) && firstPrice > 0) {
+    console.log(`Using first price found: $${firstPrice}`);
+    return firstPrice;
+  }
+  
+  console.log('No valid price found');
+  return 0;
+}
+
+/**
  * Buybox ve price field'larından en iyi fiyatı çıkar
- * Öncelik: NEW fiyat → USED fiyat → 0
  */
 function extractBestPrice(productData: ProductDetailResult): PriceAnalysisResult {
-  console.log('Price Analysis Debug:');
+  console.log('=== ENHANCED PRICE ANALYSIS DEBUG ===');
   console.log('price:', productData.price);
   console.log('price_buybox:', productData.price_buybox);
+  console.log('price_shipping:', productData.price_shipping);
+  console.log('pricing_str:', productData.pricing_str);
   console.log('buybox array:', productData.buybox);
 
   let bestPrice = 0;
+  let shippingCost = 0;
   let bestCondition = 'unknown';
   let analysisDetails = '';
   let hasNewPrice = false;
+  let pricingInfo = productData.pricing_str || '';
+  let lowestAvailablePrice = 0;
 
-  // 1. Önce buybox array'ini kontrol et - en güvenilir
+  // Shipping fiyatını al
+  if (productData.price_shipping && productData.price_shipping > 0) {
+    shippingCost = productData.price_shipping;
+    console.log(`Shipping cost found: $${shippingCost}`);
+  }
+
+  // Pricing string'den en düşük fiyatı çıkar
+  if (pricingInfo) {
+    const lowestFromPricing = parseLowestPriceFromPricingStr(pricingInfo);
+    if (lowestFromPricing > 0) {
+      // FREE Shipping kontrolü
+      const hasFreeShipping = pricingInfo.toLowerCase().includes('free');
+      
+      // Shipping maliyetini belirle
+      let shippingForLowest = 0;
+      if (!hasFreeShipping) {
+        // Önce pricing string'den shipping fiyatını çıkarmaya çalış
+        const shippingMatch = pricingInfo.match(/\+\s*\$(\d+\.?\d*)\s*shipping/i);
+        if (shippingMatch) {
+          shippingForLowest = parseFloat(shippingMatch[1]);
+          console.log(`Found shipping in pricing_str: ${shippingForLowest}`);
+        } else if (shippingCost > 0) {
+          // Pricing string'de shipping yoksa, genel shipping kullan
+          shippingForLowest = shippingCost;
+          console.log(`Using general shipping: ${shippingForLowest}`);
+        }
+      }
+      
+      lowestAvailablePrice = lowestFromPricing + shippingForLowest;
+      console.log(`📊 Lowest from pricing_str: ${lowestFromPricing}, Shipping: ${shippingForLowest}, Total: ${lowestAvailablePrice}`);
+    }
+  }
+
+  // 1. Buybox array'ini kontrol et
   if (productData.buybox && Array.isArray(productData.buybox) && productData.buybox.length > 0) {
-    const buybox = productData.buybox[0]; // İlk buybox'ı al
+    const buybox = productData.buybox[0];
+    console.log('Analyzing buybox:', buybox);
+    
     if (buybox.price && buybox.price > 0) {
       bestPrice = buybox.price;
       
-      // Buybox condition'ını kontrol et
       if (buybox.condition) {
         const conditionLower = buybox.condition.toLowerCase().trim();
+        console.log('Buybox condition:', conditionLower);
+        
         if (conditionLower.includes('new') || conditionLower.includes('buy new')) {
           bestCondition = 'new';
           hasNewPrice = true;
-        } else if (conditionLower.includes('used') || conditionLower.includes('like new') || 
-                   conditionLower.includes('very good') || conditionLower.includes('good') || 
-                   conditionLower.includes('acceptable') || conditionLower.includes('save with used')) {
+        } else {
           bestCondition = 'used';
           hasNewPrice = false;
-        } else {
-          // Belirsiz condition, ama buybox genellikle new olur
-          bestCondition = 'new';
-          hasNewPrice = true;
         }
         analysisDetails = `Buybox: $${bestPrice} (${buybox.condition})`;
       } else {
-        // Condition belirtilmemiş, varsayılan new
         bestCondition = 'new';
         hasNewPrice = true;
         analysisDetails = `Buybox: $${bestPrice} (condition not specified, assumed new)`;
       }
       
-      console.log('Using buybox array price:', analysisDetails);
-      return { bestPrice, bestCondition, analysisDetails, hasNewPrice };
+      if (shippingCost > 0) {
+        analysisDetails += ` + $${shippingCost} shipping`;
+      }
+      
+      console.log('✅ Using buybox array price:', analysisDetails);
+      
+      const totalPrice = bestPrice + shippingCost;
+      return { 
+        bestPrice, 
+        totalPrice, 
+        shippingCost, 
+        bestCondition, 
+        analysisDetails, 
+        hasNewPrice,
+        pricingInfo,
+        lowestAvailablePrice
+      };
     }
   }
 
   // 2. price_buybox field'ını kontrol et
   if (productData.price_buybox && productData.price_buybox > 0) {
     bestPrice = productData.price_buybox;
-    bestCondition = 'new'; // price_buybox genellikle new condition
+    bestCondition = 'new';
     hasNewPrice = true;
     analysisDetails = `price_buybox: $${bestPrice} (assumed new)`;
-    console.log('Using price_buybox field:', analysisDetails);
-    return { bestPrice, bestCondition, analysisDetails, hasNewPrice };
+    
+    if (shippingCost > 0) {
+      analysisDetails += ` + $${shippingCost} shipping`;
+    }
+    
+    console.log('✅ Using price_buybox field:', analysisDetails);
+    
+    const totalPrice = bestPrice + shippingCost;
+    return { 
+      bestPrice, 
+      totalPrice, 
+      shippingCost, 
+      bestCondition, 
+      analysisDetails, 
+      hasNewPrice,
+      pricingInfo,
+      lowestAvailablePrice
+    };
   }
 
   // 3. Ana price field'ını kontrol et
   if (productData.price && productData.price > 0) {
     bestPrice = productData.price;
-    bestCondition = 'new'; // Ana fiyat genellikle new
+    bestCondition = 'new';
     hasNewPrice = true;
     analysisDetails = `main price: $${bestPrice} (assumed new)`;
-    console.log('Using main price field:', analysisDetails);
-    return { bestPrice, bestCondition, analysisDetails, hasNewPrice };
+    
+    if (shippingCost > 0) {
+      analysisDetails += ` + $${shippingCost} shipping`;
+    }
+    
+    console.log('✅ Using main price field:', analysisDetails);
+    
+    const totalPrice = bestPrice + shippingCost;
+    return { 
+      bestPrice, 
+      totalPrice, 
+      shippingCost, 
+      bestCondition, 
+      analysisDetails, 
+      hasNewPrice,
+      pricingInfo,
+      lowestAvailablePrice
+    };
   }
 
-  // Hiç fiyat bulunamadı
-  analysisDetails = 'No valid price found';
-  console.log('No price found in any field');
+  // Hiç fiyat bulunamadı - pricing_str'yi fallback olarak kullan
+  if (lowestAvailablePrice > 0) {
+    bestPrice = parseLowestPriceFromPricingStr(pricingInfo);
+    const totalPrice = lowestAvailablePrice;
+    bestCondition = 'unknown';
+    hasNewPrice = false;
+    analysisDetails = `pricing_str fallback: ${bestPrice} + shipping = ${totalPrice} total`;
+    
+    console.log('✅ Using pricing_str as fallback:', analysisDetails);
+    
+    return { 
+      bestPrice, 
+      totalPrice, 
+      shippingCost: totalPrice - bestPrice, 
+      bestCondition, 
+      analysisDetails, 
+      hasNewPrice,
+      pricingInfo,
+      lowestAvailablePrice
+    };
+  }
   
-  return { bestPrice, bestCondition, analysisDetails, hasNewPrice };
+  // Gerçekten hiç fiyat yok
+  analysisDetails = 'No valid price found in any field';
+  console.log('❌ No price found in any field');
+  
+  const totalPrice = bestPrice + shippingCost;
+  return { 
+    bestPrice, 
+    totalPrice, 
+    shippingCost, 
+    bestCondition, 
+    analysisDetails, 
+    hasNewPrice,
+    pricingInfo,
+    lowestAvailablePrice
+  };
 }
 
 /**
@@ -304,7 +455,7 @@ function extractCategory(data: ProductDetailResult): string {
 }
 
 /**
- * SINGLE PRODUCT API CALL - No Retry
+ * SINGLE PRODUCT API CALL
  */
 async function executeProductAnalysis(asin: string, username: string, password: string) {
   const startTime = Date.now();
@@ -330,6 +481,8 @@ async function executeProductAnalysis(asin: string, username: string, password: 
   };
 
   try {
+    console.log(`Making product API call for ASIN: ${asin}`);
+    
     const productResponse = await axios.post<OxylabsResponse<ProductDetailResult>>(
       'https://realtime.oxylabs.io/v1/queries',
       productRequest,
@@ -339,6 +492,8 @@ async function executeProductAnalysis(asin: string, username: string, password: 
     const productTime = Date.now() - startTime;
     const productContent = productResponse.data.results?.[0]?.content || null;
 
+    console.log(`✅ Product API call completed in ${productTime}ms`);
+
     return {
       productContent,
       apiCallCount: 1,
@@ -346,12 +501,14 @@ async function executeProductAnalysis(asin: string, username: string, password: 
       timings: { productTime }
     };
   } catch (error) {
-    console.error('Product API error:', error);
+    const productTime = Date.now() - startTime;
+    console.error(`❌ Product API error (${productTime}ms):`, error);
+    
     return {
       productContent: null,
       apiCallCount: 1,
       callSequence: ['product'],
-      timings: { productTime: Date.now() - startTime }
+      timings: { productTime }
     };
   }
 }
@@ -388,7 +545,7 @@ export async function POST(request: NextRequest) {
       } as ApiResponse, { status: 400 });
     }
 
-    console.log(`\nOXYLABS SINGLE PRODUCT: ${cleanCode} (${codeInfo.type})`);
+    console.log(`\nOXYLABS ENHANCED SINGLE PRODUCT: ${cleanCode} (${codeInfo.type})`);
 
     // Cache kontrolü
     const cachedResult = await productCache.getFromCache(cleanCode);
@@ -421,12 +578,11 @@ export async function POST(request: NextRequest) {
 
     let asin = '';
 
-    // ASIN BUL - ISBN için direkt ASIN kullan (978 prefix'li), diğerleri için search
+    // ASIN BUL
     if (codeInfo.type === 'asin') {
       asin = codeInfo.searchCode;
       console.log('ASIN available, skipping search');
     } else if (codeInfo.type === 'isbn' && !codeInfo.needsSearch) {
-      // Sadece 978 prefix'li ve başarıyla dönüştürülen ISBN'ler direkt ASIN olarak kullanılır
       asin = codeInfo.searchCode;
       const note = codeInfo.converted ? ' (converted from ISBN-13)' : ' (ISBN-10)';
       console.log(`Using ISBN as ASIN: ${asin}${note} (search bypassed)`);
@@ -489,7 +645,7 @@ export async function POST(request: NextRequest) {
       } as ApiResponse, { status: 500 });
     }
 
-    // PROCESS DATA
+    // DATA PROCESSING
     const priceAnalysis = extractBestPrice(productResult.productContent);
     const salesRank = extractSalesRank(productResult.productContent);
     const category = extractCategory(productResult.productContent);
@@ -497,13 +653,40 @@ export async function POST(request: NextRequest) {
     const title = productResult.productContent.title || 'Title not found';
     const image = productResult.productContent.images?.[0] || '';
 
-    // Basit mantık: En iyi fiyatı gönder (NEW varsa NEW, yoksa USED, hiçbiri yoksa 0)
-    const productPrice = priceAnalysis.bestPrice;
+    // ÖZEL FİYAT MANTĞI - Sadece buybox yoksa ve 28 dolar altı için
+    let finalPrice = priceAnalysis.totalPrice; // varsayılan
+    let displayMessage = '';
+    
+    // Eğer buybox fiyatı yoksa (pricing_str fallback kullanıldıysa)
+    const isFallbackPrice = priceAnalysis.analysisDetails.includes('pricing_str fallback');
+    
+    if (isFallbackPrice && priceAnalysis.totalPrice < 28) {
+      // Buybox yok + 28 dolar altı → En düşük fiyat kuralı
+      let lowestTotalPrice = priceAnalysis.totalPrice;
+      
+      if (priceAnalysis.lowestAvailablePrice && priceAnalysis.lowestAvailablePrice > 0) {
+        lowestTotalPrice = priceAnalysis.lowestAvailablePrice;
+      }
+      
+      if (lowestTotalPrice >= 17) {
+        finalPrice = 29;
+        console.log(`💡 Fallback price adjustment: ${lowestTotalPrice} → ${finalPrice} (buybox yok + lowest price ≥ $17 rule)`);
+      } else {
+        console.log(`💡 Fallback no adjustment: ${lowestTotalPrice} (buybox yok + lowest price < $17 - keeping real price)`);
+      }
+    } else if (isFallbackPrice && priceAnalysis.totalPrice >= 28) {
+      // Buybox yok + 28 dolar üstü → Direkt gerçek fiyat
+      console.log(`💡 Fallback direct price: ${priceAnalysis.totalPrice} (buybox yok + ≥ $28 - using real price)`);
+    } else {
+      // Buybox var → Normal işlem
+      console.log(`💡 Buybox available: ${priceAnalysis.totalPrice} (using buybox price)`);
+    }
 
+    // Ürün kartı için basit product objesi (eskisi gibi)
     const product: AmazonProduct = {
       title,
       image,
-      price: productPrice,
+      price: finalPrice,
       sales_rank: salesRank,
       category,
       asin
@@ -511,17 +694,35 @@ export async function POST(request: NextRequest) {
 
     const pricingResult = calculateOurPrice(product);
 
+    // Basit message oluşturma - sadece 2 seçenek
     let message = '';
     if (pricingResult.accepted && pricingResult.ourPrice) {
-      message = `Accepted`;
+      message = ` ACCEPTED`;
     } else {
-      message = `${pricingResult.reason}`;
+      message = `DOES NOT MEET OUR PURCHASING CRITERIA`;
+    }
+
+    // 28 dolardan düşükse fiyat detaylarını console'a yaz (debug için)
+    if (priceAnalysis.totalPrice < 28) {
+      const basePriceStr = `$${priceAnalysis.bestPrice.toFixed(2)}`;
+      const shippingStr = priceAnalysis.shippingCost > 0 ? ` + $${priceAnalysis.shippingCost.toFixed(2)} shipping` : '';
+      const totalStr = ` = $${priceAnalysis.totalPrice.toFixed(2)} total`;
+      
+      displayMessage = `${basePriceStr}${shippingStr}${totalStr}`;
+      
+      // Pricing info varsa ekle
+      if (priceAnalysis.pricingInfo && priceAnalysis.pricingInfo.trim()) {
+        displayMessage = `${priceAnalysis.pricingInfo} | ${displayMessage}`;
+      }
+      
+      console.log(`💰 Under $28 pricing details: ${displayMessage}`);
+      // message'a eklenmez, sadece console'da görünür
     }
 
     const totalTime = Date.now() - totalStartTime;
 
     const debugInfo = {
-      searchMethod: 'oxylabs-single-product',
+      searchMethod: 'oxylabs-enhanced-single-product',
       apiCalls: apiCallCount,
       hasRank: salesRank > 0,
       cacheHit: false,
@@ -548,6 +749,11 @@ export async function POST(request: NextRequest) {
 
     const speedLabel = totalTime < 2000 ? 'ULTRA FAST' : totalTime < 3000 ? 'SUPER FAST' : totalTime < 5000 ? 'FAST' : 'NORMAL';
     console.log(`[${speedLabel}] ${totalTime}ms, ${apiCallCount} calls: ${callSequence.join(' + ')}`);
+    console.log(`💰 Original pricing: Base $${priceAnalysis.bestPrice} + Shipping $${priceAnalysis.shippingCost} = Total $${priceAnalysis.totalPrice}`);
+    console.log(`🎯 Final product price sent to engine: $${finalPrice}`);
+    if (displayMessage) {
+      console.log(`📋 Display message: ${displayMessage}`);
+    }
 
     return NextResponse.json({
       success: true,
@@ -596,7 +802,7 @@ export async function GET() {
 
   return NextResponse.json({
     success: true,
-    message: 'Amazon API - Single Product Optimized Version (Books, CDs, DVDs, Games, Music)',
+    message: 'Amazon API - Enhanced Single Product with Smart Pricing Logic',
     configured: hasConfig,
     timestamp: new Date().toISOString()
   });

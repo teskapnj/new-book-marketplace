@@ -227,57 +227,39 @@ function calculateGamePrice(price: number, salesRank: number): PricingResult {
 function handleNoPriceScenario(category: ProductCategory, salesRank: number): PricingResult {
   switch (category) {
     case 'books':
-      if (salesRank <= 1000000) {
+      if (salesRank <= 500000) {
         return {
           accepted: true,
           ourPrice: 2,
           category: 'books',
           priceRange: "No price - default",
-          rankRange: "≤ 1M"
-        };
-      }
-      if (salesRank <= 2000000) {
-        return {
-          accepted: true,
-          ourPrice: 1.5,
-          category: 'books',
-          priceRange: "No price - default",
-          rankRange: "1M-2M"
+          rankRange: "≤ 500K"
         };
       }
       return {
         accepted: false,
-        reason: "Rank too low ",
+        reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
         category: 'books',
-        rankRange: "> 2M"
+        rankRange: "> 500K"
       };
       
     case 'cds':
     case 'dvds': 
     case 'games':
-      if (salesRank <= 100000) {
+      if (salesRank <= 50000) {
         return {
           accepted: true,
           ourPrice: 2,
           category,
           priceRange: "No price - default", 
-          rankRange: "≤ 100K"
-        };
-      }
-      if (salesRank <= 200000) {
-        return {
-          accepted: true,
-          ourPrice: 1.5,
-          category,
-          priceRange: "No price - default",
-          rankRange: "100K-200K"
+          rankRange: "≤ 50K"
         };
       }
       return {
         accepted: false,
         reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
         category,
-        rankRange: "> 200K"
+        rankRange: "> 50K"
       };
       
     default:

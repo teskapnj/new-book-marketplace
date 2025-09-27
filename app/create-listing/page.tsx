@@ -1183,7 +1183,7 @@ export default function CreateListingPage() {
                             </li>
                             <li className="flex items-start">
                               <FiCheck className="h-4 w-4 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
-                              <span>You&apos;ll receive a free shipping label via email</span>
+                              <span>If Aproved : You&apos;ll receive a free shipping label via email</span>
                             </li>
                             <li className="flex items-start">
                               <FiCheck className="h-4 w-4 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
