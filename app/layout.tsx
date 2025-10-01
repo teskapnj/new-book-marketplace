@@ -12,10 +12,10 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.sellbookmedia.com'),
   title: {
-    default: 'SellBook Media - Sell Your Books, CDs, DVDs & Games for Cash',
+    default: 'Sell Books, CDs, DVDs & Games for Cash - Free Shipping | SellBook Media',
     template: '%s | SellBook Media'
   },
-  description: 'Sell your used books, CDs, DVDs, and video games for instant cash. Free shipping, fast quotes, secure payments. Turn your media collection into money today!',
+  description: 'Get instant cash for your used books, CDs, DVDs, and video games. Free shipping labels, fast payments, best prices guaranteed. America\'s #1 media buyback service.',
   keywords: [
     'sell books for cash',
     'sell used books',
@@ -44,7 +44,6 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  // FAVICON EKLENDİ
   icons: {
     icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>",
     shortcut: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>",
@@ -73,11 +72,76 @@ export const metadata: Metadata = {
     images: ['/twitter-image.jpg'],
   },
   verification: {
-    google: 'your-google-verification-code',
+    google: 'your-google-verification-code', // Google Search Console'dan alın
   },
   alternates: {
     canonical: 'https://www.sellbookmedia.com',
   },
+}
+
+// JSON-LD Structured Data
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': 'https://www.sellbookmedia.com/#organization',
+      name: 'SellBook Media',
+      url: 'https://www.sellbookmedia.com',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://www.sellbookmedia.com/logo.png',
+        width: 512,
+        height: 512
+      },
+      description: 'Buy used books, CDs, DVDs, and video games from customers nationwide',
+      address: {
+        '@type': 'PostalAddress',
+        addressCountry: 'US'
+      },
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: '4.8',
+        bestRating: '5',
+        ratingCount: '500'
+      }
+    },
+    {
+      '@type': 'WebSite',
+      '@id': 'https://www.sellbookmedia.com/#website',
+      url: 'https://www.sellbookmedia.com',
+      name: 'SellBook Media',
+      publisher: {
+        '@id': 'https://www.sellbookmedia.com/#organization'
+      },
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: {
+          '@type': 'EntryPoint',
+          urlTemplate: 'https://www.sellbookmedia.com/search?q={search_term_string}'
+        },
+        'query-input': 'required name=search_term_string'
+      }
+    },
+    {
+      '@type': 'Service',
+      name: 'Media Buyback Service',
+      description: 'We buy used books, CDs, DVDs, and video games for cash with free shipping',
+      provider: {
+        '@id': 'https://www.sellbookmedia.com/#organization'
+      },
+      serviceType: 'Media Buyback',
+      areaServed: {
+        '@type': 'Country',
+        name: 'United States'
+      },
+      offers: {
+        '@type': 'Offer',
+        description: 'Cash for used media with free shipping',
+        availability: 'https://schema.org/InStock'
+      }
+    }
+  ]
 }
 
 export default function RootLayout({
@@ -88,8 +152,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Google Analytics - eğer kullanıyorsanız */}
-        {/* <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script> */}
+        {/* JSON-LD Structured Data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+        
+        {/* Preconnect for Performance */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body>
         <AuthProvider>
