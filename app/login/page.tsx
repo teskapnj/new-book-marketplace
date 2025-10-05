@@ -9,6 +9,13 @@ import SocialLogin from "@/components/SocialLogin";
 import { FiHome, FiEye, FiEyeOff } from "react-icons/fi";
 import { useAuth } from "@/contexts/AuthContext";
 import DOMPurify from 'isomorphic-dompurify';
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Login | SellBook Media',
+  description: 'Sign in to your SellBook Media account to manage your listings, track payments, and view shipping details.',
+  alternates: { canonical: 'https://www.sellbookmedia.com/login' },
+}
 
 // Custom Password Input Component with Hold-to-Show functionality
 const PasswordInputHold = ({

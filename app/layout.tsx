@@ -71,9 +71,6 @@ export const metadata: Metadata = {
     description: 'Turn your books into cash! Free shipping & best prices guaranteed.',
     images: ['/twitter-image.jpg'],
   },
-  verification: {
-    google: 'your-google-verification-code', // Google Search Console'dan alın
-  },
   alternates: {
     canonical: 'https://www.sellbookmedia.com',
   },
