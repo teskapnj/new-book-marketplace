@@ -8,17 +8,12 @@ import { auth, db } from "@/lib/firebase";
 import { FiHome } from "react-icons/fi";
 import SocialLogin from "@/components/SocialLogin";
 import DOMPurify from 'isomorphic-dompurify';
-import type { Metadata } from 'next'
 
 // PasswordInput bileşeni RegisterPage dışına taşıyoruz
 interface PasswordInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
 }
-export const metadata: Metadata = {
-  title: 'Register | SellBook Media',
-  description: 'Create your SellBook Media account to sell your used books, CDs, DVDs, and games for instant cash. Free signup and fast payments.',
-  alternates: { canonical: 'https://www.sellbookmedia.com/register' },
-}
+
 
 function PasswordInput({
   label,

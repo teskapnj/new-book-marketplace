@@ -14,13 +14,7 @@ import { AmazonProduct, PricingResult } from "@/lib/pricingEngine";
 import DOMPurify from 'isomorphic-dompurify';
 import UserListingsSection from "@/components/UserListingsSection";
 import Image from 'next/image';
-import type { Metadata } from 'next'
 
-export const metadata: Metadata = {
-  title: 'Create a Listing | SellBook Media',
-  description: 'Enter your ISBN or barcode to get an instant quote and sell your used books, CDs, DVDs, and games for cash. Free shipping and quick payouts.',
-  alternates: { canonical: 'https://www.sellbookmedia.com/create-listing' },
-}
 
 interface BundleItem {
   id: string;

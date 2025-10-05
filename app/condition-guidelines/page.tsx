@@ -1,13 +1,6 @@
 'use client';
 
 import Link from "next/link";
-import type { Metadata } from 'next'
-
-export const metadata: Metadata = {
-  title: 'Condition Guidelines | SellBook Media',
-  description: 'Check the condition of your books, CDs, DVDs, and games to get the best offer when selling. Learn what qualifies as “Good” or “Like New.”',
-  alternates: { canonical: 'https://www.sellbookmedia.com/condition-guidelines' },
-}
 
 
 export default function ConditionGuidelines() {

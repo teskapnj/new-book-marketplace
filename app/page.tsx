@@ -16,14 +16,7 @@ import {
   secureLogout,
   logSecurityAttempt
 } from "@/lib/auth-utils";
-import type { Metadata } from 'next'
 
-export const metadata: Metadata = {
-  title: 'Sell Books, CDs, DVDs & Games for Cash | SellBook Media',
-  description: 'Turn your old books, CDs, DVDs and games into instant cash. Prices start from $1.49. Free shipping, instant quotes, and fast secure payments.',
-  alternates: { canonical: 'https://www.sellbookmedia.com' },
-  keywords: 'sell books online, sell DVDs, sell CDs, sell video games, instant cash, used books',
-}
 // SVG Icons (unchanged)
 function UserIcon({ size = 24, className = "" }) {
   return (
