@@ -16,20 +16,10 @@ export const metadata: Metadata = {
     template: '%s | SellBook Media'
   },
   description: 'Get instant cash for your used books, CDs, DVDs, and video games. Free shipping labels, fast payments, best prices guaranteed. America\'s #1 media buyback service.',
-  keywords: [
-    'sell books for cash',
-    'sell used books',
-    'sell CDs online',
-    'sell DVDs',
-    'sell video games',
-    'cash for books',
-    'textbook buyback',
-    'used media buyback',
-    'book resale',
-    'instant book quote',
-    'media buyback service',
-    'used book buyers'
-  ],
+  
+  // ❌ KEYWORDS KALDIRILDI - Google kullanmıyor (deprecated since 2009)
+  // keywords: [...],
+  
   authors: [{ name: 'SellBook Media' }],
   creator: 'SellBook Media',
   publisher: 'SellBook Media',
@@ -76,7 +66,7 @@ export const metadata: Metadata = {
   },
 }
 
-// JSON-LD Structured Data
+// ✅ JSON-LD Structured Data - IMPROVED
 const structuredData = {
   '@context': 'https://schema.org',
   '@graph': [
@@ -92,16 +82,20 @@ const structuredData = {
         height: 512
       },
       description: 'Buy used books, CDs, DVDs, and video games from customers nationwide',
-      address: {
-        '@type': 'PostalAddress',
-        addressCountry: 'US'
-      },
-      aggregateRating: {
-        '@type': 'AggregateRating',
-        ratingValue: '4.8',
-        bestRating: '5',
-        ratingCount: '500'
-      }
+      
+      // ⚠️ ADDRESS - Eğer fiziksel ofis YOKSA kaldırın
+      // address: {
+      //   '@type': 'PostalAddress',
+      //   addressCountry: 'US'
+      // },
+      
+      // ⚠️ AGGREGATE RATING - Gerçek 500 yorumunuz YOKSA kaldırın!
+      // aggregateRating: {
+      //   '@type': 'AggregateRating',
+      //   ratingValue: '4.8',
+      //   bestRating: '5',
+      //   ratingCount: '500'
+      // }
     },
     {
       '@type': 'WebSite',
@@ -111,14 +105,16 @@ const structuredData = {
       publisher: {
         '@id': 'https://www.sellbookmedia.com/#organization'
       },
-      potentialAction: {
-        '@type': 'SearchAction',
-        target: {
-          '@type': 'EntryPoint',
-          urlTemplate: 'https://www.sellbookmedia.com/search?q={search_term_string}'
-        },
-        'query-input': 'required name=search_term_string'
-      }
+      
+      // ⚠️ SEARCH ACTION - /search sayfanız YOKSA kaldırın
+      // potentialAction: {
+      //   '@type': 'SearchAction',
+      //   target: {
+      //     '@type': 'EntryPoint',
+      //     urlTemplate: 'https://www.sellbookmedia.com/search?q={search_term_string}'
+      //   },
+      //   'query-input': 'required name=search_term_string'
+      // }
     },
     {
       '@type': 'Service',
