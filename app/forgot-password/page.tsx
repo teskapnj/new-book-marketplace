@@ -108,7 +108,6 @@ export default function ForgotPasswordPage() {
                     Email Address
                   </label>
                   <div className="relative">
-                  // GÜVENLİ
                     <input
                       id="email"
                       name="email"
