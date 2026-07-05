@@ -1081,50 +1081,62 @@ export default function CreateListingPage() {
             </div>
           )}
 
-          {showScanner && (
-            <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 m-4 max-w-sm w-full">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold">📱 Barcode Scanner</h3>
-                  <button
-                    onClick={closeBarcodeScanner}
-                    className="p-2 hover:bg-gray-100 rounded-full"
-                  >
-                    <FiX className="h-5 w-5" />
-                  </button>
+{showScanner && (
+            <div className="fixed inset-0 bg-black z-50 flex flex-col">
+              {/* Üst bar: başlık + kapat */}
+              <div className="flex justify-between items-center px-4 py-3 bg-black bg-opacity-80">
+                <h3 className="text-lg font-semibold text-white">📱 Barcode Scanner</h3>
+                <button
+                  onClick={closeBarcodeScanner}
+                  className="p-2 text-white hover:bg-white hover:bg-opacity-20 rounded-full"
+                >
+                  <FiX className="h-6 w-6" />
+                </button>
+              </div>
+
+              {/* Hata mesajları */}
+              {cameraError && (
+                <div className="mx-4 mt-2 bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-red-700 text-sm">{cameraError}</p>
                 </div>
+              )}
+              {scannerError && (
+                <div className="mx-4 mt-2 bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-red-700 text-sm">{scannerError}</p>
+                </div>
+              )}
+
+              {/* Kamera alanı: kalan tüm ekranı kaplar */}
+              <div className="relative flex-1">
                 {!isCameraReady && !cameraError && (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Preparing camera...</p>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+                    <p className="text-white">Preparing camera...</p>
                   </div>
                 )}
-                {cameraError && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-                    <p className="text-red-700 text-sm">{cameraError}</p>
-                  </div>
-                )}
-                {scannerError && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-                    <p className="text-red-700 text-sm">{scannerError}</p>
-                  </div>
-                )}
-                <div className="relative">
-                  <video
-                    ref={videoRef}
-                    className="w-full h-64 bg-black rounded-lg object-cover"
-                    playsInline
-                    muted
-                  />
-                  {isCameraReady && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="border-2 border-red-500 w-48 h-32 rounded-lg"></div>
+                <video
+                  ref={videoRef}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  playsInline
+                  muted
+                />
+                {isCameraReady && (
+                  <div className="absolute inset-0 pointer-events-none">
+                    {/* Yatay kılavuz çizgisi - ekranın tam ortası */}
+                    <div className="absolute left-6 right-6 top-1/2 -translate-y-1/2">
+                      <div className="h-0.5 bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.9)]"></div>
                     </div>
-                  )}
+                    {/* Çizginin uçlarında küçük dikey tutamaçlar */}
+                    <div className="absolute left-6 top-1/2 -translate-y-1/2 w-0.5 h-10 bg-red-500"></div>
+                    <div className="absolute right-6 top-1/2 -translate-y-1/2 w-0.5 h-10 bg-red-500"></div>
+                  </div>
+                )}
+                {/* Alt bilgi yazısı */}
+                <div className="absolute bottom-8 left-0 right-0 text-center px-4">
+                  <p className="text-white text-sm bg-black bg-opacity-60 rounded-full py-2 px-4 inline-block">
+                    Align the barcode with the red line
+                  </p>
                 </div>
-                <p className="text-center text-sm text-gray-600 mt-4">
-                  Point the camera at the barcode/QR code
-                </p>
               </div>
             </div>
           )}
