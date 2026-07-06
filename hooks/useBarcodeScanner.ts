@@ -81,6 +81,8 @@ export function useBarcodeScanner(options: BarcodeScannerOptions): BarcodeScanne
   const scanningIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isDecodingRef = useRef(false);
   const scanCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const lastScanTimeRef = useRef<number>(0);
+  const lastScanCodeRef = useRef<string | null>(null);
 
   // Mobile device check
   const checkIsMobile = useCallback((): boolean => {
@@ -444,9 +446,6 @@ export function useBarcodeScanner(options: BarcodeScannerOptions): BarcodeScanne
         BarcodeFormat.UPC_A,
         BarcodeFormat.UPC_E,
         BarcodeFormat.CODE_128,
-        BarcodeFormat.CODE_39,
-        BarcodeFormat.CODE_93,
-        BarcodeFormat.ITF
       ]);
 
       const reader = new MultiFormatReader();
@@ -503,9 +502,18 @@ export function useBarcodeScanner(options: BarcodeScannerOptions): BarcodeScanne
           }
 
           if (scannedCode) {
-            if (mountedRef.current) {
+            const now = Date.now();
+            const isSameCodeTooSoon = 
+              lastScanCodeRef.current === scannedCode && 
+              (now - lastScanTimeRef.current) < 2500; // aynı barkod 2.5 sn içinde tekrar sayılmaz
+
+            if (!isSameCodeTooSoon && mountedRef.current) {
+              lastScanTimeRef.current = now;
+              lastScanCodeRef.current = scannedCode;
+
               setState(prev => ({ ...prev, lastScannedCode: scannedCode }));
               onScan(scannedCode);
+              
               if (!continuous) {
                 stopScanning();
                 return;

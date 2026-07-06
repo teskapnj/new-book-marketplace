@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db, storage } from "@/lib/firebase";
@@ -113,6 +113,7 @@ export default function CreateListingPage() {
   const [popupTimer, setPopupTimer] = useState<NodeJS.Timeout | null>(null);
   const [prevUser, setPrevUser] = useState(user);
   const [showUserListings, setShowUserListings] = useState(false);
+  const resultTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const totalOurPrice = bundleItems.reduce((total, item) => {
     return total + (item.price * item.quantity);
@@ -204,11 +205,27 @@ export default function CreateListingPage() {
 
   const handleBarcodeScanned = useCallback(async (code: string) => {
     console.log('📱 Barcode scanned:', code);
+
+    // Kısa bip sesi (Web Audio API - dosya yüklemeye gerek yok)
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      oscillator.frequency.value = 800;
+      gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.15);
+    } catch (e) {
+      console.log('Beep sound not supported');
+    }
+
     try {
       setIsCheckingAmazon(true);
       clearAmazonResults();
-      stopScanning();
-      setShowScanner(false);
+      // stopScanning() ve setShowScanner(false) KALDIRILDI - kamera açık kalacak
       setCurrentItem(prev => ({
         ...prev,
         isbn: code
@@ -268,7 +285,8 @@ export default function CreateListingPage() {
         if (pricing.accepted && pricing.ourPrice) {
           autoAddAcceptedItem(code, product, pricing);
 
-          setTimeout(() => {
+          if (resultTimerRef.current) clearTimeout(resultTimerRef.current);
+          resultTimerRef.current = setTimeout(() => {
             setAmazonResult(null);
             setError("");
             setCurrentItem(prev => ({
@@ -278,9 +296,10 @@ export default function CreateListingPage() {
               imageUrl: null,
               amazonData: undefined
             }));
-          }, 10000);
+          }, 6000);
         } else {
-          setTimeout(() => {
+          if (resultTimerRef.current) clearTimeout(resultTimerRef.current);
+          resultTimerRef.current = setTimeout(() => {
             setAmazonResult(null);
             setError("");
             setCurrentItem(prev => ({
@@ -290,7 +309,7 @@ export default function CreateListingPage() {
               imageUrl: null,
               amazonData: undefined
             }));
-          }, 10000);
+          }, 6000);
         }
       } else {
         setError(response.data.error || 'Amazon check failed');
@@ -337,7 +356,6 @@ export default function CreateListingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoAddAcceptedItem, clearAmazonResults]);
 
-
   const handleScanBarcode = () => {
     if (!isMobile) {
       setError("Barcode scanning only works on mobile devices");
@@ -364,8 +382,8 @@ export default function CreateListingPage() {
   } = useBarcodeScanner({
     onScan: handleBarcodeScanned,
     onError: (error) => setScannerError(error),
-    continuous: false,
-    timeout: 30000
+    continuous: true,      // kamera taramadan sonra kapanmasın
+    timeout: 300000        // 5 dakika - sürekli mod için daha uzun bir güvenlik süresi
   });
 
   useEffect(() => {
@@ -1108,6 +1126,12 @@ export default function CreateListingPage() {
 
               {/* Kamera alanı: kalan tüm ekranı kaplar */}
               <div className="relative flex-1">
+              {isCheckingAmazon && (
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-black bg-opacity-80 text-white text-base font-bold px-6 py-3 rounded-full flex items-center gap-3 shadow-lg">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      Checking product...
+                    </div>
+                  )}
                 {!isCameraReady && !cameraError && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
@@ -1116,7 +1140,8 @@ export default function CreateListingPage() {
                 )}
                 <video
                   ref={videoRef}
-                  className="absolute inset-0 w-full h-full object-cover"
+                  className="absolute left-0 right-0 w-full object-cover"
+                  style={{ top: '56px', height: 'calc(100% - 112px)' }}
                   playsInline
                   muted
                 />
@@ -1129,6 +1154,55 @@ export default function CreateListingPage() {
                     {/* Çizginin uçlarında küçük dikey tutamaçlar */}
                     <div className="absolute left-6 top-1/2 -translate-y-1/2 w-0.5 h-10 bg-red-500"></div>
                     <div className="absolute right-6 top-1/2 -translate-y-1/2 w-0.5 h-10 bg-red-500"></div>
+                  </div>
+                )}
+                {/* Alttan kayan sonuç kartı */}
+                {amazonResult && (
+                  <div
+                    key={currentItem.isbn}
+                    className="absolute bottom-0 left-0 right-0 z-20 animate-slide-up"
+                  >
+                    <div className={`mx-3 mb-4 rounded-2xl shadow-2xl p-6 ${
+                      amazonResult.pricing.accepted ? 'bg-green-50 border-2 border-green-400' : 'bg-red-50 border-2 border-red-400'
+                    }`}>
+                      <div className="flex items-center gap-5">
+                        <div className="w-28 h-28 rounded-lg overflow-hidden bg-white flex-shrink-0 border border-gray-200">
+                          {amazonResult.product.image ? (
+                            <Image
+                              src={amazonResult.product.image}
+                              alt={amazonResult.product.title || "Product"}
+                              width={112}
+                              height={112}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <FiPackage className="h-10 w-10 text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-lg font-semibold text-gray-900 line-clamp-2">
+                            {amazonResult.product.title || "Product"}
+                          </p>
+                          <div className={`inline-flex items-center gap-1.5 mt-3 px-4 py-1.5 rounded-full text-base font-bold ${
+                            amazonResult.pricing.accepted ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+                          }`}>
+                            {amazonResult.pricing.accepted ? (
+                              <>
+                                <FiCheck className="h-3 w-3" />
+                                Accepted - ${amazonResult.pricing.ourPrice?.toFixed(2)}
+                              </>
+                            ) : (
+                              <>
+                                <FiX className="h-3 w-3" />
+                                Not Accepted
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
                 {/* Alt bilgi yazısı */}
