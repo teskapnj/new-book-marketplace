@@ -21,18 +21,18 @@ export const RateLimitWarning: React.FC<RateLimitWarningProps> = ({
           <div className="text-center">
             <div className="text-red-500 text-6xl mb-4">🚫</div>
             <h2 className="text-2xl font-bold text-red-600 mb-4">
-              Çok Fazla Deneme
+              Too Many Attempts
             </h2>
             <p className="text-gray-600 mb-6">
-              Güvenlik nedeniyle geçici olarak erişiminiz kısıtlandı.
+              Your access has been temporarily restricted for security reasons.
             </p>
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
               <p className="text-red-700 font-semibold">
-                Kalan süre: {Math.floor(remainingTime / 60)}:{String(remainingTime % 60).padStart(2, '0')}
+                Time remaining: {Math.floor(remainingTime / 60)}:{String(remainingTime % 60).padStart(2, '0')}
               </p>
             </div>
             <p className="text-sm text-gray-500">
-              Bu süre sonunda tekrar deneyebilirsiniz.
+              You can try again after this time.
             </p>
           </div>
         </div>
@@ -48,10 +48,10 @@ export const RateLimitWarning: React.FC<RateLimitWarningProps> = ({
           <div className="text-yellow-500 text-xl mr-3">⚠️</div>
           <div>
             <p className="text-yellow-700 font-medium">
-              Uyarı: {maxAttempts - attempts} deneme hakkınız kaldı
+              Warning: {maxAttempts - attempts} attempts remaining
             </p>
             <p className="text-yellow-600 text-sm">
-              Limit aşılırsa geçici olarak erişiminiz kısıtlanacak.
+              Your access will be temporarily restricted if you exceed the limit.
             </p>
           </div>
         </div>

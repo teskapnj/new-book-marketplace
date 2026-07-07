@@ -80,9 +80,14 @@ export function useBarcodeScanner(options: BarcodeScannerOptions): BarcodeScanne
   const mountedRef = useRef(true);
   const scanningIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isDecodingRef = useRef(false);
+  const onScanRef = useRef(onScan);
   const scanCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const lastScanTimeRef = useRef<number>(0);
   const lastScanCodeRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    onScanRef.current = onScan;
+  }, [onScan]);
 
   // Mobile device check
   const checkIsMobile = useCallback((): boolean => {
@@ -512,7 +517,7 @@ export function useBarcodeScanner(options: BarcodeScannerOptions): BarcodeScanne
               lastScanCodeRef.current = scannedCode;
 
               setState(prev => ({ ...prev, lastScannedCode: scannedCode }));
-              onScan(scannedCode);
+              onScanRef.current(scannedCode);
               
               if (!continuous) {
                 stopScanning();

@@ -108,6 +108,11 @@ export default function CreateListingPage() {
     pricing: PricingResult;
     message: string;
   } | null>(null);
+  const [duplicateConfirm, setDuplicateConfirm] = useState<{
+    code: string;
+    count: number;
+    existingItem: BundleItem;
+  } | null>(null);
   const [scannerError, setScannerError] = useState("");
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [popupTimer, setPopupTimer] = useState<NodeJS.Timeout | null>(null);
@@ -220,6 +225,20 @@ export default function CreateListingPage() {
       oscillator.stop(audioCtx.currentTime + 0.15);
     } catch (e) {
       console.log('Beep sound not supported');
+    }
+
+    const existingMatches = bundleItems.filter(item => item.isbn === code);
+    if (existingMatches.length > 0) {
+      setAmazonResult(null); // önceki kartı hemen kapat, çakışmasın
+      setDuplicateConfirm({
+        code,
+        count: existingMatches.length,
+        existingItem: existingMatches[0]
+      });
+      if (existingMatches.length >= 5) {
+        setTimeout(() => setDuplicateConfirm(null), 4000);
+      }
+      return;
     }
 
     try {
@@ -355,6 +374,31 @@ export default function CreateListingPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoAddAcceptedItem, clearAmazonResults]);
+
+  const handleConfirmAddDuplicate = () => {
+    if (!duplicateConfirm) return;
+    const existing = duplicateConfirm.existingItem;
+    const newItem: BundleItem = {
+      id: Date.now().toString(),
+      isbn: duplicateConfirm.code,
+      condition: "very-good",
+      quantity: 1,
+      price: existing.price,
+      image: existing.image,
+      imageUrl: existing.imageUrl,
+      imageBlob: null,
+      category: existing.category,
+      amazonData: existing.amazonData,
+      ourPrice: existing.ourPrice,
+      originalPrice: existing.originalPrice
+    };
+    setBundleItems(prev => [...prev, newItem]);
+    setDuplicateConfirm(null);
+  };
+
+  const handleDeclineAddDuplicate = () => {
+    setDuplicateConfirm(null);
+  };
 
   const handleScanBarcode = () => {
     if (!isMobile) {
@@ -1155,9 +1199,65 @@ export default function CreateListingPage() {
                     <div className="absolute left-6 top-1/2 -translate-y-1/2 w-0.5 h-10 bg-red-500"></div>
                     <div className="absolute right-6 top-1/2 -translate-y-1/2 w-0.5 h-10 bg-red-500"></div>
                   </div>
-                )}
+                     )}
+
+                     {duplicateConfirm && (
+                       <div className="absolute bottom-0 left-0 right-0 z-20 animate-slide-up">
+                         <div className="mx-3 mb-4 rounded-2xl shadow-2xl p-6 bg-yellow-50 border-2 border-yellow-400">
+                           <div className="flex items-center gap-5">
+                             <div className="w-20 h-20 rounded-lg overflow-hidden bg-white flex-shrink-0 border border-gray-200">
+                               {duplicateConfirm.existingItem.imageUrl ? (
+                                 <Image
+                                   src={duplicateConfirm.existingItem.imageUrl}
+                                   alt="Product"
+                                   width={80}
+                                   height={80}
+                                   className="w-full h-full object-cover"
+                                 />
+                               ) : (
+                                 <div className="w-full h-full flex items-center justify-center">
+                                   <FiPackage className="h-8 w-8 text-gray-400" />
+                                 </div>
+                               )}
+                             </div>
+                             <div className="flex-1 min-w-0">
+                               <p className="text-base font-medium text-gray-900 line-clamp-2">
+                                 {duplicateConfirm.existingItem.amazonData?.title || "This item"}
+                               </p>
+                               {duplicateConfirm.count >= 5 ? (
+                                 <p className="text-sm font-bold text-red-700 mt-2">
+                                   Maximum 5 of this item reached
+                                 </p>
+                               ) : (
+                                 <p className="text-sm text-gray-700 mt-2">
+                                   You already have {duplicateConfirm.count} of this item. Add another?
+                                 </p>
+                               )}
+                             </div>
+                           </div>
+                           {duplicateConfirm.count < 5 && (
+                             <div className="flex gap-3 mt-4">
+                               <button
+                                 type="button"
+                                 onClick={handleDeclineAddDuplicate}
+                                 className="flex-1 py-2 px-4 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium"
+                               >
+                                 No
+                               </button>
+                               <button
+                                 type="button"
+                                 onClick={handleConfirmAddDuplicate}
+                                 className="flex-1 py-2 px-4 rounded-lg bg-green-600 text-white font-medium"
+                               >
+                                 Yes, Add
+                               </button>
+                             </div>
+                           )}
+                         </div>
+                       </div>
+                     )}
                 {/* Alttan kayan sonuç kartı */}
-                {amazonResult && (
+                {amazonResult && !duplicateConfirm && (
                   <div
                     key={currentItem.isbn}
                     className="absolute bottom-0 left-0 right-0 z-20 animate-slide-up"

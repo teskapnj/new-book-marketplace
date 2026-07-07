@@ -70,8 +70,11 @@ export const secureApiCall = async (
 };
 
 // FIRESTORE'DAN ROL OKUMA (Ana Fonksiyon) - GÜNCELLENMIŞ
+// DÜZELTME: sadece user.uid kontrol ediliyor artık - user.email'in anlık olarak
+// boş/gecikmeli gelmesi (Firebase auth state henüz tam yüklenmemişken) artık
+// "Invalid user" hatası fırlatıp rate-limit sayacını yanlışlıkla artırmıyor.
 export const verifyUserRoleSecurely = async (user: User): Promise<UserRole> => {
-  if (!user?.uid || !user?.email) {
+  if (!user?.uid) {
     throw new Error('Invalid user');
   }
 
