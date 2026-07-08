@@ -1313,7 +1313,11 @@ export default function CreateListingPage() {
                 <FiArrowRight className="ml-2 h-5 w-5" />
               </button>
             ) : (
-              <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-center">
+              <div className="space-y-2">
+                <p className="text-center text-xs text-gray-500">
+                  You can scan and add items without an account — you only need to log in or sign up when you&apos;re ready to send them.
+                </p>
+                <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-center">
                 <p className="text-sm text-blue-700 mb-3">Log in or sign up to continue and send your items</p>
                 <div className="flex gap-3">
                   <Link
@@ -1328,6 +1332,7 @@ export default function CreateListingPage() {
                   >
                     <FiUser className="mr-2 h-4 w-4" /> Sign up
                   </Link>
+                </div>
                 </div>
               </div>
             )}
