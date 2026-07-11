@@ -29,6 +29,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.7, // ⬆️ 0.6'dan 0.7'ye yükseltildi
     },
+    
+     // ✅ GUIDE PAGES - SEO içerik sayfaları
+     {
+      url: 'https://www.sellbookmedia.com/guides/where-to-sell-books-and-dvds-for-cash',
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
 
     // ✅ SUPPORT & POLICY PAGES
     {

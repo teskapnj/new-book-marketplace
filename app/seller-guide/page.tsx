@@ -23,7 +23,7 @@ const SellerGuidePage: NextPage = () => {
       id: 3,
       title: "Get Shipping Labels",
       icon: "📦",
-      description: "Receive prepaid labels within 24 hours"
+      description: "Receive a prepaid label once your bundle is approved"
     },
     {
       id: 4,
@@ -175,16 +175,13 @@ const SellerGuidePage: NextPage = () => {
                     <div className="border border-gray-200 rounded-lg p-4">
                       <h4 className="font-medium text-gray-800 mb-2">👤 Personal Details</h4>
                       <ul className="text-gray-600 text-sm space-y-1">
-                        <li>• Full Name (First & Last)</li>
-                        <li>• Email Address</li>
-                        <li>• Phone Number</li>
+                        <li>• Full Name (First &amp; Last)</li>
                       </ul>
                     </div>
                     <div className="border border-gray-200 rounded-lg p-4">
                       <h4 className="font-medium text-gray-800 mb-2">💳 Payment Information</h4>
                       <ul className="text-gray-600 text-sm space-y-1">
                         <li>• PayPal Account Email</li>
-                        <li>• Confirm PayPal Email</li>
                       </ul>
                     </div>
                     <div className="border border-gray-200 rounded-lg p-4">
@@ -203,9 +200,8 @@ const SellerGuidePage: NextPage = () => {
                     <h4 className="font-medium text-blue-800 mb-2">📦 Package Details</h4>
                     <p className="text-blue-700 text-sm mb-2">Provide accurate measurements for proper shipping labels:</p>
                     <ul className="text-blue-700 text-sm space-y-1">
-                      <li>• Package Weight (in pounds/kg)</li>
-                      <li>• Length, Width, Height (in inches/cm)</li>
-                      <li>• Number of packages (if multiple)</li>
+                      <li>• Package Weight (up to 50 lbs)</li>
+                      <li>• Length, Width, Height (up to 18&quot; x 16&quot; x 16&quot;)</li>
                     </ul>
                   </div>
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -228,7 +224,7 @@ const SellerGuidePage: NextPage = () => {
                 <span className="text-3xl mr-4">📦</span>
                 <div>
                   <h2 className="text-2xl font-bold">Step 3: Get Shipping Labels</h2>
-                  <p className="text-purple-100">Receive prepaid shipping labels within 24 hours</p>
+                  <p className="text-purple-100">Receive a prepaid shipping label once your bundle is approved</p>
                 </div>
               </div>
             </div>
@@ -247,15 +243,15 @@ const SellerGuidePage: NextPage = () => {
                     <div className="flex items-start space-x-3">
                       <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">2</div>
                       <div>
-                        <h4 className="font-medium text-gray-800">Label Generation</h4>
-                        <p className="text-gray-600 text-sm">Our system processes your information and generates prepaid shipping labels.</p>
+                        <h4 className="font-medium text-gray-800">We Review Your Bundle</h4>
+                        <p className="text-gray-600 text-sm">Our team reviews your submitted items, typically within 24 hours.</p>
                       </div>
                     </div>
                     <div className="flex items-start space-x-3">
                       <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">3</div>
                       <div>
-                        <h4 className="font-medium text-gray-800">Labels Delivered</h4>
-                        <p className="text-gray-600 text-sm">Within 24 hours, you'll receive an email with your prepaid shipping labels attached.</p>
+                        <h4 className="font-medium text-gray-800">Label Sent If Approved</h4>
+                        <p className="text-gray-600 text-sm">Once approved, you'll receive an email with your free prepaid shipping label.</p>
                       </div>
                     </div>
                   </div>
@@ -265,10 +261,9 @@ const SellerGuidePage: NextPage = () => {
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
                     <h4 className="font-medium text-green-800 mb-2">📄 Shipping Package</h4>
                     <ul className="text-green-700 text-sm space-y-1">
-                      <li>• Prepaid shipping labels (PDF format)</li>
+                      <li>• Prepaid shipping label (PDF format)</li>
                       <li>• Packing instructions</li>
                       <li>• Tracking information setup</li>
-                      <li>• Return address details</li>
                     </ul>
                   </div>
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -277,7 +272,7 @@ const SellerGuidePage: NextPage = () => {
                       <li>• Print labels on standard 8.5" x 11" paper</li>
                       <li>• Use clear tape to secure labels</li>
                       <li>• Keep confirmation emails for your records</li>
-                      <li>• Labels are valid for 30 days</li>
+                      <li>• Check your spam/junk folder if you don't see it</li>
                     </ul>
                   </div>
                 </div>
@@ -353,7 +348,7 @@ const SellerGuidePage: NextPage = () => {
             {[
               {
                 question: "How long does the entire process take?",
-                answer: "From submission to payment: typically 2-3 business days after we receive your package."
+                answer: "After you submit your bundle, our team reviews it within 24 hours. Once approved and we receive your shipped items, payment is typically sent within 2 business days."
               },
               {
                 question: "What if some of my items aren't accepted?",
@@ -365,11 +360,11 @@ const SellerGuidePage: NextPage = () => {
               },
               {
                 question: "What if I made a mistake in my submission?",
-                answer: "Contact our support team immediately. Changes may be possible before shipping labels are generated."
+                answer: "Contact our support team as soon as possible. Changes may be possible before your shipping label is generated."
               },
               {
-                question: "Are there any fees?",
-                answer: "No fees at all! Shipping is completely free, and we don't charge any processing fees."
+                question: "Are there any shipping fees?",
+                answer: "No, shipping is completely free — we email you a prepaid label once your bundle is approved."
               },
               {
                 question: "What payment methods do you offer?",
