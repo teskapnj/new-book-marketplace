@@ -43,6 +43,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.9,
     },
+    {
+      url: 'https://www.sellbookmedia.com/guides/best-places-to-sell-cds-dvds-games',
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
 
     // ✅ SUPPORT & POLICY PAGES
     {
