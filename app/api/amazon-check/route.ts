@@ -21,6 +21,7 @@ interface AmazonProduct {
   sales_rank: number;
   category: string;
   asin: string;
+  priceType?: 'new' | 'used' | 'none';
 }
 
 interface PricingResult {
@@ -366,7 +367,10 @@ export async function POST(request: NextRequest) {
       price: priceAnalysis.price,
       sales_rank: salesRank,
       category,
-      asin
+      asin,
+      priceType: priceAnalysis.price <= 0
+        ? 'none'
+        : priceAnalysis.hasNewPrice ? 'new' : 'used'
     };
 
     const pricingResult = calculateOurPrice(product);
