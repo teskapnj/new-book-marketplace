@@ -559,8 +559,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-16">
+     {/* Footer */}
+     <footer className="bg-gray-900 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="lg:col-span-1">
@@ -593,6 +593,17 @@ export default function HomePage() {
             </div>
 
             <div>
+              <h4 className="font-bold text-lg mb-6 text-white">Guides</h4>
+              <ul className="space-y-3">
+                <li><Link href="/guides/how-much-are-used-books-worth" className="text-gray-400 hover:text-white transition-colors">What Are Books Worth?</Link></li>
+                <li><Link href="/guides/how-much-are-used-dvds-worth" className="text-gray-400 hover:text-white transition-colors">What Are DVDs Worth?</Link></li>
+                <li><Link href="/guides/sell-video-games-for-cash" className="text-gray-400 hover:text-white transition-colors">Sell Video Games</Link></li>
+                <li><Link href="/guides/best-places-to-sell-cds-dvds-games" className="text-gray-400 hover:text-white transition-colors">Best Places to Sell</Link></li>
+                <li><Link href="/guides/where-to-sell-books-and-dvds-for-cash" className="text-gray-400 hover:text-white transition-colors">Where to Sell for Cash</Link></li>
+              </ul>
+            </div>
+
+            <div>
               <h4 className="font-bold text-lg mb-6 text-white">Support</h4>
               <ul className="space-y-3">
                 <li><Link href="/help" className="text-gray-400 hover:text-white transition-colors">Help Center</Link></li>
@@ -605,7 +616,7 @@ export default function HomePage() {
           <div className="mt-12 pt-8 border-t border-gray-800">
             <div className="flex flex-col sm:flex-row justify-between items-center">
               <p className="text-gray-400 text-sm">
-                © 2025 SellBookMedia. All rights reserved.
+                © 2026 SellBookMedia. All rights reserved.
               </p>
               <div className="flex items-center space-x-6 mt-4 sm:mt-0">
                 <span className="text-gray-400 text-sm">Made with ❤️ for collectors</span>
