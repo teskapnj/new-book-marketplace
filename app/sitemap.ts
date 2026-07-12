@@ -49,6 +49,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.9,
     },
+    {
+      url: 'https://www.sellbookmedia.com/guides/how-much-are-used-dvds-worth',
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
 
     // ✅ SUPPORT & POLICY PAGES
     {
