@@ -10,6 +10,7 @@ import { FiHome, FiPackage, FiAlertCircle, FiTruck, FiFileText, FiArrowLeft, FiA
 import Link from "next/link";
 import Head from "next/head";
 import DOMPurify from 'isomorphic-dompurify';
+import { trackEvent } from "@/lib/analytics";
 
 interface ImageStats {
   width: number;
@@ -472,6 +473,12 @@ export default function ShippingInfoPage() {
       const docRef = await addDoc(collection(db, "listings"), listingData);
       console.log("✅ Document written with ID: ", docRef.id);
       
+      // ✅ ANALYTICS: Gönderim başarılı - Funnel'in son adımı
+      trackEvent('listing_submitted', {
+        item_count: bundleItems.length,
+        total_value: totalOurPrice
+      });
+      
       // Admin notification email
       try {
         await fetch('/api/send-seller-notification', {
@@ -739,7 +746,7 @@ export default function ShippingInfoPage() {
                           className="block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                         />
                       </div>
-                      <div className="md:col-span-2">
+                      <div className="md:colspan-2">
                         <label htmlFor="paypalAccount" className="block text-sm font-medium text-gray-700 mb-1">
                           PayPal Account Email
                         </label>
@@ -766,7 +773,7 @@ export default function ShippingInfoPage() {
                   <div>
                     <h4 className="text-md font-medium text-gray-900 mb-3">Shipping Address</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="md:col-span-2">
+                      <div className="md:colspan-2">
                         <label htmlFor="street" className="block text-sm font-medium text-gray-700 mb-1">
                           Street Address
                         </label>

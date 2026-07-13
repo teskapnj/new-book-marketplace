@@ -12,6 +12,7 @@ import { AmazonProduct, PricingResult } from "@/lib/pricingEngine";
 import DOMPurify from 'isomorphic-dompurify';
 import UserListingsSection from "@/components/UserListingsSection";
 import Image from 'next/image';
+import { trackEvent } from "@/lib/analytics";
 
 
 interface BundleItem {
@@ -192,7 +193,18 @@ export default function CreateListingPage() {
       originalPrice: product.price
     };
 
+    // Event'leri state güncellemesinin dışında gönder (React Strict Mode'da çift tetiklenmesin)
+    trackEvent('item_accepted', {
+      category: newItem.category,
+      price: newItem.price
+    });
+
+    if (bundleItems.length + 1 === 5) {
+      trackEvent('minimum_reached');
+    }
+
     setBundleItems(prev => [...prev, newItem]);
+
     setCurrentItem({
       id: "",
       isbn: "",
@@ -404,6 +416,7 @@ export default function CreateListingPage() {
       setError("Barcode scanning only works on mobile devices");
       return;
     }
+    trackEvent('scan_started');
     setShowScanner(true);
     clearAmazonResults();
     startScanning();
@@ -685,6 +698,10 @@ export default function CreateListingPage() {
   };
 
   const handleContinueToShipping = () => {
+    trackEvent('shipping_started', {
+      item_count: bundleItems.length,
+      total_value: totalOurPrice
+    });
     saveToStorage();
     router.push('/create-listing/shipping');
   };
