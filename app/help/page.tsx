@@ -106,8 +106,8 @@ export default function HelpCenterPage() {
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-sm border-b border-white/20 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {/* Back Button */}
-          <div className="mb-8">
+          {/* Back Button + Nav Links */}
+          <div className="mb-8 flex flex-wrap items-center gap-3">
             <button
               onClick={() => window.history.back()}
               className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -117,6 +117,20 @@ export default function HelpCenterPage() {
               </svg>
               Back
             </button>
+
+            <Link
+              href="/"
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50"
+            >
+              Home
+            </Link>
+
+            <Link
+              href="/create-listing"
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-md shadow-sm hover:bg-blue-700"
+            >
+              Start Scanning
+            </Link>
           </div>
 
           <div className="text-center">
@@ -336,6 +350,20 @@ export default function HelpCenterPage() {
                     <div>
                       <h4 className="font-medium">Return Policy</h4>
                       <p className="text-gray-600 text-sm">No returns - recycling policy</p>
+                    </div>
+                  </Link>
+                  <Link href="/" className="flex items-center p-3 border border-gray-200 rounded-lg hover:border-blue-300 transition">
+                    <span className="text-lg mr-3">🏠</span>
+                    <div>
+                      <h4 className="font-medium">Homepage</h4>
+                      <p className="text-gray-600 text-sm">Back to SellBookMedia home</p>
+                    </div>
+                  </Link>
+                  <Link href="/create-listing" className="flex items-center p-3 border border-gray-200 rounded-lg hover:border-blue-300 transition">
+                    <span className="text-lg mr-3">📷</span>
+                    <div>
+                      <h4 className="font-medium">Start Scanning</h4>
+                      <p className="text-gray-600 text-sm">Get an instant cash offer</p>
                     </div>
                   </Link>
                 </div>
