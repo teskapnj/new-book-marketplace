@@ -1,5 +1,4 @@
 import './globals.css'
-import AuthDebug from '@/components/AutoDebug'
 import { CartProvider } from '../contexts/CartContext'
 import { WishlistProvider } from '../contexts/WishlistContext'
 import { AuthProvider } from '../contexts/AuthContext'
@@ -161,7 +160,6 @@ export default function RootLayout({
             <CartProvider>
               <StoreProvider>
                 {children}
-                <AuthDebug />
                 <SpeedInsights />
                 <Analytics />
               </StoreProvider>

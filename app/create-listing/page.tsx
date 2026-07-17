@@ -15,6 +15,7 @@ import Image from 'next/image';
 import { trackEvent } from "@/lib/analytics";
 
 
+
 interface BundleItem {
   id: string;
   isbn: string;
@@ -130,6 +131,7 @@ export default function CreateListingPage() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [showAuthOptions, setShowAuthOptions] = useState(false);
 
   const totalOurPrice = bundleItems.reduce((total, item) => {
     return total + (item.price * item.quantity);
@@ -1010,6 +1012,19 @@ export default function CreateListingPage() {
                     </div>
                   </div>
                 )}
+                {error && !amazonResult && !duplicateConfirm && (
+                  <div className="absolute bottom-0 left-0 right-0 z-20 animate-slide-up">
+                    <div className="mx-3 mb-4 rounded-2xl shadow-2xl p-6 bg-red-50 border-2 border-red-400">
+                      <div className="flex items-center gap-4">
+                        <FiAlertCircle className="h-10 w-10 text-red-500 flex-shrink-0" />
+                        <div>
+                          <p className="text-base font-semibold text-red-800">Barcode not recognized</p>
+                          <p className="text-sm text-red-700 mt-1">{error}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {amazonResult && !duplicateConfirm && (
                   <div
                     key={currentItem.isbn}
@@ -1160,11 +1175,11 @@ export default function CreateListingPage() {
               type="button"
               onClick={handleScanBarcode}
               disabled={isCheckingAmazon}
-              className="w-full border border-green-200 bg-green-50 rounded-2xl py-7 px-4 text-center disabled:opacity-60"
+              className="w-full bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl py-10 px-4 text-center shadow-lg active:scale-95 transition-transform disabled:opacity-60"
             >
-              <FiCamera className="h-8 w-8 text-green-600 mx-auto mb-2" />
-              <p className="text-base font-medium text-gray-900">Tap to scan barcode</p>
-              <p className="text-sm text-gray-500 mt-0.5">Opens your camera</p>
+              <FiCamera className="h-14 w-14 text-white mx-auto mb-3" />
+              <p className="text-2xl font-extrabold text-white">Tap to Scan Barcode</p>
+              <p className="text-base text-green-50 mt-1">Point your camera at the barcode</p>
             </button>
 
             <div className="text-center">
@@ -1319,7 +1334,7 @@ export default function CreateListingPage() {
               </div>
             )}
 
-            {user ? (
+{user ? (
               <button
                 type="button"
                 onClick={handleContinueToShipping}
@@ -1329,27 +1344,32 @@ export default function CreateListingPage() {
                 Continue
                 <FiArrowRight className="ml-2 h-5 w-5" />
               </button>
+            ) : !showAuthOptions ? (
+              <button
+                type="button"
+                onClick={() => setShowAuthOptions(true)}
+                disabled={bundleItems.length < 5}
+                className="w-full flex justify-center items-center py-4 px-6 rounded-xl text-white bg-gradient-to-r from-blue-600 to-indigo-700 font-medium disabled:opacity-50"
+              >
+                Next
+                <FiArrowRight className="ml-2 h-5 w-5" />
+              </button>
             ) : (
-              <div className="space-y-2">
-                <p className="text-center text-xs text-gray-500">
-                  You can scan and add items without an account — you only need to log in or sign up when you&apos;re ready to send them.
-                </p>
-                <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-center">
-                <p className="text-sm text-blue-700 mb-3">Log in or sign up to continue and send your items</p>
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-center">
+                <p className="text-sm text-blue-700 mb-3">Sign up to send your items, or sign in if you already have an account</p>
                 <div className="flex gap-3">
                   <Link
-                    href="/login"
-                    className="flex-1 flex items-center justify-center py-3 rounded-xl text-white bg-blue-600 text-sm font-medium"
-                  >
-                    <FiLogIn className="mr-2 h-4 w-4" /> Log in
-                  </Link>
-                  <Link
                     href="/register"
-                    className="flex-1 flex items-center justify-center py-3 rounded-xl border border-blue-300 text-blue-700 text-sm font-medium"
+                    className="flex-1 flex items-center justify-center py-3 rounded-xl text-white bg-blue-600 text-sm font-medium"
                   >
                     <FiUser className="mr-2 h-4 w-4" /> Sign up
                   </Link>
-                </div>
+                  <Link
+                    href="/login"
+                    className="flex-1 flex items-center justify-center py-3 rounded-xl border border-blue-300 text-blue-700 text-sm font-medium"
+                  >
+                    <FiLogIn className="mr-2 h-4 w-4" /> Sign in
+                  </Link>
                 </div>
               </div>
             )}

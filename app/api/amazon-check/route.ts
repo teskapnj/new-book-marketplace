@@ -149,7 +149,7 @@ async function fetchKeepaByCode(code: string, apiKey: string) {
       key: apiKey,
       domain: KEEPA_DOMAIN,
       code: code,
-      stats: 180
+      stats: 1
     },
     timeout: 5500
   });
