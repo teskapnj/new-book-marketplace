@@ -43,8 +43,13 @@ export interface BarcodeScannerReturn {
   isMobile: boolean;
 }
 
-// Performans için: analiz edilecek karenin maksimum genişliği
-const MAX_ANALYSIS_WIDTH = 800;
+// Performans için: analiz edilecek bölgenin maksimum genişliği
+const MAX_ANALYSIS_WIDTH = 1280;
+
+// Karenin merkezinden kırpılacak bölge oranları
+// (kullanıcı barkodu ortadaki kırmızı çizgiye hizalıyor)
+const ROI_LONG_RATIO = 0.9;   // barkodun uzandığı eksen
+const ROI_SHORT_RATIO = 0.5;  // barkodun kalınlık ekseni
 
 // Rotasyon açıları (radyan cinsinden)
 const ROTATIONS = [
@@ -84,6 +89,8 @@ export function useBarcodeScanner(options: BarcodeScannerOptions): BarcodeScanne
   const scanCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const lastScanTimeRef = useRef<number>(0);
   const lastScanCodeRef = useRef<string | null>(null);
+  const pendingCodeRef = useRef<string | null>(null);
+  const pendingCountRef = useRef(0);
 
   useEffect(() => {
     onScanRef.current = onScan;
@@ -384,40 +391,41 @@ export function useBarcodeScanner(options: BarcodeScannerOptions): BarcodeScanne
     canvas: HTMLCanvasElement,
     angle: number
   ): string | null => {
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    if (!vw || !vh) return null;
+
     const isVertical = angle === Math.PI / 2 || angle === (3 * Math.PI) / 2;
-    
-    // Döndürülmüş karenin boyutları
-    const w = isVertical ? Math.floor(video.videoHeight * (MAX_ANALYSIS_WIDTH / video.videoWidth)) 
-                         : Math.floor(video.videoWidth * (MAX_ANALYSIS_WIDTH / video.videoWidth));
-    const h = isVertical ? Math.floor(video.videoWidth * (MAX_ANALYSIS_WIDTH / video.videoWidth)) 
-                         : Math.floor(video.videoHeight * (MAX_ANALYSIS_WIDTH / video.videoWidth));
 
-    if (w <= 0 || h <= 0) return null;
+    // Merkezden kırpılacak bölge:
+    // yatay barkod için geniş-alçak, dikey barkod için dar-yüksek
+    const roiW = Math.floor(vw * (isVertical ? ROI_SHORT_RATIO : ROI_LONG_RATIO));
+    const roiH = Math.floor(vh * (isVertical ? ROI_LONG_RATIO : ROI_SHORT_RATIO));
+    const roiX = Math.floor((vw - roiW) / 2);
+    const roiY = Math.floor((vh - roiH) / 2);
 
-    canvas.width = w;
-    canvas.height = h;
+    if (roiW <= 0 || roiH <= 0) return null;
+
+    // Sadece gerekiyorsa küçült - asla büyütme
+    const scale = Math.min(1, MAX_ANALYSIS_WIDTH / roiW);
+    const drawW = Math.max(1, Math.floor(roiW * scale));
+    const drawH = Math.max(1, Math.floor(roiH * scale));
+
+    // 90/270 derecede canvas en/boy yer değiştirir
+    const canvasW = isVertical ? drawH : drawW;
+    const canvasH = isVertical ? drawW : drawH;
+
+    canvas.width = canvasW;
+    canvas.height = canvasH;
 
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return null;
 
     ctx.save();
-    ctx.clearRect(0, 0, w, h);
-
-    if (angle === 0) {
-      // Normal - rotasyon yok
-      ctx.drawImage(video, 0, 0, w, h);
-    } else {
-      // Rotasyon uygula
-      ctx.translate(w / 2, h / 2);
-      ctx.rotate(angle);
-      
-      // Orijinal video boyutlarını scale et
-      const scaledW = isVertical ? h : w;
-      const scaledH = isVertical ? w : h;
-      
-      ctx.drawImage(video, -scaledW / 2, -scaledH / 2, scaledW, scaledH);
-    }
-
+    ctx.clearRect(0, 0, canvasW, canvasH);
+    ctx.translate(canvasW / 2, canvasH / 2);
+    if (angle !== 0) ctx.rotate(angle);
+    ctx.drawImage(video, roiX, roiY, roiW, roiH, -drawW / 2, -drawH / 2, drawW, drawH);
     ctx.restore();
 
     return decodeCanvas(reader, canvas);
@@ -450,7 +458,6 @@ export function useBarcodeScanner(options: BarcodeScannerOptions): BarcodeScanne
         BarcodeFormat.EAN_8,
         BarcodeFormat.UPC_A,
         BarcodeFormat.UPC_E,
-        BarcodeFormat.CODE_128,
       ]);
 
       const reader = new MultiFormatReader();
@@ -507,12 +514,29 @@ export function useBarcodeScanner(options: BarcodeScannerOptions): BarcodeScanne
           }
 
           if (scannedCode) {
+            // Çift okuma doğrulaması: aynı kod arka arkaya 2 kez okunmadan kabul edilmez.
+            // Bulanık kareden çıkan hatalı okuma ikinci karede tekrarlanmaz.
+            if (pendingCodeRef.current === scannedCode) {
+              pendingCountRef.current += 1;
+            } else {
+              pendingCodeRef.current = scannedCode;
+              pendingCountRef.current = 1;
+            }
+
+            if (pendingCountRef.current < 2) {
+              return;
+            }
+
+            pendingCodeRef.current = null;
+            pendingCountRef.current = 0;
+
             const now = Date.now();
             const isSameCodeTooSoon = 
               lastScanCodeRef.current === scannedCode && 
               (now - lastScanTimeRef.current) < 2500; // aynı barkod 2.5 sn içinde tekrar sayılmaz
 
             if (!isSameCodeTooSoon && mountedRef.current) {
+
               lastScanTimeRef.current = now;
               lastScanCodeRef.current = scannedCode;
 

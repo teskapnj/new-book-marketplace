@@ -256,6 +256,8 @@ export default function CreateListingPage() {
     }
 
     try {
+      // Farklı bir barkod okundu: bekleyen duplicate uyarısı otomatik "No" sayılır
+      setDuplicateConfirm(null);
       setIsCheckingAmazon(true);
       clearAmazonResults();
       setCurrentItem(prev => ({
