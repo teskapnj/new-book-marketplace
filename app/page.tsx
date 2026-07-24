@@ -388,20 +388,20 @@ export default function HomePage() {
               Sell Your Books, CDs, DVDs & Games
             </h1>
             <p className="text-xl sm:text-2xl text-blue-100 mb-8 leading-relaxed">
-              Turn your old Books, CDs, DVDs and games into cash. We accept a wide range of items and our prices start from $1.49 - no cents, just dollars. Get instant quotes and free shipping today!
+              Turn your old books, CDs, DVDs, and games into cash. We accept a wide range of items with prices starting from $1.50. Get instant quotes and free shipping today!
             </p>
             <div className="grid grid-cols-3 gap-8 mt-16 max-w-2xl mx-auto">
               <div className="text-center">
-                <div className="text-3xl sm:text-4xl font-bold text-white mb-2">1000+</div>
-                <div className="text-blue-200 text-sm sm:text-base">Sold items</div>
+                <div className="text-3xl sm:text-4xl font-bold text-white mb-2">$0</div>
+                <div className="text-blue-200 text-sm sm:text-base">Shipping Cost</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl sm:text-4xl font-bold text-white mb-2">500+</div>
-                <div className="text-blue-200 text-sm sm:text-base">Happy Sellers</div>
+                <div className="text-3xl sm:text-4xl font-bold text-white mb-2">24h</div>
+                <div className="text-blue-200 text-sm sm:text-base">Label by Email</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl sm:text-4xl font-bold text-white mb-2">95%</div>
-                <div className="text-blue-200 text-sm sm:text-base">Satisfaction</div>
+                <div className="text-3xl sm:text-4xl font-bold text-white mb-2">PayPal</div>
+                <div className="text-blue-200 text-sm sm:text-base">Fast Payment</div>
               </div>
             </div>
 
@@ -509,8 +509,7 @@ export default function HomePage() {
             Ready to Start Earning?
           </h2>
           <p className="text-xl sm:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto leading-relaxed">
-            Join thousands of sellers who've already earned money from their used media collections.
-            Transform unused items into real money!!
+            Turn the used media collecting dust on your shelves into real cash — quickly and hassle-free.
           </p>
           <div className="mt-12 flex justify-center space-x-8 text-blue-200">
             <div className="flex items-center">
@@ -568,20 +567,10 @@ export default function HomePage() {
                 SellBookMedia
               </Link>
               <p className="text-gray-400 leading-relaxed mb-6">
-                The premier marketplace for buying used books, CDs, DVDs, games discs.
-                Turn your collection into cash with confidence.
+                We buy used books, CDs, DVDs, and games for cash.
+                Turn your collection into money with confidence.
               </p>
-              <div className="flex space-x-4">
-                <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center hover:bg-blue-700 transition-colors cursor-pointer">
-                  <span className="text-sm font-bold">f</span>
-                </div>
-                <div className="w-10 h-10 bg-blue-400 rounded-xl flex items-center justify-center hover:bg-blue-500 transition-colors cursor-pointer">
-                  <span className="text-sm font-bold">t</span>
-                </div>
-                <div className="w-10 h-10 bg-pink-600 rounded-xl flex items-center justify-center hover:bg-pink-700 transition-colors cursor-pointer">
-                  <span className="text-sm font-bold">i</span>
-                </div>
-              </div>
+             
             </div>
             <div>
               <h4 className="font-bold text-lg mb-6 text-white">For Sellers</h4>
@@ -600,6 +589,7 @@ export default function HomePage() {
                 <li><Link href="/guides/sell-video-games-for-cash" className="text-gray-400 hover:text-white transition-colors">Sell Video Games</Link></li>
                 <li><Link href="/guides/best-places-to-sell-cds-dvds-games" className="text-gray-400 hover:text-white transition-colors">Best Places to Sell</Link></li>
                 <li><Link href="/guides/where-to-sell-books-and-dvds-for-cash" className="text-gray-400 hover:text-white transition-colors">Where to Sell for Cash</Link></li>
+                <li><Link href="/guides/decluttr-shut-down-alternative" className="text-gray-400 hover:text-white transition-colors">Decluttr Alternative</Link></li>
               </ul>
             </div>
 
