@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import RelatedGuides from "@/components/RelatedGuides";
 
 export const metadata: Metadata = {
   title: "Decluttr Shut Down: Where to Sell Your Books, CDs, DVDs & Games Now | SellBookMedia",
@@ -189,6 +190,8 @@ export default function DecluttrAlternativeGuide() {
               </div>
             </div>
           </section>
+
+          <RelatedGuides currentSlug="decluttr-shut-down-alternative" />
 
           <div className="text-center bg-blue-50 rounded-2xl p-8">
             <h2 className="text-xl font-bold text-gray-900 mb-2">

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import RelatedGuides from "@/components/RelatedGuides";
 
 export const metadata: Metadata = {
   title: "Best Places to Sell Used CDs, DVDs & Video Games for Cash (2026) | SellBookMedia",
@@ -186,8 +187,8 @@ export default function BestPlacesGuide() {
               </div>
             </div>
           </section>
-
-          <div className="text-center bg-blue-50 rounded-2xl p-8">
+          <RelatedGuides currentSlug="best-places-to-sell-cds-dvds-games" />
+           <div className="text-center bg-blue-50 rounded-2xl p-8">
             <h2 className="text-xl font-bold text-gray-900 mb-2">See what your collection is worth</h2>
             <p className="text-gray-600 mb-6">
               Scan your CDs, DVDs, and games for an instant offer &mdash; no account required to start.

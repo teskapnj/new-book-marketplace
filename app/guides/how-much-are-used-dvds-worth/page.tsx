@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import RelatedGuides from "@/components/RelatedGuides";
+
 
 export const metadata: Metadata = {
   title: "How Much Are Used DVDs Worth? (2026 Price Guide) | SellBookMedia",
@@ -208,6 +210,8 @@ export default function DvdValueGuide() {
               </div>
             </div>
           </section>
+
+          <RelatedGuides currentSlug="how-much-are-used-dvds-worth" />
 
           <div className="text-center bg-blue-50 rounded-2xl p-8">
             <h2 className="text-xl font-bold text-gray-900 mb-2">Find out what your DVDs are worth</h2>

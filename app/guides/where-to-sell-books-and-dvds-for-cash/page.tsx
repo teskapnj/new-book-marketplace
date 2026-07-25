@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import RelatedGuides from "@/components/RelatedGuides";
 
 export const metadata: Metadata = {
   title: "Where to Sell Used Books and DVDs for Cash (2026 Guide) | SellBookMedia",
@@ -186,6 +187,8 @@ export default function WhereToSellGuide() {
               </div>
             </div>
           </section>
+
+          <RelatedGuides currentSlug="where-to-sell-books-and-dvds-for-cash" />
 
           <div className="text-center bg-blue-50 rounded-2xl p-8">
             <h2 className="text-xl font-bold text-gray-900 mb-2">Ready to see what your items are worth?</h2>

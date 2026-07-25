@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import RelatedGuides from "@/components/RelatedGuides";
 
 export const metadata: Metadata = {
   title: "How Much Are Used Books Worth? (2026 Price Guide) | SellBookMedia",
@@ -251,6 +252,8 @@ export default function BookValueGuide() {
               </div>
             </div>
           </section>
+
+          <RelatedGuides currentSlug="how-much-are-used-books-worth" />
 
           <div className="text-center bg-blue-50 rounded-2xl p-8">
             <h2 className="text-xl font-bold text-gray-900 mb-2">See what your books are worth</h2>
