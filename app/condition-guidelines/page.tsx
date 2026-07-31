@@ -144,6 +144,10 @@ export default function ConditionGuidelines() {
                     <span className="font-medium mr-2">✗</span>
                     <span>Ex-library books, promotional copies, or bootleg items</span>
                   </li>
+                  <li className="flex items-start">
+                    <span className="font-medium mr-2">✗</span>
+                    <span><strong>VHS tapes and cassette tapes</strong> (not currently accepted)</span>
+                  </li>
                 </ul>
               </div>
             </div>
