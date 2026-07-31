@@ -1410,7 +1410,9 @@ export default function AdminListingsPage() {
               shippingLabelUrl: shippingLabelUrl,
               trackingNumber: trackingNumber,
               carrier: carrier,
-              listingId: listingId
+              listingId: listingId,
+              totalItems: selectedListing.totalItems,
+              packageDimensions: selectedListing.shippingInfo?.packageDimensions || null
             }),
           });
           

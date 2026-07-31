@@ -15,7 +15,7 @@ const transporter = nodemailer.createTransport({
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
-    const { email, listingTitle, shippingLabelUrl, trackingNumber, carrier, listingId } = data;
+    const { email, listingTitle, shippingLabelUrl, trackingNumber, carrier, listingId, totalItems, packageDimensions } = data;
 
     if (!email || !listingTitle || !shippingLabelUrl || !trackingNumber || !carrier) {
       return NextResponse.json({
@@ -57,8 +57,8 @@ export async function POST(request: NextRequest) {
           <div class="card">
             <h3 style="margin-top: 0; color: #374151;">📦 Listing Information</h3>
             <div class="info-row">
-              <span class="label">Title:</span>
-              <span class="value">${listingTitle}</span>
+              <span class="label">Item Type:</span>
+              <span class="value">Very Good Condition Media Items</span>
             </div>
             <div class="info-row">
               <span class="label">Status:</span>
@@ -68,6 +68,20 @@ export async function POST(request: NextRequest) {
               <span class="label">Listing ID:</span>
               <span class="value">#${listingId.substring(0, 8)}</span>
             </div>
+            ${totalItems ? `
+            <div class="info-row">
+              <span class="label">Number of Items:</span>
+              <span class="value">${totalItems}</span>
+            </div>` : ''}
+            ${packageDimensions ? `
+            <div class="info-row">
+              <span class="label">Box Size:</span>
+              <span class="value">${packageDimensions.length} × ${packageDimensions.width} × ${packageDimensions.height} in</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Weight:</span>
+              <span class="value">${packageDimensions.weight} lb</span>
+            </div>` : ''}
           </div>
           
           <div class="card">
@@ -114,11 +128,11 @@ export async function POST(request: NextRequest) {
     await transporter.sendMail({
       from: process.env.EMAIL_USER, // Namecheap e-posta adresiniz
       to: email,
-      subject: `✅ Your listing "${listingTitle}" has been approved! Shipping label inside`,
+      subject: `✅ Your submission has been approved! Shipping label inside`,
       html: emailHtml,
       text: `Your listing has been approved!
       
-Listing: ${listingTitle}
+Item Type: Very Good Condition Media Items
 Status: Approved
 Tracking Number: ${trackingNumber}
 Carrier: ${carrier.toUpperCase()}
