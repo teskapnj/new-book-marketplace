@@ -80,48 +80,48 @@ function calculateBookPrice(price: number, salesRank: number): PricingResult {
   }
 
   if (salesRank <= 1000000) {
-    if (price > 28 && price < 36) {
-      return { accepted: true, ourPrice: 1.5, category: 'books', priceRange: "$29-35.99", rankRange: "≤ 1M" };
+    if (price >= 39 && price < 50) {
+      return { accepted: true, ourPrice: 1.5, category: 'books', priceRange: "$39-49.99", rankRange: "≤ 1M" };
     }
-    if (price >= 36 && price < 46) {
-      return { accepted: true, ourPrice: 2.5, category: 'books', priceRange: "$36-45.99", rankRange: "≤ 1M" };
+    if (price >= 50 && price < 60) {
+      return { accepted: true, ourPrice: 2.5, category: 'books', priceRange: "$50-59.99", rankRange: "≤ 1M" };
     }
-    if (price >= 46 && price < 56) {
-      return { accepted: true, ourPrice: 3.5, category: 'books', priceRange: "$46-55.99", rankRange: "≤ 1M" };
+    if (price >= 60 && price < 70) {
+      return { accepted: true, ourPrice: 3.5, category: 'books', priceRange: "$60-69.99", rankRange: "≤ 1M" };
     }
-    if (price >= 56 && price < 66) {
-      return { accepted: true, ourPrice: 4.5, category: 'books', priceRange: "$56-65.99", rankRange: "≤ 1M" };
+    if (price >= 70 && price < 80) {
+      return { accepted: true, ourPrice: 4.5, category: 'books', priceRange: "$70-79.99", rankRange: "≤ 1M" };
     }
-    if (price >= 66 && price < 96) {
-      return { accepted: true, ourPrice: 5.5, category: 'books', priceRange: "$66-95.99", rankRange: "≤ 1M" };
+    if (price >= 80 && price < 110) {
+      return { accepted: true, ourPrice: 5.5, category: 'books', priceRange: "$80-109.99", rankRange: "≤ 1M" };
     }
-    if (price >= 96 && price < 126) {
-      return { accepted: true, ourPrice: 6.5, category: 'books', priceRange: "$96-125.99", rankRange: "≤ 1M" };
+    if (price >= 110 && price < 140) {
+      return { accepted: true, ourPrice: 6.5, category: 'books', priceRange: "$110-139.99", rankRange: "≤ 1M" };
     }
-    if (price >= 126) {
-      return { accepted: true, ourPrice: 7.5, category: 'books', priceRange: "$126+", rankRange: "≤ 1M" };
+    if (price >= 140) {
+      return { accepted: true, ourPrice: 7.5, category: 'books', priceRange: "$140+", rankRange: "≤ 1M" };
     }
 
     return {
       accepted: false,
       reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
       category: 'books',
-      priceRange: `$${price} (min: $29)`
+      priceRange: `$${price} (min: $39)`
     };
   }
 
   if (salesRank <= 2000000) {
     if (price >= 56 && price < 66) {
-      return { accepted: true, ourPrice: 2.5, category: 'books', priceRange: "$56-65.99", rankRange: "1M-2M" };
+      return { accepted: true, ourPrice: 1.5, category: 'books', priceRange: "$56-65.99", rankRange: "1M-2M" };
     }
     if (price >= 66 && price < 96) {
-      return { accepted: true, ourPrice: 3.5, category: 'books', priceRange: "$66-95.99", rankRange: "1M-2M" };
+      return { accepted: true, ourPrice: 2.5, category: 'books', priceRange: "$66-95.99", rankRange: "1M-2M" };
     }
     if (price >= 96 && price < 126) {
-      return { accepted: true, ourPrice: 4.5, category: 'books', priceRange: "$96-125.99", rankRange: "1M-2M" };
+      return { accepted: true, ourPrice: 3.5, category: 'books', priceRange: "$96-125.99", rankRange: "1M-2M" };
     }
     if (price >= 126) {
-      return { accepted: true, ourPrice: 5.5, category: 'books', priceRange: "$126+", rankRange: "1M-2M" };
+      return { accepted: true, ourPrice: 4.5, category: 'books', priceRange: "$126+", rankRange: "1M-2M" };
     }
 
     return {
@@ -153,17 +153,17 @@ function calculateCDPrice(price: number, salesRank: number): PricingResult {
   }
 
   if (salesRank <= 100000) {
-    if (price > 28 && price < 40) {
-      return { accepted: true, ourPrice: 1.5, category: 'cds', priceRange: "$29-39.99", rankRange: "≤ 100k" };
+    if (price >= 39 && price < 50) {
+      return { accepted: true, ourPrice: 1.5, category: 'cds', priceRange: "$39-49.99", rankRange: "≤ 100k" };
     }
-    if (price >= 40 && price < 51) {
-      return { accepted: true, ourPrice: 2.5, category: 'cds', priceRange: "$40-50.99", rankRange: "≤ 100k" };
+    if (price >= 50 && price < 61) {
+      return { accepted: true, ourPrice: 2.5, category: 'cds', priceRange: "$50-60.99", rankRange: "≤ 100k" };
     }
-    if (price >= 51 && price < 62) {
-      return { accepted: true, ourPrice: 3.5, category: 'cds', priceRange: "$51-61.99", rankRange: "≤ 100k" };
+    if (price >= 61 && price < 72) {
+      return { accepted: true, ourPrice: 3.5, category: 'cds', priceRange: "$61-71.99", rankRange: "≤ 100k" };
     }
-    if (price >= 62) {
-      return { accepted: true, ourPrice: 4.5, category: 'cds', priceRange: "$62+", rankRange: "≤ 100k" };
+    if (price >= 72) {
+      return { accepted: true, ourPrice: 4.5, category: 'cds', priceRange: "$72+", rankRange: "≤ 100k" };
     }
 
     return {
@@ -175,14 +175,11 @@ function calculateCDPrice(price: number, salesRank: number): PricingResult {
   }
 
   if (salesRank <= 200000) {
-    if (price > 28 && price < 51) {
-      return { accepted: true, ourPrice: 1.5, category: 'cds', priceRange: "$29-50.99", rankRange: "100k-200k" };
+    if (price >= 51 && price < 72) {
+      return { accepted: true, ourPrice: 1.5, category: 'cds', priceRange: "$51-71.99", rankRange: "100k-200k" };
     }
-    if (price >= 51 && price < 62) {
-      return { accepted: true, ourPrice: 2.5, category: 'cds', priceRange: "$51-61.99", rankRange: "100k-200k" };
-    }
-    if (price >= 62) {
-      return { accepted: true, ourPrice: 3.5, category: 'cds', priceRange: "$62+", rankRange: "100k-200k" };
+    if (price >= 72) {
+      return { accepted: true, ourPrice: 2.5, category: 'cds', priceRange: "$72+", rankRange: "100k-200k" };
     }
 
     return {
@@ -194,8 +191,8 @@ function calculateCDPrice(price: number, salesRank: number): PricingResult {
   }
 
   if (salesRank <= 300000) {
-    if (price >= 55) {
-      return { accepted: true, ourPrice: 1.5, category: 'cds', priceRange: "$55+", rankRange: "200k-300k" };
+    if (price >= 75) {
+      return { accepted: true, ourPrice: 1.5, category: 'cds', priceRange: "$75+", rankRange: "200k-300k" };
     }
 
     return {
