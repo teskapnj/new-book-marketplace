@@ -10,28 +10,36 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1.0,
     },
 
+    // ✅ PRIMARY LANDING PAGE - Ana dönüşüm sayfası (SEO hedefli)
+    {
+      url: 'https://www.sellbookmedia.com/sell-books-and-dvds-for-cash',
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.95,
+    },
+
     // ✅ HIGH VALUE PAGES - SEO için çok önemli
     {
       url: 'https://www.sellbookmedia.com/seller-guide',
       lastModified: new Date(),
       changeFrequency: 'monthly',
-      priority: 0.9, // ⬆️ 0.6'dan 0.9'a yükseltildi!
+      priority: 0.9,
     },
     {
       url: 'https://www.sellbookmedia.com/help',
       lastModified: new Date(),
       changeFrequency: 'monthly',
-      priority: 0.8, // ⭐ YENİ! FAQ schema var
+      priority: 0.8,
     },
     {
       url: 'https://www.sellbookmedia.com/condition-guidelines',
       lastModified: new Date(),
       changeFrequency: 'monthly',
-      priority: 0.7, // ⬆️ 0.6'dan 0.7'ye yükseltildi
+      priority: 0.7,
     },
-    
-     // ✅ GUIDE PAGES - SEO içerik sayfaları
-     {
+
+    // ✅ GUIDE PAGES - SEO içerik sayfaları
+    {
       url: 'https://www.sellbookmedia.com/guides/where-to-sell-books-and-dvds-for-cash',
       lastModified: new Date(),
       changeFrequency: 'monthly',
@@ -73,19 +81,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: 'https://www.sellbookmedia.com/contact',
       lastModified: new Date(),
       changeFrequency: 'yearly',
-      priority: 0.6, // ⬆️ 0.5'ten 0.6'ya yükseltildi
+      priority: 0.6,
     },
     {
       url: 'https://www.sellbookmedia.com/returns-policy',
       lastModified: new Date(),
       changeFrequency: 'yearly',
-      priority: 0.6, // ⭐ YENİ!
+      priority: 0.6,
     },
     {
       url: 'https://www.sellbookmedia.com/privacy-policy',
       lastModified: new Date(),
       changeFrequency: 'yearly',
-      priority: 0.3, // ⭐ YENİ!
+      priority: 0.3,
     },
     {
       url: 'https://www.sellbookmedia.com/terms',
@@ -93,25 +101,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'yearly',
       priority: 0.3,
     },
-
-    // ❌ REMOVED - Private pages (Google indexlememeli!)
-    // {
-    //   url: 'https://www.sellbookmedia.com/create-listing',
-    //   lastModified: new Date(),
-    //   changeFrequency: 'weekly',
-    //   priority: 0.8,
-    // },
-    // {
-    //   url: 'https://www.sellbookmedia.com/login',
-    //   lastModified: new Date(),
-    //   changeFrequency: 'monthly',
-    //   priority: 0.5,
-    // },
-    // {
-    //   url: 'https://www.sellbookmedia.com/register',
-    //   lastModified: new Date(),
-    //   changeFrequency: 'monthly',
-    //   priority: 0.5,
-    // },
   ]
 }

@@ -573,8 +573,9 @@ export default function HomePage() {
              
             </div>
             <div>
-              <h4 className="font-bold text-lg mb-6 text-white">For Sellers</h4>
+            <h4 className="font-bold text-lg mb-6 text-white">For Sellers</h4>
               <ul className="space-y-3">
+                <li><Link href="/sell-books-and-dvds-for-cash" className="text-gray-400 hover:text-white transition-colors">Sell Books &amp; DVDs for Cash</Link></li>
                 <li><Link href="/condition-guidelines" className="text-gray-400 hover:text-white transition-colors">Condition Guidelines</Link></li>
                 <li><Link href="/returns-policy" className="text-gray-400 hover:text-white transition-colors">Returns Policy</Link></li>
                 <li><Link href="/seller-guide" className="text-gray-400 hover:text-white transition-colors">Seller Guide</Link></li>
