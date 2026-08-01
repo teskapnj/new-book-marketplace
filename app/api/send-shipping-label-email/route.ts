@@ -53,8 +53,8 @@ export async function POST(request: NextRequest) {
           <tr>
             <td style="background-color:#10b981; padding:36px 40px; text-align:center;">
               <div style="font-size:13px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:#d1fae5; margin-bottom:12px;">SellBook Media</div>
-              <div style="font-size:26px; font-weight:700; color:#ffffff; line-height:1.3;">Your listing is approved</div>
-              <div style="font-size:15px; color:#d1fae5; margin-top:8px;">It's all set and ready to ship.</div>
+              <div style="font-size:26px; font-weight:700; color:#ffffff; line-height:1.3;">You're ready to ship!</div>
+              <div style="font-size:15px; color:#d1fae5; margin-top:8px;">Your prepaid label is enclosed.</div>
             </td>
           </tr>
 
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
           <tr>
             <td style="padding:32px 40px 8px 40px;">
               <p style="margin:0; font-size:16px; line-height:1.6; color:#334155;">
-                Good news — your submission has been reviewed and approved. Everything you need to send it off is below. Just print the label, pack your items, and drop it off.
+                Good news — you're all set to send us your items. Everything you need is right here. Just print your label, pack your box, and drop it off.
               </p>
             </td>
           </tr>
@@ -219,9 +219,11 @@ export async function POST(request: NextRequest) {
     await transporter.sendMail({
       from: `"SellBook Media" <${process.env.EMAIL_USER}>`, // Görünen ad eklendi
       to: email,
-      subject: `Your submission has been approved - shipping label enclosed`, // Emoji kaldırıldı
+      subject: `You're ready to ship - your prepaid label is enclosed`, // Emoji kaldirildi, sicak dil
       html: emailHtml,
-      text: `Your listing has been approved!
+      text: `You're ready to ship!
+
+Good news - you're all set to send us your items. Everything you need is right here.
 
 Item Type: Very Good Condition Media Items
 Status: Approved
