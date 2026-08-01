@@ -146,7 +146,23 @@ export default function ConditionGuidelines() {
                   </li>
                   <li className="flex items-start">
                     <span className="font-medium mr-2">✗</span>
-                    <span><strong>VHS tapes and cassette tapes</strong> (not currently accepted)</span>
+                    <span>Advance Reader Copies (ARCs) or items marked &quot;Not for Resale&quot;</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="font-medium mr-2">✗</span>
+                    <span>Magazines, newspapers, or periodicals</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="font-medium mr-2">✗</span>
+                    <span>Region-locked or non-US format discs (e.g. PAL)</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="font-medium mr-2">✗</span>
+                    <span>Digital or streaming codes, or download-only items</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="font-medium mr-2">✗</span>
+                    <span><strong>VHS tapes, cassette tapes, and vinyl records</strong> (not currently accepted)</span>
                   </li>
                 </ul>
               </div>
