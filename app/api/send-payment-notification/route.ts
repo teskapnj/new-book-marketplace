@@ -14,6 +14,15 @@ export async function POST(request: NextRequest) {
       notes
     } = body;
 
+    // Admin notundaki satır atlamalarini maile <br> olarak yansit (kabul edilmeyen urunler alt alta gorunsun)
+    const notesHtml = notes
+      ? String(notes)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/\r?\n/g, '<br>')
+      : '';
+
     // Namecheap için transporter yapılandırması
     const transporter = nodemailer.createTransport({
       host: 'mail.privateemail.com', // Namecheap Private Email SMTP sunucusu
@@ -49,7 +58,7 @@ export async function POST(request: NextRequest) {
             <td style="background-color:#10b981; padding:36px 40px; text-align:center;">
               <div style="font-size:13px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:#d1fae5; margin-bottom:12px;">SellBook Media</div>
               <div style="font-size:26px; font-weight:700; color:#ffffff; line-height:1.3;">Payment sent</div>
-              <div style="font-size:15px; color:#d1fae5; margin-top:8px;">Your payment has been processed.</div>
+              <div style="font-size:15px; color:#d1fae5; margin-top:8px;">Your items are in and your payment is on the way.</div>
             </td>
           </tr>
 
@@ -68,7 +77,7 @@ export async function POST(request: NextRequest) {
                 Hi ${sellerName},
               </p>
               <p style="margin:0; font-size:16px; line-height:1.6; color:#334155;">
-                Great news — we've successfully sent your payment for your approved listing. The funds should appear in your PayPal account within a few minutes.
+                Great news — we've received and checked your items, and your payment has been sent. The funds should appear in your PayPal account within a few minutes.
               </p>
             </td>
           </tr>
@@ -102,10 +111,10 @@ export async function POST(request: NextRequest) {
                         <td style="padding:10px 0; font-size:14px; color:#0f172a; font-weight:600; text-align:right; font-family:monospace;">${listingId}</td>
                       </tr>
                     </table>
-                    ${notes ? `
+                    ${notesHtml ? `
                     <div style="margin-top:16px; padding-top:16px; border-top:1px solid #e2e8f0;">
-                      <div style="font-size:13px; font-weight:600; color:#64748b; margin-bottom:6px;">Note</div>
-                      <div style="font-size:14px; color:#334155; line-height:1.5;">${notes}</div>
+                      <div style="font-size:13px; font-weight:600; color:#64748b; margin-bottom:6px;">Adjustments &amp; Notes</div>
+                      <div style="font-size:14px; color:#334155; line-height:1.6;">${notesHtml}</div>
                     </div>` : ''}
                   </td>
                 </tr>
