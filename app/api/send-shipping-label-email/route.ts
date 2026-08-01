@@ -177,6 +177,19 @@ export async function POST(request: NextRequest) {
             </td>
           </tr>
 
+          <!-- Payment note -->
+          <tr>
+            <td style="padding:0 40px 16px 40px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#eff6ff; border-radius:12px; border:1px solid #bfdbfe;">
+                <tr>
+                  <td style="padding:18px 24px; font-size:14px; color:#1e40af; line-height:1.5;">
+                    <strong>About your payment:</strong> Once your items arrive at our facility and are checked, we'll send your payment straight to your PayPal account.
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
           <!-- Sign-off -->
           <tr>
             <td style="padding:0 40px 32px 40px;">
@@ -223,6 +236,8 @@ Next steps:
 3. Attach the shipping label to your package
 4. Drop off the package at ${carrierUpper}
 5. Track your package using: ${trackingNumber}
+
+About your payment: Once your items arrive at our facility and are checked, we'll send your payment straight to your PayPal account.
 
 View your listing: ${process.env.NEXT_PUBLIC_BASE_URL}/listings/${listingId}
 
