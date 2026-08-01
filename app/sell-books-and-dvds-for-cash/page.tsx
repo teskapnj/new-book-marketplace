@@ -5,11 +5,11 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 
-const SITE_URL = "https://sellbookmedia.com";
+const SITE_URL = "https://www.sellbookmedia.com";
 const PAGE_URL = `${SITE_URL}/sell-books-and-dvds-for-cash`;
 
 export const metadata: Metadata = {
-  title: "Sell Books and DVDs for Cash | Free Shipping | SellBook Media",
+  title: "Sell Books and DVDs for Cash | Free Shipping",
   description:
     "Sell your used books, DVDs, CDs, and video games for cash. Scan a barcode for an instant quote, ship free, and get paid by PayPal. Start selling today.",
   keywords: [
