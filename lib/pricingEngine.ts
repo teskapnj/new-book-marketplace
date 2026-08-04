@@ -1,6 +1,8 @@
 // /lib/pricingEngine.ts
 // Amazon ürün fiyatlandırma motoru
 // GÜNCELLEME: "Hiç fiyat yok" ve "New yok, Used var" senaryoları yeni kriterlere göre ayrıldı
+// GÜNCELLEME 2: Kabul edilmeyen formatlar (vinyl, VHS, kaset, indirilebilir audiobook)
+//               Keepa binding/type alanlarına göre en başta reddedilir.
 
 export interface AmazonProduct {
   title: string;
@@ -14,6 +16,11 @@ export interface AmazonProduct {
   // 'used' -> NEW yoktu, USED fiyatına düşüldü, sabit fiyat kuralı uygulanır
   // 'none' -> ne NEW ne USED fiyatı var, price alanı 0/boş
   priceType?: 'new' | 'used' | 'none';
+  // YENİ ALANLAR: Keepa'dan gelen format bilgisi (kategori filtresi için)
+  // binding -> ör. 'audioCD', 'lp_record', 'VHStape', 'cassette'
+  // type    -> ör. 'ABIS_MUSIC', 'ABIS_VIDEO', 'DOWNLOADABLE_AUDIO'
+  binding?: string;
+  type?: string;
 }
 
 export interface PricingResult {
@@ -26,6 +33,50 @@ export interface PricingResult {
 }
 
 export type ProductCategory = 'books' | 'cds' | 'dvds' | 'games' | 'unknown';
+
+// ==================== KABUL EDİLMEYEN FORMATLAR ====================
+// Keepa'nin gercek verisiyle dogrulanan binding degerleri (12 Agustos 2026 testleri):
+//   Vinyl -> binding: 'lp_record'
+//   VHS   -> binding: 'VHStape'
+//   Kaset -> binding: 'cassette'
+//   Indirilebilir audiobook -> type: 'DOWNLOADABLE_AUDIO'
+// NOT: Fiziksel audiobook CD, muzik CD ile ayni gorunur (binding 'audioCD', type 'ABIS_MUSIC')
+//      -> otomatik ayrilamaz, elle kontrol edilir.
+// Karsilastirma buyuk/kucuk harf duyarsiz ve olasi varyasyonlari da kapsar.
+
+const REJECTED_BINDINGS = [
+  'lp_record',   // vinyl
+  'vinyl',       // olasi varyasyon
+  'vhstape',     // VHS
+  'vhs_tape',    // olasi varyasyon
+  'vhs',         // olasi varyasyon
+  'cassette',    // kaset
+  'audiocassette', // olasi varyasyon
+  'audio_cassette', // olasi varyasyon
+];
+
+const REJECTED_TYPES = [
+  'DOWNLOADABLE_AUDIO', // indirilebilir audiobook (Audible)
+];
+
+/**
+ * Ürünün kabul edilmeyen bir formatta olup olmadığını kontrol eder.
+ * Kabul edilmiyorsa reddetme sebebini döndürür, ediliyorsa null döndürür.
+ */
+function checkRejectedFormat(product: AmazonProduct): string | null {
+  const binding = (product.binding || '').toLowerCase().replace(/\s+/g, '');
+  const type = (product.type || '').toUpperCase();
+
+  if (binding && REJECTED_BINDINGS.includes(binding)) {
+    return `We do not currently accept this format (${product.binding}).`;
+  }
+
+  if (type && REJECTED_TYPES.includes(type)) {
+    return `We do not currently accept audiobooks.`;
+  }
+
+  return null;
+}
 
 /**
  * Amazon kategorisini bizim kategori sistemimize çevirir
@@ -331,6 +382,17 @@ function handleUsedOnlyScenario(category: ProductCategory, salesRank: number): P
 export function calculateOurPrice(product: AmazonProduct): PricingResult {
   const category = detectCategory(product.category);
 
+  // ADIM 0: Kabul edilmeyen format kontrolü (vinyl, VHS, kaset, indirilebilir audiobook)
+  // Fiyat/rank bakılmadan EN BAŞTA reddedilir.
+  const rejectedFormat = checkRejectedFormat(product);
+  if (rejectedFormat) {
+    return {
+      accepted: false,
+      reason: rejectedFormat,
+      category
+    };
+  }
+
   // Sales rank kontrolü - rank yoksa/geçersizse direkt reddet
   if (!product.sales_rank || product.sales_rank <= 0) {
     return {
@@ -403,6 +465,12 @@ export function testPricingEngine() {
     { title: "Test Book (no price, rank too high)", image: "", price: 0, sales_rank: 1500000, category: "Books", priceType: 'none' },
     { title: "Test Game (no price, rank ok)", image: "", price: 0, sales_rank: 120000, category: "Video Games", priceType: 'none' },
     { title: "Test Game (no price, rank too high)", image: "", price: 0, sales_rank: 180000, category: "Video Games", priceType: 'none' },
+
+    // Kabul edilmeyen formatlar - hepsi reddedilmeli
+    { title: "Test Vinyl", image: "", price: 78, sales_rank: 5000, category: "CDs & Vinyl", priceType: 'new', binding: 'lp_record', type: 'ABIS_MUSIC' },
+    { title: "Test VHS", image: "", price: 31, sales_rank: 5000, category: "Movies & TV", priceType: 'used', binding: 'VHStape', type: 'ABIS_VIDEO' },
+    { title: "Test Cassette", image: "", price: 0, sales_rank: 2255, category: "CDs & Vinyl", priceType: 'none', binding: 'cassette', type: 'ABIS_MUSIC' },
+    { title: "Test Audiobook (downloadable)", image: "", price: 0, sales_rank: 447308, category: "Books", priceType: 'none', binding: '', type: 'DOWNLOADABLE_AUDIO' },
   ];
 
   testProducts.forEach((product, index) => {
