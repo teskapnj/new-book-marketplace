@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
           <tr>
             <td style="background-color:#10b981; padding:36px 40px; text-align:center;">
               <div style="font-size:13px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:#d1fae5; margin-bottom:12px;">SellBook Media</div>
-              <div style="font-size:26px; font-weight:700; color:#ffffff; line-height:1.3;">We received your items</div>
+              <div style="font-size:26px; font-weight:700; color:#ffffff; line-height:1.3;">We received your submission</div>
               <div style="font-size:15px; color:#d1fae5; margin-top:8px;">Thanks for your submission.</div>
             </td>
           </tr>
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
       to: sellerEmail,
       subject: 'Your items were submitted successfully - SellBook Media',
       html: emailHtml,
-      text: `Thank you for submitting your items!
+      text: `Thank you for your submission!
 
 Hi ${sellerName},
 
