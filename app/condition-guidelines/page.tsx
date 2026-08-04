@@ -93,16 +93,16 @@ export default function ConditionGuidelines() {
                   </li>
                   <li className="flex items-start">
                     <span className="font-medium mr-2">✓</span>
+                    <span>Discs and artwork must be clean, with no stickers, writing, or markings</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="font-medium mr-2">✓</span>
                     <span>Clean, readable, and odor-free</span>
                   </li>
                   <li className="flex items-start">
                     <span className="font-medium mr-2">✓</span>
-                    <span>removable Price stickers </span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="font-medium mr-2">✓</span>
-                    <span>We do not consider case condition. Only artwork
-                       and disc condition must meet our quality standards.  </span>
+                    <span>We do not consider outer case condition. Only the artwork
+                       and disc must meet our quality standards.</span>
                   </li>
                 </ul>
               </div>
@@ -119,6 +119,10 @@ export default function ConditionGuidelines() {
                   <li className="flex items-start">
                     <span className="font-medium mr-2">✗</span>
                     <span><strong>Any writing, highlighting, underlining, or annotations</strong></span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="font-medium mr-2">✗</span>
+                    <span><strong>CDs/DVDs with stickers, writing, or markings on the disc or artwork</strong></span>
                   </li>
                   <li className="flex items-start">
                     <span className="font-medium mr-2">✗</span>
@@ -154,6 +158,10 @@ export default function ConditionGuidelines() {
                   </li>
                   <li className="flex items-start">
                     <span className="font-medium mr-2">✗</span>
+                    <span><strong>Audiobooks and spoken-word CDs</strong></span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="font-medium mr-2">✗</span>
                     <span>Region-locked or non-US format discs (e.g. PAL)</span>
                   </li>
                   <li className="flex items-start">
@@ -178,10 +186,11 @@ export default function ConditionGuidelines() {
                 </div>
                 <div className="ml-3">
                   <h4 className="text-lg font-medium text-yellow-800 mb-2">
-                    Important: No Writing or Markings
+                    Important: No Writing, Stickers, or Markings
                   </h4>
                   <p className="text-yellow-700">
-                    We do not accept any items with writing, highlighting, underlining, marker stains, or any kind of markings.
+                    We do not accept any items with writing, highlighting, underlining, marker stains, stickers,
+                    or any kind of markings &mdash; this applies to books as well as the discs and artwork of CDs and DVDs.
                     This is strictly enforced for all product categories.
                   </p>
                 </div>
@@ -204,6 +213,10 @@ export default function ConditionGuidelines() {
                   </div>
                 ))}
               </div>
+              <p className="text-center text-gray-500 text-sm mt-4">
+                Music CDs, DVDs, Blu-ray, and 4K UHD discs are welcome. Audiobooks, spoken-word CDs,
+                VHS, cassette tapes, and vinyl records are not accepted.
+              </p>
             </div>
 
             {/* Simple Process */}
