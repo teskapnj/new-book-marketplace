@@ -1336,6 +1336,16 @@ export default function CreateListingPage() {
               </div>
             )}
 
+            {/* Tek koli limit bilgisi - mobil (rakamlar shipping adimiyla ayni olmali) */}
+            <div className="flex items-start gap-2 rounded-xl border border-gray-200 bg-gray-50 p-3">
+              <FiPackage className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-gray-600 leading-relaxed">
+                <span className="font-semibold text-gray-800">One box per order.</span>{" "}
+                Maximum box size 18 × 16 × 16 in, maximum weight 50 lbs. If your items
+                won&apos;t fit in a single box, please submit them as separate orders.
+              </p>
+            </div>
+
 {user ? (
               <button
                 type="button"
@@ -1703,29 +1713,17 @@ export default function CreateListingPage() {
               </div>
 
               <div className="pt-5">
-                {!user ? (
-                  <div className="space-y-4">
-                    <p className="text-center text-gray-600">
-                      Please login or sign up to start selling
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                      <Link
-                        href="/login"
-                        className="flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
-                      >
-                        <FiLogIn className="mr-2 h-5 w-5" />
-                        Login to Start selling
-                      </Link>
-                      <Link
-                        href="/register"
-                        className="flex items-center justify-center px-6 py-3 border border-gray-300 text-base font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
-                      >
-                        <FiUser className="mr-2 h-5 w-5" />
-                        Sign Up to Sell Items
-                      </Link>
-                    </div>
-                  </div>
-                ) : (
+                {/* Tek koli limit bilgisi - masaustu (rakamlar shipping adimiyla ayni olmali) */}
+                <div className="mb-5 flex items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                  <FiPackage className="h-5 w-5 text-gray-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    <span className="font-semibold text-gray-800">One box per order.</span>{" "}
+                    Maximum box size 18 × 16 × 16 in, maximum weight 50 lbs. If your items
+                    won&apos;t fit in a single box, please submit them as separate orders.
+                  </p>
+                </div>
+
+                {user ? (
                   <button
                     type="button"
                     onClick={handleContinueToShipping}
@@ -1737,7 +1735,42 @@ export default function CreateListingPage() {
                       <FiArrowRight className="ml-2 h-5 w-5" />
                     </div>
                   </button>
-                )}
+                ) : !showAuthOptions ? (
+                  /* Uyelik duvari basta gosterilmiyor: once Next, sonra login/signup */
+                  <button
+                    type="button"
+                    onClick={() => setShowAuthOptions(true)}
+                    disabled={bundleItems.length < 5}
+                    className="w-full flex justify-center py-4 px-6 border border-transparent shadow-lg text-base font-medium rounded-xl text-white bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-all duration-200 transform hover:-translate-y-0.5"
+                  >
+                    <div className="flex items-center">
+                      Next
+                      <FiArrowRight className="ml-2 h-5 w-5" />
+                    </div>
+                  </button>
+                ) : (
+                  <div className="bg-blue-50 border border-blue-100 rounded-xl p-6 text-center">
+                    <p className="text-sm text-blue-700 mb-4">
+                      Sign up to send your items, or sign in if you already have an account
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                      <Link
+                        href="/register"
+                        className="flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                      >
+                        <FiUser className="mr-2 h-5 w-5" />
+                        Sign up
+                      </Link>
+                      <Link
+                        href="/login"
+                        className="flex items-center justify-center px-6 py-3 border border-blue-300 text-base font-medium rounded-xl text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                      >
+                        <FiLogIn className="mr-2 h-5 w-5" />
+                        Sign in
+                      </Link>
+                    </div>
+                  </div>
+              )}
               </div>
             </div>
           </div>
