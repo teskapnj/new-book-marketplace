@@ -306,7 +306,8 @@ export async function POST(request: NextRequest) {
         data: {
           product: cachedResult.product,
           pricing: cachedResult.pricing,
-          message: cachedResult.message + ' (Cache)',
+          // Cache bilgisi kullaniciya gosterilmez, debug.cacheHit alaninda zaten var
+          message: cachedResult.message,
           debug: { ...cachedResult.debug, cacheHit: true }
         }
       } as ApiResponse);
