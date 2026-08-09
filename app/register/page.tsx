@@ -286,7 +286,9 @@ export default function RegisterPage() {
         firstName: DOMPurify.sanitize(formData.firstName.trim()).substring(0, 50),
         lastName: DOMPurify.sanitize(formData.lastName.trim()).substring(0, 50),
         role: "seller",
-        status: "pending", // E-posta doğrulanana kadar beklemede
+        // E-posta dogrulama kontrolu Firebase Auth'un emailVerified alani uzerinden
+        // yapiliyor. Buradaki status alani hesabin askiya alinip alinmadigini gosterir.
+        status: "active",
         emailVerified: false, // Firebase'deki emailVerified durumu
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),

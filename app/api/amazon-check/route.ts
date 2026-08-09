@@ -137,7 +137,7 @@ async function fetchKeepaByAsin(asin: string, apiKey: string) {
       asin: asin,
       stats: 1 // son 1 gün istatistik (current fiyat/rank için yeterli)
     },
-    timeout: 5500
+    timeout: 3000
   });
   return response.data;
 }
@@ -154,7 +154,7 @@ async function fetchKeepaByCode(code: string, apiKey: string) {
       code: code,
       stats: 1
     },
-    timeout: 5500
+    timeout: 3000
   });
   return response.data;
 }
