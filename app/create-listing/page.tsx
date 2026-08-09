@@ -1481,9 +1481,62 @@ export default function CreateListingPage() {
                       )}
                     </div>
                   </div>
-                  <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
                     <div className="p-4 h-full">
-                      {amazonResult ? (
+                      {/* Masaustunde kamera acilmadigi icin duplicate onayi burada gosteriliyor */}
+                      {duplicateConfirm ? (
+                        <div className="flex flex-col h-full">
+                          <div className="flex items-start gap-3">
+                            <div className="w-16 h-20 bg-gray-100 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
+                              {duplicateConfirm.existingItem.imageUrl ? (
+                                <Image
+                                  src={duplicateConfirm.existingItem.imageUrl}
+                                  alt="Product"
+                                  width={64}
+                                  height={80}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <FiPackage className="h-6 w-6 text-gray-400" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 line-clamp-2">
+                                {duplicateConfirm.existingItem.amazonData?.title || "This item"}
+                              </p>
+                              {duplicateConfirm.count >= 5 ? (
+                                <p className="text-sm font-bold text-red-700 mt-2">
+                                  Maximum 5 of this item reached
+                                </p>
+                              ) : (
+                                <p className="text-sm text-gray-700 mt-2">
+                                  You already have {duplicateConfirm.count} of this item. Add another?
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          {duplicateConfirm.count < 5 && (
+                            <div className="flex gap-3 mt-4">
+                              <button
+                                type="button"
+                                onClick={handleDeclineAddDuplicate}
+                                className="flex-1 py-2 px-4 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50"
+                              >
+                                No
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleConfirmAddDuplicate}
+                                className="flex-1 py-2 px-4 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700"
+                              >
+                                Yes, Add
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : amazonResult ? (
                         <div className="flex flex-col h-full relative">
                           <button
                             type="button"
