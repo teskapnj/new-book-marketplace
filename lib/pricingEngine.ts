@@ -204,7 +204,7 @@ function calculateCDPrice(price: number, salesRank: number): PricingResult {
   }
 
   if (salesRank <= 100000) {
-    if (price >= 39 && price < 50) {
+    if (price >= 30 && price < 50) {
       return { accepted: true, ourPrice: 1.5, category: 'cds', priceRange: "$39-49.99", rankRange: "≤ 100k" };
     }
     if (price >= 50 && price < 61) {
