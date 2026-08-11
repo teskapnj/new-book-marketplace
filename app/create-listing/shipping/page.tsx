@@ -552,9 +552,11 @@ export default function ShippingInfoPage() {
       // Hemen create-listing sayfasına yönlendir
       router.push('/create-listing');
       
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error creating listing:", err);
-      setError("Failed to create listing. Please try again.");
+      // Gercek hata kodu kullaniciya gosteriliyor ki destek isteginde bize iletebilsin
+      const code = err?.code ? ` (${err.code})` : "";
+      setError(`Failed to create listing${code}. Please try again or contact support.`);
       setIsSubmitting(false);
     }
   };
@@ -702,19 +704,6 @@ export default function ShippingInfoPage() {
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900">Shipping Information</h3>
                 </div>
-                
-                {shippingError && (
-                  <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm">
-                    <div className="flex">
-                      <div className="flex-shrink-0">
-                        <FiAlertCircle className="h-5 w-5 text-red-500" />
-                      </div>
-                      <div className="ml-3">
-                        <p className="text-sm text-red-700">{shippingError}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
                 
                 <div className="space-y-6">
                   <div>
@@ -956,19 +945,7 @@ export default function ShippingInfoPage() {
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900">Terms and Conditions</h3>
                 </div>
-                
-                {termsError && (
-                  <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm">
-                    <div className="flex">
-                      <div className="flex-shrink-0">
-                        <FiAlertCircle className="h-5 w-5 text-red-500" />
-                      </div>
-                      <div className="ml-3">
-                        <p className="text-sm text-red-700">{termsError}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
+              
                 
                 <div className="space-y-4">
                   <div className="bg-white rounded-lg p-4 border border-gray-200">
@@ -979,7 +956,11 @@ export default function ShippingInfoPage() {
                           name="terms-acceptance"
                           type="checkbox"
                           checked={acceptedTerms}
-                          onChange={(e) => setAcceptedTerms(e.target.checked)}
+                          onChange={(e) => {
+                            setAcceptedTerms(e.target.checked);
+                            // Kutucuk isaretlenince uyari hemen kalksin
+                            if (e.target.checked) setTermsError("");
+                          }}
                           className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
                       </div>
