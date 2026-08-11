@@ -1024,6 +1024,22 @@ export default function ShippingInfoPage() {
                 </div>
               </div>
               <div className="pt-5">
+                {/* Hata mesajlari sayfanin yukarisinda kaliyordu, mobilde gorunmuyordu.
+                    Butonun hemen ustunde de gosteriliyor. */}
+                {(shippingError || termsError || error) && (
+                  <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm">
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0">
+                        <FiAlertCircle className="h-5 w-5 text-red-500" />
+                      </div>
+                      <div className="ml-3">
+                        <p className="text-sm font-medium text-red-700">
+                          {termsError || shippingError || error}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div className="flex flex-col sm:flex-row gap-4">
                   <button
                     type="button"
