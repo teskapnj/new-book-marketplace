@@ -890,22 +890,6 @@ export default function CreateListingPage() {
             />
           )}
 
-          {!isMobile && (
-            <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg shadow-sm">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <FiAlertCircle className="h-5 w-5 text-yellow-400" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-yellow-700">
-                    📱 Barcode scanning feature only works on mobile devices (iPhone/Android).
-                    Please open this page on a phone or tablet.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
           {showScanner && (
             <div className="fixed inset-0 bg-black z-50 flex flex-col">
               <div className="flex justify-between items-center px-4 py-3 bg-black bg-opacity-80">
@@ -1474,11 +1458,8 @@ export default function CreateListingPage() {
                         <FiCamera className="h-5 w-5" />
                       </button>
                     </div>
-                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <div className="text-xs text-gray-500 mt-1">
                       <span>🔍 Press Enter or click Check button to verify</span>
-                      {!isMobile && (
-                        <span>📱 Barcode scanning only works on mobile devices</span>
-                      )}
                     </div>
                   </div>
                  <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
