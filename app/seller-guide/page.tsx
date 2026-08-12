@@ -154,7 +154,7 @@ const SellerGuidePage: NextPage = () => {
                     <ul className="text-green-700 text-sm space-y-1">
                       <li>• Books (Fiction, Non-fiction, Textbooks)</li>
                       <li>• Music CDs</li>
-                      <li>• DVD Movies</li>
+                      <li>• DVD Movies  (DVD, Blu-ray, 4K )</li>
                       <li>• Video Games (All platforms)</li>
                     </ul>
                   </div>
