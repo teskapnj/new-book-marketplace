@@ -36,9 +36,10 @@ const nextConfig: NextConfig = {
         hostname: "g-ecx.images-amazon.com",
       },
     ],
-    formats: ["image/webp", "image/avif"],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    // OPTİMİZASYON KAPALI: ürün görselleri Amazon'dan geliyor, zaten küçük ve
+    // optimize. Vercel'in her ekran boyutu için ayrı sürüm üretmesi ücretsiz
+    // kotayı (5.000 dönüşüm/ay) boşuna yakıyordu.
+    unoptimized: true,
   },
 
   async headers() {
