@@ -241,7 +241,9 @@ export default function ShippingInfoPage() {
     return true;
   };
 
+  // Kullanici alani duzeltmeye baslayinca eski uyari metni temizlenir
   const handleNameChange = (field: keyof Pick<ShippingInfo, 'firstName' | 'lastName'>, value: string) => {
+    setShippingError("");
     setShippingInfo(prev => ({
       ...prev,
       [field]: value
@@ -249,6 +251,7 @@ export default function ShippingInfoPage() {
   };
 
   const handlePaypalAccountChange = (value: string) => {
+    setShippingError("");
     setShippingInfo(prev => ({
       ...prev,
       paypalAccount: value
@@ -256,6 +259,7 @@ export default function ShippingInfoPage() {
   };
 
   const handleAddressChange = (field: keyof Address, value: string) => {
+    setShippingError("");
     setShippingInfo(prev => ({
       ...prev,
       address: {
@@ -311,7 +315,8 @@ export default function ShippingInfoPage() {
     
     if (newErrors.length || newErrors.width || newErrors.height || newErrors.weight) {
       setShippingError("Package exceeds size or weight limits");
-    } else if (shippingError === "Package exceeds size or weight limits") {
+    } else {
+      // Boyutlar duzeltilince eski uyari metni ne olursa olsun temizlenir
       setShippingError("");
     }
   };
