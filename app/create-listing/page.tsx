@@ -719,46 +719,6 @@ export default function CreateListingPage() {
     };
   }, [popupTimer]);
 
-  const resetForm = () => {
-    if (window.confirm("Are you sure you want to reset all data? This cannot be undone.")) {
-      setBundleItems([]);
-      setCurrentItem({
-        id: "",
-        isbn: "",
-        condition: "very-good",
-        quantity: 1,
-        price: 0,
-        image: null,
-        imageBlob: null,
-        category: "book",
-        imageUrl: null
-      });
-      setDescription("");
-      setShippingInfo({
-        firstName: "",
-        lastName: "",
-        address: {
-          street: "",
-          city: "",
-          state: "",
-          zip: "",
-          country: "US"
-        },
-        packageDimensions: {
-          length: 0,
-          width: 0,
-          height: 0,
-          weight: 0
-        },
-        paypalAccount: ""
-      });
-      clearAmazonResults();
-      if (typeof window !== 'undefined' && !isPrivateMode) {
-        const storageKey = getStorageKey();
-        localStorage.removeItem(storageKey);
-      }
-    }
-  };
 
   if (loading || isInitializing) {
     return (
@@ -803,26 +763,7 @@ export default function CreateListingPage() {
               <Link href="/contact" className="flex items-center py-2.5 text-sm text-gray-700">
                 <FiMessageSquare className="mr-3 h-4 w-4" /> Contact Us
               </Link>
-              {user && (
-                <button
-                  onClick={() => { setShowUserListings(!showUserListings); setShowMobileMenu(false); }}
-                  className="flex items-center py-2.5 text-sm text-gray-700 w-full text-left"
-                >
-                  <FiList className="mr-3 h-4 w-4" /> Submissions
-                </button>
-              )}
-              <Link
-                href={user ? "/dashboard/settings" : "/login"}
-                className="flex items-center py-2.5 text-sm text-gray-700"
-              >
-                <FiUser className="mr-3 h-4 w-4" /> Account Settings
-              </Link>
-              <button
-                onClick={resetForm}
-                className="flex items-center py-2.5 text-sm text-red-600 w-full text-left"
-              >
-                <FiX className="mr-3 h-4 w-4" /> Reset All
-              </button>
+              
             </div>
           )}
         </div>
@@ -831,7 +772,7 @@ export default function CreateListingPage() {
 
           <div className="mb-8 hidden md:block">
             <div className="max-w-4xl mx-auto">
-              <div className={`grid gap-3 ${user ? 'grid-cols-6' : 'grid-cols-4'}`}>
+            <div className="grid gap-3 grid-cols-3">
                 <Link
                   href="/"
                   className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-blue-600 hover:text-blue-700 hover:shadow-md transition-all duration-200"
@@ -853,32 +794,7 @@ export default function CreateListingPage() {
                   <FiMessageSquare className="mr-2 h-4 w-4" />
                   Contact Us
                 </Link>
-                {user && (
-                  <>
-                    <button
-                      onClick={() => setShowUserListings(!showUserListings)}
-                      className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-indigo-600 hover:text-indigo-700 hover:shadow-md transition-all duration-200 cursor-pointer"
-                    >
-                      <FiList className="mr-2 h-4 w-4" />
-                      Submissions
-                    </button>
-                    <Link
-                      href="/dashboard/settings"
-                      className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-gray-600 hover:text-gray-700 hover:shadow-md transition-all duration-200"
-                    >
-                      <FiSettings className="mr-2 h-4 w-4" />
-                      Settings
-                    </Link>
-                  </>
-                )}
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="flex items-center justify-center px-4 py-3 bg-white rounded-xl shadow-sm text-sm font-medium text-red-600 hover:text-red-700 hover:shadow-md transition-all duration-200"
-                >
-                  <FiX className="mr-2 h-4 w-4" />
-                  Reset All
-                </button>
+               
               </div>
             </div>
           </div>
