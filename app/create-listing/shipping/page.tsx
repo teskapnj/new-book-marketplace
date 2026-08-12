@@ -101,6 +101,8 @@ export default function ShippingInfoPage() {
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Submit sirasinda kullaniciya hangi asamada oldugunu gosterir
+  const [submitStage, setSubmitStage] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -324,8 +326,24 @@ export default function ShippingInfoPage() {
       
       console.log(`Uploading image for ISBN ${item.isbn}`);
       const storageRef = ref(storage, imagePath);
-      const snapshot = await uploadBytes(storageRef, item.imageBlob);
-      const downloadURL = await getDownloadURL(snapshot.ref);
+
+      // Yavas baglantida yukleme sonsuza kadar asili kalmasin diye 30 sn sinir.
+      // Sure dolarsa gorsel olmadan devam edilir, submit engellenmez.
+      const uploadPromise = (async () => {
+        const snapshot = await uploadBytes(storageRef, item.imageBlob!);
+        return await getDownloadURL(snapshot.ref);
+      })();
+
+      const timeoutPromise = new Promise<null>((resolve) =>
+        setTimeout(() => resolve(null), 30000)
+      );
+
+      const downloadURL = await Promise.race([uploadPromise, timeoutPromise]);
+
+      if (!downloadURL) {
+        console.warn(`Image upload timed out for ISBN ${item.isbn}, continuing without it`);
+        return null;
+      }
       
       console.log(`✅ Image uploaded successfully`);
       return downloadURL;
@@ -374,9 +392,10 @@ export default function ShippingInfoPage() {
     
     setIsSubmitting(true);
     setError("");
+    setSubmitStage("Preparing your items...");
     
     try {
-      const title = generateTitle();      
+      const title = generateTitle();  
       const uploadedItems = await Promise.all(
         bundleItems.map(async (item) => {
           let finalImageUrl = null;
@@ -470,6 +489,7 @@ export default function ShippingInfoPage() {
         )
       };
       
+      setSubmitStage("Creating your listing...");
       const docRef = await addDoc(collection(db, "listings"), listingData);
       console.log("✅ Document written with ID: ", docRef.id);
       
@@ -479,9 +499,9 @@ export default function ShippingInfoPage() {
         total_value: totalOurPrice
       });
       
-      // Admin notification email
+      // Admin notification email - arka planda gonderilir, kullanici beklemez
       try {
-        await fetch('/api/send-seller-notification', {
+        fetch('/api/send-seller-notification', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -495,15 +515,14 @@ export default function ShippingInfoPage() {
             dashboardUrl: `${window.location.origin}/admin/listings`,
             shippingInfo: shippingInfo
           })
-        });
-        console.log("Admin notification sent");
+        }).catch(err => console.error("Admin email error:", err));
       } catch (error) {
         console.error("Admin email error:", error);
       }
       
-      // Seller confirmation email
+      // Seller confirmation email - arka planda gonderilir, kullanici beklemez
       try {
-        await fetch('/api/send-seller-confirmation', {
+        fetch('/api/send-seller-confirmation', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -513,8 +532,7 @@ export default function ShippingInfoPage() {
             totalValue: totalValue,
             submissionId: docRef.id
           })
-        });
-        console.log("Seller confirmation sent");
+        }).catch(err => console.error("Seller email error:", err));
       } catch (error) {
         console.error("Seller email error:", error);
       }
@@ -557,6 +575,7 @@ export default function ShippingInfoPage() {
       // Gercek hata kodu kullaniciya gosteriliyor ki destek isteginde bize iletebilsin
       const code = err?.code ? ` (${err.code})` : "";
       setError(`Failed to create listing${code}. Please try again or contact support.`);
+      setSubmitStage("");
       setIsSubmitting(false);
     }
   };
@@ -1032,6 +1051,8 @@ export default function ShippingInfoPage() {
                   </button>
                   <button
                     type="submit"
+                    // Mobil tarayicilarda form onSubmit bazen tetiklenmiyor, onClick yedek yol
+                    onClick={handleSubmit}
                     disabled={isSubmitting}
                     className="flex-1 flex justify-center py-4 px-6 border border-transparent shadow-lg text-base font-medium rounded-xl text-white bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-all duration-200 transform hover:-translate-y-0.5"
                   >
@@ -1041,7 +1062,7 @@ export default function ShippingInfoPage() {
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        Submitting...
+                        {submitStage || "Submitting..."}
                       </div>
                     ) : (
                       <div className="flex items-center">
