@@ -1375,9 +1375,9 @@ export default function CreateListingPage() {
             <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 py-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-white">Add Items to Sell</h2>
+                <h2 className="text-2xl font-bold text-white">Add Your Items</h2>
                   <p className="mt-1 text-blue-100 max-w-2xl">
-                    Scan barcode to automatically check our pricing and add items for sale.
+                    Type the barcode number from the back of each item to see what we&apos;ll pay.
                   </p>
                 </div>
                 <div className="hidden md:block">
@@ -1410,7 +1410,7 @@ export default function CreateListingPage() {
                     </span>
                   )}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       ISBN/UPC
@@ -1438,7 +1438,7 @@ export default function CreateListingPage() {
                         value={currentItem.isbn || ''}
                         onChange={(e) => handleCurrentItemChange('isbn', e.target.value)}
                         placeholder="Enter ISBN/UPC or scan barcode"
-                        className="flex-1 block w-full px-4 py-3 border-0 focus:ring-0 text-base"
+                        className="flex-1 block w-full px-5 py-4 border-0 focus:ring-0 text-lg"
                         disabled={isCheckingAmazon}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && currentItem.isbn.trim()) {
@@ -1462,152 +1462,98 @@ export default function CreateListingPage() {
                       <span>🔍 Press Enter or click Check button to verify</span>
                     </div>
                   </div>
-                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-                    <div className="p-4 h-full">
-                      {/* Masaustunde kamera acilmadigi icin duplicate onayi burada gosteriliyor */}
-                      {duplicateConfirm ? (
-                        <div className="flex flex-col h-full">
-                          <div className="flex items-start gap-3">
-                            <div className="w-16 h-20 bg-gray-100 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
-                              {duplicateConfirm.existingItem.imageUrl ? (
-                                <Image
-                                  src={duplicateConfirm.existingItem.imageUrl}
-                                  alt="Product"
-                                  width={64}
-                                  height={80}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  <FiPackage className="h-6 w-6 text-gray-400" />
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 line-clamp-2">
-                                {duplicateConfirm.existingItem.amazonData?.title || "This item"}
-                              </p>
-                              {duplicateConfirm.count >= 5 ? (
-                                <p className="text-sm font-bold text-red-700 mt-2">
-                                  Maximum 5 of this item reached
-                                </p>
-                              ) : (
-                                <p className="text-sm text-gray-700 mt-2">
-                                  You already have {duplicateConfirm.count} of this item. Add another?
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          {duplicateConfirm.count < 5 && (
-                            <div className="flex gap-3 mt-4">
-                              <button
-                                type="button"
-                                onClick={handleDeclineAddDuplicate}
-                                className="flex-1 py-2 px-4 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50"
-                              >
-                                No
-                              </button>
-                              <button
-                                type="button"
-                                onClick={handleConfirmAddDuplicate}
-                                className="flex-1 py-2 px-4 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700"
-                              >
-                                Yes, Add
-                              </button>
-                            </div>
+                 {/* Ince geri bildirim seridi - buyuk kart yerine, sadece gerektiginde gorunur */}
+                 {duplicateConfirm && (
+                    <div className="rounded-lg border-2 border-yellow-400 bg-yellow-50 p-4">
+                      <div className="flex items-center justify-between gap-4 flex-wrap">
+                        <p className="text-sm text-gray-800">
+                          <span className="font-medium">
+                            {duplicateConfirm.existingItem.amazonData?.title || "This item"}
+                          </span>
+                          {duplicateConfirm.count >= 5 ? (
+                            <span className="block text-red-700 font-bold mt-1">
+                              Maximum 5 of this item reached
+                            </span>
+                          ) : (
+                            <span className="block text-gray-700 mt-1">
+                              You already have {duplicateConfirm.count}. Add another?
+                            </span>
                           )}
-                        </div>
-                      ) : amazonResult ? (
-                        <div className="flex flex-col h-full relative">
-                          <button
-                            type="button"
-                            onClick={clearAmazonCard}
-                            className="absolute top-1 right-1 z-10 p-1 rounded-full bg-white shadow-sm border border-gray-200 text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"
-                          >
-                            <FiX className="h-3 w-3" />
-                          </button>
-                          <div className="flex items-start justify-between mb-3">
-                            <h4 className="text-sm font-medium text-gray-900 line-clamp-2">
-                              {amazonResult.product.title || "Product Title"}
-                            </h4>
-                            {amazonResult.pricing.accepted && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                <FiCheck className="mr-1 h-3 w-3" />
-                                Accepted
-                              </span>
-                            )}
+                        </p>
+                        {duplicateConfirm.count < 5 && (
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={handleDeclineAddDuplicate}
+                              className="py-2 px-5 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50"
+                            >
+                              No
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleConfirmAddDuplicate}
+                              className="py-2 px-5 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700"
+                            >
+                              Yes, Add
+                            </button>
                           </div>
-                          <div className="flex flex-col sm:flex-row gap-3 flex-1">
-                            <div className="flex-shrink-0">
-                              <div className="w-16 h-20 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
-                                {amazonResult.product.image ? (
-                                  <Image
-                                    src={amazonResult.product.image}
-                                    alt={amazonResult.product.title || "Product"}
-                                    width={64}
-                                    height={80}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center">
-                                    <FiPackage className="h-6 w-6 text-gray-400" />
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="grid grid-cols-2 gap-2">
-                                <div className="bg-gray-50 rounded p-2">
-                                  <p className="text-xs text-gray-500">Category</p>
-                                  <p className="text-sm font-medium text-gray-900 capitalize">
-                                    {getCategoryFromPricing(amazonResult.pricing.category)}
-                                  </p>
-                                </div>
-                                <div className="bg-gray-50 rounded p-2">
-                                  <p className="text-xs text-gray-500">Our Price</p>
-                                  <p className="text-lg font-bold text-green-600">
-                                    ${amazonResult.pricing.ourPrice || '0.00'}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="mt-2">
-                                <div className={`text-base inline-flex items-center px-2 py-1 rounded-full font-bold ${amazonResult.pricing.accepted
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-red-100 text-red-800'
-                                  }`}>
-                                  {amazonResult.pricing.accepted ? (
-                                    amazonResult.message
-                                  ) : (
-                                    amazonResult.message
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          {amazonResult.pricing.accepted && (
-                            <div className="mt-2 text-xs text-green-600">
-                              ✅ Product added to your list! Card will disappear in 5 seconds...
-                            </div>
-                          )}
-                          {!amazonResult.pricing.accepted && (
-                            <div className="mt-2 text-xs text-red-600">
-                              ❌ This result will disappear in 10 seconds...
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-center py-4">
-                          <FiPackage className="h-10 w-10 text-gray-400 mb-2" />
-                          <p className="text-sm text-gray-500">
-                            {isCheckingAmazon
-                              ? "Checking Amazon..."
-                              : "Enter ISBN/UPC and click Check to see product details"
-                            }
-                          </p>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {amazonResult && !duplicateConfirm && (
+                    <div className={`flex items-center gap-4 rounded-lg border-2 p-4 ${
+                      amazonResult.pricing.accepted
+                        ? 'border-green-400 bg-green-50'
+                        : 'border-red-400 bg-red-50'
+                    }`}>
+                      <div className="w-12 h-16 rounded overflow-hidden bg-white flex-shrink-0 border border-gray-200">
+                        {amazonResult.product.image ? (
+                          <Image
+                            src={amazonResult.product.image}
+                            alt={amazonResult.product.title || "Product"}
+                            width={48}
+                            height={64}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <FiPackage className="h-5 w-5 text-gray-400" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 line-clamp-1">
+                          {amazonResult.product.title || "Product"}
+                        </p>
+                        <span className={`inline-flex items-center gap-1 mt-1 px-3 py-1 rounded-full text-sm font-bold ${
+                          amazonResult.pricing.accepted
+                            ? 'bg-green-600 text-white'
+                            : 'bg-red-600 text-white'
+                        }`}>
+                          {amazonResult.pricing.accepted ? (
+                            <>
+                              <FiCheck className="h-3 w-3" />
+                              Accepted - ${amazonResult.pricing.ourPrice?.toFixed(2)}
+                            </>
+                          ) : (
+                            <>
+                              <FiX className="h-3 w-3" />
+                              Not Accepted
+                            </>
+                          )}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={clearAmazonCard}
+                        className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-white flex-shrink-0"
+                      >
+                        <FiX className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
