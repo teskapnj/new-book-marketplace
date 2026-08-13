@@ -260,13 +260,36 @@ function extractKeepaImage(product: any): string {
 function pickBestKeepaProduct(products: any[]): any | null {
   if (!products || products.length === 0) return null;
 
+  // Ayni barkod birden fazla ASIN'e denk gelebiliyor (farkli baski/varyant,
+  // hatali listing). Rank ayirt edici olmadigi icin fiyati olanlar arasindan
+  // EN DUSUK fiyatli olan secilir: yanlis varyant secilse bile fazla odeme yapilmaz.
+  let cheapest: any | null = null;
+  let cheapestPrice = Infinity;
+
   for (const p of products) {
     const pricing = extractKeepaPricing(p);
-    if (pricing.price > 0) return p;
+    if (pricing.price > 0 && pricing.price < cheapestPrice) {
+      cheapestPrice = pricing.price;
+      cheapest = p;
+    }
   }
 
-  // Hiçbirinde fiyat yoksa yine de ilkini döndür (title/image gösterebilmek için)
-  return products[0];
+  if (cheapest) return cheapest;
+
+  // Hicbirinde fiyat yoksa karar tamamen rank'e bakiyor,
+  // o yuzden rank'i en iyi (en dusuk sayi) olan secilir.
+  let bestRanked = products[0];
+  let bestRank = Infinity;
+
+  for (const p of products) {
+    const rank = extractKeepaSalesRank(p);
+    if (rank > 0 && rank < bestRank) {
+      bestRank = rank;
+      bestRanked = p;
+    }
+  }
+
+  return bestRanked;
 }
 
 // ==================== POST /api/amazon-check ====================
