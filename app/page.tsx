@@ -121,7 +121,6 @@ export default function HomePage() {
   // State
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
-  const [isClient, setIsClient] = useState(false);
 
   // Rate limiting
   const rateLimitConfig = {
@@ -132,10 +131,6 @@ export default function HomePage() {
 
   const { isBlocked, remainingTime, attempts, recordAttempt } = useRateLimit(rateLimitConfig);
 
-  // Client-side hydration
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   // ✅ BACKGROUND AUTH - NON-BLOCKING
   useEffect(() => {
@@ -165,32 +160,6 @@ export default function HomePage() {
 
     checkUserRoleInBackground();
   }, [user, isBlocked, recordAttempt]);
-
-  // ✅ GOOGLE ADS TRACKING - PROPER IMPLEMENTATION
-  useEffect(() => {
-    if (isClient && typeof window !== 'undefined') {
-      // Page view tracking
-      if ('gtag' in window) {
-        (window as any).gtag('event', 'page_view', {
-          page_title: 'Home - Sell Books CDs DVDs Games',
-          page_location: window.location.href,
-          page_path: '/'
-        });
-      }
-
-      // Mark as potential customer
-      if ('gtag' in window) {
-        (window as any).gtag('event', 'view_item_list', {
-          items: [
-            { item_name: 'Books', item_category: 'Media' },
-            { item_name: 'CDs', item_category: 'Media' },
-            { item_name: 'DVDs', item_category: 'Media' },
-            { item_name: 'Games', item_category: 'Media' }
-          ]
-        });
-      }
-    }
-  }, [isClient]);
 
   // Secure logout
   const handleSecureLogout = async () => {
