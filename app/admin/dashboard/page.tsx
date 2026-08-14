@@ -90,6 +90,8 @@ interface BundleItem {
 }
 
 interface ShippingInfo {
+  firstName?: string;
+  lastName?: string;
   address: {
     street: string;
     city: string;
@@ -2484,6 +2486,15 @@ export default function AdminListingsPage() {
                           <div>
                             <h5 className="text-sm font-medium text-purple-800 mb-1">Return Address</h5>
                             <p className="text-sm text-gray-700">
+                              {/* Ad soyad shippingInfo icinde tutuluyor, kargo etiketi icin gerekli */}
+                              {(selectedListing.shippingInfo.firstName || selectedListing.shippingInfo.lastName) && (
+                                <>
+                                  <strong>
+                                    {selectedListing.shippingInfo.firstName} {selectedListing.shippingInfo.lastName}
+                                  </strong>
+                                  <br />
+                                </>
+                              )}
                               {selectedListing.shippingInfo.address.street}<br />
                               {selectedListing.shippingInfo.address.city}, {selectedListing.shippingInfo.address.state} {selectedListing.shippingInfo.address.zip}<br />
                               {selectedListing.shippingInfo.address.country}
