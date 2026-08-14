@@ -1,14 +1,15 @@
+// app/api/send-shipping-label-email/route.ts
+// Satici onaylandiginda kargo etiketi maili
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 
-// Namecheap için transporter yapılandırması
 const transporter = nodemailer.createTransport({
-  host: 'mail.privateemail.com', // Namecheap Private Email SMTP sunucusu
-  port: 465, // SSL için port
-  secure: true, // SSL kullanımı için true
+  host: 'mail.privateemail.com',
+  port: 465,
+  secure: true,
   auth: {
-    user: process.env.EMAIL_USER, // Namecheap e-posta adresiniz
-    pass: process.env.EMAIL_PASS  // Namecheap e-posta şifreniz
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
   }
 });
 
@@ -24,8 +25,8 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const shortId = listingId.substring(0, 8);
-    const carrierUpper = carrier.toUpperCase();
+    const shortId = listingId ? String(listingId).substring(0, 8) : 'n/a';
+    const carrierUpper = String(carrier).toUpperCase();
     const dateStr = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
 
     const emailHtml = `<!DOCTYPE html>
@@ -34,12 +35,12 @@ export async function POST(request: NextRequest) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light">
-  <title>Listing Approved</title>
+  <title>Ready to Ship</title>
 </head>
 <body style="margin:0; padding:0; background-color:#f1f5f9; -webkit-font-smoothing:antialiased;">
   <!-- Preheader (hidden preview text) -->
   <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;">
-    Your listing is approved and ready to ship. Your shipping label is enclosed.
+    Your prepaid shipping label is ready. Print it, pack your box, and drop it off.
   </div>
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f1f5f9; padding:24px 0;">
@@ -62,37 +63,39 @@ export async function POST(request: NextRequest) {
           <tr>
             <td style="padding:32px 40px 8px 40px;">
               <p style="margin:0; font-size:16px; line-height:1.6; color:#334155;">
-                Good news — you're all set to send us your items. Everything you need is right here. Just print your label, pack your box, and drop it off.
+                Good news &mdash; you're all set to send us your items. Everything you need is right here. Just print your label, pack your box, and drop it off.
               </p>
             </td>
           </tr>
 
-          <!-- Listing Information -->
+          <!-- CTA Button - once gelsin, en onemli aksiyon bu -->
           <tr>
-            <td style="padding:16px 40px;">
+            <td style="padding:24px 40px 8px 40px; text-align:center;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="border-radius:12px; background-color:#10b981; text-align:center;">
+                    <a href="${shippingLabelUrl}" target="_blank" style="display:block; padding:20px 24px; font-size:18px; font-weight:700; color:#ffffff; text-decoration:none; border-radius:12px;">
+                      View &amp; Print Shipping Label
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <div style="margin-top:12px; font-size:13px; color:#94a3b8;">Opens your prepaid label in a new tab</div>
+            </td>
+          </tr>
+
+          <!-- Your Box -->
+          <tr>
+            <td style="padding:16px 40px 8px 40px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc; border-radius:12px; border:1px solid #e2e8f0;">
                 <tr>
                   <td style="padding:20px 24px 8px 24px;">
-                    <div style="font-size:13px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; color:#10b981;">Listing Details</div>
+                    <div style="font-size:13px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; color:#10b981;">Your Box</div>
                   </td>
                 </tr>
                 <tr>
                   <td style="padding:0 24px 16px 24px;">
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                      <tr>
-                        <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:14px; color:#64748b;">Item Type</td>
-                        <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:14px; color:#0f172a; font-weight:600; text-align:right;">Very Good Condition Media Items</td>
-                      </tr>
-                      <tr>
-                        <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:14px; color:#64748b;">Status</td>
-                        <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; text-align:right;">
-                          <span style="display:inline-block; background-color:#dcfce7; color:#15803d; font-size:13px; font-weight:600; padding:3px 12px; border-radius:999px;">Approved</span>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding:10px 0; ${totalItems || packageDimensions ? 'border-bottom:1px solid #e2e8f0;' : ''} font-size:14px; color:#64748b;">Listing ID</td>
-                        <td style="padding:10px 0; ${totalItems || packageDimensions ? 'border-bottom:1px solid #e2e8f0;' : ''} font-size:14px; color:#0f172a; font-weight:600; text-align:right; font-family:monospace;">#${shortId}</td>
-                      </tr>
                       ${totalItems ? `
                       <tr>
                         <td style="padding:10px 0; ${packageDimensions ? 'border-bottom:1px solid #e2e8f0;' : ''} font-size:14px; color:#64748b;">Number of Items</td>
@@ -101,7 +104,7 @@ export async function POST(request: NextRequest) {
                       ${packageDimensions ? `
                       <tr>
                         <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:14px; color:#64748b;">Box Size</td>
-                        <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:14px; color:#0f172a; font-weight:600; text-align:right;">${packageDimensions.length} × ${packageDimensions.width} × ${packageDimensions.height} in</td>
+                        <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:14px; color:#0f172a; font-weight:600; text-align:right;">${packageDimensions.length} &times; ${packageDimensions.width} &times; ${packageDimensions.height} in</td>
                       </tr>
                       <tr>
                         <td style="padding:10px 0; font-size:14px; color:#64748b;">Weight</td>
@@ -141,25 +144,9 @@ export async function POST(request: NextRequest) {
             </td>
           </tr>
 
-          <!-- CTA Button -->
-          <tr>
-            <td style="padding:24px 40px; text-align:center;">
-              <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;">
-                <tr>
-                  <td style="border-radius:10px; background-color:#10b981;">
-                    <a href="${shippingLabelUrl}" target="_blank" style="display:inline-block; padding:15px 40px; font-size:16px; font-weight:600; color:#ffffff; text-decoration:none; border-radius:10px;">
-                      View &amp; Print Shipping Label
-                    </a>
-                  </td>
-                </tr>
-              </table>
-              <div style="margin-top:12px; font-size:13px; color:#94a3b8;">Opens your prepaid label in a new tab</div>
-            </td>
-          </tr>
-
           <!-- Next Steps -->
           <tr>
-            <td style="padding:8px 40px 32px 40px;">
+            <td style="padding:16px 40px 16px 40px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fffbeb; border-radius:12px; border:1px solid #fde68a;">
                 <tr>
                   <td style="padding:22px 26px;">
@@ -194,7 +181,7 @@ export async function POST(request: NextRequest) {
           <tr>
             <td style="padding:0 40px 32px 40px;">
               <p style="margin:0; font-size:15px; line-height:1.6; color:#334155;">
-                Thanks for choosing SellBook Media. If you have any questions, just reply to this email — we're happy to help.
+                Thanks for choosing SellBook Media. If you have any questions, just reply to this email &mdash; we're happy to help.
               </p>
             </td>
           </tr>
@@ -203,7 +190,7 @@ export async function POST(request: NextRequest) {
           <tr>
             <td style="background-color:#f8fafc; padding:24px 40px; text-align:center; border-top:1px solid #e2e8f0;">
               <div style="font-size:14px; font-weight:600; color:#475569;">SellBook Media</div>
-              <div style="font-size:12px; color:#94a3b8; margin-top:6px;">Listing #${shortId} &nbsp;·&nbsp; ${dateStr}</div>
+              <div style="font-size:12px; color:#94a3b8; margin-top:6px;">Ref ${shortId} &nbsp;&middot;&nbsp; ${dateStr}</div>
             </td>
           </tr>
 
@@ -216,43 +203,52 @@ export async function POST(request: NextRequest) {
 </body>
 </html>`;
 
-    await transporter.sendMail({
-      from: `"SellBook Media" <${process.env.EMAIL_USER}>`, // Görünen ad eklendi
-      to: email,
-      subject: `You're ready to ship - your prepaid label is enclosed`, // Emoji kaldirildi, sicak dil
-      html: emailHtml,
-      text: `You're ready to ship!
+    const emailText = `You're ready to ship!
 
 Good news - you're all set to send us your items. Everything you need is right here.
 
-Item Type: Very Good Condition Media Items
-Status: Approved
-Tracking Number: ${trackingNumber}
+Print your shipping label here:
+${shippingLabelUrl}
+
+YOUR BOX${totalItems ? `
+Number of items: ${totalItems}` : ''}${packageDimensions ? `
+Box size: ${packageDimensions.length} x ${packageDimensions.width} x ${packageDimensions.height} in
+Weight: ${packageDimensions.weight} lb` : ''}
+
+SHIPPING
+Tracking number: ${trackingNumber}
 Carrier: ${carrierUpper}
 
-Please print your shipping label here: ${shippingLabelUrl}
-
-Next steps:
+NEXT STEPS
 1. Print the shipping label
-2. Package your items securely
-3. Attach the shipping label to your package
-4. Drop off the package at ${carrierUpper}
-5. Track your package using: ${trackingNumber}
+2. Pack your items securely in a box
+3. Attach the shipping label to the package
+4. Drop it off at ${carrierUpper}
+5. Track your package with ${trackingNumber}
 
 About your payment: Once your items arrive at our facility and are checked, we'll send your payment straight to your PayPal account.
 
-View your listing: ${process.env.NEXT_PUBLIC_BASE_URL}/listings/${listingId}
+Thanks for choosing SellBook Media. If you have any questions, just reply to this email.
 
-Thank you for using SellBook Media!`
+Ref ${shortId}`;
+
+    await transporter.sendMail({
+      from: `"SellBook Media" <${process.env.EMAIL_USER}>`,
+      to: email,
+      replyTo: process.env.EMAIL_USER,
+      subject: `You're ready to ship - your prepaid label is enclosed`,
+      html: emailHtml,
+      text: emailText
     });
 
     console.log(`Email sent to ${email} for listing ${listingId}`);
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Email error:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({
       success: false,
-      error: error.message
+      error: message
     }, { status: 500 });
   }
 }
