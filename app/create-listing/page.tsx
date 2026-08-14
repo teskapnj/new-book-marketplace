@@ -1125,7 +1125,43 @@ export default function CreateListingPage() {
                   </button>
                 </div>
 
-                {amazonResult && !showScanner && (
+                {/* Manuel girisde de duplicate onayi gosterilir (kamera acik degil) */}
+                {duplicateConfirm && !showScanner && (
+                  <div className="border-2 border-yellow-400 bg-yellow-50 rounded-lg p-4">
+                    <p className="text-sm font-medium text-gray-900 line-clamp-2">
+                      {duplicateConfirm.existingItem.amazonData?.title || "This item"}
+                    </p>
+                    {duplicateConfirm.count >= 5 ? (
+                      <p className="text-sm font-bold text-red-700 mt-2">
+                        Maximum 5 of this item reached
+                      </p>
+                    ) : (
+                      <>
+                        <p className="text-sm text-gray-700 mt-1">
+                          You already have {duplicateConfirm.count}. Add another?
+                        </p>
+                        <div className="flex gap-3 mt-3">
+                          <button
+                            type="button"
+                            onClick={handleDeclineAddDuplicate}
+                            className="flex-1 py-2 px-4 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm font-medium"
+                          >
+                            No
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleConfirmAddDuplicate}
+                            className="flex-1 py-2 px-4 rounded-lg bg-green-600 text-white text-sm font-medium"
+                          >
+                            Yes, Add
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {amazonResult && !showScanner && !duplicateConfirm && (
                   <div className="border border-gray-200 rounded-lg p-3">
                     <div className="flex items-center gap-3">
                       <div className="w-14 h-14 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-200">
