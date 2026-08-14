@@ -752,6 +752,13 @@ export default function AdminListingsPage() {
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   
+  // Urun dogrulama icin state'ler (koli gelince tek tek kontrol)
+  // acceptedItems: kabul edilen satirlarin index'leri
+  const [acceptedItems, setAcceptedItems] = useState<Set<number>>(new Set());
+  const [scanInput, setScanInput] = useState("");
+  const [lastScannedIndex, setLastScannedIndex] = useState<number | null>(null);
+  const [scanMessage, setScanMessage] = useState("");
+
   // Payment için state'ler
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentTransactionId, setPaymentTransactionId] = useState("");
@@ -1606,6 +1613,50 @@ export default function AdminListingsPage() {
         {icons[status as keyof typeof icons]} <span className="ml-1 capitalize">{status.replace('_', ' ')}</span>
       </span>
     );
+  };
+
+  // Barkod okutuldugunda: henuz isaretlenmemis ilk eslesmeyi bul ve vurgula.
+  // Otomatik kabul YOK - admin urune bakip kutucuga kendisi tiklar.
+  const handleScanLookup = (code: string) => {
+    if (!selectedListing?.bundleItems) return;
+
+    const clean = code.replace(/[^a-zA-Z0-9X]/gi, "").trim().toUpperCase();
+    if (!clean) return;
+
+    const idx = selectedListing.bundleItems.findIndex((item, i) => {
+      const itemCode = (item.isbn || "").replace(/[^a-zA-Z0-9X]/gi, "").trim().toUpperCase();
+      return itemCode === clean && !acceptedItems.has(i);
+    });
+
+    if (idx === -1) {
+      // Zaten isaretlenmis mi, yoksa listede hic yok mu?
+      const existsAnywhere = selectedListing.bundleItems.some((item) => {
+        const itemCode = (item.isbn || "").replace(/[^a-zA-Z0-9X]/gi, "").trim().toUpperCase();
+        return itemCode === clean;
+      });
+      setScanMessage(
+        existsAnywhere
+          ? `All copies of ${clean} are already checked`
+          : `${clean} is not in this listing`
+      );
+      setLastScannedIndex(null);
+    } else {
+      setScanMessage("");
+      setLastScannedIndex(idx);
+    }
+
+    setScanInput("");
+  };
+
+  const toggleItemAccepted = (index: number) => {
+    const next = new Set(acceptedItems);
+    if (next.has(index)) {
+      next.delete(index);
+    } else {
+      next.add(index);
+    }
+    setAcceptedItems(next);
+    setLastScannedIndex(null);
   };
 
   const getCategoryIcon = (category: string) => {
@@ -2537,28 +2588,168 @@ export default function AdminListingsPage() {
                     </div>
                   </div>
                   
-                  {/* Bundle items preview */}
+                  {/* Bundle items - koli geldiginde tek tek dogrulama */}
                   {selectedListing.bundleItems && selectedListing.bundleItems.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-medium text-gray-900 mb-2">
-                        Bundle Items ({selectedListing.bundleItems.length})
-                      </h4>
-                      <div className="max-h-80 overflow-y-auto space-y-2">
-                      {selectedListing.bundleItems?.map((item: BundleItem, index: number) => ( // Düzeltilmiş: optional chaining eklendi
-                          <div key={index} className="bg-gray-50 p-3 rounded-lg text-sm">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center">
-                                <span className="mr-2">{getCategoryIcon(item.category)}</span>
-                                <span className="font-medium">ISBN: {item.isbn}</span>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-medium text-gray-900">
+                          Bundle Items ({selectedListing.bundleItems.length})
+                        </h4>
+                        <span className="text-xs text-gray-600">
+                          {acceptedItems.size} checked / {selectedListing.bundleItems.length}
+                        </span>
+                      </div>
+
+                      {/* Barkod okutma alani - USB tarayici klavye gibi calisir */}
+                      <div className="mb-3">
+                        <input
+                          type="text"
+                          value={scanInput}
+                          onChange={(e) => setScanInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleScanLookup(scanInput);
+                            }
+                          }}
+                          autoFocus
+                          className="w-full p-2 border-2 border-blue-300 rounded text-sm font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                          placeholder="Scan a barcode to find the item..."
+                        />
+                        {scanMessage && (
+                          <p className="text-xs text-orange-700 mt-1">{scanMessage}</p>
+                        )}
+                        {lastScannedIndex !== null && (
+                          <div className="flex items-center justify-between mt-1">
+                            <p className="text-xs text-blue-700">
+                              Showing scanned item only
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => setLastScannedIndex(null)}
+                              className="text-xs text-blue-600 hover:text-blue-800 underline"
+                            >
+                              Show all
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="max-h-96 overflow-y-auto space-y-2">
+                      {selectedListing.bundleItems
+                          .map((item: BundleItem, index: number) => ({ item, index }))
+                          // Barkod okutulduysa sadece o urun gosterilir, karisiklik olmasin
+                          .filter(({ index }) =>
+                            lastScannedIndex === null ? true : index === lastScannedIndex
+                          )
+                          .sort((a, b) => {
+                            // Isaretlenenler uste, geri kalan orijinal sirada
+                            const aChecked = acceptedItems.has(a.index) ? 0 : 1;
+                            const bChecked = acceptedItems.has(b.index) ? 0 : 1;
+                            if (aChecked !== bChecked) return aChecked - bChecked;
+                            return a.index - b.index;
+                          })
+                          .map(({ item, index }) => {
+                            const isChecked = acceptedItems.has(index);
+                            const isScanned = lastScannedIndex === index;
+                            return (
+                              <div
+                                key={index}
+                                className={`p-3 rounded-lg text-sm border-2 transition-colors ${
+                                  isScanned
+                                    ? "bg-yellow-50 border-yellow-400"
+                                    : isChecked
+                                    ? "bg-green-50 border-green-300"
+                                    : "bg-gray-50 border-transparent"
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center min-w-0">
+                                    <input
+                                      type="checkbox"
+                                      checked={isChecked}
+                                      onChange={() => toggleItemAccepted(index)}
+                                      className="h-5 w-5 text-green-600 rounded focus:ring-green-500 mr-3 flex-shrink-0"
+                                    />
+                                    <span className="mr-2">{getCategoryIcon(item.category)}</span>
+                                    <span className="font-medium font-mono truncate">{item.isbn}</span>
+                                  </div>
+                                  <span className="text-gray-600 flex-shrink-0 ml-2">
+                                    ${item.price.toFixed(2)}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1 ml-8">
+                                  {item.category} • {item.condition} • Qty: {item.quantity}
+                                </p>
                               </div>
-                              <span className="text-gray-600">${item.price}</span>
+                            );
+                          })}
+                      </div>
+
+                      {/* Dogrulama ozeti - kabul/ret tutarlari ve payment'a aktarma */}
+                      {(() => {
+                        const items = selectedListing.bundleItems || [];
+                        const acceptedTotal = items.reduce(
+                          (sum, it, i) => (acceptedItems.has(i) ? sum + it.price * it.quantity : sum),
+                          0
+                        );
+                        const rejected = items
+                          .map((it, i) => ({ it, i }))
+                          .filter(({ i }) => !acceptedItems.has(i));
+                        const rejectedTotal = rejected.reduce(
+                          (sum, { it }) => sum + it.price * it.quantity,
+                          0
+                        );
+                        const originalTotal = selectedListing.totalValue || 0;
+
+                        const applyToPayment = () => {
+                          setPaymentAmount(acceptedTotal.toFixed(2));
+
+                          if (rejected.length === 0) {
+                            setPaymentNotes(
+                              `All ${items.length} items accepted. Paid in full: $${acceptedTotal.toFixed(2)}`
+                            );
+                            return;
+                          }
+
+                          const codes = rejected.map(({ it }) => it.isbn).join(", ");
+                          setPaymentNotes(
+                            `Not accepted (${rejected.length} item${rejected.length !== 1 ? "s" : ""}): ${codes}\n` +
+                            `Deducted: $${rejectedTotal.toFixed(2)}\n` +
+                            `Original offer: $${originalTotal.toFixed(2)} — Paid: $${acceptedTotal.toFixed(2)}`
+                          );
+                        };
+
+                        return (
+                          <div className="mt-3 bg-gray-50 border border-gray-200 rounded-lg p-4">
+                            <div className="grid grid-cols-2 gap-3 text-sm mb-3">
+                              <div className="bg-green-50 border border-green-200 rounded p-3">
+                                <p className="text-xs text-green-700">Accepted</p>
+                                <p className="font-bold text-green-800">
+                                  {acceptedItems.size} items · ${acceptedTotal.toFixed(2)}
+                                </p>
+                              </div>
+                              <div className="bg-red-50 border border-red-200 rounded p-3">
+                                <p className="text-xs text-red-700">Not accepted</p>
+                                <p className="font-bold text-red-800">
+                                  {rejected.length} items · ${rejectedTotal.toFixed(2)}
+                                </p>
+                              </div>
                             </div>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {item.category} • {item.condition} • Qty: {item.quantity}
+                            <button
+                              type="button"
+                              onClick={applyToPayment}
+                              disabled={acceptedItems.size === 0}
+                              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-2 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Apply to Payment
+                            </button>
+                            <p className="text-xs text-gray-500 mt-2 text-center">
+                              Fills the payment amount and notes below
                             </p>
                           </div>
-                        ))}
-                      </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
