@@ -8,6 +8,7 @@ const ALL_GUIDES = [
   { slug: "where-to-sell-books-and-dvds-for-cash", title: "Where to Sell Books & DVDs for Cash" },
   { slug: "decluttr-shut-down-alternative", title: "Best Decluttr Alternative" },
   { slug: "what-to-do-with-old-dvds-and-cds", title: "What to Do With Old DVDs and CDs" },
+  { slug: "how-much-are-used-cds-worth", title: "How Much Are Used CDs Worth?" },
 ];
 
 export default function RelatedGuides({ currentSlug }: { currentSlug: string }) {
