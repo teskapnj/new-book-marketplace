@@ -1051,10 +1051,15 @@ export default function AdminListingsPage() {
     filteredListings = filteredListings.filter(listing => listing.status === filterStatus);
   }
   if (searchTerm) {
+    // Aramada bosluklar yok sayilir: etiketten kopyalanan numara bosluklu olabilir
+    const term = searchTerm.toLowerCase().replace(/\s/g, "");
     filteredListings = filteredListings.filter(listing =>
-      listing.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      listing.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      listing.vendorName.toLowerCase().includes(searchTerm.toLowerCase())
+      listing.title.toLowerCase().includes(term) ||
+      listing.id.toLowerCase().includes(term) ||
+      listing.vendorName.toLowerCase().includes(term) ||
+      (listing.trackingNumber || "").toLowerCase().includes(term) ||
+      (listing.shippingInfo?.firstName || "").toLowerCase().includes(term) ||
+      (listing.shippingInfo?.lastName || "").toLowerCase().includes(term)
     );
   }
 
@@ -1753,9 +1758,14 @@ export default function AdminListingsPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
                   <input
                     type="text"
-                    placeholder="Search by title, ID, or seller..."
+                    placeholder="Search by name, tracking number, title, or ID..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      // Arama yapilinca status filtresi engel olmasin
+                      if (e.target.value) setFilterStatus("all");
+                      setCurrentPage(1);
+                    }}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
