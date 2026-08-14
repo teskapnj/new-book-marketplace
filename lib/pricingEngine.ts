@@ -162,17 +162,12 @@ function calculateBookPrice(price: number, salesRank: number): PricingResult {
   }
 
   if (salesRank <= 2000000) {
-    if (price >= 56 && price < 66) {
-      return { accepted: true, ourPrice: 1.5, category: 'books', priceRange: "$56-65.99", rankRange: "1M-2M" };
+    // 1M-2M bandi iki kurala indirildi (yavas satan kitaplar)
+    if (price >= 56 && price < 100) {
+      return { accepted: true, ourPrice: 1.5, category: 'books', priceRange: "$56-99.99", rankRange: "1M-2M" };
     }
-    if (price >= 66 && price < 96) {
-      return { accepted: true, ourPrice: 2.5, category: 'books', priceRange: "$66-95.99", rankRange: "1M-2M" };
-    }
-    if (price >= 96 && price < 126) {
-      return { accepted: true, ourPrice: 3.5, category: 'books', priceRange: "$96-125.99", rankRange: "1M-2M" };
-    }
-    if (price >= 126) {
-      return { accepted: true, ourPrice: 4.5, category: 'books', priceRange: "$126+", rankRange: "1M-2M" };
+    if (price >= 100) {
+      return { accepted: true, ourPrice: 2.5, category: 'books', priceRange: "$100+", rankRange: "1M-2M" };
     }
 
     return {
