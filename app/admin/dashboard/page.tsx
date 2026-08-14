@@ -547,7 +547,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onU
                     <input
                       type="text"
                       value={trackingNumber}
-                      onChange={(e) => setTrackingNumber(e.target.value)}
+                      onChange={(e) => setTrackingNumber(e.target.value.replace(/\s/g, ""))}
                       className="w-full p-2 border border-gray-300 rounded text-sm"
                       placeholder="Enter tracking number"
                     />
@@ -2664,7 +2664,7 @@ export default function AdminListingsPage() {
                               <input
                                 type="text"
                                 value={trackingNumber}
-                                onChange={(e) => setTrackingNumber(e.target.value)}
+                                onChange={(e) => setTrackingNumber(e.target.value.replace(/\s/g, ""))}
                                 className="w-full p-2 border border-gray-300 rounded text-sm bg-gray-100"
                                 placeholder="Enter tracking number"
                                 disabled={selectedListing.status === "pending"}
@@ -2926,7 +2926,7 @@ export default function AdminListingsPage() {
                               <input
                                 type="text"
                                 value={trackingNumber}
-                                onChange={(e) => setTrackingNumber(e.target.value)}
+                                onChange={(e) => setTrackingNumber(e.target.value.replace(/\s/g, ""))}
                                 className="w-full p-2 border border-gray-300 rounded text-sm"
                                 placeholder="Enter tracking number"
                               />
