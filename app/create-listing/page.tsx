@@ -126,6 +126,8 @@ export default function CreateListingPage() {
   const [prevUser, setPrevUser] = useState(user);
   const [showUserListings, setShowUserListings] = useState(false);
   const resultTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // minimum_reached event'inin ayni oturumda tekrar tetiklenmesini engeller
+  const minimumReachedFiredRef = useRef(false);
 
   // YENİ: sadece mobil redesign için eklenen state'ler
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -201,9 +203,8 @@ export default function CreateListingPage() {
       price: newItem.price
     });
 
-    if (bundleItems.length + 1 === 5) {
-      trackEvent('minimum_reached');
-    }
+    // minimum_reached buradan kaldirildi - artik bundleItems.length'i izleyen
+    // useEffect tetikliyor (duplicate ekleme ve sayfa yenileme de yakalaniyor)
 
     setBundleItems(prev => [...prev, newItem]);
 
@@ -407,6 +408,15 @@ export default function CreateListingPage() {
       ourPrice: existing.ourPrice,
       originalPrice: existing.originalPrice
     };
+
+    // Duplicate onayiyla eklenen urun de kabul edilmis sayilir.
+    // Eskiden bu event sadece autoAddAcceptedItem icinde gonderiliyordu,
+    // bu yuzden ayni urunden birden fazla ekleyenlerde eksik sayiliyordu.
+    trackEvent('item_accepted', {
+      category: newItem.category,
+      price: newItem.price
+    });
+
     setBundleItems(prev => [...prev, newItem]);
     setDuplicateConfirm(null);
   };
@@ -689,6 +699,41 @@ export default function CreateListingPage() {
     }, 1000);
     return () => clearTimeout(timeoutId);
   }, [bundleItems, description, shippingInfo, saveToStorage, isMounted, isInitializing]);
+
+  // minimum_reached: urun sayisi 5'e ulastiginda bir kez tetiklenir.
+  // Eski kod sadece "tam 5. urun eklendiginde" calisiyordu; duplicate onayiyla
+  // eklemede ve sayfa yenilendikten sonra hic tetiklenmiyordu.
+  // Bayrak localStorage'da tutuluyor, boylece yenilemede tekrar gonderilmiyor.
+  useEffect(() => {
+    if (!isMounted || isInitializing) return;
+    if (bundleItems.length < 5) return;
+    if (minimumReachedFiredRef.current) return;
+
+    const FLAG_KEY = 'minimumReachedFired';
+
+    try {
+      if (localStorage.getItem(FLAG_KEY) === 'true') {
+        minimumReachedFiredRef.current = true;
+        return;
+      }
+    } catch {
+      // gizli mod: localStorage yok, ref tek basina yeterli
+    }
+
+    // Once ref'i isaretle - React Strict Mode'da cift tetiklenmeyi onler
+    minimumReachedFiredRef.current = true;
+
+    trackEvent('minimum_reached', {
+      item_count: bundleItems.length,
+      total_value: totalOurPrice
+    });
+
+    try {
+      localStorage.setItem(FLAG_KEY, 'true');
+    } catch {
+      // gizli modda sessizce gec
+    }
+  }, [bundleItems.length, totalOurPrice, isMounted, isInitializing]);
 
   const handleCurrentItemChange = (field: keyof BundleItem, value: string | number) => {
     setCurrentItem(prev => ({
