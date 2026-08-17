@@ -2,8 +2,9 @@
 // Funnel takibi için basit event gönderme yardımcısı
 
 type FunnelEvent =
-  | 'scan_started'        // Kamera açıldı
+  | 'scan_started'        // Tarama başladı (kamera veya manuel giriş)
   | 'item_accepted'       // Ürün sepete eklendi
+  | 'item_rejected'       // Ürün kabul edilmedi (teşhis amaçlı, dönüşüm değil)
   | 'minimum_reached'     // 5 ürüne ulaşıldı
   | 'shipping_started'    // Shipping sayfasına geçildi
   | 'listing_submitted';  // Gönderim tamamlandı

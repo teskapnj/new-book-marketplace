@@ -146,7 +146,7 @@ export default function DashboardPage() {
               setRedirectingToListings(true);
               
               setTimeout(() => {
-                window.location.href = "/create-listing";
+                window.location.href = "/";
               }, 2000);
               return;
             }
@@ -189,7 +189,7 @@ export default function DashboardPage() {
               
               setRedirectingToListings(true);
               setTimeout(() => {
-                window.location.href = "/create-listing";
+                window.location.href = "/";
               }, 2000);
             } catch (error) {
               console.error("Error creating user profile or conversation:", error);
@@ -542,7 +542,7 @@ export default function DashboardPage() {
           
           <div className="space-y-3">
             <Link 
-              href="/create-listing"
+              href="/"
               className="block w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
               Go to Create Listing Now

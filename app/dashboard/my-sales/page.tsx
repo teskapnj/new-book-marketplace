@@ -485,7 +485,7 @@ export default function MySalesPage() {
                     : `You don't have any ${activeTab} sales.`}
                 </p>
                 <Link 
-                  href="/create-listing"
+                  href="/"
                   className="inline-block bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors"
                 >
                   Create Listing

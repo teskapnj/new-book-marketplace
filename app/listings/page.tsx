@@ -186,7 +186,7 @@ function ListingsContent() {
               if (firestoreRole !== "buyer" && firestoreRole !== "admin") {
                 // Kullanıcı uygun role sahip değil, doğru sayfaya yönlendir
                 if (firestoreRole === "seller") {
-                  router.push("/create-listing");
+                  router.push("/");
                 } else {
                   router.push("/");
                 }
@@ -217,7 +217,7 @@ function ListingsContent() {
               if (firestoreRole !== "buyer" && firestoreRole !== "admin") {
                 // Kullanıcı uygun role sahip değil, doğru sayfaya yönlendir
                 if (firestoreRole === "seller") {
-                  router.push("/create-listing");
+                  router.push("/");
                 } else {
                   router.push("/");
                 }
@@ -478,7 +478,7 @@ function ListingsContent() {
           <button
             onClick={() => {
               if (userRole === "seller") {
-                router.push("/create-listing");
+                router.push("/");
               } else {
                 router.push("/");
               }
@@ -788,7 +788,7 @@ function ListingsContent() {
                         : "No bundles match your current filters. Try adjusting your search criteria."}
                     </p>
                     {products.length === 0 ? (
-                      <Link href="/create-listing" className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-2xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+                      <Link href="/" className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-2xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl">
                         <PackageIcon size={20} className="mr-2" />
                         Create First Bundle
                       </Link>

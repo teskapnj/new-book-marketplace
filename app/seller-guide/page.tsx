@@ -57,7 +57,7 @@ const SellerGuidePage: NextPage = () => {
           </Link>
 
           <Link
-            href="/create-listing"
+            href="/"
             className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-md shadow-sm hover:bg-blue-700"
           >
             Start Scanning
@@ -139,7 +139,7 @@ const SellerGuidePage: NextPage = () => {
                     </div>
                     <div className="border border-gray-200 rounded-lg p-4">
                       <h4 className="font-medium text-gray-800 mb-2">🔍 Manual Search</h4>
-                      <p className="text-gray-600 text-sm">Type the title, author, or barcode number to search our database.</p>
+                      <p className="text-gray-600 text-sm">Type barcode number to search our database.</p>
                     </div>
                     <div className="border border-gray-200 rounded-lg p-4">
                       <h4 className="font-medium text-gray-800 mb-2">🏷️ Amazon ASIN</h4>
@@ -400,7 +400,7 @@ const SellerGuidePage: NextPage = () => {
            <p className="text-gray-600 mb-6">Scan your first item and get an instant cash offer.</p>
            <div className="flex flex-wrap justify-center gap-4">
              <Link
-               href="/create-listing"
+               href="/"
                className="inline-flex items-center justify-center bg-blue-600 text-white py-3 px-8 rounded-lg hover:bg-blue-700 transition font-medium"
              >
                Start Scanning

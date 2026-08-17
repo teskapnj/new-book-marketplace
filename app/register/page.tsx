@@ -404,7 +404,7 @@ export default function RegisterPage() {
         router.push("/listings");
       } else {
         console.log("Redirecting to create listing page");
-        router.push("/create-listing");
+        router.push("/");
       }
     } catch (error) {
       console.error("Social login role check error:", error);

@@ -202,13 +202,15 @@ export default function LoginPage() {
         const userRole = userData.role || "seller";
         const userStatus = userData.status || "active";
         
-        // Check if user account is active
-        if (userStatus !== "active") {
-          console.log("User account is not active:", userStatus);
-          setError("Your account is not active. Please contact the administrator to activate your account.");
-          setLoading(false);
-          return;
-        }
+       // Check if user account is active
+       if (userStatus !== "active") {
+        console.log("User account is not active:", userStatus);
+        setError("Your account is not active. Please contact the administrator to activate your account.");
+        setLoading(false);
+        // Oturum kapatilmazsa user dolu kalir ve kullanici "Redirecting..." ekraninda takilir
+        await auth.signOut();
+        return;
+      }
         
         console.log("User role detected:", userRole);
         
@@ -224,8 +226,9 @@ export default function LoginPage() {
           console.log("Redirecting to listing page");
           router.push("/listings");
         } else {
-          console.log("Redirecting to create listing page");
-          router.push("/create-listing");
+          // Satici ana sayfaya doner - tarama ve sepet orada
+          console.log("Redirecting to home page");
+          router.push("/");
         }
       } else {
         console.warn("User document not found, creating default profile");
@@ -252,9 +255,9 @@ export default function LoginPage() {
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("userName", firebaseUser.displayName || "User");
         
-        // Redirect to create listing page
-        console.log("Redirecting to create listing page");
-        router.push("/create-listing");
+        // Yeni profil olusturuldu, ana sayfaya don
+        console.log("Redirecting to home page");
+        router.push("/");
       }
     } catch (error) {
       console.error("Error checking user role:", error);
@@ -281,16 +284,17 @@ export default function LoginPage() {
     );
   }
   
-  if (user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Redirecting...</p>
-        </div>
+ // Hata varsa yonlendirme ekrani gosterilmez - yoksa kullanici mesaji goremez
+ if (user && !error) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Redirecting...</p>
       </div>
-    );
-  }
+    </div>
+  );
+}
   
   // GÜVENLİ - DÜZELTİLMİŞ VERSİYON
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -432,8 +436,9 @@ export default function LoginPage() {
           console.log("Redirecting to listing page");
           router.push("/listings");
         } else {
-          console.log("Redirecting to create listing page");
-          router.push("/create-listing");
+          // Satici ana sayfaya doner - misafirken taranan sepet orada devam eder
+          console.log("Redirecting to home page");
+          router.push("/");
         }
       } else {
         // User document doesn't exist, create default profile in Firestore
@@ -462,9 +467,9 @@ export default function LoginPage() {
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("userName", DOMPurify.sanitize(userCredential.user.displayName || "User").substring(0, 50));
         
-        // Redirect to create listing page
-        console.log("Redirecting to create listing page");
-        router.push("/create-listing");
+        // Yeni profil olusturuldu, ana sayfaya don
+        console.log("Redirecting to home page");
+        router.push("/");
       }
     } catch (error: any) {
       console.error("Login error:", error);
@@ -523,6 +528,7 @@ export default function LoginPage() {
           console.log("Social login user account is not active:", userStatus);
           setError("Your account is not active. Please contact the administrator to activate your account.");
           setLoading(false);
+          await auth.signOut();
           return;
         }
         
@@ -564,8 +570,9 @@ export default function LoginPage() {
         console.log("Redirecting to listing page");
         router.push("/listings");
       } else {
-        console.log("Redirecting to create listing page");
-        router.push("/create-listing");
+        // Satici ana sayfaya doner
+        console.log("Redirecting to home page");
+        router.push("/");
       }
     } catch (error) {
       console.error("Social login role check error:", error);

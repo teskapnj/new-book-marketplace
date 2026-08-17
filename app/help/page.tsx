@@ -126,7 +126,7 @@ export default function HelpCenterPage() {
             </Link>
 
             <Link
-              href="/create-listing"
+              href="/"
               className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-md shadow-sm hover:bg-blue-700"
             >
               Start Scanning
@@ -359,7 +359,7 @@ export default function HelpCenterPage() {
                       <p className="text-gray-600 text-sm">Back to SellBookMedia home</p>
                     </div>
                   </Link>
-                  <Link href="/create-listing" className="flex items-center p-3 border border-gray-200 rounded-lg hover:border-blue-300 transition">
+                  <Link href="/" className="flex items-center p-3 border border-gray-200 rounded-lg hover:border-blue-300 transition">
                     <span className="text-lg mr-3">📷</span>
                     <div>
                       <h4 className="font-medium">Start Scanning</h4>

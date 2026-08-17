@@ -232,7 +232,7 @@ export default function CdValueGuide() {
               Scan a barcode and see your offer in seconds &mdash; no account required to start.
             </p>
             <Link
-              href="/create-listing"
+              href="/"
               className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-blue-600 hover:bg-blue-700 transition-colors"
             >
               Start Scanning

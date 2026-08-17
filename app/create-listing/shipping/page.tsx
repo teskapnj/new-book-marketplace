@@ -550,6 +550,8 @@ export default function ShippingInfoPage() {
         try {
           const storageKey = user ? `bundleListingDraft_${user.uid}` : 'bundleListingDraft_guest';
           localStorage.removeItem(storageKey);
+          // Misafirken taranip sonra giris yapilmissa guest kaydi da kalmis olabilir
+          localStorage.removeItem('bundleListingDraft_guest');
           console.log("✅ Draft cleared from localStorage");
           
           // Ekstra kontrol: temizlendiğini doğrula
@@ -564,16 +566,19 @@ export default function ShippingInfoPage() {
         }
       }
       
-      // Popup'ı create-listing sayfasında göstermek için localStorage'a flag koy
+      // Popup'i ana sayfada gostermek icin localStorage'a flag koy
       try {
         localStorage.setItem('showSuccessPopup', 'true');
-        console.log("✅ Success popup flag set in localStorage");
+        // minimum_reached bayragi temizlenir, yoksa ayni musteri ikinci
+        // siparisinde bu event'i hic tetiklemez
+        localStorage.removeItem('minimumReachedFired');
+        console.log("✅ Success popup flag set, minimum_reached flag cleared");
       } catch (error) {
         console.error("Error setting success popup flag:", error);
       }
       
-      // Hemen create-listing sayfasına yönlendir
-      router.push('/create-listing');
+      // Ana sayfaya yonlendir - tarama ve sepet artik orada
+      router.push('/');
       
     } catch (err: any) {
       console.error("Error creating listing:", err);
@@ -605,8 +610,8 @@ export default function ShippingInfoPage() {
       }
     }
     
-    // Önceki sayfaya geri dön
-    router.back();
+   // Ana sayfaya don - tarama ve sepet orada
+   router.push('/');
   };
 
   if (loading || isInitializing) {

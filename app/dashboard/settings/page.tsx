@@ -73,7 +73,7 @@ export default function SettingsPage() {
         <div className="mb-6">
           <div className="flex items-center">
             <Link 
-              href="/create-listing"  // Changed from "/dashboard" to "/create-listing"
+              href="/"  // Changed from "/dashboard" to "/create-listing"
               className="mr-4 p-2 rounded-lg bg-white shadow-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
             >
               <FiArrowLeft className="w-5 h-5" />

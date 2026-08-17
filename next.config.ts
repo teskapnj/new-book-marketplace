@@ -61,7 +61,9 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=()",
+            // camera=() tum kaynaklara kamerayi kapatiyordu, barkod tarayici
+            // Chrome'da calismayabilir. self eklendi.
+            value: "camera=(self), microphone=(), geolocation=()",
           },
           {
             key: "Content-Security-Policy",
@@ -71,7 +73,10 @@ const nextConfig: NextConfig = {
                 https://apis.google.com
                 https://www.gstatic.com
                 https://www.googletagmanager.com
-                https://va.vercel-scripts.com;
+                https://va.vercel-scripts.com
+                https://googleads.g.doubleclick.net
+                https://www.googleadservices.com
+                https://www.google-analytics.com;
               style-src 'self' 'unsafe-inline';
               img-src 'self' data: https:
                 https://firebasestorage.googleapis.com
@@ -82,7 +87,9 @@ const nextConfig: NextConfig = {
                 https://*.firebaseio.com
                 https://*.googleapis.com
                 https://*.gstatic.com;
-              frame-src https://*.firebaseapp.com https://*.google.com;
+              frame-src https://*.firebaseapp.com https://*.google.com
+                https://googleads.g.doubleclick.net
+                https://td.doubleclick.net;
             `
               .replace(/\s{2,}/g, " ")
               .trim(),

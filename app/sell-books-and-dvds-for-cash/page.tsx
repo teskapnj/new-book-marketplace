@@ -157,7 +157,7 @@ export default function SellBooksAndDvdsForCash() {
               SellBookMedia
             </Link>
             <Link
-              href="/create-listing"
+              href="/"
               className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-5 sm:px-6 py-2 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
             >
               Start Selling
@@ -201,7 +201,7 @@ export default function SellBooksAndDvdsForCash() {
 
             <div className="mt-12">
               <Link
-                href="/create-listing"
+                href="/"
                 className="group inline-flex items-center px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold text-lg sm:text-xl rounded-2xl hover:from-yellow-500 hover:to-orange-600 transition-all duration-300 shadow-2xl transform hover:-translate-y-1"
               >
                 Get Your Instant Quote
@@ -364,7 +364,7 @@ export default function SellBooksAndDvdsForCash() {
             Get an instant quote in seconds. Free shipping, no fees, fast PayPal payment.
           </p>
           <Link
-            href="/create-listing"
+            href="/"
             className="inline-flex items-center px-8 py-4 bg-white text-blue-600 font-bold text-lg rounded-2xl hover:bg-gray-100 transition-all duration-300 shadow-lg"
           >
             Start Selling Now
