@@ -1,4 +1,4 @@
-// app/page.tsx - HOMEPAGE WITH INTEGRATED SCANNING
+// app/page.tsx - HOMEPAGE WITH INTEGRATED SCANNING + SINGLE PAGE CHECKOUT
 "use client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -11,6 +11,7 @@ import DOMPurify from "isomorphic-dompurify";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { AmazonProduct, PricingResult } from "@/lib/pricingEngine";
 import { trackEvent } from "@/lib/analytics";
+import CheckoutForm from "@/components/CheckoutForm";
 
 // Security hooks
 import { useRateLimit } from "@/hooks/useRateLimit";
@@ -270,6 +271,10 @@ export default function HomePage() {
   const [showAuthOptions, setShowAuthOptions] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
+  // --- Tek sayfa checkout ---
+  const [showCheckout, setShowCheckout] = useState(false);
+  const checkoutFormRef = useRef<HTMLDivElement | null>(null);
+
   // Storage state
   const [isPrivateMode, setIsPrivateMode] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -351,28 +356,47 @@ export default function HomePage() {
 
     if (user) {
       try {
+        let userItems: BundleItem[] = [];
+        let guestItems: BundleItem[] = [];
+
         const userData = localStorage.getItem(userKey);
         if (userData) {
           const data = validateAndSanitizeData(JSON.parse(userData));
-          if (data) {
-            setBundleItems(data.bundleItems);
-            return;
-          }
-          localStorage.removeItem(userKey);
+          if (data) userItems = data.bundleItems;
+          else localStorage.removeItem(userKey);
         }
 
-        // Misafirken taranan urunler giris sonrasi kaybolmamali
+        // Misafirken (veya cikis yaptiktan sonra) taranan urunler kaybolmamali
         const guestData = localStorage.getItem(guestKey);
         if (guestData) {
           const data = validateAndSanitizeData(JSON.parse(guestData));
-          if (data) {
-            setBundleItems(data.bundleItems);
-            localStorage.setItem(userKey, guestData);
-            localStorage.removeItem(guestKey);
-            return;
-          }
+          if (data) guestItems = data.bundleItems;
           localStorage.removeItem(guestKey);
         }
+
+        if (guestItems.length === 0) {
+          setBundleItems(userItems);
+          return;
+        }
+
+        // Iki liste birlestirilir. Ayni ISBN'den en fazla 5 adet kurali korunur,
+        // id cakismasi olursa yeni id uretilir (React key hatasi olmasin).
+        const merged: BundleItem[] = [...userItems];
+        const isbnCount = new Map<string, number>();
+        merged.forEach(i => isbnCount.set(i.isbn, (isbnCount.get(i.isbn) || 0) + 1));
+        const usedIds = new Set(merged.map(i => i.id));
+
+        guestItems.forEach(item => {
+          const count = isbnCount.get(item.isbn) || 0;
+          if (count >= 5) return;
+          let id = item.id;
+          while (usedIds.has(id)) id = `${id}-${Math.random().toString(36).slice(2, 7)}`;
+          usedIds.add(id);
+          isbnCount.set(item.isbn, count + 1);
+          merged.push({ ...item, id });
+        });
+
+        setBundleItems(merged);
       } catch (e) {
         console.error("Error loading user data", e);
         localStorage.removeItem(userKey);
@@ -653,6 +677,9 @@ export default function HomePage() {
     setScannerError("");
   };
 
+  // -------------------------------------------------------------------------
+  // Checkout - artik yonlendirme yok, form ayni sayfada acilir
+  // -------------------------------------------------------------------------
   const handleCheckout = () => {
     if (bundleItems.length < 5) return;
     if (!user) {
@@ -664,8 +691,45 @@ export default function HomePage() {
       total_value: totalOurPrice
     });
     saveToStorage();
-    router.push('/create-listing/shipping');
+    setShowCheckout(true);
   };
+
+  const handleCheckoutSuccess = () => {
+    setBundleItems([]);
+    setShowCheckout(false);
+    minimumReachedFiredRef.current = false;
+    setShowSuccessPopup(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Form acilinca kaydir - kullanici "bir sey olmadi" sanmasin
+  useEffect(() => {
+    if (!showCheckout) return;
+    const t = setTimeout(() => {
+      checkoutFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+    return () => clearTimeout(t);
+  }, [showCheckout]);
+
+  // Giris sonrasi ana sayfaya donunce checkout'u kaldigi yerden ac
+  useEffect(() => {
+    if (!isMounted || isInitializing) return;
+    if (!user || showCheckout) return;
+    if (bundleItems.length < 5) return;
+
+    let flag: string | null = null;
+    try { flag = sessionStorage.getItem('resumeCheckout'); } catch { return; }
+    if (flag !== 'true') return;
+    try { sessionStorage.removeItem('resumeCheckout'); } catch {}
+
+    trackEvent('shipping_started', {
+      item_count: bundleItems.length,
+      total_value: totalOurPrice
+    });
+    setShowAuthOptions(false);
+    setShowCheckout(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, isMounted, isInitializing, bundleItems.length, showCheckout]);
 
   // -------------------------------------------------------------------------
   // Effects
@@ -937,6 +1001,18 @@ export default function HomePage() {
               </p>
             </div>
           </div>
+
+          {/* Alt kapatma butonu - telefonda tek elle uste uzanmak zor */}
+          <div className="bg-black px-4 pt-3" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}>
+            <button
+              type="button"
+              onClick={closeBarcodeScanner}
+             className="w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-white/15 border border-white/30 text-white text-base font-semibold active:scale-95 transition-transform"
+            >
+              <XIcon size={20} />
+              Close Camera
+            </button>
+          </div>
         </div>
       )}
 
@@ -1194,10 +1270,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ===================== RESULT + CART (acik zemin) ===================== */}
+      {/* ===================== RESULT + CART + CHECKOUT (acik zemin) ===================== */}
       {(scanError || duplicateConfirm || amazonResult || bundleItems.length > 0) && (
         <section className="bg-gradient-to-br from-slate-50 to-blue-50 py-6">
-          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className={`${showCheckout ? 'max-w-6xl' : 'max-w-3xl'} mx-auto px-4 sm:px-6 lg:px-8 transition-all`}>
 
             {/* ---------- ERROR ---------- */}
             {scanError && !showScanner && (
@@ -1255,108 +1331,140 @@ export default function HomePage() {
               </div>
             )}
 
-            {/* ---------- CART ---------- */}
-            {bundleItems.length > 0 && (
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-5">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-sm text-gray-500">Your items</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-green-50 text-green-700">
-                      {bundleItems.length} added
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setEditMode(prev => !prev)}
-                      className="text-xs font-medium px-2.5 py-1 rounded-full border border-gray-300 text-gray-600"
-                    >
-                      {editMode ? "Done" : "Edit"}
-                    </button>
-                  </div>
-                </div>
+            {/* ---------- CART + FORM GRID ----------
+                showCheckout false: tek sutun, sepet tam genislik
+                showCheckout true (md+): sol sepet (col-span-2, sticky) / sag form (col-span-3)
+                Mobilde her zaman alt alta */}
+            <div className={showCheckout ? 'grid grid-cols-1 md:grid-cols-5 gap-6 items-start' : ''}>
 
-                <div className="max-h-80 overflow-y-auto">
-                  {bundleItems.map((item, index) => (
-                    <div
-                      key={item.id}
-                      className={`flex items-center justify-between py-2.5 ${index < bundleItems.length - 1 ? 'border-b border-dashed border-gray-200' : ''}`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-base flex-shrink-0">{CATEGORY_EMOJI[item.category]}</span>
-                        <span className="text-sm text-gray-900 truncate">
-                          {item.amazonData?.title || `ISBN: ${item.isbn}`}
+              {/* ===== SOL SUTUN: sepet + kutu uyarisi + (checkout kapaliyken) buton ===== */}
+              <div className={showCheckout ? 'md:col-span-2 md:sticky md:top-6' : ''}>
+
+                {/* ---------- CART ---------- */}
+                {bundleItems.length > 0 && (
+                  <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-5">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-sm text-gray-500">Your items</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-green-50 text-green-700">
+                          {bundleItems.length} added
                         </span>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                        <span className="font-mono text-sm font-medium text-green-700">
-                          ${item.price.toFixed(2)}
-                        </span>
-                        {editMode && (
-                          <button type="button" onClick={() => removeItem(item.id)} className="text-red-500 p-1" aria-label="Remove item">
-                            <TrashIcon size={16} />
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => setEditMode(prev => !prev)}
+                          className="text-xs font-medium px-2.5 py-1 rounded-full border border-gray-300 text-gray-600"
+                        >
+                          {editMode ? "Done" : "Edit"}
+                        </button>
                       </div>
                     </div>
-                  ))}
-                </div>
 
-                <div className="border-t border-gray-300 mt-1 pt-3 flex justify-between items-baseline">
-                  <span className="text-sm font-medium text-gray-900">Cash offer total</span>
-                  <span className="font-mono text-xl sm:text-2xl font-semibold text-green-700">
-                    ${totalOurPrice.toFixed(2)}
-                  </span>
-                </div>
+                    <div className="max-h-80 overflow-y-auto">
+                      {bundleItems.map((item, index) => (
+                        <div
+                          key={item.id}
+                          className={`flex items-center justify-between py-2.5 ${index < bundleItems.length - 1 ? 'border-b border-dashed border-gray-200' : ''}`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-base flex-shrink-0">{CATEGORY_EMOJI[item.category]}</span>
+                            <span className="text-sm text-gray-900 truncate">
+                              {item.amazonData?.title || `ISBN: ${item.isbn}`}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                            <span className="font-mono text-sm font-medium text-green-700">
+                              ${item.price.toFixed(2)}
+                            </span>
+                            {editMode && (
+                              <button type="button" onClick={() => removeItem(item.id)} className="text-red-500 p-1" aria-label="Remove item">
+                                <TrashIcon size={16} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
 
-                {itemsRemaining > 0 && (
-                  <div className="mt-4 bg-amber-50 text-amber-800 rounded-lg py-2.5 text-center text-sm">
-                    {itemsRemaining} more item{itemsRemaining !== 1 ? 's' : ''} needed to check out
+                    <div className="border-t border-gray-300 mt-1 pt-3 flex justify-between items-baseline">
+                      <span className="text-sm font-medium text-gray-900">Cash offer total</span>
+                      <span className="font-mono text-xl sm:text-2xl font-semibold text-green-700">
+                        ${totalOurPrice.toFixed(2)}
+                      </span>
+                    </div>
+
+                    {itemsRemaining > 0 && (
+                      <div className="mt-4 bg-amber-50 text-amber-800 rounded-lg py-2.5 text-center text-sm">
+                        {itemsRemaining} more item{itemsRemaining !== 1 ? 's' : ''} needed to check out
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
-            )}
 
-            {/* ---------- ONE BOX NOTICE ---------- */}
-            {bundleItems.length > 0 && (
-              <div className="mt-3 flex items-start gap-2 rounded-xl border border-gray-200 bg-white p-3">
-                <PackageIcon size={16} className="text-gray-500 flex-shrink-0 mt-0.5" />
-                <p className="text-xs text-gray-600 leading-relaxed">
-                  <span className="font-semibold text-gray-800">One box per order.</span>{" "}
-                  Maximum box size 18 × 16 × 16 in, maximum weight 50 lbs. If your items
-                  won&apos;t fit in a single box, please submit them as separate orders.
-                </p>
-              </div>
-            )}
-
-            {/* ---------- CHECKOUT ---------- */}
-            {bundleItems.length > 0 && (
-              <div className="mt-4">
-                {showAuthOptions && !user ? (
-                  <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 text-center">
-                    <p className="text-sm text-gray-700 mb-4">
-                      Sign up to send your items, or sign in if you already have an account
+                {/* ---------- ONE BOX NOTICE ---------- */}
+                {bundleItems.length > 0 && (
+                  <div className="mt-3 flex items-start gap-2 rounded-xl border border-gray-200 bg-white p-3">
+                    <PackageIcon size={16} className="text-gray-500 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-gray-600 leading-relaxed">
+                      <span className="font-semibold text-gray-800">One box per order.</span>{" "}
+                      Maximum box size 18 × 16 × 16 in, maximum weight 50 lbs. If your items
+                      won&apos;t fit in a single box, please submit them as separate orders.
                     </p>
-                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                      <Link href="/register" className="flex-1 flex items-center justify-center py-3 px-6 rounded-xl text-white bg-blue-600 hover:bg-blue-700 text-base font-medium">
-                        <UserIcon size={20} className="mr-2" /> Sign up
-                      </Link>
-                      <Link href="/login" className="flex-1 flex items-center justify-center py-3 px-6 rounded-xl border border-blue-300 text-blue-700 bg-white hover:bg-blue-50 text-base font-medium">
-                        <LogInIcon size={20} className="mr-2" /> Sign in
-                      </Link>
-                    </div>
                   </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleCheckout}
-                    disabled={bundleItems.length < 5}
-                    className="w-full flex justify-center items-center py-4 px-6 rounded-xl text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-base font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  >
-                    Proceed to Checkout — ${totalOurPrice.toFixed(2)}
-                    <ArrowRightIcon size={20} className="ml-2" />
-                  </button>
+                )}
+
+                {/* ---------- CHECKOUT BUTONU (sadece form kapaliyken) ---------- */}
+                {bundleItems.length > 0 && !showCheckout && (
+                  <div className="mt-4">
+                    {showAuthOptions && !user ? (
+                      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 text-center">
+                        <p className="text-sm text-gray-700 mb-4">
+                          Sign up to send your items, or sign in if you already have an account
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <Link
+  href="/register"
+  onClick={() => { try { sessionStorage.setItem('resumeCheckout', 'true'); } catch {} }}
+  className="flex-1 flex items-center justify-center py-3 px-6 rounded-xl text-white bg-blue-600 hover:bg-blue-700 text-base font-medium"
+>
+  <UserIcon size={20} className="mr-2" /> Sign up
+</Link>
+<Link
+  href="/login"
+  onClick={() => { try { sessionStorage.setItem('resumeCheckout', 'true'); } catch {} }}
+  className="flex-1 flex items-center justify-center py-3 px-6 rounded-xl border border-blue-300 text-blue-700 bg-white hover:bg-blue-50 text-base font-medium"
+>
+  <LogInIcon size={20} className="mr-2" /> Sign in
+</Link>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleCheckout}
+                        disabled={bundleItems.length < 5}
+                        className="w-full flex justify-center items-center py-4 px-6 rounded-xl text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-base font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      >
+                        Proceed to Checkout — ${totalOurPrice.toFixed(2)}
+                        <ArrowRightIcon size={20} className="ml-2" />
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
+
+              {/* ===== SAG SUTUN: checkout formu ===== */}
+              {showCheckout && (
+                <div ref={checkoutFormRef} className="md:col-span-3 scroll-mt-24 mt-6 md:mt-0">
+                  <CheckoutForm
+                    bundleItems={bundleItems}
+                    user={user}
+                    storageKey={getStorageKey()}
+                    isPrivateMode={isPrivateMode}
+                    onSuccess={handleCheckoutSuccess}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </section>
       )}
