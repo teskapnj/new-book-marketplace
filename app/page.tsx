@@ -698,6 +698,13 @@ export default function HomePage() {
     setBundleItems([]);
     setShowCheckout(false);
     minimumReachedFiredRef.current = false;
+  
+    try {
+      localStorage.removeItem('minimumReachedFired');
+    } catch {
+      // Private mode / storage unavailable
+    }
+  
     setShowSuccessPopup(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -1205,10 +1212,10 @@ export default function HomePage() {
 
         <div className="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-3xl sm:text-5xl font-bold text-white mb-3 sm:mb-4 leading-tight">
-            Sell Your Books, CDs, DVDs &amp; Games
+          Turn Your Books, CDs, DVDs &amp; Games Into Cash
           </h1>
           <p className="text-base sm:text-lg text-blue-100 mb-6 sm:mb-8">
-            Scan a barcode, see what we pay instantly. Prices start at $1.50, shipping is free, and there&apos;s no app to download.
+          Scan the barcode and see our cash offer instantly. Accepted offers start at $1.50, shipping is free, and there&apos;s no app to download.
           </p>
 
           {/* ---------- QUOTE BOX (solid white - mordan net ayrilir) ---------- */}
@@ -1223,8 +1230,11 @@ export default function HomePage() {
                   disabled={isCheckingAmazon}
                   className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl py-6 shadow-md active:scale-95 transition-transform disabled:opacity-60"
                 >
-                  <CameraIcon size={40} className="text-white mx-auto mb-2" />
-                  <span className="text-xl font-extrabold text-white">Scan Barcode</span>
+                                   <CameraIcon size={40} className="text-white mx-auto mb-2" />
+                  <span className="block text-xl font-extrabold text-white">Scan Barcode</span>
+                  <span className="block text-sm font-medium text-white/85 mt-0.5">
+                    Opens your camera
+                  </span>
                 </button>
                 <div className="text-sm text-gray-500 my-3">or type it in</div>
               </>
@@ -1262,10 +1272,32 @@ export default function HomePage() {
               </button>
             </div>
 
-            <Link href="/seller-guide" className="inline-flex items-center mt-3 sm:mt-4 text-sm text-blue-600 hover:text-blue-800">
-              <HelpCircleIcon size={16} className="mr-2" />
-              Where do I find the barcode?
-            </Link>
+          
+
+<div className="mt-4 pt-4 border-t border-gray-100">
+  <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs sm:text-sm text-gray-600">
+    <span className="flex items-center gap-1">
+      <CheckIcon size={14} className="text-green-600" />
+      Free Shipping
+    </span>
+    <span className="flex items-center gap-1">
+      <CheckIcon size={14} className="text-green-600" />
+      PayPal Payment
+    </span>
+    <span className="flex items-center gap-1">
+      <CheckIcon size={14} className="text-green-600" />
+      No Seller Fees
+    </span>
+    <span className="flex items-center gap-1">
+      <CheckIcon size={14} className="text-green-600" />
+      No App Required
+    </span>
+  </div>
+
+  <p className="mt-3 text-xs text-gray-500">
+    Minimum 5 accepted items per order.
+  </p>
+</div>
           </div>
         </div>
       </section>
@@ -1392,11 +1424,39 @@ export default function HomePage() {
                       </span>
                     </div>
 
-                    {itemsRemaining > 0 && (
-                      <div className="mt-4 bg-amber-50 text-amber-800 rounded-lg py-2.5 text-center text-sm">
-                        {itemsRemaining} more item{itemsRemaining !== 1 ? 's' : ''} needed to check out
-                      </div>
-                    )}
+                    <div className="mt-4">
+  <div className="flex justify-between items-center mb-2 text-sm">
+    <span className="font-medium text-gray-700">
+      {Math.min(bundleItems.length, 5)} of 5 items added
+    </span>
+    <span className={itemsRemaining > 0 ? "text-amber-700" : "text-green-700 font-semibold"}>
+      {itemsRemaining > 0
+        ? `${itemsRemaining} more needed`
+        : "Ready to ship!"}
+    </span>
+  </div>
+
+  <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+    <div
+      className={`h-2.5 rounded-full transition-all duration-300 ${
+        itemsRemaining === 0 ? "bg-green-500" : "bg-blue-500"
+      }`}
+      style={{
+        width: `${Math.min((bundleItems.length / 5) * 100, 100)}%`
+      }}
+    />
+  </div>
+
+  {itemsRemaining > 0 ? (
+    <p className="mt-2 text-xs text-center text-gray-500">
+      Add {itemsRemaining} more accepted item{itemsRemaining !== 1 ? "s" : ""} to continue.
+    </p>
+  ) : (
+    <p className="mt-2 text-xs text-center text-green-700 font-medium">
+      ✓ You&apos;ve reached the 5-item minimum.
+    </p>
+  )}
+</div>
                   </div>
                 )}
 
@@ -1444,7 +1504,7 @@ export default function HomePage() {
                         disabled={bundleItems.length < 5}
                         className="w-full flex justify-center items-center py-4 px-6 rounded-xl text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-base font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                       >
-                        Proceed to Checkout — ${totalOurPrice.toFixed(2)}
+                        Sell My Items — ${totalOurPrice.toFixed(2)}
                         <ArrowRightIcon size={20} className="ml-2" />
                       </button>
                     )}
@@ -1472,14 +1532,14 @@ export default function HomePage() {
       {/* ===================== TRUST STRIP ===================== */}
       <section className="bg-white border-b border-gray-100">
         <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-gray-100">
-          <div className="py-5 sm:py-6 text-center">
-            <div className="text-xl sm:text-2xl font-bold text-gray-900">$0</div>
-            <div className="text-xs sm:text-sm text-gray-500 mt-1">Shipping cost</div>
-          </div>
-          <div className="py-5 sm:py-6 text-center">
-            <div className="text-xl sm:text-2xl font-bold text-gray-900">24h</div>
-            <div className="text-xs sm:text-sm text-gray-500 mt-1">Label by email</div>
-          </div>
+        <div className="py-5 sm:py-6 text-center">
+  <div className="text-xl sm:text-2xl font-bold text-gray-900">FREE</div>
+  <div className="text-xs sm:text-sm text-gray-500 mt-1">Prepaid Shipping</div>
+</div>
+<div className="py-5 sm:py-6 text-center">
+  <div className="text-xl sm:text-2xl font-bold text-gray-900">$1.50+</div>
+  <div className="text-xs sm:text-sm text-gray-500 mt-1">Accepted Offers</div>
+</div>
           <div className="py-5 sm:py-6 text-center">
             <div className="text-xl sm:text-2xl font-bold text-gray-900">PayPal</div>
             <div className="text-xs sm:text-sm text-gray-500 mt-1">Fast payment</div>
@@ -1510,11 +1570,10 @@ export default function HomePage() {
                   <SparklesIcon size={16} className="text-yellow-600 m-auto mt-1" />
                 </div>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Add Your Items</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Quick &amp; Easy Selling - Just scan or type the barcode from your books, CDs, DVDs, or game discs.
-                Amazon ASIN codes work too. Get your quote instantly.
-              </p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Scan &amp; Get Your Offer</h3>
+<p className="text-gray-600 leading-relaxed">
+  Scan or enter the ISBN, UPC, and instantly see our cash offer.
+</p>
             </div>
             <div className="group text-center">
               <div className="relative mb-8">
@@ -1526,10 +1585,9 @@ export default function HomePage() {
                 </div>
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-4">Ship for Free</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Within 24 hours, receive your prepaid shipping label and packing instructions via email.
-                Pack your items securely and safely - proper packaging protects your items during transit.
-              </p>
+<p className="text-gray-600 leading-relaxed">
+  Submit your order and, once approved, receive a prepaid shipping label by email.
+</p>
             </div>
             <div className="group text-center">
               <div className="relative mb-8">
@@ -1541,10 +1599,9 @@ export default function HomePage() {
                 </div>
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-4">Get Paid Fast</h3>
-              <p className="text-gray-600 leading-relaxed">
-                We inspect each item against our condition standards. Once your items are delivered to us,
-                payment is processed within 2 business days directly to your paypal account.
-              </p>
+<p className="text-gray-600 leading-relaxed">
+  After your items arrive and pass inspection, your payment is processed to your PayPal account within 2 business days.
+</p>
             </div>
           </div>
         </div>
@@ -1554,9 +1611,9 @@ export default function HomePage() {
       <section className="py-16 sm:py-20 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 relative overflow-hidden">
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6">Ready to Start Earning?</h2>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6"> Ready to Turn Your Old Media Into Cash?</h2>
           <p className="text-xl sm:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto leading-relaxed">
-            Turn the used media collecting dust on your shelves into real cash — quickly and hassle-free.
+          Scan your first barcode and see what your books, CDs, DVDs, and games are worth.
           </p>
           <div className="mt-12 flex flex-wrap justify-center gap-6 sm:gap-8 text-blue-200">
             <div className="flex items-center">

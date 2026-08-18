@@ -370,7 +370,7 @@ export default function SellerGuidePage() {
                   items={[
                     "Use a sturdy box or padded envelope",
                     "Include every item from your submission",
-                    "No extra packing materials needed inside",
+                    "Fill empty space so items can't shift in transit — crumpled paper works fine",
                   ]}
                 />
               </Card>
