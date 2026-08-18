@@ -1,375 +1,338 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import DOMPurify from 'isomorphic-dompurify'; // Bu satırı ekleyin
+import { useState } from "react";
+import Link from "next/link";
 
+type Item = {
+  q: string;
+  a: string;
+  href?: string;
+  hrefLabel?: string;
+};
+
+type Group = {
+  id: string;
+  name: string;
+  blurb: string;
+  items: Item[];
+};
+
+const GROUPS: Group[] = [
+  {
+    id: "selling",
+    name: "Selling items",
+    blurb: "Scanning, what we take, and what we don't",
+    items: [
+      {
+        q: "How do I start selling?",
+        a: "Scan a barcode with your phone camera, or type the number in by hand. If we buy that title, it's added to your list with the offer shown. You don't need an account to scan — only to submit your box.",
+      },
+      {
+        q: "What can I scan?",
+        a: "The ISBN on a book, the UPC on a CD, DVD, Blu-ray, 4K disc, or game. Amazon ASINs work too. If a barcode is damaged, type the number in instead.",
+      },
+      {
+        q: "What do you buy?",
+        a: "Books, music CDs, movies on DVD, Blu-ray and 4K, and video games on all platforms. We don't currently buy VHS tapes, cassettes, vinyl records, or audiobook CD sets.",
+      },
+      {
+        q: "Why didn't my item appear in the list?",
+        a: "Items only appear if we make an offer on them. If nothing appeared, that title is worth less than our $1.50 minimum, or it's a format we don't buy. It isn't a problem with the scan.",
+      },
+      {
+        q: "What condition do items need to be in?",
+        a: "Very good condition: clean, complete with original case and artwork, no writing or stickers, and no deep scratches. Ex-library and ex-rental copies aren't accepted.",
+        href: "/condition-guidelines",
+        hrefLabel: "Full condition guidelines",
+      },
+      {
+        q: "Is there a minimum number of items?",
+        a: "Yes, five accepted items per box. Books, CDs, DVDs, and games can be mixed in any combination to reach it.",
+      },
+    ],
+  },
+  {
+    id: "shipping",
+    name: "Shipping",
+    blurb: "Labels, packing, and box limits",
+    items: [
+      {
+        q: "How long until I get a shipping label?",
+        a: "We review your submission, typically within 24 hours. Once it's approved, the free prepaid label arrives by email. Check your spam folder if you don't see it.",
+      },
+      {
+        q: "Are there any shipping fees?",
+        a: "No. Shipping costs you nothing — the prepaid label is included once your bundle is approved.",
+      },
+      {
+        q: "How big can my box be?",
+        a: "One box per order, up to 18 × 16 × 16 inches and 50 lbs. If your items won't fit in a single box, submit them as separate orders.",
+      },
+      {
+        q: "How should I pack the items?",
+        a: "Use a sturdy box or padded envelope, include every item from your submission, and attach the prepaid label securely. No extra packing material is needed inside.",
+      },
+      {
+        q: "Can I track my package?",
+        a: "Yes. Your prepaid label includes tracking, so you can follow the box online.",
+      },
+    ],
+  },
+  {
+    id: "process",
+    name: "After you ship",
+    blurb: "Inspection, payment, and what happens to rejected items",
+    items: [
+      {
+        q: "What happens when you receive my box?",
+        a: "Every item is inspected against our condition standards, then sorted. Items that meet the standard are processed for payment; items that don't are recycled.",
+      },
+      {
+        q: "How do I get paid?",
+        a: "Payment goes to the PayPal address you entered, within 2 business days of inspection. You'll get an email confirming the details.",
+      },
+      {
+        q: "Do you return items you don't accept?",
+        a: "No. Items that don't meet our condition standard are recycled rather than returned, and aren't paid for. That's why it's worth checking condition carefully before you ship.",
+        href: "/returns-policy",
+        hrefLabel: "Returns policy",
+      },
+      {
+        q: "What if I made a mistake in my submission?",
+        a: "Contact support as soon as you can. Changes may still be possible before your shipping label is generated.",
+        href: "/contact",
+        hrefLabel: "Contact support",
+      },
+    ],
+  },
+  {
+    id: "technical",
+    name: "Technical help",
+    blurb: "Camera, browser, and account issues",
+    items: [
+      {
+        q: "The camera won't scan my barcode",
+        a: "Make sure the barcode is inside the red line, hold steady, and try more light. If your browser hasn't been given camera permission, the scanner won't open — check your browser's site settings. You can always type the number in instead.",
+      },
+      {
+        q: "Do I need to install an app?",
+        a: "No. Everything runs in your phone's browser — there's nothing to download.",
+      },
+      {
+        q: "Do I need an account?",
+        a: "Not to scan and build your list. You'll need to sign in or create an account when you're ready to submit your box, so we know where to send the label and the payment.",
+      },
+      {
+        q: "I can't sign in",
+        a: "Check that you're using the same email you registered with, and look for a verification email in your spam folder. If you're still stuck, contact support and we'll sort it out.",
+        href: "/contact",
+        hrefLabel: "Contact support",
+      },
+    ],
+  },
+];
+
+const LINKS = [
+  { href: "/condition-guidelines", title: "Condition guidelines", blurb: "What we accept and reject" },
+  { href: "/returns-policy", title: "Returns policy", blurb: "Why items aren't sent back" },
+  { href: "/seller-guide", title: "Seller guide", blurb: "The whole process, step by step" },
+  { href: "/", title: "Start scanning", blurb: "Get an instant cash offer" },
+];
 
 export default function HelpCenterPage() {
-  const [activeCategory, setActiveCategory] = useState('selling');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [query, setQuery] = useState("");
 
-  const categories = [
-    {
-      id: 'selling',
-      name: 'Selling Items',
-      icon: '💰',
-      description: 'Learn how to sell your books, CDs, DVDs, and games',
-      articles: [
-        { title: 'How to scan and add items', slug: 'scan-items', description: 'Use your phone camera to scan barcodes or search manually' },
-        { title: 'Understanding our condition standards', slug: 'condition-guide', description: 'What condition we accept and what we don\'t' },
-        { title: 'Getting paid via PayPal', slug: 'paypal-payments', description: 'How and when you receive your payments' },
-        { title: 'Shipping your items to us', slug: 'shipping-guide', description: 'Free prepaid labels and packaging instructions' }
-      ]
-    },
-    {
-      id: 'account',
-      name: 'Account & Profile',
-      icon: '👤',
-      description: 'Manage your account settings and information',
-      articles: [
-        { title: 'Creating your seller account', slug: 'create-account', description: 'Sign up and set up your profile' },
-        { title: 'Updating your PayPal information', slug: 'update-paypal', description: 'Change your payment details safely' },
-        { title: 'Managing your shipping address', slug: 'shipping-address', description: 'Update where we send shipping labels' },
-        { title: 'Account security and privacy', slug: 'account-security', description: 'Keep your account safe and secure' }
-      ]
-    },
-    {
-      id: 'process',
-      name: 'Our Process',
-      icon: '🔄',
-      description: 'How we handle your items from receipt to payment',
-      articles: [
-        { title: 'What happens after you ship', slug: 'after-shipping', description: 'Our inspection and payment process' },
-        { title: 'Why some items aren\'t accepted', slug: 'rejected-items', description: 'Understanding our quality standards' },
-        { title: 'Payment timeline and processing', slug: 'payment-timeline', description: 'When to expect your PayPal payment' },
-        { title: 'Items that go to recycling', slug: 'recycling-policy', description: 'What happens to non-qualifying items' }
-      ]
-    },
-    {
-      id: 'technical',
-      name: 'Technical Support',
-      icon: '🔧',
-      description: 'Help with scanning, searching, and technical issues',
-      articles: [
-        { title: 'Barcode scanning troubleshooting', slug: 'barcode-issues', description: 'Fix common camera and scanning problems' },
-        { title: 'Manual search and Amazon ASIN', slug: 'manual-search', description: 'Alternative ways to find your items' },
-        { title: 'Browser and device compatibility', slug: 'compatibility', description: 'Supported devices and browsers' },
-        { title: 'Account login problems', slug: 'login-issues', description: 'Resolve sign-in difficulties' }
-      ]
-    }
-  ];
+  const q = query.trim().toLowerCase();
+  const groups = q
+    ? GROUPS.map((g) => ({
+        ...g,
+        items: g.items.filter(
+          (item) => item.q.toLowerCase().includes(q) || item.a.toLowerCase().includes(q)
+        ),
+      })).filter((g) => g.items.length > 0)
+    : GROUPS;
 
-  const quickHelp = [
-    {
-      question: 'How do I start selling?',
-      answer: 'Simply scan your first item using your phone camera or search manually. If we accept it, it will appear in your list.',
-      category: 'selling'
-    },
-    {
-      question: 'What condition do you accept?',
-      answer: 'We only accept items in very good condition with no writing, highlighting, or damage. Check our condition guide.',
-      category: 'selling'
-    },
-    {
-      question: 'How do I get paid?',
-      answer: 'Payment is sent to your PayPal account after we inspect and approve your items.',
-      category: 'process'
-    },
-    {
-      question: 'Do you return rejected items?',
-      answer: 'No, we do not return items. Non-qualifying items are responsibly recycled.',
-      category: 'process'
-    },
-    {
-      question: 'How long until I get shipping labels?',
-      answer: 'You\'ll receive prepaid shipping labels via email within 24 hours of submission.',
-      category: 'selling'
-    }
-  ];
-
-  const filteredCategories = categories.map(category => ({
-    ...category,
-    articles: category.articles.filter(article =>
-      article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      article.description.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  })).filter(category => category.articles.length > 0);
-
-  const filteredQuickHelp = quickHelp.filter(item =>
-    item.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.answer.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const resultCount = groups.reduce((n, g) => n + g.items.length, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-white/20 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {/* Back Button + Nav Links */}
-          <div className="mb-8 flex flex-wrap items-center gap-3">
+    <div className="min-h-screen bg-slate-50">
+      {/* ===================== BASLIK BANDI ===================== */}
+      <header className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(129,140,248,0.25),transparent_60%)]" />
+
+        <div className="relative max-w-3xl mx-auto px-5 sm:px-8 pt-8 pb-12 sm:pt-10 sm:pb-16">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <button
               onClick={() => window.history.back()}
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="inline-flex items-center text-sm font-medium text-blue-200 transition-colors hover:text-white"
             >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
               Back
             </button>
-
             <Link
               href="/"
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50"
+              className="inline-flex items-center text-sm font-medium text-blue-200 transition-colors hover:text-white"
             >
               Home
             </Link>
-
-            <Link
-              href="/"
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-md shadow-sm hover:bg-blue-700"
-            >
-              Start Scanning
-            </Link>
           </div>
 
-          <div className="text-center">
-            <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl mb-4">
-              Help Center
-            </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-              Find answers to your questions about selling books, CDs, DVDs, and games
-            </p>
+          <p className="mt-10 text-xs font-semibold uppercase tracking-[0.2em] text-blue-300">
+            Help center
+          </p>
 
-            {/* Search Bar */}
-            <div className="max-w-2xl mx-auto">
-              <div className="relative">
-             
-                <input
-                  type="text"
-                  placeholder="Search for help articles..."
-                  className="w-full py-4 px-6 pr-12 rounded-lg text-gray-800 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-300 shadow-sm"
-                  value={searchQuery}
-                  onChange={(e) => {
-                    const sanitizedQuery = DOMPurify.sanitize(e.target.value).substring(0, 100); // Search query limit
-                    setSearchQuery(sanitizedQuery);
-                  }}
-                />
-                <svg className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-            </div>
+          <h1 className="mt-3 font-serif text-4xl sm:text-5xl font-bold leading-[1.1] text-white">
+            How can we help?
+          </h1>
+
+          <p className="mt-5 text-lg leading-relaxed text-blue-100">
+            Answers about selling your books, CDs, DVDs, and games.
+          </p>
+
+          <div className="relative mt-7">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value.substring(0, 100))}
+              placeholder="Search — try &ldquo;payment&rdquo; or &ldquo;label&rdquo;"
+              className="w-full rounded-xl border border-white/20 bg-white/95 py-4 pl-5 pr-12 text-base text-slate-900 shadow-lg outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-blue-400"
+              aria-label="Search help articles"
+            />
+            <svg
+              className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path strokeLinecap="round" d="M21 21l-4.35-4.35" />
+            </svg>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        {/* Quick Help Section */}
-        {searchQuery === '' && (
-          <div className="mb-12">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Quick Answers</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {quickHelp.map((item, index) => (
-                <div key={index} className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-                  
-                  <h3 className="font-semibold text-gray-800 mb-3">{DOMPurify.sanitize(item.question)}</h3>
-                  <p className="text-gray-600 text-sm">{DOMPurify.sanitize(item.answer)}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+      <div className="max-w-3xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
+        {q && (
+          <p className="mb-8 text-sm text-slate-500">
+            {resultCount === 0
+              ? "No answers matched that search."
+              : `${resultCount} answer${resultCount === 1 ? "" : "s"} matched.`}
+          </p>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-lg p-6 sticky top-6">
-              <h2 className="text-xl font-bold mb-6">Categories</h2>
-              <nav className="space-y-2">
-                {categories.map((category) => (
-                  <button
-                    key={category.id}
-                    className={`w-full text-left px-4 py-3 rounded-lg transition ${activeCategory === category.id
-                      ? 'bg-blue-100 text-blue-700 font-medium'
-                      : 'hover:bg-gray-100'
-                      }`}
-                    onClick={() => setActiveCategory(category.id)}
-                  >
-                    <div className="flex items-center">
-                      <span className="text-xl mr-3">{category.icon}</span>
-                      <span>{category.name}</span>
-                    </div>
-                  </button>
-                ))}
-              </nav>
-            </div>
+        {resultCount === 0 && q ? (
+          <div className="rounded-2xl border border-slate-200 bg-white px-6 py-10 text-center shadow-sm">
+            <h2 className="font-serif text-xl font-bold text-slate-900">Nothing found</h2>
+            <p className="mx-auto mt-2 max-w-sm text-[16px] leading-relaxed text-slate-600">
+              Try a different word, or clear the search to browse everything. If it&rsquo;s something
+              we haven&rsquo;t covered, just ask us.
+            </p>
+            <button
+              onClick={() => setQuery("")}
+              className="mt-6 inline-flex items-center rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Clear search
+            </button>
           </div>
-
-          {/* Main Content */}
-          <div className="lg:col-span-3">
-            {/* Search Results */}
-            {searchQuery !== '' && (
-              <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
-               
-                <h2 className="text-2xl font-bold mb-6">
-                  Search Results for "{DOMPurify.sanitize(searchQuery)}"
-                </h2>
-
-                {filteredCategories.length === 0 && filteredQuickHelp.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="text-gray-400 mb-4">
-                      <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-xl font-medium text-gray-900 mb-2">No results found</h3>
-                    <p className="text-gray-600">
-                      Try different keywords or browse our categories below.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-8">
-                    {/* Quick Help Results */}
-                    {filteredQuickHelp.length > 0 && (
-                      <div>
-                        <h3 className="text-lg font-bold mb-4">Quick Answers</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {filteredQuickHelp.map((item, index) => (
-                            <div key={index} className="border border-gray-200 rounded-lg p-4">
-                             // GÜVENLİ
-                              <h4 className="font-medium mb-2">{DOMPurify.sanitize(item.question)}</h4>
-                              <p className="text-gray-600 text-sm">{DOMPurify.sanitize(item.answer)}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Article Results */}
-                    {filteredCategories.map((category) => (
-                      <div key={category.id}>
-                        <h3 className="text-lg font-bold mb-4 flex items-center">
-                          <span className="text-xl mr-2">{category.icon}</span>
-                          {category.name}
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {category.articles.map((article, index) => (
-                            <div
-                              key={index}
-                              className="block p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-sm transition cursor-pointer"
-                            >
-                              <h4 className="font-medium mb-1">{article.title}</h4>
-                              <p className="text-gray-600 text-sm">{article.description}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Selected Category */}
-            {searchQuery === '' && (
-              <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
-                <div className="flex items-center mb-6">
-                  <div className="bg-blue-100 p-3 rounded-lg mr-4">
-                    <span className="text-2xl">{categories.find(c => c.id === activeCategory)?.icon}</span>
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold">
-                      {categories.find(c => c.id === activeCategory)?.name}
-                    </h2>
-                    <p className="text-gray-600">
-                      {categories.find(c => c.id === activeCategory)?.description}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {categories
-                    .find(c => c.id === activeCategory)
-                    ?.articles.map((article, index) => (
-                      <div
-                        key={index}
-                        className="block p-6 border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-sm transition cursor-pointer"
-                      >
-                        <h3 className="font-medium text-lg mb-2">{article.title}</h3>
-                        <p className="text-gray-600 text-sm mb-3">{article.description}</p>
-                        <p className="text-blue-600 text-sm font-medium">Learn more →</p>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {/* Contact Support */}
-            <div className="bg-white rounded-xl shadow-lg p-8">
-              <h2 className="text-2xl font-bold mb-6">Still Need Help?</h2>
-              <p className="text-gray-600 mb-8">
-                Can't find what you're looking for? Our support team is here to help.
+        ) : (
+          groups.map((group) => (
+            <section key={group.id} className="mb-14">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+                {group.blurb}
               </p>
+              <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
+                {group.name}
+              </h2>
 
-              <div className="max-w-md mx-auto">
-                <div className="border border-gray-200 rounded-lg p-6 text-center">
-                  <div className="flex justify-center mb-4">
-                    <div className="bg-blue-100 p-3 rounded-lg">
-                      <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              <div className="mt-6 divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                {group.items.map((item) => (
+                  <details key={item.q} className="group px-5 py-4" open={Boolean(q)}>
+                    <summary className="flex cursor-pointer list-none items-start justify-between gap-4">
+                      <span className="font-semibold text-slate-900">{item.q}</span>
+                      <svg
+                        className="mt-1 h-5 w-5 flex-shrink-0 text-slate-400 transition-transform group-open:rotate-180"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                       </svg>
-                    </div>
-                  </div>
-                  <h3 className="font-bold text-lg mb-2">Contact Support</h3>
-                  <p className="text-gray-600 mb-6 text-sm">
-                    Have a question? Send us a message and we'll respond within 24 hours.
-                  </p>
-                  <Link
-                    href="/contact"
-                    className="inline-flex items-center justify-center w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition font-medium"
-                  >
-                    Contact Us
-                  </Link>
-                </div>
+                    </summary>
+                    <p className="mt-3 text-[16px] leading-[1.75] text-slate-600">{item.a}</p>
+                    {item.href && (
+                      <Link
+                        href={item.href}
+                        className="mt-3 inline-flex items-center text-sm font-semibold text-blue-600 hover:text-blue-700"
+                      >
+                        {item.hrefLabel}
+                        <svg
+                          className="ml-1.5 h-4 w-4"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+                        </svg>
+                      </Link>
+                    )}
+                  </details>
+                ))}
               </div>
+            </section>
+          ))
+        )}
 
-              {/* Important Links */}
-              <div className="mt-8 pt-8 border-t border-gray-200">
-                <h3 className="font-bold mb-4">Important Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Link href="/condition-guidelines" className="flex items-center p-3 border border-gray-200 rounded-lg hover:border-blue-300 transition">
-                    <span className="text-lg mr-3">📋</span>
-                    <div>
-                      <h4 className="font-medium">Condition Guidelines</h4>
-                      <p className="text-gray-600 text-sm">What we accept and reject</p>
-                    </div>
-                  </Link>
-                  <Link href="/returns-policy" className="flex items-center p-3 border border-gray-200 rounded-lg hover:border-blue-300 transition">
-                    <span className="text-lg mr-3">🔄</span>
-                    <div>
-                      <h4 className="font-medium">Return Policy</h4>
-                      <p className="text-gray-600 text-sm">No returns - recycling policy</p>
-                    </div>
-                  </Link>
-                  <Link href="/" className="flex items-center p-3 border border-gray-200 rounded-lg hover:border-blue-300 transition">
-                    <span className="text-lg mr-3">🏠</span>
-                    <div>
-                      <h4 className="font-medium">Homepage</h4>
-                      <p className="text-gray-600 text-sm">Back to SellBookMedia home</p>
-                    </div>
-                  </Link>
-                  <Link href="/" className="flex items-center p-3 border border-gray-200 rounded-lg hover:border-blue-300 transition">
-                    <span className="text-lg mr-3">📷</span>
-                    <div>
-                      <h4 className="font-medium">Start Scanning</h4>
-                      <p className="text-gray-600 text-sm">Get an instant cash offer</p>
-                    </div>
-                  </Link>
-                </div>
-              </div>
-            </div>
+        {/* ---------- Onemli sayfalar ---------- */}
+        <section className="mb-14">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+            Read next
+          </p>
+          <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
+            Important pages
+          </h2>
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            {LINKS.map((link) => (
+              <Link
+                key={link.title}
+                href={link.href}
+                className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50/40"
+              >
+                <h3 className="font-semibold text-slate-900">{link.title}</h3>
+                <p className="mt-1 text-[15px] text-slate-600">{link.blurb}</p>
+              </Link>
+            ))}
           </div>
+        </section>
+
+        {/* ---------- Iletisim ---------- */}
+        <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 px-6 py-10 text-center sm:px-10">
+          <h2 className="font-serif text-2xl font-bold text-white">Still stuck?</h2>
+          <p className="mx-auto mt-3 max-w-md text-blue-100">
+            Send us a message and we&rsquo;ll get back to you within 24 hours.
+          </p>
+          <Link
+            href="/contact"
+            className="mt-7 inline-flex items-center rounded-xl bg-white px-7 py-3.5 text-base font-bold text-blue-700 shadow-lg transition-transform hover:scale-[1.02]"
+          >
+            Contact support
+            <svg
+              className="ml-2 h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </Link>
         </div>
       </div>
     </div>

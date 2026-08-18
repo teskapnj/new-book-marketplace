@@ -1,421 +1,457 @@
 'use client';
 
-import { useState } from 'react';
-import { NextPage } from 'next';
-import Link from 'next/link';
+import Link from "next/link";
 
-const SellerGuidePage: NextPage = () => {
-  const [activeStep, setActiveStep] = useState(1);
+const STEPS = [
+  {
+    id: "scan",
+    n: "01",
+    title: "Scan and add items",
+    blurb: "Use your phone to scan barcodes, or type them in",
+  },
+  {
+    id: "details",
+    n: "02",
+    title: "Enter your details",
+    blurb: "Contact, payment, and package information",
+  },
+  {
+    id: "label",
+    n: "03",
+    title: "Get your shipping label",
+    blurb: "Free prepaid label once your bundle is approved",
+  },
+  {
+    id: "paid",
+    n: "04",
+    title: "Ship and get paid",
+    blurb: "Send your box, receive payment via PayPal",
+  },
+];
 
-  const steps = [
-    {
-      id: 1,
-      title: "Scan & Add Items",
-      icon: "📱",
-      description: "Use your phone to scan barcodes or search manually"
-    },
-    {
-      id: 2,
-      title: "Enter Your Details",
-      icon: "📝",
-      description: "Provide your contact and payment information"
-    },
-    {
-      id: 3,
-      title: "Get Shipping Labels",
-      icon: "📦",
-      description: "Receive a prepaid label once your bundle is approved"
-    },
-    {
-      id: 4,
-      title: "Ship & Get Paid",
-      icon: "💰",
-      description: "Send your items and receive payment"
-    }
-  ];
+const FAQ = [
+  {
+    q: "How long does the entire process take?",
+    a: "After you submit your bundle, our team reviews it within 24 hours. Once approved and we receive your shipped items, payment is typically sent within 2 business days.",
+  },
+  {
+    q: "What if some of my items aren't accepted?",
+    a: "Only qualifying items receive payment. Non-qualifying items are responsibly recycled rather than returned.",
+  },
+  {
+    q: "Can I track my package?",
+    a: "Yes. Your prepaid shipping label includes tracking information that you can monitor online.",
+  },
+  {
+    q: "What if I made a mistake in my submission?",
+    a: "Contact our support team as soon as possible. Changes may be possible before your shipping label is generated.",
+  },
+  {
+    q: "Are there any shipping fees?",
+    a: "No, shipping is completely free — we email you a prepaid label once your bundle is approved.",
+  },
+  {
+    q: "What payment methods do you offer?",
+    a: "Currently we only offer PayPal payments, for fast and secure transactions.",
+  },
+];
+
+// Adim bolumu basligi - dort adimda ayni yapida
+function StepHeading({ n, title, blurb }: { n: string; title: string; blurb: string }) {
+  return (
+    <div className="flex items-start gap-4 border-b border-slate-200 pb-5">
+      <span className="font-mono text-2xl font-bold text-blue-600 tabular-nums">{n}</span>
+      <div>
+        <h2 className="font-serif text-2xl sm:text-3xl font-bold text-slate-900">{title}</h2>
+        <p className="mt-1 text-[16px] text-slate-600">{blurb}</p>
+      </div>
+    </div>
+  );
+}
+
+function Card({
+  title,
+  children,
+  tone = "plain",
+}: {
+  title: string;
+  children: React.ReactNode;
+  tone?: "plain" | "good" | "warn";
+}) {
+  const border =
+    tone === "good" ? "border-emerald-200" : tone === "warn" ? "border-amber-200" : "border-slate-200";
+  const head =
+    tone === "good"
+      ? "border-emerald-100 bg-emerald-50 text-emerald-800"
+      : tone === "warn"
+      ? "border-amber-100 bg-amber-50 text-amber-900"
+      : "border-slate-100 bg-slate-50 text-slate-700";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Back Button + Nav Links */}
-        <div className="mb-8 flex flex-wrap items-center gap-3">
-          <button 
-            onClick={() => window.history.back()}
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back
-          </button>
+    <div className={`overflow-hidden rounded-xl border bg-white shadow-sm ${border}`}>
+      <p className={`border-b px-5 py-3 text-sm font-semibold ${head}`}>{title}</p>
+      <div className="px-5 py-4 text-[15px] leading-relaxed text-slate-700">{children}</div>
+    </div>
+  );
+}
 
-          <Link
-            href="/"
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50"
-          >
-            Home
-          </Link>
+function Bullets({ items }: { items: string[] }) {
+  return (
+    <ul className="space-y-2">
+      {items.map((item) => (
+        <li key={item} className="flex items-start gap-2.5">
+          <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-slate-300" />
+          <span>{item}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
-          <Link
-            href="/"
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-md shadow-sm hover:bg-blue-700"
-          >
-            Start Scanning
-          </Link>
-        </div>
+export default function SellerGuidePage() {
+  return (
+    <div className="min-h-screen bg-slate-50">
+      {/* ===================== BASLIK BANDI ===================== */}
+      <header className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(129,140,248,0.25),transparent_60%)]" />
 
-        {/* Header */}
-        <div className="text-center mb-16">
-          <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl mb-4">
-            Seller Guide
-          </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Sell your books, CDs, DVDs, and games in four easy steps. 
-            Follow this guide to get started and receive payment quickly.
+        <div className="relative max-w-4xl mx-auto px-5 sm:px-8 pt-8 pb-12 sm:pt-10 sm:pb-16">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <button
+              onClick={() => window.history.back()}
+              className="inline-flex items-center text-sm font-medium text-blue-200 transition-colors hover:text-white"
+            >
+              <svg className="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back
+            </button>
+            <Link
+              href="/"
+              className="inline-flex items-center text-sm font-medium text-blue-200 transition-colors hover:text-white"
+            >
+              Home
+            </Link>
+          </div>
+
+          <p className="mt-10 text-xs font-semibold uppercase tracking-[0.2em] text-blue-300">
+            Seller guide
           </p>
-        </div>
 
-        {/* Process Overview */}
-        <div className="mb-16">
-          <h2 className="text-2xl font-bold text-gray-800 mb-8 text-center">How It Works</h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {steps.map((step, index) => (
-              <div key={step.id} className="relative">
-                <div 
-                  onClick={() => setActiveStep(step.id)}
-                  className={`cursor-pointer p-6 rounded-xl border-2 transition-all duration-200 ${
-                    activeStep === step.id 
-                      ? 'border-blue-500 bg-blue-50 shadow-lg' 
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
+          <h1 className="mt-3 font-serif text-4xl sm:text-5xl font-bold leading-[1.1] text-white">
+            How to sell your books, CDs, DVDs, and games
+          </h1>
+
+          <p className="mt-5 text-lg sm:text-xl leading-relaxed text-blue-100">
+            Four steps from the shelf to your PayPal account. Here&rsquo;s exactly what happens at
+            each one, and what to check before you ship.
+          </p>
+
+          <Link
+            href="/"
+            className="mt-7 inline-flex items-center rounded-xl bg-white px-6 py-3 text-base font-bold text-blue-700 shadow-lg transition-transform hover:scale-[1.02]"
+          >
+            Start scanning
+            <svg
+              className="ml-2 h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </Link>
+        </div>
+      </header>
+
+      <div className="max-w-4xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
+        {/* ---------- Adim gezinmesi ---------- */}
+        <nav aria-label="Steps" className="mb-16">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+            The whole process
+          </p>
+          <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
+            Four steps, start to finish
+          </h2>
+
+          <ol className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {STEPS.map((step) => (
+              <li key={step.id}>
+                <a
+                  href={`#${step.id}`}
+                  className="block h-full rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50/40"
                 >
-                  <div className="text-center">
-                    <div className={`text-4xl mb-3 ${activeStep === step.id ? 'scale-110' : ''} transition-transform duration-200`}>
-                      {step.icon}
-                    </div>
-                    <div className={`w-8 h-8 rounded-full mx-auto mb-3 flex items-center justify-center text-white font-bold ${
-                      activeStep === step.id ? 'bg-blue-500' : 'bg-gray-400'
-                    }`}>
-                      {step.id}
-                    </div>
-                    <h3 className="font-semibold text-gray-800 mb-2">{step.title}</h3>
-                    <p className="text-sm text-gray-600">{step.description}</p>
-                  </div>
-                </div>
-                {index < steps.length - 1 && (
-                  <div className="hidden md:block absolute top-1/2 -right-3 transform -translate-y-1/2">
-                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                )}
-              </div>
+                  <span className="font-mono text-sm font-bold text-blue-600 tabular-nums">
+                    {step.n}
+                  </span>
+                  <h3 className="mt-2 font-semibold text-slate-900">{step.title}</h3>
+                  <p className="mt-1 text-[14px] leading-relaxed text-slate-600">{step.blurb}</p>
+                </a>
+              </li>
             ))}
-          </div>
-        </div>
+          </ol>
+        </nav>
 
-        {/* Detailed Steps */}
-        <div className="space-y-12">
-          
-          {/* Step 1: Scan & Add Items */}
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            <div className="bg-blue-500 text-white p-6">
-              <div className="flex items-center">
-                <span className="text-3xl mr-4">📱</span>
-                <div>
-                  <h2 className="text-2xl font-bold">Step 1: Scan & Add Items</h2>
-                  <p className="text-blue-100">Use your phone camera to scan barcodes or search manually</p>
-                </div>
-              </div>
-            </div>
-            <div className="p-8">
-              <div className="grid md:grid-cols-2 gap-8">
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-4">Scanning Methods</h3>
-                  <div className="space-y-4">
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-800 mb-2">📷 Camera Scan (Recommended)</h4>
-                      <p className="text-gray-600 text-sm">Point your phone camera at the barcode (ISBN/UPC) and we'll automatically identify your item.</p>
-                    </div>
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-800 mb-2">🔍 Manual Search</h4>
-                      <p className="text-gray-600 text-sm">Type barcode number to search our database.</p>
-                    </div>
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-800 mb-2">🏷️ Amazon ASIN</h4>
-                      <p className="text-gray-600 text-sm">Enter the Amazon ASIN number if available for quick identification.</p>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-4">What We Accept</h3>
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                    <h4 className="font-medium text-green-800 mb-2">✅ Accepted Items</h4>
-                    <ul className="text-green-700 text-sm space-y-1">
-                      <li>• Books (Fiction, Non-fiction, Textbooks)</li>
-                      <li>• Music CDs</li>
-                      <li>• DVD Movies  (DVD, Blu-ray, 4K )</li>
-                      <li>• Video Games (All platforms)</li>
-                    </ul>
-                  </div>
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <h4 className="font-medium text-yellow-800 mb-2">📋 Quick Tips</h4>
-                    <ul className="text-yellow-700 text-sm space-y-1">
-                      <li>• Items appear in your list only if we accept them</li>
-                      <li>• If an item doesn't appear, we don't currently buy it</li>
-                      <li>• Check our condition guide before adding items</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* ---------- ADIM 1 ---------- */}
+        <section id="scan" className="mb-16 scroll-mt-8">
+          <StepHeading n="01" title="Scan and add items" blurb="Three ways to identify an item" />
 
-          {/* Step 2: Enter Details */}
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            <div className="bg-green-500 text-white p-6">
-              <div className="flex items-center">
-                <span className="text-3xl mr-4">📝</span>
-                <div>
-                  <h2 className="text-2xl font-bold">Step 2: Enter Your Details</h2>
-                  <p className="text-green-100">Provide your information for payment and shipping</p>
-                </div>
-              </div>
+          <div className="mt-6 grid gap-4 md:grid-cols-2 md:items-start">
+            <div className="space-y-3">
+              <Card title="Camera scan (recommended)">
+                Point your phone camera at the barcode — the ISBN on a book, the UPC on a disc — and
+                we identify the item automatically.
+              </Card>
+              <Card title="Type it in">
+                Enter the barcode number by hand. Useful on desktop, or when a barcode is damaged.
+              </Card>
+              <Card title="Amazon ASIN">
+                If you have the ASIN, that works too.
+              </Card>
             </div>
-            <div className="p-8">
-              <div className="grid md:grid-cols-2 gap-8">
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-4">Required Information</h3>
-                  <div className="space-y-4">
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-800 mb-2">👤 Personal Details</h4>
-                      <ul className="text-gray-600 text-sm space-y-1">
-                        <li>• Full Name (First &amp; Last)</li>
-                      </ul>
-                    </div>
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-800 mb-2">💳 Payment Information</h4>
-                      <ul className="text-gray-600 text-sm space-y-1">
-                        <li>• PayPal Account Email</li>
-                      </ul>
-                    </div>
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-800 mb-2">📍 Shipping Address</h4>
-                      <ul className="text-gray-600 text-sm space-y-1">
-                        <li>• Complete Street Address</li>
-                        <li>• City, State, ZIP Code</li>
-                        <li>• Country</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-4">Package Information</h3>
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                    <h4 className="font-medium text-blue-800 mb-2">📦 Package Details</h4>
-                    <p className="text-blue-700 text-sm mb-2">Provide accurate measurements for proper shipping labels:</p>
-                    <ul className="text-blue-700 text-sm space-y-1">
-                      <li>• Package Weight (up to 50 lbs)</li>
-                      <li>• Length, Width, Height (up to 18&quot; x 16&quot; x 16&quot;)</li>
-                    </ul>
-                  </div>
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <h4 className="font-medium text-yellow-800 mb-2">⚠️ Important Notes</h4>
-                    <ul className="text-yellow-700 text-sm space-y-1">
-                      <li>• Double-check your PayPal email address</li>
-                      <li>• Accurate package dimensions are crucial</li>
-                      <li>• All fields are required to proceed</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
+
+            <div className="space-y-3">
+              <Card title="What we accept" tone="good">
+                <Bullets
+                  items={[
+                    "Books — fiction, non-fiction, textbooks",
+                    "Music CDs",
+                    "Movies — DVD, Blu-ray, 4K",
+                    "Video games — all platforms",
+                  ]}
+                />
+              </Card>
+              <Card title="Worth knowing" tone="warn">
+                <Bullets
+                  items={[
+                    "Items only appear in your list if we accept them",
+                    "If an item doesn't appear, we don't currently buy that title",
+                    "Check the condition guide before adding items",
+                  ]}
+                />
+                <Link
+                  href="/condition-guidelines"
+                  className="mt-3 inline-flex items-center text-sm font-semibold text-blue-600 hover:text-blue-700"
+                >
+                  Condition guidelines
+                  <svg
+                    className="ml-1.5 h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              </Card>
             </div>
           </div>
+        </section>
 
-          {/* Step 3: Get Shipping Labels */}
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            <div className="bg-purple-500 text-white p-6">
-              <div className="flex items-center">
-                <span className="text-3xl mr-4">📦</span>
-                <div>
-                  <h2 className="text-2xl font-bold">Step 3: Get Shipping Labels</h2>
-                  <p className="text-purple-100">Receive a prepaid shipping label once your bundle is approved</p>
-                </div>
-              </div>
+        {/* ---------- ADIM 2 ---------- */}
+        <section id="details" className="mb-16 scroll-mt-8">
+          <StepHeading
+            n="02"
+            title="Enter your details"
+            blurb="What we need to send your label and your money"
+          />
+
+          <div className="mt-6 grid gap-4 md:grid-cols-2 md:items-start">
+            <div className="space-y-3">
+              <Card title="About you">
+                <Bullets items={["First and last name", "PayPal account email"]} />
+              </Card>
+              <Card title="Shipping address">
+                <Bullets items={["Street address", "City, state, ZIP code", "Country"]} />
+              </Card>
             </div>
-            <div className="p-8">
-              <div className="grid md:grid-cols-2 gap-8">
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-4">After Submission</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-start space-x-3">
-                      <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">1</div>
-                      <div>
-                        <h4 className="font-medium text-gray-800">Confirmation Email</h4>
-                        <p className="text-gray-600 text-sm">You'll receive an immediate confirmation that we've received your submission.</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start space-x-3">
-                      <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">2</div>
-                      <div>
-                        <h4 className="font-medium text-gray-800">We Review Your Bundle</h4>
-                        <p className="text-gray-600 text-sm">Our team reviews your submitted items, typically within 24 hours.</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start space-x-3">
-                      <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">3</div>
-                      <div>
-                        <h4 className="font-medium text-gray-800">Label Sent If Approved</h4>
-                        <p className="text-gray-600 text-sm">Once approved, you'll receive an email with your free prepaid shipping label.</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-4">What's Included</h3>
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                    <h4 className="font-medium text-green-800 mb-2">📄 Shipping Package</h4>
-                    <ul className="text-green-700 text-sm space-y-1">
-                      <li>• Prepaid shipping label (PDF format)</li>
-                      <li>• Packing instructions</li>
-                      <li>• Tracking information setup</li>
-                    </ul>
-                  </div>
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-medium text-blue-800 mb-2">💡 Pro Tips</h4>
-                    <ul className="text-blue-700 text-sm space-y-1">
-                      <li>• Print labels on standard 8.5" x 11" paper</li>
-                      <li>• Use clear tape to secure labels</li>
-                      <li>• Keep confirmation emails for your records</li>
-                      <li>• Check your spam/junk folder if you don't see it</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
+
+            <div className="space-y-3">
+              <Card title="Your box">
+                <p className="mb-3">
+                  Measure the box you&rsquo;ll actually ship in — the label depends on it.
+                </p>
+                <Bullets
+                  items={[
+                    "Weight, up to 50 lbs",
+                    "Length, width, height — up to 18 × 16 × 16 in",
+                    "One box per order",
+                  ]}
+                />
+              </Card>
+              <Card title="Before you submit" tone="warn">
+                <Bullets
+                  items={[
+                    "Double-check your PayPal email — that's where the money goes",
+                    "Accurate dimensions matter; a wrong label costs you time",
+                    "All fields are required to continue",
+                  ]}
+                />
+              </Card>
             </div>
           </div>
+        </section>
 
-          {/* Step 4: Ship & Get Paid */}
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            <div className="bg-orange-500 text-white p-6">
-              <div className="flex items-center">
-                <span className="text-3xl mr-4">💰</span>
-                <div>
-                  <h2 className="text-2xl font-bold">Step 4: Ship & Get Paid</h2>
-                  <p className="text-orange-100">Package your items and receive payment after inspection</p>
-                </div>
-              </div>
-            </div>
-            <div className="p-8">
-              <div className="grid md:grid-cols-2 gap-8">
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-4">Packaging & Shipping</h3>
-                  <div className="space-y-4">
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-800 mb-2">📦 Packing Instructions</h4>
-                      <ul className="text-gray-600 text-sm space-y-1">
-                        <li>• Use a sturdy box or padded envelope</li>
-                        <li>• Include all items from your submission</li>
-                        <li>• No extra packing materials needed inside</li>
-                      </ul>
-                    </div>
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-800 mb-2">🚚 Shipping Process</h4>
-                      <ul className="text-gray-600 text-sm space-y-1">
-                        <li>• Attach the prepaid label securely</li>
-                        <li>• Drop off at designated shipping location</li>
-                        <li>• Keep tracking number for reference</li>
-                        <li>• No shipping costs - completely free!</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-4">Payment Process</h3>
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                    <h4 className="font-medium text-green-800 mb-2">💳 How You Get Paid</h4>
-                    <ul className="text-green-700 text-sm space-y-1">
-                      <li>• Items inspected upon arrival</li>
-                      <li>• Qualifying items processed for payment</li>
-                      <li>• Payment sent to your PayPal account</li>
-                      <li>• Email confirmation with payment details</li>
-                    </ul>
-                  </div>
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <h4 className="font-medium text-red-800 mb-2">⚠️ Important Reminders</h4>
-                    <ul className="text-red-700 text-sm space-y-1">
-                      <li>• Only items meeting our condition guide are paid</li>
-                      <li>• Non-qualifying items are recycled (not returned)</li>
-                      <li>• No payment for items that don't meet standards</li>
-                      <li>• Review condition guide before shipping</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* ---------- ADIM 3 ---------- */}
+        <section id="label" className="mb-16 scroll-mt-8">
+          <StepHeading
+            n="03"
+            title="Get your shipping label"
+            blurb="What happens after you hit submit"
+          />
 
-        {/* FAQ Section */}
-        <div className="mt-16 bg-white rounded-2xl shadow-xl p-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-8 text-center">Frequently Asked Questions</h2>
-          <div className="grid md:grid-cols-2 gap-6">
+          <ol className="mt-6 space-y-3">
             {[
               {
-                question: "How long does the entire process take?",
-                answer: "After you submit your bundle, our team reviews it within 24 hours. Once approved and we receive your shipped items, payment is typically sent within 2 business days."
+                t: "Confirmation email",
+                b: "You get an immediate confirmation that we've received your submission.",
               },
               {
-                question: "What if some of my items aren't accepted?",
-                answer: "Only qualifying items receive payment. Non-qualifying items are responsibly recycled."
+                t: "We review your bundle",
+                b: "Our team checks the submitted items, typically within 24 hours.",
               },
               {
-                question: "Can I track my package?",
-                answer: "Yes! Your prepaid shipping label includes tracking information that you can monitor online."
+                t: "Label sent if approved",
+                b: "Once approved, you receive an email with your free prepaid shipping label.",
               },
-              {
-                question: "What if I made a mistake in my submission?",
-                answer: "Contact our support team as soon as possible. Changes may be possible before your shipping label is generated."
-              },
-              {
-                question: "Are there any shipping fees?",
-                answer: "No, shipping is completely free — we email you a prepaid label once your bundle is approved."
-              },
-              {
-                question: "What payment methods do you offer?",
-                answer: "Currently, we only offer PayPal payments for fast and secure transactions."
-              }
-            ].map((faq, index) => (
-              <div key={index} className="border border-gray-200 rounded-lg p-4">
-                <h3 className="font-medium text-gray-800 mb-2">{faq.question}</h3>
-                <p className="text-gray-600 text-sm">{faq.answer}</p>
-              </div>
-           ))}
-           </div>
-         </div>
- 
-         {/* Bottom CTA */}
-         <div className="mt-16 text-center">
-           <h2 className="text-2xl font-bold text-gray-800 mb-4">Ready to Start?</h2>
-           <p className="text-gray-600 mb-6">Scan your first item and get an instant cash offer.</p>
-           <div className="flex flex-wrap justify-center gap-4">
-             <Link
-               href="/"
-               className="inline-flex items-center justify-center bg-blue-600 text-white py-3 px-8 rounded-lg hover:bg-blue-700 transition font-medium"
-             >
-               Start Scanning
-             </Link>
-             <Link
-               href="/"
-               className="inline-flex items-center justify-center bg-white text-gray-700 border border-gray-300 py-3 px-8 rounded-lg hover:bg-gray-50 transition font-medium"
-             >
-               Back to Home
-             </Link>
-           </div>
-         </div>
-       </div>
-     </div>
-   );
- };
+            ].map((item, i) => (
+              <li
+                key={item.t}
+                className="flex items-start gap-4 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm"
+              >
+                <span className="font-mono text-sm font-bold text-blue-600 tabular-nums">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div>
+                  <p className="font-semibold text-slate-900">{item.t}</p>
+                  <p className="mt-1 text-[15px] leading-relaxed text-slate-600">{item.b}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
 
-export default SellerGuidePage;
+          <div className="mt-4 grid gap-4 md:grid-cols-2 md:items-start">
+            <Card title="What arrives in the email" tone="good">
+              <Bullets
+                items={[
+                  "Prepaid shipping label (PDF)",
+                  "Packing instructions",
+                  "Tracking information",
+                ]}
+              />
+            </Card>
+            <Card title="Printing tips">
+              <Bullets
+                items={[
+                  'Print on standard 8.5" × 11" paper',
+                  "Use clear tape to secure the label",
+                  "Keep confirmation emails for your records",
+                  "Check your spam folder if the label doesn't arrive",
+                ]}
+              />
+            </Card>
+          </div>
+        </section>
+
+        {/* ---------- ADIM 4 ---------- */}
+        <section id="paid" className="mb-16 scroll-mt-8">
+          <StepHeading
+            n="04"
+            title="Ship and get paid"
+            blurb="Pack the box, drop it off, watch for the payment"
+          />
+
+          <div className="mt-6 grid gap-4 md:grid-cols-2 md:items-start">
+            <div className="space-y-3">
+              <Card title="Packing">
+                <Bullets
+                  items={[
+                    "Use a sturdy box or padded envelope",
+                    "Include every item from your submission",
+                    "No extra packing materials needed inside",
+                  ]}
+                />
+              </Card>
+              <Card title="Shipping">
+                <Bullets
+                  items={[
+                    "Attach the prepaid label securely",
+                    "Drop off at the designated shipping location",
+                    "Keep the tracking number",
+                    "Shipping costs you nothing",
+                  ]}
+                />
+              </Card>
+            </div>
+
+            <div className="space-y-3">
+              <Card title="How you get paid" tone="good">
+                <Bullets
+                  items={[
+                    "Items are inspected on arrival",
+                    "Qualifying items are processed for payment",
+                    "Payment goes to your PayPal account",
+                    "You get an email confirming the details",
+                  ]}
+                />
+              </Card>
+              <Card title="Before you seal the box" tone="warn">
+                <Bullets
+                  items={[
+                    "Only items meeting the condition guide are paid for",
+                    "Non-qualifying items are recycled, not returned",
+                    "Review the condition guide one last time",
+                  ]}
+                />
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* ---------- SSS ---------- */}
+        <section className="mb-14">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+            Still wondering
+          </p>
+          <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
+            Common questions
+          </h2>
+
+          <dl className="mt-6 divide-y divide-slate-200 border-y border-slate-200">
+            {FAQ.map((item) => (
+              <div key={item.q} className="py-6">
+                <dt className="font-serif text-lg font-semibold text-slate-900">{item.q}</dt>
+                <dd className="mt-2 text-[16px] leading-[1.75] text-slate-600">{item.a}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+
+        {/* ---------- CTA ---------- */}
+        <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 px-6 py-10 text-center sm:px-10">
+          <h2 className="font-serif text-2xl font-bold text-white">Ready to start?</h2>
+          <p className="mx-auto mt-3 max-w-md text-blue-100">
+            Scan your first item and get an instant cash offer. No account required to start.
+          </p>
+          <Link
+            href="/"
+            className="mt-7 inline-flex items-center rounded-xl bg-white px-7 py-3.5 text-base font-bold text-blue-700 shadow-lg transition-transform hover:scale-[1.02]"
+          >
+            Start scanning
+            <svg
+              className="ml-2 h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
