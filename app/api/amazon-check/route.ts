@@ -62,6 +62,11 @@ interface ApiResponse {
 // Keepa domain kodu: 1 = amazon.com (US)
 const KEEPA_DOMAIN = 1;
 
+// Veri bu saatten daha yeniyse Keepa canli tarama yapmadan kendi cache'inden doner.
+// Alim fiyati karari icin 24 saatlik BSR/fiyat fazlasiyla yeterli.
+// Dusurmek = daha taze veri + daha yavas + daha cok token.
+const KEEPA_UPDATE_HOURS = 24;
+
 // ==================== KOD TİPİ ALGILAMA (aynı, değişmedi) ====================
 
 function convertISBN13toISBN10(isbn13: string): string | null {
@@ -135,7 +140,8 @@ async function fetchKeepaByAsin(asin: string, apiKey: string) {
       key: apiKey,
       domain: KEEPA_DOMAIN,
       asin: asin,
-      stats: 1 // son 1 gün istatistik (current fiyat/rank için yeterli)
+      stats: 1, // son 1 gün istatistik (current fiyat/rank için yeterli)
+      update: KEEPA_UPDATE_HOURS
     },
     timeout: 3000
   });
@@ -152,7 +158,8 @@ async function fetchKeepaByCode(code: string, apiKey: string) {
       key: apiKey,
       domain: KEEPA_DOMAIN,
       code: code,
-      stats: 1
+      stats: 1,
+      update: KEEPA_UPDATE_HOURS
     },
     timeout: 3000
   });
@@ -321,7 +328,9 @@ export async function POST(request: NextRequest) {
     console.log(`\nKEEPA LOOKUP: ${cleanCode} (${codeInfo.type})`);
 
     // ---- Cache kontrolü (değişmedi) ----
+    const cacheReadStart = Date.now();
     const cachedResult = await productCache.getFromCache(cleanCode);
+    console.log(`⏱️ cacheRead=${Date.now() - cacheReadStart}ms`);
     if (cachedResult) {
       console.log(`Cache hit: ${cleanCode}`);
       return NextResponse.json({
@@ -347,6 +356,7 @@ export async function POST(request: NextRequest) {
 
     // ---- Keepa sorgusu ----
     let keepaResponse: any;
+    const keepaStart = Date.now();
     try {
       if (codeInfo.needsCodeLookup) {
         keepaResponse = await fetchKeepaByCode(codeInfo.searchCode, apiKey);
@@ -367,7 +377,7 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-    console.log(`🎫 Tokens: consumed=${keepaResponse?.tokensConsumed}, left=${keepaResponse?.tokensLeft}`);
+    console.log(`🎫 Tokens: consumed=${keepaResponse?.tokensConsumed}, left=${keepaResponse?.tokensLeft}, keepaMs=${keepaResponse?.processingTimeInMs}, roundTrip=${Date.now() - keepaStart}ms`);
 
     const products = keepaResponse?.products;
     const bestProduct = pickBestKeepaProduct(products);
@@ -419,7 +429,13 @@ export async function POST(request: NextRequest) {
       timings: { totalTime }
     };
 
-    await productCache.saveToCache(cleanCode, codeInfo.type, product, pricingResult, message, debugInfo);
+        // Cache yazmasi kullaniciyi bekletmemeli - arka planda gonderilir.
+    // Yazma basarisiz olsa bile cevap dogru, sadece bir sonraki sorgu tekrar Keepa'ya gider.
+    const cacheWriteStart = Date.now();
+    productCache
+      .saveToCache(cleanCode, codeInfo.type, product, pricingResult, message, debugInfo)
+      .then(() => console.log(`⏱️ cacheWrite=${Date.now() - cacheWriteStart}ms (arka plan)`))
+      .catch(err => console.error('Cache save error:', err));
 
     const speedLabel = totalTime < 1000 ? 'ULTRA FAST' : totalTime < 2000 ? 'FAST' : 'NORMAL';
     console.log(`[${speedLabel}] ${totalTime}ms - Keepa lookup (${debugInfo.lookupType})`);
