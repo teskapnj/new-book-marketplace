@@ -12,7 +12,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
     // ✅ PRIMARY LANDING PAGE - Ana dönüşüm sayfası (SEO hedefli)
     {
-      url: 'https://www.sellbookmedia.com/sell-books-and-dvds-for-cash',
+      url: 'https://www.sellbookmedia.com/sell-books-for-cash',
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.95,
+    },
+    {
+      url: 'https://www.sellbookmedia.com/sell-dvds-for-cash',
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.95,
+    },
+    {
+      url: 'https://www.sellbookmedia.com/sell-cds-for-cash',
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.95,

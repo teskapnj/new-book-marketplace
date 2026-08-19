@@ -1206,7 +1206,7 @@ export default function HomePage() {
       </header>
 
    {/* ===================== HERO + SCAN ===================== */}
-   <section className="relative py-10 sm:py-12 overflow-hidden">
+   <section id="quote" className="relative py-10 sm:py-12 overflow-hidden scroll-mt-24">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700"></div>
         <div className="absolute inset-0 bg-black/20"></div>
 
@@ -1606,6 +1606,73 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      <section className="py-12 bg-white">
+  <div className="max-w-5xl mx-auto px-4 sm:px-6">
+    <div className="text-center mb-8">
+      <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
+        Sell Your Media for Cash
+      </h2>
+      <p className="mt-2 text-gray-600">
+        Learn more about what we buy and how to sell your collection.
+      </p>
+    </div>
+
+    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+    <Link
+  href="/sell-books-for-cash"
+  className="block rounded-2xl border border-gray-200 bg-gray-50 p-6 hover:border-blue-300 hover:shadow-md transition-all"
+>
+  <div className="text-3xl mb-3">📚</div>
+
+  <h3 className="text-xl font-bold text-gray-900">
+    Sell Books for Cash
+  </h3>
+
+  <p className="mt-2 text-sm text-gray-600">
+    Learn how to sell your used books and textbooks for cash.
+  </p>
+
+  <span className="inline-flex items-center mt-4 font-semibold text-blue-600">
+    Learn More
+    <ArrowRightIcon size={18} className="ml-2" />
+  </span>
+</Link>
+      <Link
+        href="/sell-dvds-for-cash"
+        className="block rounded-2xl border border-gray-200 bg-gray-50 p-6 hover:border-blue-300 hover:shadow-md transition-all"
+      >
+        <div className="text-3xl mb-3">📀</div>
+        <h3 className="text-xl font-bold text-gray-900">
+          Sell DVDs, Blu-rays &amp; 4K
+        </h3>
+        <p className="mt-2 text-sm text-gray-600">
+          Learn how to sell your used movies for cash.
+        </p>
+        <span className="inline-flex items-center mt-4 font-semibold text-blue-600">
+          Learn More
+          <ArrowRightIcon size={18} className="ml-2" />
+        </span>
+      </Link>
+
+      <Link
+        href="/sell-cds-for-cash"
+        className="block rounded-2xl border border-gray-200 bg-gray-50 p-6 hover:border-blue-300 hover:shadow-md transition-all"
+      >
+        <div className="text-3xl mb-3">💿</div>
+        <h3 className="text-xl font-bold text-gray-900">
+          Sell CDs for Cash
+        </h3>
+        <p className="mt-2 text-sm text-gray-600">
+          Learn how to sell your used CDs and music collection.
+        </p>
+        <span className="inline-flex items-center mt-4 font-semibold text-blue-600">
+          Learn More
+          <ArrowRightIcon size={18} className="ml-2" />
+        </span>
+      </Link>
+    </div>
+  </div>
+</section>
 
       {/* ===================== CTA ===================== */}
       <section className="py-16 sm:py-20 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 relative overflow-hidden">
@@ -1671,14 +1738,63 @@ export default function HomePage() {
               </p>
             </div>
             <div>
-              <h4 className="font-bold text-lg mb-6 text-white">For Sellers</h4>
-              <ul className="space-y-3">
-                <li><Link href="/sell-books-and-dvds-for-cash" className="text-gray-400 hover:text-white transition-colors">Sell Books &amp; DVDs for Cash</Link></li>
-                <li><Link href="/condition-guidelines" className="text-gray-400 hover:text-white transition-colors">Condition Guidelines</Link></li>
-                <li><Link href="/returns-policy" className="text-gray-400 hover:text-white transition-colors">Returns Policy</Link></li>
-                <li><Link href="/seller-guide" className="text-gray-400 hover:text-white transition-colors">Seller Guide</Link></li>
-              </ul>
-            </div>
+  <h4 className="font-bold text-lg mb-6 text-white">For Sellers</h4>
+  <ul className="space-y-3">
+  <li>
+  <Link
+    href="/sell-books-for-cash"
+    className="text-gray-400 hover:text-white transition-colors"
+  >
+    Sell Books for Cash
+  </Link>
+</li>
+
+  <li>
+    <Link
+      href="/sell-dvds-for-cash"
+      className="text-gray-400 hover:text-white transition-colors"
+    >
+      Sell DVDs, Blu-rays &amp; 4K
+    </Link>
+  </li>
+
+  <li>
+    <Link
+      href="/sell-cds-for-cash"
+      className="text-gray-400 hover:text-white transition-colors"
+    >
+      Sell CDs for Cash
+    </Link>
+  </li>
+
+  <li>
+    <Link
+      href="/condition-guidelines"
+      className="text-gray-400 hover:text-white transition-colors"
+    >
+      Condition Guidelines
+    </Link>
+  </li>
+
+  <li>
+    <Link
+      href="/returns-policy"
+      className="text-gray-400 hover:text-white transition-colors"
+    >
+      Returns Policy
+    </Link>
+  </li>
+
+  <li>
+    <Link
+      href="/seller-guide"
+      className="text-gray-400 hover:text-white transition-colors"
+    >
+      Seller Guide
+    </Link>
+  </li>
+</ul>
+</div>
 
             <div>
               <h4 className="font-bold text-lg mb-6 text-white">Guides</h4>

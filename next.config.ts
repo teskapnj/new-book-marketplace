@@ -99,13 +99,23 @@ const nextConfig: NextConfig = {
     ];
   },
 
+  async redirects() {
+    return [
+      {
+        source: '/sell-books-and-dvds-for-cash',
+        destination: '/sell-books-for-cash',
+        permanent: true,
+      },
+    ];
+  },
+  
   async rewrites() {
     return [
       {
         source: '/sell',
         destination: '/',
       }
-    ]
+    ];
   },
 
   webpack: (config) => {
