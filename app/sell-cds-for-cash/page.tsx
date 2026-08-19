@@ -18,10 +18,72 @@ export const metadata: Metadata = {
     type: "website",
   },
 };
+const cdFaqs = [
+  {
+    q: "What CDs can I sell?",
+    a: "We buy eligible music CDs, box sets, and collector editions with readable UPC barcodes. Scan or enter the barcode to see if we are currently buying your CD.",
+  },
+  {
+    q: "How do I know how much my CD is worth?",
+    a: "Scan or enter the UPC on your CD. If we are currently buying it, you will see our cash offer instantly.",
+  },
+  {
+    q: "Is shipping free?",
+    a: "Yes. Approved orders receive a prepaid shipping label, so you do not have to pay shipping out of pocket.",
+  },
+  {
+    q: "How do I get paid?",
+    a: "After your shipment arrives and your items pass inspection, payment is processed through PayPal.",
+  },
+  {
+    q: "Is there a minimum order?",
+    a: "Yes. You need at least 5 accepted items per order. You can combine eligible CDs with accepted books, DVDs, Blu-rays, 4K movies, and video games.",
+  },
+  {
+    q: "Do you buy every CD?",
+    a: "No. Acceptance and pricing depend on current demand, resale value, edition, and condition. Scan the UPC to see whether your CD currently qualifies for an offer.",
+  },
+];
+
 
 export default function SellCdsForCashPage() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Service",
+        name: "Sell CDs for Cash",
+        serviceType: "Used CD buyback",
+        provider: {
+          "@type": "Organization",
+          name: "SellBookMedia",
+          url: "https://www.sellbookmedia.com",
+        },
+        areaServed: "US",
+        description:
+          "Sell used CDs for cash with instant UPC quotes, free shipping, and PayPal payment.",
+        url: "https://www.sellbookmedia.com/sell-cds-for-cash",
+      },
+      {
+        "@type": "FAQPage",
+        mainEntity: cdFaqs.map((faq) => ({
+          "@type": "Question",
+          name: faq.q,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: faq.a,
+          },
+        })),
+      },
+    ],
+  };
+
   return (
     <main className="min-h-screen bg-white">
+  <script
+    type="application/ld+json"
+    dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+  />
       <section className="bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 text-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
           <p className="text-sm sm:text-base font-semibold text-blue-100 mb-3">

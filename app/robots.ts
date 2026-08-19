@@ -30,8 +30,12 @@ export default function robots(): MetadataRoute.Robots {
           '/login',
           '/register',
           '/create-listing',
+          '/checkout/',
+          '/cart/',
+          '/account/',
+          '/orders/',
+          '/listings/',
         ],
-        crawlDelay: 0,
       },
       // AI crawlers - explicitly allowed for AI search visibility
       // (ChatGPT, Claude, Perplexity, Gemini). Same private-area
