@@ -29,6 +29,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly',
       priority: 0.95,
     },
+    {
+      url: 'https://www.sellbookmedia.com/sell-video-games-for-cash',
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.95,
+    },
 
     // ✅ HIGH VALUE PAGES - SEO için çok önemli
     {

@@ -1617,7 +1617,7 @@ export default function HomePage() {
       </p>
     </div>
 
-    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
     <Link
   href="/sell-books-for-cash"
   className="block rounded-2xl border border-gray-200 bg-gray-50 p-6 hover:border-blue-300 hover:shadow-md transition-all"
@@ -1670,6 +1670,25 @@ export default function HomePage() {
           <ArrowRightIcon size={18} className="ml-2" />
         </span>
       </Link>
+      <Link
+  href="/sell-video-games-for-cash"
+  className="block rounded-2xl border border-gray-200 bg-gray-50 p-6 hover:border-blue-300 hover:shadow-md transition-all"
+>
+  <div className="text-3xl mb-3">🎮</div>
+
+  <h3 className="text-xl font-bold text-gray-900">
+    Sell Video Games for Cash
+  </h3>
+
+  <p className="mt-2 text-sm text-gray-600">
+    Learn how to sell your used video games for cash.
+  </p>
+
+  <span className="inline-flex items-center mt-4 font-semibold text-blue-600">
+    Learn More
+    <ArrowRightIcon size={18} className="ml-2" />
+  </span>
+</Link>
     </div>
   </div>
 </section>
@@ -1766,6 +1785,14 @@ export default function HomePage() {
       Sell CDs for Cash
     </Link>
   </li>
+  <li>
+  <Link
+    href="/sell-video-games-for-cash"
+    className="text-gray-400 hover:text-white transition-colors"
+  >
+    Sell Video Games for Cash
+  </Link>
+</li>
 
   <li>
     <Link
