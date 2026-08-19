@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import MediaCategoryLinks from "../../components/MediaCategoryLinks";
 
 export const metadata: Metadata = {
     title: "Sell DVDs, Blu-rays & 4K Movies for Cash Online",
@@ -216,6 +217,7 @@ and payment is sent via PayPal.
           </Link>
         </div>
       </section>
+      <MediaCategoryLinks current="dvds" />
 
       {/* FAQ */}
       <section className="py-16 sm:py-20">

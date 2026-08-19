@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import MediaCategoryLinks from "../../components/MediaCategoryLinks";
 
 export const metadata: Metadata = {
   title: "Sell CDs for Cash Online | Instant Quotes & Free Shipping",
@@ -116,7 +117,110 @@ export default function SellCdsForCashPage() {
           </div>
         </div>
       </section>
+      <MediaCategoryLinks current="cds" />
 
+<section className="py-16 sm:py-20 bg-slate-50">
+  <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="text-center mb-12">
+      <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+        Frequently Asked Questions
+      </h2>
+
+      <p className="text-xl text-gray-600">
+        Everything you need to know about selling used CDs
+      </p>
+    </div>
+
+    <div className="space-y-4">
+      <details className="group bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+        <summary className="flex items-center justify-between cursor-pointer list-none font-semibold text-lg text-gray-900">
+          What CDs can I sell?
+          <span className="ml-4 text-blue-600 transition-transform group-open:rotate-45 text-2xl leading-none">
+            +
+          </span>
+        </summary>
+
+        <p className="mt-4 text-gray-600 leading-relaxed">
+          We buy eligible music CDs, box sets, and collector editions with
+          readable UPC barcodes. Scan or enter the barcode to see if we are
+          currently buying your CD.
+        </p>
+      </details>
+
+      <details className="group bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+        <summary className="flex items-center justify-between cursor-pointer list-none font-semibold text-lg text-gray-900">
+          How do I know how much my CD is worth?
+          <span className="ml-4 text-blue-600 transition-transform group-open:rotate-45 text-2xl leading-none">
+            +
+          </span>
+        </summary>
+
+        <p className="mt-4 text-gray-600 leading-relaxed">
+          Scan or enter the UPC on your CD. If we are currently buying it,
+          you will see our cash offer instantly.
+        </p>
+      </details>
+
+      <details className="group bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+        <summary className="flex items-center justify-between cursor-pointer list-none font-semibold text-lg text-gray-900">
+          Is shipping free?
+          <span className="ml-4 text-blue-600 transition-transform group-open:rotate-45 text-2xl leading-none">
+            +
+          </span>
+        </summary>
+
+        <p className="mt-4 text-gray-600 leading-relaxed">
+          Yes. Approved orders receive a prepaid shipping label, so you do not
+          have to pay shipping out of pocket.
+        </p>
+      </details>
+
+      <details className="group bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+        <summary className="flex items-center justify-between cursor-pointer list-none font-semibold text-lg text-gray-900">
+          How do I get paid?
+          <span className="ml-4 text-blue-600 transition-transform group-open:rotate-45 text-2xl leading-none">
+            +
+          </span>
+        </summary>
+
+        <p className="mt-4 text-gray-600 leading-relaxed">
+          After your shipment arrives and your items pass inspection, payment
+          is processed through PayPal.
+        </p>
+      </details>
+
+      <details className="group bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+        <summary className="flex items-center justify-between cursor-pointer list-none font-semibold text-lg text-gray-900">
+          Is there a minimum order?
+          <span className="ml-4 text-blue-600 transition-transform group-open:rotate-45 text-2xl leading-none">
+            +
+          </span>
+        </summary>
+
+        <p className="mt-4 text-gray-600 leading-relaxed">
+          Yes. You need at least 5 accepted items per order. You can combine
+          eligible CDs with accepted books, DVDs, Blu-rays, 4K movies, and
+          video games.
+        </p>
+      </details>
+
+      <details className="group bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+        <summary className="flex items-center justify-between cursor-pointer list-none font-semibold text-lg text-gray-900">
+          Do you buy every CD?
+          <span className="ml-4 text-blue-600 transition-transform group-open:rotate-45 text-2xl leading-none">
+            +
+          </span>
+        </summary>
+
+        <p className="mt-4 text-gray-600 leading-relaxed">
+          No. Acceptance and pricing depend on current demand, resale value,
+          edition, and condition. Scan the UPC to see whether your CD currently
+          qualifies for an offer.
+        </p>
+      </details>
+    </div>
+  </div>
+</section>
       <section className="py-16 sm:py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">

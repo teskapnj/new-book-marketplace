@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import MediaCategoryLinks from "../../components/MediaCategoryLinks";
 
 const SITE_URL = "https://www.sellbookmedia.com";
 const PAGE_URL = `${SITE_URL}/sell-books-for-cash`;
@@ -509,6 +510,7 @@ export default function SellBooksForCashPage() {
           </div>
         </div>
       </section>
+      <MediaCategoryLinks current="books" />
 
       {/* FAQ */}
       <section className="py-16 sm:py-20 bg-white">

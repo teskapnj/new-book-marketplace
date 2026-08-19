@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import MediaCategoryLinks from "../../components/MediaCategoryLinks";
 
 const SITE_URL = "https://www.sellbookmedia.com";
 const PAGE_URL = `${SITE_URL}/sell-video-games-for-cash`;
@@ -259,6 +260,7 @@ export default function SellVideoGamesForCashPage() {
           </div>
         </div>
       </section>
+   
 
       <section className="py-16 sm:py-20 bg-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -307,6 +309,8 @@ export default function SellVideoGamesForCashPage() {
           </div>
         </div>
       </section>
+      <MediaCategoryLinks current="games" />
+
 
       <section className="py-16 sm:py-20 bg-slate-50">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
