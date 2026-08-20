@@ -135,7 +135,7 @@ function calculateBookPrice(price: number, salesRank: number): PricingResult {
   }
 
   if (salesRank <= 1000000) {
-    if (price >= 39 && price < 50) {
+    if (price >= 31 && price < 50) {
       return { accepted: true, ourPrice: 1.5, category: 'books', priceRange: "$39-49.99", rankRange: "≤ 1M" };
     }
     if (price >= 50 && price < 60) {
@@ -203,7 +203,7 @@ function calculateCDPrice(price: number, salesRank: number): PricingResult {
   }
 
   if (salesRank <= 100000) {
-    if (price >= 30 && price < 50) {
+    if (price >= 27 && price < 50) {
       return { accepted: true, ourPrice: 1.5, category: 'cds', priceRange: "$39-49.99", rankRange: "≤ 100k" };
     }
     if (price >= 50 && price < 61) {
@@ -225,7 +225,7 @@ function calculateCDPrice(price: number, salesRank: number): PricingResult {
   }
 
   if (salesRank <= 200000) {
-    if (price >= 51 && price < 72) {
+    if (price >= 35 && price < 72) {
       return { accepted: true, ourPrice: 1.5, category: 'cds', priceRange: "$51-71.99", rankRange: "100k-200k" };
     }
     if (price >= 72) {
@@ -272,7 +272,7 @@ function calculateGamePrice(price: number, salesRank: number): PricingResult {
 
 /**
  * SENARYO 1-2: Hiç fiyat yok (ne NEW ne USED)
- * Kitap: rank ≤ 1,000,000 ise $3, üstündeyse reddet
+* Kitap: rank ≤ 1,000,000 ise $3, 1M-2M ise $1.5, üstündeyse reddet
  * CD/DVD/Oyun: rank ≤ 150,000 ise $3, üstündeyse reddet
  */
 function handleNoPriceScenario(category: ProductCategory, salesRank: number): PricingResult {
@@ -335,7 +335,7 @@ function handleNoPriceScenario(category: ProductCategory, salesRank: number): Pr
 
 /**
  * SENARYO 3-4: NEW fiyat yok, USED fiyat var
- * Kitap: rank ≤ 1,000,000 ise $1.5, üstündeyse reddet
+ * Kitap: rank ≤ 2,000,000 ise $1.5, üstündeyse reddet
  * CD/DVD/Oyun: rank ≤ 150,000 ise $1.5, üstündeyse reddet
  * NOT: Used fiyatın kendi tutarı burada kriter olarak kullanılmıyor, sadece rank bakılıyor.
  */
