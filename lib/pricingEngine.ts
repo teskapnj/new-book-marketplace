@@ -108,12 +108,16 @@ export function detectCategory(amazonCategory: string): ProductCategory {
 // Senaryo: Hiç fiyat yok (ne NEW ne USED)
 const NO_PRICE_BOOK_RANK_LIMIT = 1_000_000;
 const NO_PRICE_BOOK_PRICE = 3;
+const NO_PRICE_BOOK_HIGH_RANK_LIMIT = 2_000_000;
+const NO_PRICE_BOOK_HIGH_RANK_PRICE = 1.5;
 const NO_PRICE_MEDIA_RANK_LIMIT = 150_000; // CD / DVD / Oyun ortak
 const NO_PRICE_MEDIA_PRICE = 3;
 
 // Senaryo: NEW yok, USED var
 const USED_ONLY_BOOK_RANK_LIMIT = 1_000_000;
 const USED_ONLY_BOOK_PRICE = 1.5;
+const USED_ONLY_BOOK_HIGH_RANK_LIMIT = 2_000_000;
+const USED_ONLY_BOOK_HIGH_RANK_PRICE = 1.5;
 const USED_ONLY_MEDIA_RANK_LIMIT = 150_000; // CD / DVD / Oyun ortak
 const USED_ONLY_MEDIA_PRICE = 1.5;
 
@@ -274,21 +278,32 @@ function calculateGamePrice(price: number, salesRank: number): PricingResult {
 function handleNoPriceScenario(category: ProductCategory, salesRank: number): PricingResult {
   switch (category) {
     case 'books':
-      if (salesRank <= NO_PRICE_BOOK_RANK_LIMIT) {
-        return {
-          accepted: true,
-          ourPrice: NO_PRICE_BOOK_PRICE,
-          category: 'books',
-          priceRange: "No price available",
-          rankRange: `≤ ${NO_PRICE_BOOK_RANK_LIMIT.toLocaleString()}`
-        };
-      }
-      return {
-        accepted: false,
-        reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
-        category: 'books',
-        rankRange: `> ${NO_PRICE_BOOK_RANK_LIMIT.toLocaleString()}`
-      };
+  if (salesRank <= NO_PRICE_BOOK_RANK_LIMIT) {
+    return {
+      accepted: true,
+      ourPrice: NO_PRICE_BOOK_PRICE,
+      category: 'books',
+      priceRange: "No price available",
+      rankRange: `≤ ${NO_PRICE_BOOK_RANK_LIMIT.toLocaleString()}`
+    };
+  }
+
+  if (salesRank <= NO_PRICE_BOOK_HIGH_RANK_LIMIT) {
+    return {
+      accepted: true,
+      ourPrice: NO_PRICE_BOOK_HIGH_RANK_PRICE,
+      category: 'books',
+      priceRange: "No price available",
+      rankRange: "1M-2M"
+    };
+  }
+
+  return {
+    accepted: false,
+    reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
+    category: 'books',
+    rankRange: `> ${NO_PRICE_BOOK_HIGH_RANK_LIMIT.toLocaleString()}`
+  };
 
     case 'cds':
     case 'dvds':
@@ -327,22 +342,32 @@ function handleNoPriceScenario(category: ProductCategory, salesRank: number): Pr
 function handleUsedOnlyScenario(category: ProductCategory, salesRank: number): PricingResult {
   switch (category) {
     case 'books':
-      if (salesRank <= USED_ONLY_BOOK_RANK_LIMIT) {
-        return {
-          accepted: true,
-          ourPrice: USED_ONLY_BOOK_PRICE,
-          category: 'books',
-          priceRange: "Used price only",
-          rankRange: `≤ ${USED_ONLY_BOOK_RANK_LIMIT.toLocaleString()}`
-        };
-      }
-      return {
-        accepted: false,
-        reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
-        category: 'books',
-        rankRange: `> ${USED_ONLY_BOOK_RANK_LIMIT.toLocaleString()}`
-      };
+  if (salesRank <= USED_ONLY_BOOK_RANK_LIMIT) {
+    return {
+      accepted: true,
+      ourPrice: USED_ONLY_BOOK_PRICE,
+      category: 'books',
+      priceRange: "Used price only",
+      rankRange: `≤ ${USED_ONLY_BOOK_RANK_LIMIT.toLocaleString()}`
+    };
+  }
 
+  if (salesRank <= USED_ONLY_BOOK_HIGH_RANK_LIMIT) {
+    return {
+      accepted: true,
+      ourPrice: USED_ONLY_BOOK_HIGH_RANK_PRICE,
+      category: 'books',
+      priceRange: "Used price only",
+      rankRange: "1M-2M"
+    };
+  }
+
+  return {
+    accepted: false,
+    reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
+    category: 'books',
+    rankRange: `> ${USED_ONLY_BOOK_HIGH_RANK_LIMIT.toLocaleString()}`
+  };
     case 'cds':
     case 'dvds':
     case 'games':
