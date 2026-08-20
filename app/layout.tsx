@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     default: 'Sell Books, CDs, DVDs & Games for Cash - Free Shipping | SellBook Media',
     template: '%s | SellBook Media'
   },
-  description: 'Get instant cash for your used books, CDs, DVDs, and video games. Free shipping labels, fast payments, best prices guaranteed. America\'s #1 media buyback service.',
+  description: 'Sell your used books, CDs, DVDs, Blu-rays, 4K movies, and video games for cash. Get instant barcode offers, free prepaid shipping, and fast PayPal payments.',
   
   // ❌ KEYWORDS KALDIRILDI - Google kullanmıyor (deprecated since 2009)
   // keywords: [...],
@@ -52,7 +52,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'SellBook Media - Sell Your Books for Cash',
-    description: 'Turn your books into cash! Free shipping & best prices guaranteed.',
+    description: 'Turn your used books into cash with instant quotes, free prepaid shipping, and fast PayPal payments.',
     images: ['/twitter-image.jpg'],
   },
   alternates: {
