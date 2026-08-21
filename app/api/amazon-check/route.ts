@@ -211,20 +211,29 @@ function extractKeepaPricing(product: any): {
 }
 
 function extractKeepaSalesRank(product: any): number {
-  const rankFromStats = product?.stats?.current?.[3];
-  if (typeof rankFromStats === 'number' && rankFromStats > 0) {
-    return rankFromStats;
-  }
+  console.log("🔎 RANK DEBUG:", {
+    asin: product?.asin,
+    rootCategory: product?.rootCategory,
+    salesRankReference: product?.salesRankReference,
+    statsSalesRank: product?.stats?.current?.[3],
+    salesRankKeys: product?.salesRanks ? Object.keys(product.salesRanks) : [],
+    categoryTree: product?.categoryTree
+  });
 
-  // Fallback: salesRanks objesinden en güncel değeri al
-  if (product?.salesRanks) {
-    const rankArrays = Object.values(product.salesRanks) as number[][];
-    for (const arr of rankArrays) {
-      if (Array.isArray(arr) && arr.length >= 2) {
-        const lastRank = arr[arr.length - 1];
-        if (typeof lastRank === 'number' && lastRank > 0) return lastRank;
-      }
-    }
+  const rankFromStats = product?.stats?.current?.[3];
+  const rootCategory = product?.rootCategory;
+  const salesRankReference = product?.salesRankReference;
+
+  // Sadece ana/root kategori sales rank kabul edilir.
+  // Alt kategori rank'lari fallback olarak kullanilmaz.
+  if (
+    typeof rankFromStats === 'number' &&
+    rankFromStats > 0 &&
+    typeof rootCategory === 'number' &&
+    rootCategory > 0 &&
+    salesRankReference === rootCategory
+  ) {
+    return rankFromStats;
   }
 
   return 0;
@@ -264,17 +273,90 @@ function extractKeepaImage(product: any): string {
  * (aynı barkod farklı varyant/edisyona denk gelebilir).
  * Geçerli fiyat verisi olan ilk ürünü seç.
  */
-function pickBestKeepaProduct(products: any[]): any | null {
+function pickBestKeepaProduct(products: any[], searchCode: string): any | null {
   if (!products || products.length === 0) return null;
 
-  // Ayni barkod birden fazla ASIN'e denk gelebiliyor (farkli baski/varyant,
-  // hatali listing). Rank ayirt edici olmadigi icin fiyati olanlar arasindan
-  // EN DUSUK fiyatli olan secilir: yanlis varyant secilse bile fazla odeme yapilmaz.
+  const normalizedCode = String(searchCode || '')
+    .replace(/[-\s]/g, '')
+    .toUpperCase();
+
+  // ISBN-10 veya ISBN-13 ise KITAP mantigi kullan.
+  const isIsbnLookup =
+    /^\d{9}[\dX]$/.test(normalizedCode) ||
+    /^97[89]\d{10}$/.test(normalizedCode);
+
+  if (isIsbnLookup) {
+    // Sadece Books ana kategorisindeki sonuclari al.
+    const bookProducts = products.filter((p) => {
+      return (
+        p?.rootCategory === 283155 ||
+        extractKeepaCategory(p).toLowerCase() === 'books'
+      );
+    });
+
+    if (bookProducts.length > 0) {
+      // Mumkunse girilen ISBN ile gercekten eslesen listingleri ayir.
+      const exactMatches = bookProducts.filter((p) => {
+        const codes = [
+          ...(Array.isArray(p?.eanList) ? p.eanList : []),
+          ...(Array.isArray(p?.upcList) ? p.upcList : []),
+          ...(Array.isArray(p?.gtinList) ? p.gtinList : [])
+        ]
+          .map((v: any) =>
+            String(v || '').replace(/[-\s]/g, '').toUpperCase()
+          );
+
+        // ISBN-10 kitaplarda ASIN genellikle ISBN-10 ile aynidir.
+        return (
+          codes.includes(normalizedCode) ||
+          String(p?.asin || '').toUpperCase() === normalizedCode
+        );
+      });
+
+      const candidates =
+        exactMatches.length > 0 ? exactMatches : bookProducts;
+
+      // Kitaplarda sadece gercek ANA Books rank'i olan listingleri tercih et.
+      const rankedBooks = candidates.filter(
+        (p) => extractKeepaSalesRank(p) > 0
+      );
+
+      if (rankedBooks.length > 0) {
+        // Birden fazla gecerli listing varsa en iyi ANA Books rank'ini sec.
+        return rankedBooks.reduce((best, current) => {
+          const bestRank = extractKeepaSalesRank(best);
+          const currentRank = extractKeepaSalesRank(current);
+
+          return currentRank < bestRank ? current : best;
+        });
+      }
+
+      // Books sonucu var ama hicbirinde gecerli ana rank yok.
+      // Ilkini dondur; extractKeepaSalesRank = 0 olacagi icin pricingEngine reddeder.
+      return candidates[0];
+    }
+  }
+
+  // ============================================================
+  // CD / DVD / BLU-RAY / GAME:
+  // ESKI MANTIK AYNEN KALIYOR.
+  // Birden fazla varyasyonda en dusuk fiyatli olani sec.
+  // ============================================================
+  console.log(
+    "💿 MEDIA CANDIDATES:",
+    products.map((p) => ({
+      asin: p?.asin,
+      price: extractKeepaPricing(p).price,
+      rank: extractKeepaSalesRank(p)
+    }))
+  );
+
   let cheapest: any | null = null;
   let cheapestPrice = Infinity;
 
   for (const p of products) {
     const pricing = extractKeepaPricing(p);
+
     if (pricing.price > 0 && pricing.price < cheapestPrice) {
       cheapestPrice = pricing.price;
       cheapest = p;
@@ -283,13 +365,13 @@ function pickBestKeepaProduct(products: any[]): any | null {
 
   if (cheapest) return cheapest;
 
-  // Hicbirinde fiyat yoksa karar tamamen rank'e bakiyor,
-  // o yuzden rank'i en iyi (en dusuk sayi) olan secilir.
+  // Hicbirinde fiyat yoksa en iyi gecerli ana rank'i sec.
   let bestRanked = products[0];
   let bestRank = Infinity;
 
   for (const p of products) {
     const rank = extractKeepaSalesRank(p);
+
     if (rank > 0 && rank < bestRank) {
       bestRank = rank;
       bestRanked = p;
@@ -380,7 +462,7 @@ export async function POST(request: NextRequest) {
     console.log(`🎫 Tokens: consumed=${keepaResponse?.tokensConsumed}, left=${keepaResponse?.tokensLeft}, keepaMs=${keepaResponse?.processingTimeInMs}, roundTrip=${Date.now() - keepaStart}ms`);
 
     const products = keepaResponse?.products;
-    const bestProduct = pickBestKeepaProduct(products);
+    const bestProduct = pickBestKeepaProduct(products, codeInfo.searchCode);
 
     if (!bestProduct) {
       console.log(`Product not found: ${cleanCode}`);
