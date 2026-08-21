@@ -4,9 +4,17 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { User } from "firebase/auth";
+import { User, sendEmailVerification } from "firebase/auth";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  query,
+  where,
+  limit,
+  getDocs
+} from "firebase/firestore";
 import DOMPurify from "isomorphic-dompurify";
 import { trackEvent } from "@/lib/analytics";
 import { AmazonProduct } from "@/lib/pricingEngine";
@@ -98,8 +106,10 @@ export default function CheckoutForm({
     length: "", width: "", height: "", weight: ""
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStage, setSubmitStage] = useState("");
-  const [isLoaded, setIsLoaded] = useState(false);
+const [submitStage, setSubmitStage] = useState("");
+const [isLoaded, setIsLoaded] = useState(false);
+const [verificationRequired, setVerificationRequired] = useState(false);
+const [isResendingVerification, setIsResendingVerification] = useState(false);
 
   const totalOurPrice = bundleItems.reduce((t, i) => t + i.price * i.quantity, 0);
   const totalAmazonValue = bundleItems.reduce((t, i) => t + (i.originalPrice || 0) * i.quantity, 0);
@@ -275,24 +285,71 @@ export default function CheckoutForm({
     return `${total} ${names[dominant]} Collection in Used Condition`;
   };
 
+  const handleResendVerification = async () => {
+    if (!user) return;
+  
+    try {
+      setIsResendingVerification(true);
+      await sendEmailVerification(user);
+      setError("Verification email sent. Please check your inbox and spam folder.");
+    } catch (err) {
+      console.error("Verification email resend failed:", err);
+      setError("Could not resend verification email. Please try again later.");
+    } finally {
+      setIsResendingVerification(false);
+    }
+  };
+
   // -------------------------------------------------------------------------
   // Submit
   // -------------------------------------------------------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!user) { setError("Please login to submit your listing"); return; }
+  
+    if (!user) {
+      setError("Please login to submit your listing");
+      return;
+    }
+  
     if (!validate()) return;
+  
     if (bundleItems.length < 5) {
       setError("Please add at least 5 items to create a bundle listing");
       return;
     }
-
+  
     setIsSubmitting(true);
     setError("");
-    setSubmitStage("Preparing your items...");
-
+    setVerificationRequired(false);
+    setSubmitStage("Checking your account...");
+  
     try {
+      // Firebase Auth bilgisini yenile.
+      // Kullanici emailini baska sekmede dogrulamissa yeni durum hemen gorulsun.
+      await user.reload();
+  
+      if (!user.emailVerified) {
+        // Email dogrulanmadiysa daha once siparis verip vermedigine bak.
+        const previousOrdersQuery = query(
+          collection(db, "listings"),
+          where("vendorId", "==", user.uid),
+          limit(1)
+        );
+  
+        const previousOrders = await getDocs(previousOrdersQuery);
+  
+        // En az bir onceki siparisi varsa bu artik 2. siparistir.
+        if (!previousOrders.empty) {
+          setVerificationRequired(true);
+          setError("Please verify your email before submitting another order.");
+          setIsSubmitting(false);
+          setSubmitStage("");
+          return;
+        }
+      }
+  
+      // Ilk siparis ise email dogrulanmamis olsa bile devam eder.
+      setSubmitStage("Preparing your items...");
       const title = generateTitle();
 
       const items = bundleItems.map(item => ({
@@ -521,13 +578,30 @@ export default function CheckoutForm({
 
       {/* Hata */}
       {(shippingError || error) && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-          <div className="flex items-start">
-            <AlertIcon size={20} className="text-red-500 flex-shrink-0" />
-            <p className="ml-3 text-sm font-medium text-red-700">{shippingError || error}</p>
-          </div>
-        </div>
-      )}
+  <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+    <div className="flex items-start">
+      <AlertIcon size={20} className="text-red-500 flex-shrink-0" />
+      <div className="ml-3">
+        <p className="text-sm font-medium text-red-700">
+          {shippingError || error}
+        </p>
+
+        {verificationRequired && (
+          <button
+            type="button"
+            onClick={handleResendVerification}
+            disabled={isResendingVerification}
+            className="mt-3 text-sm font-semibold text-blue-700 underline disabled:opacity-50"
+          >
+            {isResendingVerification
+              ? "Sending verification email..."
+              : "Resend verification email"}
+          </button>
+        )}
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Terms metni + submit */}
       <div className="border-t border-gray-100 pt-5">

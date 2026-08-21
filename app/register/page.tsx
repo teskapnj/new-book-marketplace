@@ -302,12 +302,12 @@ export default function RegisterPage() {
       console.log("User document created in Firestore");
       
       // Doğrulama e-postası gönder
-      await sendEmailVerification(userCredential.user);
-      console.log("Verification email sent");
-      
-      // Kullanıcıyı oturumdan çıkar (e-posta doğrulanana kadar giriş yapamaması için)
-      await auth.signOut();
-      setEmailSent(true);
+await sendEmailVerification(userCredential.user);
+console.log("Verification email sent");
+
+// Kullanıcı oturumda kalır.
+// İlk sipariş için e-posta doğrulaması zorunlu değildir.
+router.push("/");
     } catch (error: any) {
       console.error("Registration error:", error);
       
