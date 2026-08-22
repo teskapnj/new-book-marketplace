@@ -1294,9 +1294,9 @@ export default function HomePage() {
     </span>
   </div>
 
-  <p className="mt-3 text-xs text-gray-500">
-    Minimum 5 accepted items per order.
-  </p>
+  <p className="mt-4 text-base text-gray-700 font-medium">
+  <span className="font-bold">Minimum</span> 5 accepted items per order.
+</p>
 </div>
           </div>
         </div>
@@ -1425,36 +1425,40 @@ export default function HomePage() {
                     </div>
 
                     <div className="mt-4">
-  <div className="flex justify-between items-center mb-2 text-sm">
-    <span className="font-medium text-gray-700">
-      {Math.min(bundleItems.length, 5)} of 5 items added
-    </span>
-    <span className={itemsRemaining > 0 ? "text-amber-700" : "text-green-700 font-semibold"}>
-      {itemsRemaining > 0
-        ? `${itemsRemaining} more needed`
-        : "Ready to ship!"}
-    </span>
-  </div>
-
-  <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
-    <div
-      className={`h-2.5 rounded-full transition-all duration-300 ${
-        itemsRemaining === 0 ? "bg-green-500" : "bg-blue-500"
-      }`}
-      style={{
-        width: `${Math.min((bundleItems.length / 5) * 100, 100)}%`
-      }}
-    />
-  </div>
-
   {itemsRemaining > 0 ? (
-    <p className="mt-2 text-xs text-center text-gray-500">
-      Add {itemsRemaining} more accepted item{itemsRemaining !== 1 ? "s" : ""} to continue.
-    </p>
+    <>
+      <div className="flex justify-between items-center mb-2 text-sm">
+        <span className="font-medium text-gray-700">
+          {bundleItems.length} of 5 items added
+        </span>
+
+        <span className="text-amber-700">
+          {itemsRemaining} more needed
+        </span>
+      </div>
+
+      <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+        <div
+          className="h-2.5 rounded-full transition-all duration-300 bg-blue-500"
+          style={{
+            width: `${(bundleItems.length / 5) * 100}%`
+          }}
+        />
+      </div>
+
+      <p className="mt-2 text-xs text-center text-gray-500">
+        Add {itemsRemaining} more accepted item{itemsRemaining !== 1 ? "s" : ""} to continue.
+      </p>
+    </>
   ) : (
-    <p className="mt-2 text-xs text-center text-green-700 font-medium">
-      ✓ You&apos;ve reached the 5-item minimum.
-    </p>
+    <div className="rounded-lg bg-green-100 border border-green-300 px-4 py-3 text-center">
+  <p className="text-base font-bold text-green-900">
+    ✓ Minimum reached
+  </p>
+  <p className="mt-1 text-sm font-semibold text-green-800">
+    You can continue adding more items.
+  </p>
+</div>
   )}
 </div>
                   </div>
