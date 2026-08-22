@@ -1542,7 +1542,7 @@ export default function HomePage() {
 </div>
 <div className="py-5 sm:py-6 text-center">
   <div className="text-xl sm:text-2xl font-bold text-gray-900">$1.50+</div>
-  <div className="text-xs sm:text-sm text-gray-500 mt-1">Accepted Offers</div>
+  <div className="text-xs sm:text-sm text-gray-500 mt-1">Accepted Offers start at 1.50$</div>
 </div>
           <div className="py-5 sm:py-6 text-center">
             <div className="text-xl sm:text-2xl font-bold text-gray-900">PayPal</div>
