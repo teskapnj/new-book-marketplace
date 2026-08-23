@@ -6,7 +6,6 @@ import { StoreProvider } from '@/lib/store'
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from '@vercel/analytics/react'
 import type { Metadata } from 'next'
-import StorageGuard from '@/components/StorageGuard'
 
 // SEO Metadata
 export const metadata: Metadata = {
@@ -16,13 +15,11 @@ export const metadata: Metadata = {
     template: '%s | SellBook Media'
   },
   description: 'Sell your used books, CDs, DVDs, Blu-rays, 4K movies, and video games for cash. Get instant barcode offers, free prepaid shipping, and fast PayPal payments.',
-  
-  // ❌ KEYWORDS KALDIRILDI - Google kullanmıyor (deprecated since 2009)
-  // keywords: [...],
-  
+
   authors: [{ name: 'SellBook Media' }],
   creator: 'SellBook Media',
   publisher: 'SellBook Media',
+
   robots: {
     index: true,
     follow: true,
@@ -34,6 +31,7 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -50,18 +48,20 @@ export const metadata: Metadata = {
       },
     ],
   },
+
   twitter: {
     card: 'summary_large_image',
     title: 'SellBook Media - Sell Your Books for Cash',
     description: 'Turn your used books into cash with instant quotes, free prepaid shipping, and fast PayPal payments.',
     images: ['/twitter-image.jpg'],
   },
+
   alternates: {
     canonical: 'https://www.sellbookmedia.com',
   },
 }
 
-// ✅ JSON-LD Structured Data - IMPROVED
+// JSON-LD Structured Data
 const structuredData = {
   '@context': 'https://schema.org',
   '@graph': [
@@ -80,20 +80,6 @@ const structuredData = {
       sameAs: [
         'https://www.facebook.com/sellbookmedia'
       ],
-      
-      // ⚠️ ADDRESS - Eğer fiziksel ofis YOKSA kaldırın
-      // address: {
-      //   '@type': 'PostalAddress',
-      //   addressCountry: 'US'
-      // },
-      
-      // ⚠️ AGGREGATE RATING - Gerçek 500 yorumunuz YOKSA kaldırın!
-      // aggregateRating: {
-      //   '@type': 'AggregateRating',
-      //   ratingValue: '4.8',
-      //   bestRating: '5',
-      //   ratingCount: '500'
-      // }
     },
     {
       '@type': 'WebSite',
@@ -103,16 +89,6 @@ const structuredData = {
       publisher: {
         '@id': 'https://www.sellbookmedia.com/#organization'
       },
-      
-      // ⚠️ SEARCH ACTION - /search sayfanız YOKSA kaldırın
-      // potentialAction: {
-      //   '@type': 'SearchAction',
-      //   target: {
-      //     '@type': 'EntryPoint',
-      //     urlTemplate: 'https://www.sellbookmedia.com/search?q={search_term_string}'
-      //   },
-      //   'query-input': 'required name=search_term_string'
-      // }
     },
     {
       '@type': 'Service',
@@ -143,30 +119,78 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+
+        {/* Brave Browser Detection */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function () {
+                try {
+                  if (window.location.pathname === '/browser-not-supported.html') {
+                    return;
+                  }
+
+                  var ua = navigator.userAgent || '';
+
+                  // Brave on iOS normally includes "Brave" in the User-Agent.
+                  if (/Brave/i.test(ua)) {
+                    window.location.replace('/browser-not-supported.html');
+                    return;
+                  }
+
+                  // Brave detection for desktop / Android / supported environments.
+                  if (
+                    navigator.brave &&
+                    typeof navigator.brave.isBrave === 'function'
+                  ) {
+                    navigator.brave
+                      .isBrave()
+                      .then(function (isBrave) {
+                        if (isBrave) {
+                          window.location.replace('/browser-not-supported.html');
+                        }
+                      })
+                      .catch(function () {});
+                  }
+                } catch (e) {
+                  // Never interfere with normal browsers if detection fails.
+                }
+              })();
+            `,
+          }}
+        />
+
         {/* JSON-LD Structured Data */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
-        
+
         {/* Preconnect for Performance */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+
       </head>
+
       <body>
-      <StorageGuard>
         <AuthProvider>
           <WishlistProvider>
             <CartProvider>
               <StoreProvider>
+
                 {children}
+
                 <SpeedInsights />
                 <Analytics />
+
               </StoreProvider>
             </CartProvider>
           </WishlistProvider>
         </AuthProvider>
-      </StorageGuard>
       </body>
     </html>
   )
