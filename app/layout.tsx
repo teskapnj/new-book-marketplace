@@ -6,6 +6,7 @@ import { StoreProvider } from '@/lib/store'
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from '@vercel/analytics/react'
 import type { Metadata } from 'next'
+import StorageGuard from '@/components/StorageGuard'
 
 // SEO Metadata
 export const metadata: Metadata = {
@@ -153,6 +154,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body>
+      <StorageGuard>
         <AuthProvider>
           <WishlistProvider>
             <CartProvider>
@@ -164,6 +166,7 @@ export default function RootLayout({
             </CartProvider>
           </WishlistProvider>
         </AuthProvider>
+      </StorageGuard>
       </body>
     </html>
   )
