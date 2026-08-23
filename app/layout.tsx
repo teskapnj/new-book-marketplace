@@ -76,6 +76,9 @@ const structuredData = {
         height: 512
       },
       description: 'Buy used books, CDs, DVDs, and video games from customers nationwide',
+      sameAs: [
+        'https://www.facebook.com/sellbookmedia'
+      ],
       
       // ⚠️ ADDRESS - Eğer fiziksel ofis YOKSA kaldırın
       // address: {
