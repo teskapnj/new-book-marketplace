@@ -77,11 +77,6 @@ export function useBarcodeScanner(options: BarcodeScannerOptions): BarcodeScanne
     selectedDeviceId: null
   });
 
-  // Stable mobile flag.
-  // Some iOS browsers (including Brave) can briefly report a desktop-like UA/viewport
-  // during initial render. Resolve it after mount and keep the result in state.
-  const [isMobile, setIsMobile] = useState(false);
-
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -102,41 +97,11 @@ export function useBarcodeScanner(options: BarcodeScannerOptions): BarcodeScanne
   }, [onScan]);
 
   // Mobile device check
-const checkIsMobile = useCallback((): boolean => {
-  if (typeof navigator === 'undefined' || typeof window === 'undefined') {
-    return false;
-  }
-
-  const userAgent = navigator.userAgent || '';
-
-  // Normal mobile user agents
-  const mobileUserAgent =
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-      userAgent
+  const checkIsMobile = useCallback((): boolean => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent || ''
     );
-
-  // Brave / iPadOS / desktop-style mobile user agent fallback
-  const touchMobile =
-    navigator.maxTouchPoints > 1 &&
-    window.innerWidth <= 1024;
-
-  return mobileUserAgent || touchMobile;
-}, []);
-
-  useEffect(() => {
-    const updateMobileState = () => {
-      setIsMobile(checkIsMobile());
-    };
-
-    updateMobileState();
-    window.addEventListener('resize', updateMobileState);
-    window.addEventListener('orientationchange', updateMobileState);
-
-    return () => {
-      window.removeEventListener('resize', updateMobileState);
-      window.removeEventListener('orientationchange', updateMobileState);
-    };
-  }, [checkIsMobile]);
+  }, []);
 
   // List camera devices
   const getCameraDevices = useCallback(async (): Promise<MediaDeviceInfo[]> => {
@@ -194,45 +159,30 @@ const checkIsMobile = useCallback((): boolean => {
 
       const devices = await getCameraDevices();
 
-      // IMPORTANT FOR iOS / BRAVE:
-      // enumerateDevices() can return an empty list before camera permission has
-      // been granted. Do not stop here. getUserMedia() with facingMode can still
-      // successfully open the rear camera and trigger the permission prompt.
+      if (devices.length === 0) {
+        const error = 'No camera device found';
+        setState(prev => ({ ...prev, error }));
+        onError(error);
+        return false;
+      }
+
       const selectedDevice = deviceId
         ? devices.find(d => d.deviceId === deviceId) || devices[0]
         : devices[0];
 
-      const constraints: MediaStreamConstraints[] = [];
-
-      // If we already know a concrete device, try it first.
-      if (selectedDevice?.deviceId) {
-        constraints.push(
-          {
-            video: {
-              deviceId: { exact: selectedDevice.deviceId },
-              width: { ideal: 1920, min: 1280 },
-              height: { ideal: 1080, min: 720 },
-              facingMode: { ideal: 'environment' }
-            },
-            audio: false
-          },
-          {
-            video: {
-              deviceId: { exact: selectedDevice.deviceId },
-              width: { ideal: 1280 },
-              height: { ideal: 720 },
-              facingMode: { ideal: 'environment' }
-            },
-            audio: false
-          }
-        );
-      }
-
-      // Generic fallbacks are essential on iPhone/iPad browsers where camera
-      // device IDs may be unavailable until after permission is granted.
-      constraints.push(
+      const constraints: MediaStreamConstraints[] = [
         {
           video: {
+            deviceId: selectedDevice.deviceId ? { exact: selectedDevice.deviceId } : undefined,
+            width: { ideal: 1920, min: 1280 },
+            height: { ideal: 1080, min: 720 },
+            facingMode: { ideal: 'environment' }
+          },
+          audio: false
+        },
+        {
+          video: {
+            deviceId: selectedDevice.deviceId ? { exact: selectedDevice.deviceId } : undefined,
             width: { ideal: 1280 },
             height: { ideal: 720 },
             facingMode: { ideal: 'environment' }
@@ -248,16 +198,12 @@ const checkIsMobile = useCallback((): boolean => {
           audio: false
         },
         {
-          video: { facingMode: { ideal: 'environment' } },
-          audio: false
-        },
-        {
           video: true,
           audio: false
         }
-      );
+      ];
 
-      console.log('Starting camera...', selectedDevice?.label || 'Default camera');
+      console.log('Starting camera...', selectedDevice.label || 'Unknown device');
 
       let stream = null;
       for (let i = 0; i < constraints.length; i++) {
@@ -301,7 +247,7 @@ const checkIsMobile = useCallback((): boolean => {
                 isCameraReady: true,
                 error: null,
                 supportedDevices: devices,
-                selectedDeviceId: selectedDevice?.deviceId || null
+                selectedDeviceId: selectedDevice.deviceId
               }));
               console.log('Camera ready');
             }
@@ -666,6 +612,6 @@ const checkIsMobile = useCallback((): boolean => {
     stopScanning,
     switchCamera,
     videoRef,
-    isMobile
+    isMobile: checkIsMobile()
   };
 }
