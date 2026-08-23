@@ -97,11 +97,26 @@ export function useBarcodeScanner(options: BarcodeScannerOptions): BarcodeScanne
   }, [onScan]);
 
   // Mobile device check
-  const checkIsMobile = useCallback((): boolean => {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-      navigator.userAgent || ''
+const checkIsMobile = useCallback((): boolean => {
+  if (typeof navigator === 'undefined' || typeof window === 'undefined') {
+    return false;
+  }
+
+  const userAgent = navigator.userAgent || '';
+
+  // Normal mobile user agents
+  const mobileUserAgent =
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      userAgent
     );
-  }, []);
+
+  // Brave / iPadOS / desktop-style mobile user agent fallback
+  const touchMobile =
+    navigator.maxTouchPoints > 1 &&
+    window.innerWidth <= 1024;
+
+  return mobileUserAgent || touchMobile;
+}, []);
 
   // List camera devices
   const getCameraDevices = useCallback(async (): Promise<MediaDeviceInfo[]> => {
