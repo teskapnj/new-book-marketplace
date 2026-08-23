@@ -539,14 +539,14 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
       <div className="border-t border-gray-100 pt-5">
         <h3 className="text-lg font-semibold text-gray-900 mb-1">Your box</h3>
         <p className="text-sm text-gray-500 mb-3">
-          Measure the box you&apos;ll ship in. One box per order, max 18 × 16 × 16 in and 50 lbs.
+        Approximate measurements are fine. One box per order, max 18 × 16 × 16 in and 50 lbs.
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {([
-            { key: "length" as const, label: "Length (in)", max: 18 },
-            { key: "width" as const, label: "Width (in)", max: 16 },
-            { key: "height" as const, label: "Height (in)", max: 16 },
-            { key: "weight" as const, label: "Weight (lb)", max: 50 }
+            { key: "length" as const, label: "Approx. Length (in)", max: 18 },
+            { key: "width" as const, label: "Approx. Width (in)", max: 16 },
+            { key: "height" as const, label: "Approx. Height (in)", max: 16 },
+            { key: "weight" as const, label: "Approx. Weight (lb)", max: 50 }
           ]).map(f => (
             <div key={f.key}>
               <label className="block text-xs font-medium text-gray-600 mb-1">{f.label}</label>
@@ -633,7 +633,7 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
         </button>
 
         <p className="text-center text-xs text-gray-400 mt-3">
-          Free prepaid label emailed within 24 hours
+        Free prepaid label sent by email
         </p>
       </div>
     </form>
