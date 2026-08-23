@@ -1546,7 +1546,7 @@ export default function HomePage() {
         <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-gray-100">
         <div className="py-5 sm:py-6 text-center">
   <div className="text-xl sm:text-2xl font-bold text-gray-900">FREE</div>
-  <div className="text-xs sm:text-sm text-gray-500 mt-1">Prepaid Shipping</div>
+  <div className="text-xs sm:text-sm text-gray-500 mt-1">Prepaid Label by Email</div>
 </div>
 <div className="py-5 sm:py-6 text-center">
   <div className="text-xl sm:text-2xl font-bold text-gray-900">$1.50+</div>
