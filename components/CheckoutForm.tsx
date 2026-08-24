@@ -550,10 +550,10 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
           ]).map(f => (
             <div key={f.key}>
               <label className="block text-xs font-medium text-gray-600 mb-1">{f.label}</label>
-              <input type="number" min="0" max={f.max} step="0.1"
+              <input type="number" min="0" max={f.max} step="1"
                 value={shippingInfo.packageDimensions[f.key] || ""}
                 onChange={e => handleDimensionChange(f.key, parseFloat(e.target.value) || 0)}
-                placeholder="0.0"
+                placeholder="0"
                 className={`block w-full px-3 py-2.5 text-base border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                   dimensionErrors[f.key] ? "border-red-500" : "border-gray-300"
                 }`} />
