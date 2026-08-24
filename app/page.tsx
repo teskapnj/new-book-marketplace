@@ -726,25 +726,34 @@ export default function HomePage() {
     return () => clearTimeout(t);
   }, [showCheckout]);
 
-  // Giris sonrasi ana sayfaya donunce checkout'u kaldigi yerden ac
-  useEffect(() => {
-    if (!isMounted || isInitializing) return;
-    if (!user || showCheckout) return;
-    if (bundleItems.length < 5) return;
+ // Giris sonrasi ana sayfaya donunce checkout'u kaldigi yerden ac
+useEffect(() => {
+  if (!isMounted || isInitializing) return;
+  if (!user || showCheckout) return;
+  if (bundleItems.length < 5) return;
 
-    let flag: string | null = null;
-    try { flag = sessionStorage.getItem('resumeCheckout'); } catch { return; }
-    if (flag !== 'true') return;
-    try { sessionStorage.removeItem('resumeCheckout'); } catch {}
+  let flag: string | null = null;
+  try { flag = sessionStorage.getItem('resumeCheckout'); } catch { return; }
+  if (flag !== 'true') return;
+  try { sessionStorage.removeItem('resumeCheckout'); } catch {}
 
-    trackEvent('shipping_started', {
-      item_count: bundleItems.length,
-      total_value: totalOurPrice
+  trackEvent('shipping_started', {
+    item_count: bundleItems.length,
+    total_value: totalOurPrice
+  });
+
+  setShowAuthOptions(false);
+  setShowCheckout(true);
+
+  setTimeout(() => {
+    checkoutFormRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
     });
-    setShowAuthOptions(false);
-    setShowCheckout(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, isMounted, isInitializing, bundleItems.length, showCheckout]);
+  }, 300);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [user, isMounted, isInitializing, bundleItems.length, showCheckout]);
 
   // -------------------------------------------------------------------------
   // Effects

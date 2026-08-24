@@ -4,7 +4,6 @@ import { useState } from "react";
 import { auth } from "@/lib/firebase";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { FcGoogle } from "react-icons/fc";
-import { FaFacebook } from "react-icons/fa";
 import DOMPurify from 'isomorphic-dompurify';
 
 interface SocialLoginProps {
@@ -66,10 +65,6 @@ export default function SocialLogin({ isLogin = true, onSuccess, onError }: Soci
     }
   };
 
-  const handleFacebookClick = () => {
-    // Facebook henüz aktif değil - sessizce ignore et
-    console.log('Facebook login coming soon...');
-  };
 
   return (
     <div className="mt-6">
@@ -84,7 +79,7 @@ export default function SocialLogin({ isLogin = true, onSuccess, onError }: Soci
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-3">
+      <div className="mt-6">
         {/* Google Button - Active */}
         <button
           onClick={handleGoogleLogin}
@@ -95,16 +90,6 @@ export default function SocialLogin({ isLogin = true, onSuccess, onError }: Soci
           <span className="sr-only">Sign in with Google</span>
         </button>
 
-        {/* Facebook Button - Disabled but Visible */}
-        <button
-          onClick={handleFacebookClick}
-          disabled={true}
-          className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-gray-100 text-sm font-medium text-gray-400 cursor-not-allowed opacity-50"
-          title="Coming soon"
-        >
-          <FaFacebook className="h-5 w-5 text-blue-400" />
-          <span className="sr-only">Facebook login coming soon</span>
-        </button>
       </div>
     </div>
   );
