@@ -1041,54 +1041,83 @@ useEffect(() => {
       )}
 
       {/* ===================== SUCCESS POPUP ===================== */}
-      {showSuccessPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70] p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex justify-center flex-1">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                    <CheckCircleIcon size={32} className="text-green-600" />
-                  </div>
-                </div>
-                <button onClick={() => setShowSuccessPopup(false)} className="text-gray-400 hover:text-gray-600">
-                  <XIcon size={24} />
-                </button>
-              </div>
-              <h3 className="text-xl font-bold text-center text-gray-900 mb-2">Listing Submitted Successfully!</h3>
-              <p className="text-gray-600 text-center mb-6">
-                Your items have been submitted for review. You will receive a free shipping label via email within 24 hours.
-              </p>
-              <div className="bg-blue-50 rounded-lg p-4 mb-4">
-                <div className="flex items-start">
-                  <MailIcon size={20} className="text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
-                  <div>
-                    <h4 className="text-sm font-medium text-blue-800 mb-1">What happens next?</h4>
-                    <ul className="text-sm text-blue-700 space-y-1">
-                      <li className="flex items-start"><CheckIcon size={16} className="text-blue-600 mr-2 mt-0.5 flex-shrink-0" /><span>Our team will review your items within 24 hours</span></li>
-                      <li className="flex items-start"><CheckIcon size={16} className="text-blue-600 mr-2 mt-0.5 flex-shrink-0" /><span>If approved: you&apos;ll receive a free shipping label via email</span></li>
-                      <li className="flex items-start"><CheckIcon size={16} className="text-blue-600 mr-2 mt-0.5 flex-shrink-0" /><span>Package your items and attach the shipping label</span></li>
-                      <li className="flex items-start"><CheckIcon size={16} className="text-blue-600 mr-2 mt-0.5 flex-shrink-0" /><span>Drop off the package at any authorized location</span></li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-green-50 rounded-lg p-4">
-                <div className="flex items-start">
-                  <ClockIcon size={20} className="text-green-600 mt-0.5 mr-3 flex-shrink-0" />
-                  <div>
-                    <h4 className="text-sm font-medium text-green-800 mb-1">Important Information</h4>
-                    <p className="text-sm text-green-700">
-                      Please check your email (including spam/junk folder) for the shipping label.
-                      If you don&apos;t receive it within 24 hours, please contact our support team.
-                    </p>
-                  </div>
-                </div>
-              </div>
+{showSuccessPopup && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70] p-4">
+    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4">
+      <div className="p-6">
+        <div className="flex justify-between items-start mb-4">
+          <div className="flex justify-center flex-1">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+              <CheckCircleIcon size={32} className="text-green-600" />
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowSuccessPopup(false)}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <XIcon size={24} />
+          </button>
+        </div>
+
+        <h3 className="text-xl font-bold text-center text-gray-900 mb-2">
+          Order Submitted Successfully!
+        </h3>
+
+        <p className="text-gray-600 text-center mb-6">
+          Your prepaid shipping label will be emailed to you shortly.
+        </p>
+
+        <div className="bg-blue-50 rounded-lg p-4">
+          <div className="flex items-start">
+            <MailIcon
+              size={20}
+              className="text-blue-600 mt-0.5 mr-3 flex-shrink-0"
+            />
+
+            <div>
+              <h4 className="text-sm font-medium text-blue-800 mb-2">
+                What happens next?
+              </h4>
+
+              <ul className="text-sm text-blue-700 space-y-2">
+                <li className="flex items-start">
+                  <CheckIcon
+                    size={16}
+                    className="text-blue-600 mr-2 mt-0.5 flex-shrink-0"
+                  />
+                  <span>
+                    Check your inbox and spam/junk folder for the shipping label
+                  </span>
+                </li>
+
+                <li className="flex items-start">
+                  <CheckIcon
+                    size={16}
+                    className="text-blue-600 mr-2 mt-0.5 flex-shrink-0"
+                  />
+                  <span>
+                    Pack your items securely and attach the label
+                  </span>
+                </li>
+
+                <li className="flex items-start">
+                  <CheckIcon
+                    size={16}
+                    className="text-blue-600 mr-2 mt-0.5 flex-shrink-0"
+                  />
+                  <span>
+                    Drop off your package at an authorized location
+                  </span>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
-      )}
+      </div>
+    </div>
+  </div>
+)}
 
       {/* ===================== HEADER ===================== */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
