@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import MediaCategoryLinks from "../../components/MediaCategoryLinks";
+import LandingCtaLink from "../../components/LandingCtaLink";
 
 const SITE_URL = "https://www.sellbookmedia.com";
 const PAGE_URL = `${SITE_URL}/sell-books-for-cash`;
@@ -190,12 +191,14 @@ export default function SellBooksForCashPage() {
               SellBookMedia
             </Link>
 
-            <Link
-              href="/#quote"
-              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-5 sm:px-6 py-2 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
-            >
-              Start Selling
-            </Link>
+            <LandingCtaLink
+  href="/#quote"
+  eventName="books_landing_cta_clicked"
+  ctaLocation="header"
+  className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-5 sm:px-6 py-2 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
+>
+  Start Selling
+</LandingCtaLink>
           </div>
         </div>
       </header>
@@ -264,13 +267,15 @@ export default function SellBooksForCashPage() {
             </div>
 
             <div className="mt-12">
-              <Link
-                href="/#quote"
-                className="group inline-flex items-center px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold text-lg sm:text-xl rounded-2xl hover:from-yellow-500 hover:to-orange-600 transition-all duration-300 shadow-2xl transform hover:-translate-y-1"
-              >
-                Check My Book&apos;s Value
-                <ArrowRight />
-              </Link>
+            <LandingCtaLink
+  href="/#quote"
+  eventName="books_landing_cta_clicked"
+  ctaLocation="hero"
+  className="group inline-flex items-center px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold text-lg sm:text-xl rounded-2xl hover:from-yellow-500 hover:to-orange-600 transition-all duration-300 shadow-2xl transform hover:-translate-y-1"
+>
+  Check My Book&apos;s Value
+  <ArrowRight />
+</LandingCtaLink>
             </div>
 
             <p className="mt-4 text-sm text-blue-100">
@@ -559,13 +564,15 @@ export default function SellBooksForCashPage() {
             Grab a book, scan the ISBN, and see our cash offer.
           </p>
 
-          <Link
-            href="/#quote"
-            className="inline-flex items-center px-8 py-4 bg-white text-blue-600 font-bold text-lg rounded-2xl hover:bg-gray-100 transition-all duration-300 shadow-lg"
-          >
-            Get My Book Quote
-            <ArrowRight />
-          </Link>
+          <LandingCtaLink
+  href="/#quote"
+  eventName="books_landing_cta_clicked"
+  ctaLocation="footer"
+  className="inline-flex items-center px-8 py-4 bg-white text-blue-600 font-bold text-lg rounded-2xl hover:bg-gray-100 transition-all duration-300 shadow-lg"
+>
+  Get My Book Quote
+  <ArrowRight />
+</LandingCtaLink>
         </div>
       </section>
 

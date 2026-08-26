@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import MediaCategoryLinks from "../../components/MediaCategoryLinks";
+import LandingCtaLink from "../../components/LandingCtaLink";
 
 export const metadata: Metadata = {
   title: "Sell CDs for Cash Online | Instant Quotes & Free Shipping",
@@ -101,12 +102,14 @@ export default function SellCdsForCashPage() {
           </p>
 
           <div className="mt-8">
-            <Link
-              href="/#quote"
-              className="inline-flex items-center justify-center px-8 py-4 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-gray-900 text-lg font-bold shadow-lg transition-colors"
-            >
-              Scan a CD Barcode
-            </Link>
+          <LandingCtaLink
+  href="/#quote"
+  eventName="cds_landing_cta_clicked"
+  ctaLocation="hero"
+  className="inline-flex items-center justify-center px-8 py-4 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-gray-900 text-lg font-bold shadow-lg transition-colors"
+>
+  Scan a CD Barcode
+</LandingCtaLink>
           </div>
 
           <div className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-blue-100">
@@ -321,12 +324,14 @@ export default function SellCdsForCashPage() {
             Grab a CD, scan the barcode, and get your cash offer.
           </p>
 
-          <Link
-            href="/#quote"
-            className="inline-flex mt-8 items-center justify-center px-8 py-4 rounded-xl bg-white text-blue-700 font-bold text-lg hover:bg-gray-100 transition-colors"
-          >
-            Get My CD Quote
-          </Link>
+          <LandingCtaLink
+  href="/#quote"
+  eventName="cds_landing_cta_clicked"
+  ctaLocation="footer"
+  className="inline-flex mt-8 items-center justify-center px-8 py-4 rounded-xl bg-white text-blue-700 font-bold text-lg hover:bg-gray-100 transition-colors"
+>
+  Get My CD Quote
+</LandingCtaLink>
         </div>
       </section>
     </main>
