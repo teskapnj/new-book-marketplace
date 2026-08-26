@@ -2,11 +2,12 @@
 // Funnel takibi için basit event gönderme yardımcısı
 
 type FunnelEvent =
-  | 'scan_started'        // Tarama başladı (kamera veya manuel giriş)
-  | 'item_accepted'       // Ürün sepete eklendi
+  | 'barcode_section_viewed' // Barkod giriş alanı kullanıcı tarafından görüldü
+  | 'barcode_scanned'        // Her gerçek barkod sorgusunda bir kez
+  | 'item_accepted'          // Ürün sepete eklendi
   | 'item_rejected'       // Ürün kabul edilmedi (teşhis amaçlı, dönüşüm değil)
   | 'minimum_reached'     // 5 ürüne ulaşıldı
-  | 'shipping_started'    // Shipping sayfasına geçildi
+  | 'shipping_started'    // Shipping aşamasına ulaşıldı
   | 'listing_submitted';  // Gönderim tamamlandı
 
 export const trackEvent = (

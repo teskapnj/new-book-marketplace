@@ -279,9 +279,11 @@ export default function HomePage() {
   const [showAuthOptions, setShowAuthOptions] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
-  // --- Tek sayfa checkout ---
-  const [showCheckout, setShowCheckout] = useState(false);
-  const checkoutFormRef = useRef<HTMLDivElement | null>(null);
+    // --- Tek sayfa checkout ---
+    const [showCheckout, setShowCheckout] = useState(false);
+    const checkoutFormRef = useRef<HTMLDivElement | null>(null);
+    const barcodeSectionRef = useRef<HTMLDivElement | null>(null);
+    const barcodeSectionViewedFiredRef = useRef(false);
 
   // Storage state
   const [isPrivateMode, setIsPrivateMode] = useState(false);
@@ -291,8 +293,6 @@ export default function HomePage() {
 
   const resultTimerRef = useRef<NodeJS.Timeout | null>(null);
   const minimumReachedFiredRef = useRef(false);
-  // scan_started oturumda bir kez: kamera veya manuel giris, hangisi once olursa
-  const scanStartedFiredRef = useRef(false);
 
   const totalOurPrice = bundleItems.reduce((total, item) => {
     return total + (item.price * item.quantity);
@@ -503,18 +503,12 @@ export default function HomePage() {
     setIsbnInput("");
   };
 
-  // Kamera ve manuel girisin ortak noktasi - ikisinden hangisi once olursa
-  const fireScanStarted = useCallback(() => {
-    if (scanStartedFiredRef.current) return;
-    scanStartedFiredRef.current = true;
-    trackEvent('scan_started');
-  }, []);
+
 
   const handleBarcodeScanned = useCallback(async (code: string) => {
     if (!code || !code.trim()) return;
 
-    // Manuel giris de huninin ilk basamagi sayilir (masaustunde kamera yok)
-    fireScanStarted();
+    trackEvent('barcode_scanned');
 
     // Kisa bip sesi
     try {
@@ -618,7 +612,7 @@ export default function HomePage() {
       setIsCheckingAmazon(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bundleItems, clearAmazonResults, fireScanStarted]);
+  }, [bundleItems, clearAmazonResults]);
 
   const handleConfirmAddDuplicate = () => {
     if (!duplicateConfirm) return;
@@ -673,7 +667,6 @@ export default function HomePage() {
 
   const handleScanBarcode = () => {
     if (!isMobile) return;
-    fireScanStarted();
     setShowScanner(true);
     clearAmazonResults();
     startScanning();
@@ -802,8 +795,30 @@ useEffect(() => {
     return () => clearTimeout(timeoutId);
   }, [bundleItems, saveToStorage, isMounted, isInitializing]);
 
-  // minimum_reached: 5'e ulasinca bir kez tetiklenir, bayrak localStorage'da
-  useEffect(() => {
+    // barcode_section_viewed: barkod alani viewport'a girdiginde bir kez tetiklenir
+    useEffect(() => {
+      const element = barcodeSectionRef.current;
+      if (!element) return;
+  
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (!entry.isIntersecting) return;
+          if (barcodeSectionViewedFiredRef.current) return;
+  
+          barcodeSectionViewedFiredRef.current = true;
+          trackEvent('barcode_section_viewed');
+          observer.disconnect();
+        },
+        { threshold: 0.5 }
+      );
+  
+      observer.observe(element);
+  
+      return () => observer.disconnect();
+    }, []);
+  
+    // minimum_reached: 5'e ulasinca bir kez tetiklenir, bayrak localStorage'da
+    useEffect(() => {
     if (!isMounted || isInitializing) return;
     if (bundleItems.length < 5) return;
     if (minimumReachedFiredRef.current) return;
@@ -1265,7 +1280,10 @@ useEffect(() => {
           </p>
 
           {/* ---------- QUOTE BOX (solid white - mordan net ayrilir) ---------- */}
-          <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6">
+          <div
+            ref={barcodeSectionRef}
+            className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6"
+          >
 
            {/* Mobil: kamera butonu - isMounted beklenir, yoksa masaustu/mobil gecisi goruluyor */}
            {isMounted && isMobile && (
