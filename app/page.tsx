@@ -577,6 +577,8 @@ export default function HomePage() {
           // Reddedilen urunler hunide gorunmuyordu - neyin neden reddedildigini
           // gormek icin kategori, rank ve amazon fiyati da gonderiliyor
           trackEvent('item_rejected', {
+            product_code: code,
+            asin: sanitizedProduct.asin || 'unknown',
             category: sanitizedPricing.category || 'unknown',
             sales_rank: sanitizedProduct.sales_rank || 0,
             amazon_price: sanitizedProduct.price || 0,
