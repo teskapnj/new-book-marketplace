@@ -313,8 +313,13 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
   
     if (!validate()) return;
   
-    if (bundleItems.length < 5) {
-      setError("Please add at least 5 items to create a bundle listing");
+    const orderTotal = bundleItems.reduce(
+      (total, item) => total + item.price * item.quantity,
+      0
+    );
+    
+    if (orderTotal < 7.5) {
+      setError("Your order must have a minimum cash offer of $7.50");
       return;
     }
   
@@ -614,7 +619,16 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
           Items that don&apos;t meet our condition standard are recycled and not returned.
         </p>
 
-        <button type="submit" onClick={handleSubmit} disabled={isSubmitting || bundleItems.length < 5}
+        <button
+  type="submit"
+  onClick={handleSubmit}
+  disabled={
+    isSubmitting ||
+    bundleItems.reduce(
+      (total, item) => total + item.price * item.quantity,
+      0
+    ) < 7.5
+  }
           className="w-full flex justify-center items-center py-4 px-6 rounded-xl text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-base font-bold shadow-lg disabled:opacity-50 transition-all">
           {isSubmitting ? (
             <>

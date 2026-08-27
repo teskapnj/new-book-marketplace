@@ -202,20 +202,42 @@ function calculateCDPrice(price: number, salesRank: number): PricingResult {
     };
   }
 
+  if (salesRank <= 50000) {
+    if (price >= 22 && price < 35) {
+      return { accepted: true, ourPrice: 1.5, category: 'cds', priceRange: "$22-34.99", rankRange: "≤ 50k" };
+    }
+    if (price >= 35 && price < 48) {
+      return { accepted: true, ourPrice: 2.5, category: 'cds', priceRange: "$35-47.99", rankRange: "≤ 50k" };
+    }
+    if (price >= 48 && price < 60) {
+      return { accepted: true, ourPrice: 3.5, category: 'cds', priceRange: "$48-59.99", rankRange: "≤ 50k" };
+    }
+    if (price >= 60) {
+      return { accepted: true, ourPrice: 4.5, category: 'cds', priceRange: "$60+", rankRange: "≤ 50k" };
+    }
+  
+    return {
+      accepted: false,
+      reason: "Does not meet our purchasing criteria",
+      category: 'cds',
+      priceRange: `$${price}`
+    };
+  }
+  
   if (salesRank <= 100000) {
     if (price >= 27 && price < 50) {
-      return { accepted: true, ourPrice: 1.5, category: 'cds', priceRange: "$39-49.99", rankRange: "≤ 100k" };
+      return { accepted: true, ourPrice: 1.5, category: 'cds', priceRange: "$27-49.99", rankRange: "50k-100k" };
     }
     if (price >= 50 && price < 61) {
-      return { accepted: true, ourPrice: 2.5, category: 'cds', priceRange: "$50-60.99", rankRange: "≤ 100k" };
+      return { accepted: true, ourPrice: 2.5, category: 'cds', priceRange: "$50-60.99", rankRange: "50k-100k" };
     }
     if (price >= 61 && price < 72) {
-      return { accepted: true, ourPrice: 3.5, category: 'cds', priceRange: "$61-71.99", rankRange: "≤ 100k" };
+      return { accepted: true, ourPrice: 3.5, category: 'cds', priceRange: "$61-71.99", rankRange: "50k-100k" };
     }
     if (price >= 72) {
-      return { accepted: true, ourPrice: 4.5, category: 'cds', priceRange: "$72+", rankRange: "≤ 100k" };
+      return { accepted: true, ourPrice: 4.5, category: 'cds', priceRange: "$72+", rankRange: "50k-100k" };
     }
-
+  
     return {
       accepted: false,
       reason: "Does not meet our purchasing criteria",
@@ -226,7 +248,7 @@ function calculateCDPrice(price: number, salesRank: number): PricingResult {
 
   if (salesRank <= 200000) {
     if (price >= 35 && price < 72) {
-      return { accepted: true, ourPrice: 1.5, category: 'cds', priceRange: "$51-71.99", rankRange: "100k-200k" };
+      return { accepted: true, ourPrice: 1.5, category: 'cds', priceRange: "$35-71.99", rankRange: "100k-200k" };
     }
     if (price >= 72) {
       return { accepted: true, ourPrice: 2.5, category: 'cds', priceRange: "$72+", rankRange: "100k-200k" };

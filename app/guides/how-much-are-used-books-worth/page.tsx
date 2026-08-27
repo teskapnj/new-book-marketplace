@@ -65,7 +65,7 @@ const REJECTED = [
 const STEPS = [
   "Scan each book's barcode with your camera — no account needed to start.",
   "Accepted books are added to your list with their offer shown.",
-  "Reach 5 items (books, CDs, DVDs, and games can share a box), then ship free with the label we email you.",
+  "Reach a $7.50 minimum cash offer (books, CDs, DVDs, and games can share a box), then ship free with the label we email you.",
   "Get paid via PayPal within 2 business days of us receiving your box.",
 ];
 

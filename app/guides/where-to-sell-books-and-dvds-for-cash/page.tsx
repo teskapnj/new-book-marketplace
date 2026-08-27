@@ -30,7 +30,7 @@ const DIFFERENCES = [
 const STEPS = [
   "Scan the barcode on each book, CD, DVD, or game using your phone's camera — no account needed to start.",
   "See your cash offer for each item instantly, based on current market value.",
-  "Once you have at least 5 items, log in or sign up to continue.",
+  "Once your accepted offers reach $7.50, log in or sign up to continue.",
   "Print your free shipping label and send your box.",
   "Get paid via PayPal within 2 business days of us receiving your items.",
 ];
@@ -52,7 +52,7 @@ const FAQ = [
   },
   {
     q: "Is there a minimum number of items?",
-    a: "Yes, we require a minimum of 5 items per bundle so that a single shipping label covers the cost of shipping and processing.",
+    a: "Yes, we require a minimum cash offer of $7.50 per order so that a single shipping label covers the cost of shipping and processing.",
   },
   {
     q: "What happens if an item doesn't meet the condition guidelines?",

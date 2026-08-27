@@ -30,8 +30,7 @@ const dvdFaqs = [
   },
   {
     q: "How many items do I need?",
-    a: "You need at least 5 accepted items to submit an order. Eligible books, CDs, DVDs, Blu-rays, 4K movies, and games can be combined in the same order.",
-  },
+    a: "Your order must reach a minimum cash offer of $7.50. Eligible books, CDs, DVDs, Blu-rays, 4K movies, and games can be combined in the same order.",  },
   {
     q: "How will I get paid?",
     a: "Payment is processed through PayPal after your shipment arrives and the items pass inspection.",
@@ -310,7 +309,7 @@ and payment is sent via PayPal.
                 How many items do I need?
               </h3>
               <p className="mt-2 text-gray-600 leading-relaxed">
-                You need at least 5 accepted items to submit an order. Eligible
+              Your order must reach a minimum cash offer of $7.50. Eligible
                 books, CDs, DVDs, and games can be combined in the same order.
               </p>
             </div>

@@ -54,7 +54,7 @@ const CHECKLIST = [
 const STEPS = [
   "Scan the barcode on each item with your phone's camera — no account needed to start.",
   "See your cash offer instantly for each item.",
-  "Once you have at least 5 items, log in or sign up to continue.",
+  "Once your accepted offers reach $7.50, log in or sign up to continue.",
   "Ship your box with the free label we email you once your bundle is approved.",
   "Get paid via PayPal within 2 business days of us receiving your items.",
 ];

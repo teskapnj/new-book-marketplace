@@ -591,7 +591,22 @@ export default function HomePage() {
           setScanError("");
         }, 6000);
       } else {
-        setScanError(response.data.error || 'Amazon check failed');
+        const errorMessage = response.data.error || 'Amazon check failed';
+      
+        if (
+          errorMessage === 'only valid ISBN or UPC code or ASIN' ||
+          errorMessage === 'invalid ISBN/UPC format'
+        ) {
+          trackEvent('invalid_barcode', {
+            reason: errorMessage
+          });
+        } else {
+          trackEvent('item_lookup_error', {
+            reason: errorMessage.substring(0, 100)
+          });
+        }
+      
+        setScanError(errorMessage);
         setTimeout(() => {
           setScanError("");
           setAmazonResult(null);
@@ -603,6 +618,11 @@ export default function HomePage() {
       if (axios.isAxiosError(err) && err.response?.data?.error) {
         errorMessage = err.response.data.error;
       }
+      
+      trackEvent('item_lookup_error', {
+        reason: errorMessage.substring(0, 100)
+      });
+      
       setScanError(errorMessage);
       setTimeout(() => {
         setScanError("");
@@ -682,7 +702,7 @@ export default function HomePage() {
   // Checkout - artik yonlendirme yok, form ayni sayfada acilir
   // -------------------------------------------------------------------------
   const handleCheckout = () => {
-    if (bundleItems.length < 5) return;
+    if (totalOurPrice < 7.5) return;
     if (!user) {
       setShowAuthOptions(true);
       return;
@@ -723,7 +743,7 @@ export default function HomePage() {
 useEffect(() => {
   if (!isMounted || isInitializing) return;
   if (!user || showCheckout) return;
-  if (bundleItems.length < 5) return;
+if (totalOurPrice < 7.5) return;
 
   let flag: string | null = null;
   try { flag = sessionStorage.getItem('resumeCheckout'); } catch { return; }
@@ -817,11 +837,11 @@ useEffect(() => {
       return () => observer.disconnect();
     }, []);
   
-    // minimum_reached: 5'e ulasinca bir kez tetiklenir, bayrak localStorage'da
-    useEffect(() => {
-    if (!isMounted || isInitializing) return;
-    if (bundleItems.length < 5) return;
-    if (minimumReachedFiredRef.current) return;
+   // minimum_reached: toplam teklif $7.50'a ulasinca bir kez tetiklenir
+useEffect(() => {
+  if (!isMounted || isInitializing) return;
+  if (totalOurPrice < 7.5) return;
+  if (minimumReachedFiredRef.current) return;
 
     const FLAG_KEY = 'minimumReachedFired';
     try {
@@ -895,7 +915,7 @@ useEffect(() => {
     );
   }
 
-  const itemsRemaining = Math.max(0, 5 - bundleItems.length);
+  const amountRemaining = Math.max(0, 7.5 - totalOurPrice);
 
   // -------------------------------------------------------------------------
   // RENDER
@@ -1359,7 +1379,7 @@ useEffect(() => {
   </div>
 
   <p className="mt-4 text-base text-gray-700 font-medium">
-  <span className="font-bold">Minimum</span> 5 accepted items per order.
+  <span className="font-bold">Minimum order value:</span> $7.50
 </p>
 </div>
           </div>
@@ -1489,15 +1509,15 @@ useEffect(() => {
                     </div>
 
                     <div className="mt-4">
-  {itemsRemaining > 0 ? (
+  {amountRemaining > 0 ? (
     <>
       <div className="flex justify-between items-center mb-2 text-sm">
         <span className="font-medium text-gray-700">
-          {bundleItems.length} of 5 items added
+          ${totalOurPrice.toFixed(2)} of $7.50 minimum
         </span>
 
         <span className="text-amber-700">
-          {itemsRemaining} more needed
+          ${amountRemaining.toFixed(2)} more needed
         </span>
       </div>
 
@@ -1505,24 +1525,24 @@ useEffect(() => {
         <div
           className="h-2.5 rounded-full transition-all duration-300 bg-blue-500"
           style={{
-            width: `${(bundleItems.length / 5) * 100}%`
+            width: `${Math.min(100, (totalOurPrice / 7.5) * 100)}%`
           }}
         />
       </div>
 
       <p className="mt-2 text-xs text-center text-gray-500">
-        Add {itemsRemaining} more accepted item{itemsRemaining !== 1 ? "s" : ""} to continue.
+        Add more accepted items until your cash offer reaches $7.50.
       </p>
     </>
   ) : (
     <div className="rounded-lg bg-green-100 border border-green-300 px-4 py-3 text-center">
-  <p className="text-base font-bold text-green-900">
-    ✓ Minimum reached
-  </p>
-  <p className="mt-1 text-sm font-semibold text-green-800">
-    You can continue adding more items.
-  </p>
-</div>
+      <p className="text-base font-bold text-green-900">
+        ✓ Minimum reached
+      </p>
+      <p className="mt-1 text-sm font-semibold text-green-800">
+        You can continue adding more items.
+      </p>
+    </div>
   )}
 </div>
                   </div>
@@ -1569,7 +1589,7 @@ useEffect(() => {
                       <button
                         type="button"
                         onClick={handleCheckout}
-                        disabled={bundleItems.length < 5}
+                        disabled={totalOurPrice < 7.5}
                         className="w-full flex justify-center items-center py-4 px-6 rounded-xl text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-base font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                       >
                         Sell My Items — ${totalOurPrice.toFixed(2)}

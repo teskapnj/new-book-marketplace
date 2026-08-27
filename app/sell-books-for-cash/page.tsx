@@ -51,7 +51,7 @@ const faqs = [
   },
   {
     q: "Is there a minimum order?",
-    a: "Yes. You need at least 5 accepted items per shipment. Eligible books can also be combined with accepted CDs, DVDs, Blu-rays, 4K movies, and video games in the same order.",
+    a: "Yes. Your order must reach a minimum cash offer of $7.50. Eligible books can also be combined with accepted CDs, DVDs, Blu-rays, 4K movies, and video games in the same order.",
   },
   {
     q: "What condition do my books need to be in?",
@@ -279,7 +279,7 @@ export default function SellBooksForCashPage() {
             </div>
 
             <p className="mt-4 text-sm text-blue-100">
-              Minimum 5 accepted items per order.
+            Minimum order value: $7.50
             </p>
           </div>
         </div>

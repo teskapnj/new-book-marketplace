@@ -4,11 +4,13 @@
 type FunnelEvent =
   | 'barcode_section_viewed' // Barkod giriş alanı kullanıcı tarafından görüldü
   | 'barcode_scanned'        // Her gerçek barkod sorgusunda bir kez
+  | 'invalid_barcode'        // Geçersiz ISBN/UPC girildi veya okundu
   | 'item_accepted'          // Ürün sepete eklendi
-  | 'item_rejected'       // Ürün kabul edilmedi (teşhis amaçlı, dönüşüm değil)
-  | 'minimum_reached'     // 5 ürüne ulaşıldı
-  | 'shipping_started'    // Shipping aşamasına ulaşıldı
-  | 'listing_submitted';  // Gönderim tamamlandı
+  | 'item_rejected'          // Ürün kabul edilmedi (teşhis amaçlı, dönüşüm değil)
+  | 'item_lookup_error'      // API/network/ürün sorgulama hatası
+  | 'minimum_reached'        // Minimum sipariş şartına ulaşıldı
+  | 'shipping_started'       // Shipping aşamasına ulaşıldı
+  | 'listing_submitted';     // Gönderim tamamlandı
 
 export const trackEvent = (
   event: FunnelEvent,

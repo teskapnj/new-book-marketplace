@@ -40,7 +40,7 @@ const VALUABLE = [
 const STEPS = [
   "Open the scanner and point your camera at the barcode — no account needed.",
   "See your offer instantly. Accepted items are added to your list automatically.",
-  "Once you reach 5 items, ship them free with the label we email you, and get paid via PayPal within 2 business days of us receiving your box.",
+  "Once your accepted offers reach $7.50, ship them free with the label we email you, and get paid via PayPal within 2 business days of us receiving your box.",
 ];
 
 const FAQ = [

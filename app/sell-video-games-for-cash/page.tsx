@@ -51,8 +51,7 @@ const faqs = [
   },
   {
     q: "Is there a minimum order?",
-    a: "Yes. You need at least 5 accepted items per shipment. Eligible games can be combined with accepted books, CDs, DVDs, Blu-rays, and 4K movies in the same order.",
-  },
+    a: "Yes. Your order must reach a minimum cash offer of $7.50. Eligible games can be combined with accepted books, CDs, DVDs, Blu-rays, and 4K movies in the same order.",  },
   {
     q: "Do you buy every video game?",
     a: "No. Offers depend on current demand, resale value, platform, edition, and condition. If a title does not meet our current buying criteria, it will show as not accepted.",
@@ -177,7 +176,7 @@ export default function SellVideoGamesForCashPage() {
             </div>
 
             <p className="mt-4 text-sm text-blue-100">
-              Minimum 5 accepted items per order.
+            Minimum order value: $7.50
             </p>
           </div>
         </div>

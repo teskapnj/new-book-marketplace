@@ -72,7 +72,7 @@ const FAQ = [
   },
   {
     q: "Do I need to sell everything at once?",
-    a: "No. You need at least 5 accepted items to ship a box, but there's no upper limit and no obligation to send everything you own in one go.",
+    a: "No. Your accepted offers need to reach at least .50 to ship a box, but there's no upper limit and no obligation to send everything you own in one go.",
   },
 ];
 

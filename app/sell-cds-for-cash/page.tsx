@@ -38,8 +38,7 @@ const cdFaqs = [
   },
   {
     q: "Is there a minimum order?",
-    a: "Yes. You need at least 5 accepted items per order. You can combine eligible CDs with accepted books, DVDs, Blu-rays, 4K movies, and video games.",
-  },
+    a: "Yes. Your order must reach a minimum cash offer of $7.50. You can combine eligible CDs with accepted books, DVDs, Blu-rays, 4K movies, and video games.",  },
   {
     q: "Do you buy every CD?",
     a: "No. Acceptance and pricing depend on current demand, resale value, edition, and condition. Scan the UPC to see whether your CD currently qualifies for an offer.",
@@ -263,7 +262,7 @@ export default function SellCdsForCashPage() {
         </summary>
 
         <p className="mt-4 text-gray-600 leading-relaxed">
-          Yes. You need at least 5 accepted items per order. You can combine
+        Yes. Your order must reach a minimum cash offer of $7.50. You can combine
           eligible CDs with accepted books, DVDs, Blu-rays, 4K movies, and
           video games.
         </p>

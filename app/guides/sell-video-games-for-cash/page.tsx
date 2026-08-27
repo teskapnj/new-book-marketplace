@@ -30,7 +30,7 @@ const HOLDS_VALUE = [
 const STEPS = [
   "Scan the barcode on the back of the game case with your phone — no account needed to start.",
   "See your cash offer instantly. Accepted games are added to your list.",
-  "Reach 5 items total (games, DVDs, CDs, and books can all go in the same box), then ship free with the label we email you.",
+  "Reach a $7.50 minimum cash offer (games, DVDs, CDs, and books can all go in the same box), then ship free with the label we email you.",
   "Get paid via PayPal within 2 business days of us receiving your box.",
 ];
 
