@@ -96,7 +96,7 @@ export default function SellCdsForCashPage() {
 
           <p className="mt-6 text-lg sm:text-xl text-blue-100 max-w-3xl mx-auto">
             Scan the UPC on your CD and see our cash offer instantly.
-            Accepted offers start at $1.50, shipping is free, and payment is
+            Shipping is free, and payment is
             sent via PayPal.
           </p>
 

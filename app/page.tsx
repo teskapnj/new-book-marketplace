@@ -1309,7 +1309,7 @@ useEffect(() => {
           Turn Your Books, CDs, DVDs &amp; Games Into Cash
           </h1>
           <p className="text-base sm:text-lg text-blue-100 mb-6 sm:mb-8">
-          Scan the barcode and see our cash offer instantly. Accepted offers start at $1.50, shipping is free, and there&apos;s no app to download.
+          Scan the barcode and see our cash offer instantly. Shipping is free, payment is sent via PayPal, and there&apos;s no app to download.
           </p>
 
           {/* ---------- QUOTE BOX (solid white - mordan net ayrilir) ---------- */}
@@ -1638,8 +1638,8 @@ useEffect(() => {
   <div className="text-xs sm:text-sm text-gray-500 mt-1">Prepaid Label by Email</div>
 </div>
 <div className="py-5 sm:py-6 text-center">
-  <div className="text-xl sm:text-2xl font-bold text-gray-900">$1.50+</div>
-  <div className="text-xs sm:text-sm text-gray-500 mt-1">Accepted Offers start at 1.50$</div>
+<div className="text-xl sm:text-2xl font-bold text-gray-900">INSTANT</div>
+<div className="text-xs sm:text-sm text-gray-500 mt-1">Cash Offers</div>
 </div>
           <div className="py-5 sm:py-6 text-center">
             <div className="text-xl sm:text-2xl font-bold text-gray-900">PayPal</div>

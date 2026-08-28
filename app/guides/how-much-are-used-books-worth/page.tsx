@@ -72,7 +72,7 @@ const STEPS = [
 const FAQ = [
   {
     q: "Why won't you take most of my paperbacks?",
-    a: "Popular fiction usually has enormous used supply and low demand, which pushes the market value below our $1.50 minimum. It's not about the book being bad — it's about how many copies already exist.",
+    a: "Popular fiction usually has enormous used supply and low demand, which can push the market value below our purchasing criteria. It's not about the book being bad — it's about how many copies already exist.",
   },
   {
     q: "Do you buy textbooks?",
@@ -211,7 +211,7 @@ export default function BookValueGuide() {
                   time, and the people who need it really need it.
                 </p>
                 <p className="mt-4 border-t border-slate-100 pt-3 font-mono text-sm font-semibold text-emerald-700">
-                  Offers start at $1.50
+                  Instant Cash Offers
                 </p>
               </div>
             </div>
@@ -265,7 +265,7 @@ export default function BookValueGuide() {
             <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <span className="font-mono text-5xl font-bold text-emerald-700 tabular-nums">
-                  $1.50
+                  VARIES
                 </span>
                 <span className="font-serif text-2xl font-semibold text-slate-900">and up</span>
               </div>
@@ -281,7 +281,7 @@ export default function BookValueGuide() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-500" />
-                  If a book isn&rsquo;t worth at least $1.50 to us, we don&rsquo;t make an offer on it.
+                  If a book doesn&rsquo;t currently meet our purchasing criteria, we don&rsquo;t make an offer on it.
                 </li>
               </ul>
             </div>

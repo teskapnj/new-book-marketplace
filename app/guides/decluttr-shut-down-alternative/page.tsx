@@ -254,7 +254,7 @@ export default function DecluttrAlternativeGuide() {
               </div>
               <dl className="divide-y divide-slate-100">
                 {[
-                  ["Minimum offer", "$1.50 per item, not fractions of a cent"],
+                  ["Offer amount", "Based on current demand and resale value"],
                   ["Categories", "Books, CDs, DVDs, and games in the same bundle"],
                   ["Account", "Not required to scan and build your box"],
                   ["Shipping", "Free label once your bundle is approved"],

@@ -5,7 +5,7 @@ import RelatedGuides from "@/components/RelatedGuides";
 export const metadata: Metadata = {
   title: "Where to Sell Used Books and DVDs for Cash (2026 Guide) | SellBookMedia",
   description:
-    "Looking for where to sell used books, DVDs, CDs, and video games for cash? Compare your options and see how SellBookMedia pays $1.50+ per item with free shipping.",
+    "Looking for where to sell used books, DVDs, CDs, and video games for cash? Compare your options and see how SellBookMedia offers instant quotes with free shipping.",
 };
 
 const DIFFERENCES = [
@@ -15,7 +15,7 @@ const DIFFERENCES = [
   },
   {
     title: "Real cash, not cents",
-    body: "Our offers start at $1.50 per item. We don't run a cents-per-item model like some bulk buyback sites do.",
+    body: "Our offers are based on current demand and resale value. Scan your item to see whether it qualifies and what we can offer.",
   },
   {
     title: "Free shipping label",
@@ -197,7 +197,7 @@ export default function WhereToSellGuide() {
                 <div className="px-4 py-5">
                   <div className="flex flex-wrap items-baseline gap-x-2">
                     <span className="font-mono text-3xl font-bold text-emerald-700 tabular-nums">
-                      $1.50
+                      VARIES
                     </span>
                     <span className="font-medium text-slate-700">and up</span>
                   </div>

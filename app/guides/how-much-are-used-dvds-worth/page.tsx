@@ -40,7 +40,7 @@ const STEPS = [
 const FAQ = [
   {
     q: "Why won't you take some of my DVDs?",
-    a: "If a title is worth less than our $1.50 minimum — usually because there are far more copies out there than buyers — we don't make an offer. It's more honest than paying you a few cents for it.",
+    a: "If a title doesn.t currently meet our purchasing criteria — often because supply is much higher than demand — we don.t make an offer.",
   },
   {
     q: "I have a rare box set. Should I sell it here?",
@@ -187,7 +187,7 @@ export default function DvdValueGuide() {
                 <div className="px-5 py-6">
                   <div className="flex flex-wrap items-baseline gap-x-2">
                     <span className="font-mono text-4xl font-bold text-emerald-700 tabular-nums">
-                      $1.50
+                      VARIES
                     </span>
                     <span className="text-lg font-medium text-slate-700">and up</span>
                   </div>
@@ -195,7 +195,7 @@ export default function DvdValueGuide() {
                     <div className="flex justify-between gap-3">
                       <dt className="text-slate-500">Takes</dt>
                       <dd className="text-right font-medium text-slate-700">
-                        Only what clears $1.50
+                        Only qualifying titles
                       </dd>
                     </div>
                     <div className="flex justify-between gap-3">
@@ -214,7 +214,7 @@ export default function DvdValueGuide() {
               Some buyback sites will happily take your whole box — the math works for them because
               they&rsquo;re buying in bulk at pennies. We work the other way round: pricing is based
               on current market value and how well each title is selling, and if a disc isn&rsquo;t
-              worth at least $1.50, we don&rsquo;t make an offer at all.
+              meets our purchasing criteria, we don&rsquo;t make an offer at all.
             </p>
           </section>
 

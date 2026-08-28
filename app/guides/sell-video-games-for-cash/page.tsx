@@ -186,7 +186,7 @@ export default function SellGamesGuide() {
                 <div className="px-4 py-5">
                   <div className="flex flex-wrap items-baseline gap-x-2">
                     <span className="font-mono text-3xl font-bold text-emerald-700 tabular-nums">
-                      $1.50
+                      VARIES
                     </span>
                     <span className="font-medium text-slate-700">and up</span>
                   </div>
@@ -215,7 +215,7 @@ export default function SellGamesGuide() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-slate-300" />
-                If a game isn&rsquo;t worth at least $1.50 to us, we won&rsquo;t make an offer on it.
+                If a game doesn&rsquo;t currently meet our purchasing criteria, we won&rsquo;t make an offer on it.
                 We&rsquo;d rather be upfront than have you pack a box for pocket change.
               </li>
             </ul>

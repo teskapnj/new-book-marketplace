@@ -37,7 +37,7 @@ const GROUPS: Group[] = [
       },
       {
         q: "Why didn't my item appear in the list?",
-        a: "Items only appear if we make an offer on them. If nothing appeared, that title is worth less than our $1.50 minimum, or it's a format we don't buy. It isn't a problem with the scan.",
+        a: "Items only appear if we make an offer on them. If nothing appeared, that title may not currently meet our purchasing criteria, or it may be a format we don.t buy. It isn't a problem with the scan.",
       },
       {
         q: "What condition do items need to be in?",

@@ -159,7 +159,7 @@ export default function SellVideoGamesForCashPage() {
 
             <p className="text-xl sm:text-2xl text-blue-100 mb-8 leading-relaxed">
               Scan the barcode on your game and see our cash offer instantly.
-              Accepted offers start at $1.50, shipping is free, and payment is
+              Shipping is free, and payment is
               sent via PayPal.
             </p>
 

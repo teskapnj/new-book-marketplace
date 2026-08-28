@@ -233,7 +233,7 @@ export default function SellBooksForCashPage() {
 
             <p className="text-xl sm:text-2xl text-blue-100 mb-8 leading-relaxed">
               Scan or enter the ISBN and see our cash offer instantly.
-              Accepted offers start at $1.50, shipping is free, and payment is
+              Shipping is free, and payment is
               sent via PayPal.
             </p>
 
@@ -249,10 +249,10 @@ export default function SellBooksForCashPage() {
 
               <div className="text-center">
                 <div className="text-3xl sm:text-4xl font-bold text-white mb-2">
-                  $1.50+
+                  INSTANT
                 </div>
                 <div className="text-blue-200 text-sm sm:text-base">
-                  Accepted Offers
+                  Cash Offers
                 </div>
               </div>
 

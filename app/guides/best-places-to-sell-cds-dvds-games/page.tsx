@@ -48,7 +48,7 @@ const COMPARISON = [
     takes: "Books, CDs, DVDs, games — one box",
     account: "Not required to scan",
     payment: "PayPal, 2 business days",
-    note: "Offers start at $1.50 per item. Free shipping once approved.",
+    note: "Instant quotes based on current demand and resale value. Free shipping once approved.",
     highlight: true,
   },
 ];
@@ -56,7 +56,7 @@ const COMPARISON = [
 const FAQ = [
   {
     q: "Is it worth selling common DVDs and CDs?",
-    a: "It depends on the buyer. At sites paying cents per disc, a small collection may not be worth the effort. Services with per-item minimums like ours only accept titles worth at least $1.50, so you're not shipping a box for pocket change.",
+    a: "It depends on the buyer. At sites paying cents per disc, a small collection may not be worth the effort. Services like ours focus on titles that currently have enough demand and resale value to qualify for an offer.",
   },
   {
     q: "Do I need the original case?",
@@ -208,7 +208,7 @@ export default function BestPlacesGuide() {
                       Our minimum, any accepted item
                     </span>
                     <span className="font-mono text-sm font-semibold text-emerald-700 tabular-nums">
-                      $1.50
+                      VARIES
                     </span>
                   </div>
                   <div className="mt-2 h-3 w-full rounded-full bg-slate-100">
@@ -222,7 +222,7 @@ export default function BestPlacesGuide() {
 
               <p className="mt-7 border-t border-slate-100 pt-5 text-sm leading-relaxed text-slate-600">
                 A site paying a dime per disc means a box of 50 might only be worth a few dollars.
-                We work the other way round: offers start at $1.50, so we simply don&rsquo;t accept
+                We focus on items that currently meet our purchasing criteria, so we simply don&rsquo;t accept
                 items we&rsquo;d only value at pennies.
               </p>
             </div>
