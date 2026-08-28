@@ -20,5 +20,13 @@ if (!admin.apps.length) {
 }
 
 export const auth = admin.auth();
+
 export const db = admin.firestore();
+
+// Vercel/serverless ortaminda uzun gRPC retry/deadline sorunlarini azalt.
+// Firestore HTTP/REST transport kullanir.
+db.settings({
+  preferRest: true,
+});
+
 export const FieldValue = admin.firestore.FieldValue;
