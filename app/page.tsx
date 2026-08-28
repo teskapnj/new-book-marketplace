@@ -298,6 +298,10 @@ export default function HomePage() {
   // Kamera acik kalmaya devam eder.
   const scanInProgressRef = useRef(false);
 
+// Kamera ayni rejected barkodu arka arkaya okumaya devam ederse
+// ikinci kez API / GA4 eventi olusturma.
+const lastRejectedCameraCodeRef = useRef<string | null>(null);
+
   const totalOurPrice = bundleItems.reduce((total, item) => {
     return total + (item.price * item.quantity);
   }, 0);
@@ -509,12 +513,23 @@ export default function HomePage() {
 
 
 
-  const handleBarcodeScanned = useCallback(async (code: string) => {
+  const handleBarcodeScanned = useCallback(async (
+    code: string,
+    source: 'camera' | 'manual' = 'manual'
+  ) => {
     if (!code || !code.trim()) return;
 
     // Bir urunun API sorgusu devam ediyorsa yeni taramayi isleme alma.
     // Kamera kapanmaz; sadece callback sessizce yok sayilir.
     if (scanInProgressRef.current) return;
+
+    // Kamera ayni rejected barkodu tekrar tekrar goruyorsa yok say.
+    if (source === 'camera') {
+      if (lastRejectedCameraCodeRef.current === code) return;
+
+      // Farkli bir barkod gorulduyse onceki rejected kilidi kalkar.
+      lastRejectedCameraCodeRef.current = null;
+    }
 
     trackEvent('barcode_scanned');
 
@@ -584,6 +599,11 @@ export default function HomePage() {
         if (pricing.accepted && pricing.ourPrice) {
           autoAddAcceptedItem(code, sanitizedProduct, sanitizedPricing);
         } else {
+          // Kamera ayni rejected barkodu tekrar gorurse tekrar isleme alma.
+          if (source === 'camera') {
+            lastRejectedCameraCodeRef.current = code;
+          }
+
           // Reddedilen urunler hunide gorunmuyordu - neyin neden reddedildigini
           // gormek icin kategori, rank ve amazon fiyati da gonderiliyor
           trackEvent('item_rejected', {
@@ -692,7 +712,7 @@ export default function HomePage() {
     videoRef,
     isMobile
   } = useBarcodeScanner({
-    onScan: handleBarcodeScanned,
+    onScan: (code) => handleBarcodeScanned(code, 'camera'),
     onError: (error) => setScannerError(error),
     continuous: true,
     timeout: 300000

@@ -134,39 +134,163 @@ function calculateBookPrice(price: number, salesRank: number): PricingResult {
     };
   }
 
-  if (salesRank <= 1000000) {
-    if (price >= 31 && price < 50) {
-      return { accepted: true, ourPrice: 1.5, category: 'books', priceRange: "$39-49.99", rankRange: "≤ 1M" };
+  // ------------------------------------------------------------
+  // BOOKS: rank ≤ 200k
+  // ------------------------------------------------------------
+  if (salesRank <= 200000) {
+    if (price >= 16.99 && price < 20) {
+      return { accepted: true, ourPrice: 0.25, category: 'books', priceRange: "$16.99-19.99", rankRange: "≤ 200k" };
+    }
+    if (price >= 20 && price < 24) {
+      return { accepted: true, ourPrice: 0.5, category: 'books', priceRange: "$20-23.99", rankRange: "≤ 200k" };
+    }
+    if (price >= 24 && price < 27) {
+      return { accepted: true, ourPrice: 0.75, category: 'books', priceRange: "$24-26.99", rankRange: "≤ 200k" };
+    }
+    if (price >= 27 && price < 31) {
+      return { accepted: true, ourPrice: 1.25, category: 'books', priceRange: "$27-30.99", rankRange: "≤ 200k" };
+    }
+    if (price >= 31 && price < 40) {
+      return { accepted: true, ourPrice: 1.75, category: 'books', priceRange: "$31-39.99", rankRange: "≤ 200k" };
+    }
+    if (price >= 40 && price < 50) {
+      return { accepted: true, ourPrice: 2.25, category: 'books', priceRange: "$40-49.99", rankRange: "≤ 200k" };
     }
     if (price >= 50 && price < 60) {
-      return { accepted: true, ourPrice: 2.5, category: 'books', priceRange: "$50-59.99", rankRange: "≤ 1M" };
+      return { accepted: true, ourPrice: 2.75, category: 'books', priceRange: "$50-59.99", rankRange: "≤ 200k" };
     }
     if (price >= 60 && price < 70) {
-      return { accepted: true, ourPrice: 3.5, category: 'books', priceRange: "$60-69.99", rankRange: "≤ 1M" };
+      return { accepted: true, ourPrice: 3.5, category: 'books', priceRange: "$60-69.99", rankRange: "≤ 200k" };
     }
     if (price >= 70 && price < 80) {
-      return { accepted: true, ourPrice: 4.5, category: 'books', priceRange: "$70-79.99", rankRange: "≤ 1M" };
+      return { accepted: true, ourPrice: 4.5, category: 'books', priceRange: "$70-79.99", rankRange: "≤ 200k" };
     }
     if (price >= 80 && price < 110) {
-      return { accepted: true, ourPrice: 5.5, category: 'books', priceRange: "$80-109.99", rankRange: "≤ 1M" };
+      return { accepted: true, ourPrice: 5.5, category: 'books', priceRange: "$80-109.99", rankRange: "≤ 200k" };
     }
     if (price >= 110 && price < 140) {
-      return { accepted: true, ourPrice: 6.5, category: 'books', priceRange: "$110-139.99", rankRange: "≤ 1M" };
+      return { accepted: true, ourPrice: 6.5, category: 'books', priceRange: "$110-139.99", rankRange: "≤ 200k" };
     }
     if (price >= 140) {
-      return { accepted: true, ourPrice: 7.5, category: 'books', priceRange: "$140+", rankRange: "≤ 1M" };
+      return { accepted: true, ourPrice: 7.5, category: 'books', priceRange: "$140+", rankRange: "≤ 200k" };
     }
 
     return {
       accepted: false,
       reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
       category: 'books',
-      priceRange: `$${price} (min: $39)`
+      priceRange: `$${price}`
     };
   }
 
+  // ------------------------------------------------------------
+  // BOOKS: rank 200k-500k
+  // ------------------------------------------------------------
+  if (salesRank <= 500000) {
+    if (price >= 19 && price < 23) {
+      return { accepted: true, ourPrice: 0.25, category: 'books', priceRange: "$19-22.99", rankRange: "200k-500k" };
+    }
+    if (price >= 23 && price < 27) {
+      return { accepted: true, ourPrice: 0.5, category: 'books', priceRange: "$23-26.99", rankRange: "200k-500k" };
+    }
+    if (price >= 27 && price < 31) {
+      return { accepted: true, ourPrice: 0.75, category: 'books', priceRange: "$27-30.99", rankRange: "200k-500k" };
+    }
+    if (price >= 31 && price < 40) {
+      return { accepted: true, ourPrice: 1.5, category: 'books', priceRange: "$31-39.99", rankRange: "200k-500k" };
+    }
+    if (price >= 40 && price < 50) {
+      return { accepted: true, ourPrice: 2.0, category: 'books', priceRange: "$40-49.99", rankRange: "200k-500k" };
+    }
+    if (price >= 50 && price < 60) {
+      return { accepted: true, ourPrice: 2.5, category: 'books', priceRange: "$50-59.99", rankRange: "200k-500k" };
+    }
+    if (price >= 60 && price < 70) {
+      return { accepted: true, ourPrice: 3.5, category: 'books', priceRange: "$60-69.99", rankRange: "200k-500k" };
+    }
+    if (price >= 70 && price < 80) {
+      return { accepted: true, ourPrice: 4.5, category: 'books', priceRange: "$70-79.99", rankRange: "200k-500k" };
+    }
+    if (price >= 80 && price < 110) {
+      return { accepted: true, ourPrice: 5.5, category: 'books', priceRange: "$80-109.99", rankRange: "200k-500k" };
+    }
+    if (price >= 110 && price < 140) {
+      return { accepted: true, ourPrice: 6.5, category: 'books', priceRange: "$110-139.99", rankRange: "200k-500k" };
+    }
+    if (price >= 140) {
+      return { accepted: true, ourPrice: 7.5, category: 'books', priceRange: "$140+", rankRange: "200k-500k" };
+    }
+
+    return {
+      accepted: false,
+      reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
+      category: 'books',
+      priceRange: `$${price}`
+    };
+  }
+
+  // ------------------------------------------------------------
+  // BOOKS: rank 500k-1M
+  // ------------------------------------------------------------
+  if (salesRank <= 1000000) {
+    if (price >= 24.99 && price < 30) {
+      return { accepted: true, ourPrice: 0.25, category: 'books', priceRange: "$24.99-29.99", rankRange: "500k-1M" };
+    }
+    if (price >= 30 && price < 35) {
+      return { accepted: true, ourPrice: 0.75, category: 'books', priceRange: "$30-34.99", rankRange: "500k-1M" };
+    }
+    if (price >= 35 && price < 40) {
+      return { accepted: true, ourPrice: 1.0, category: 'books', priceRange: "$35-39.99", rankRange: "500k-1M" };
+    }
+    if (price >= 40 && price < 45) {
+      return { accepted: true, ourPrice: 1.25, category: 'books', priceRange: "$40-44.99", rankRange: "500k-1M" };
+    }
+    if (price >= 45 && price < 50) {
+      return { accepted: true, ourPrice: 1.5, category: 'books', priceRange: "$45-49.99", rankRange: "500k-1M" };
+    }
+    if (price >= 50 && price < 60) {
+      return { accepted: true, ourPrice: 2.0, category: 'books', priceRange: "$50-59.99", rankRange: "500k-1M" };
+    }
+    if (price >= 60 && price < 70) {
+      return { accepted: true, ourPrice: 2.5, category: 'books', priceRange: "$60-69.99", rankRange: "500k-1M" };
+    }
+    if (price >= 70 && price < 80) {
+      return { accepted: true, ourPrice: 3.0, category: 'books', priceRange: "$70-79.99", rankRange: "500k-1M" };
+    }
+    if (price >= 80 && price < 95) {
+      return { accepted: true, ourPrice: 3.5, category: 'books', priceRange: "$80-94.99", rankRange: "500k-1M" };
+    }
+    if (price >= 95 && price < 110) {
+      return { accepted: true, ourPrice: 4.0, category: 'books', priceRange: "$95-109.99", rankRange: "500k-1M" };
+    }
+    if (price >= 110 && price < 125) {
+      return { accepted: true, ourPrice: 4.5, category: 'books', priceRange: "$110-124.99", rankRange: "500k-1M" };
+    }
+    if (price >= 125 && price < 140) {
+      return { accepted: true, ourPrice: 5.0, category: 'books', priceRange: "$125-139.99", rankRange: "500k-1M" };
+    }
+    if (price >= 140 && price < 160) {
+      return { accepted: true, ourPrice: 5.5, category: 'books', priceRange: "$140-159.99", rankRange: "500k-1M" };
+    }
+    if (price >= 160 && price < 180) {
+      return { accepted: true, ourPrice: 6.0, category: 'books', priceRange: "$160-179.99", rankRange: "500k-1M" };
+    }
+    if (price >= 180) {
+      return { accepted: true, ourPrice: 6.5, category: 'books', priceRange: "$180+", rankRange: "500k-1M" };
+    }
+
+    return {
+      accepted: false,
+      reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
+      category: 'books',
+      priceRange: `$${price}`
+    };
+  }
+
+  // ------------------------------------------------------------
+  // BOOKS: rank 1M-2M — DEGİŞMEDİ
+  // ------------------------------------------------------------
   if (salesRank <= 2000000) {
-    // 1M-2M bandi iki kurala indirildi (yavas satan kitaplar)
     if (price >= 56 && price < 100) {
       return { accepted: true, ourPrice: 1.5, category: 'books', priceRange: "$56-99.99", rankRange: "1M-2M" };
     }
@@ -202,9 +326,22 @@ function calculateCDPrice(price: number, salesRank: number): PricingResult {
     };
   }
 
+  // CD / DVD / GAME: rank ≤ 50k
   if (salesRank <= 50000) {
-    if (price >= 22 && price < 35) {
-      return { accepted: true, ourPrice: 1.5, category: 'cds', priceRange: "$22-34.99", rankRange: "≤ 50k" };
+    if (price >= 15 && price < 18) {
+      return { accepted: true, ourPrice: 0.25, category: 'cds', priceRange: "$15-17.99", rankRange: "≤ 50k" };
+    }
+    if (price >= 18 && price < 21) {
+      return { accepted: true, ourPrice: 0.5, category: 'cds', priceRange: "$18-20.99", rankRange: "≤ 50k" };
+    }
+    if (price >= 21 && price < 24) {
+      return { accepted: true, ourPrice: 0.75, category: 'cds', priceRange: "$21-23.99", rankRange: "≤ 50k" };
+    }
+    if (price >= 24 && price < 29) {
+      return { accepted: true, ourPrice: 1, category: 'cds', priceRange: "$24-28.99", rankRange: "≤ 50k" };
+    }
+    if (price >= 29 && price < 35) {
+      return { accepted: true, ourPrice: 1.5, category: 'cds', priceRange: "$29-34.99", rankRange: "≤ 50k" };
     }
     if (price >= 35 && price < 48) {
       return { accepted: true, ourPrice: 2.5, category: 'cds', priceRange: "$35-47.99", rankRange: "≤ 50k" };
@@ -215,29 +352,7 @@ function calculateCDPrice(price: number, salesRank: number): PricingResult {
     if (price >= 60) {
       return { accepted: true, ourPrice: 4.5, category: 'cds', priceRange: "$60+", rankRange: "≤ 50k" };
     }
-  
-    return {
-      accepted: false,
-      reason: "Does not meet our purchasing criteria",
-      category: 'cds',
-      priceRange: `$${price}`
-    };
-  }
-  
-  if (salesRank <= 100000) {
-    if (price >= 27 && price < 50) {
-      return { accepted: true, ourPrice: 1.5, category: 'cds', priceRange: "$27-49.99", rankRange: "50k-100k" };
-    }
-    if (price >= 50 && price < 61) {
-      return { accepted: true, ourPrice: 2.5, category: 'cds', priceRange: "$50-60.99", rankRange: "50k-100k" };
-    }
-    if (price >= 61 && price < 72) {
-      return { accepted: true, ourPrice: 3.5, category: 'cds', priceRange: "$61-71.99", rankRange: "50k-100k" };
-    }
-    if (price >= 72) {
-      return { accepted: true, ourPrice: 4.5, category: 'cds', priceRange: "$72+", rankRange: "50k-100k" };
-    }
-  
+
     return {
       accepted: false,
       reason: "Does not meet our purchasing criteria",
@@ -246,9 +361,60 @@ function calculateCDPrice(price: number, salesRank: number): PricingResult {
     };
   }
 
+  // CD / DVD / GAME: rank 50k-100k
+  if (salesRank <= 100000) {
+    if (price >= 18 && price < 21) {
+      return { accepted: true, ourPrice: 0.25, category: 'cds', priceRange: "$18-20.99", rankRange: "50k-100k" };
+    }
+    if (price >= 21 && price < 24) {
+      return { accepted: true, ourPrice: 0.5, category: 'cds', priceRange: "$21-23.99", rankRange: "50k-100k" };
+    }
+    if (price >= 24 && price < 29) {
+      return { accepted: true, ourPrice: 0.75, category: 'cds', priceRange: "$24-28.99", rankRange: "50k-100k" };
+    }
+    if (price >= 29 && price < 35) {
+      return { accepted: true, ourPrice: 1, category: 'cds', priceRange: "$29-34.99", rankRange: "50k-100k" };
+    }
+    if (price >= 35 && price < 48) {
+      return { accepted: true, ourPrice: 1.5, category: 'cds', priceRange: "$35-47.99", rankRange: "50k-100k" };
+    }
+    if (price >= 48 && price < 60) {
+      return { accepted: true, ourPrice: 2.5, category: 'cds', priceRange: "$48-59.99", rankRange: "50k-100k" };
+    }
+    if (price >= 60 && price < 72) {
+      return { accepted: true, ourPrice: 3.5, category: 'cds', priceRange: "$60-71.99", rankRange: "50k-100k" };
+    }
+    if (price >= 72) {
+      return { accepted: true, ourPrice: 4.5, category: 'cds', priceRange: "$72+", rankRange: "50k-100k" };
+    }
+
+    return {
+      accepted: false,
+      reason: "Does not meet our purchasing criteria",
+      category: 'cds',
+      priceRange: `$${price}`
+    };
+  }
+
+  // CD / DVD / GAME: rank 100k-200k
   if (salesRank <= 200000) {
-    if (price >= 35 && price < 72) {
-      return { accepted: true, ourPrice: 1.5, category: 'cds', priceRange: "$35-71.99", rankRange: "100k-200k" };
+    if (price >= 24 && price < 28) {
+      return { accepted: true, ourPrice: 0.25, category: 'cds', priceRange: "$24-27.99", rankRange: "100k-200k" };
+    }
+    if (price >= 28 && price < 32) {
+      return { accepted: true, ourPrice: 0.5, category: 'cds', priceRange: "$28-31.99", rankRange: "100k-200k" };
+    }
+    if (price >= 32 && price < 35) {
+      return { accepted: true, ourPrice: 0.75, category: 'cds', priceRange: "$32-34.99", rankRange: "100k-200k" };
+    }
+    if (price >= 35 && price < 48) {
+      return { accepted: true, ourPrice: 1.25, category: 'cds', priceRange: "$35-47.99", rankRange: "100k-200k" };
+    }
+    if (price >= 48 && price < 60) {
+      return { accepted: true, ourPrice: 1.75, category: 'cds', priceRange: "$48-59.99", rankRange: "100k-200k" };
+    }
+    if (price >= 60 && price < 72) {
+      return { accepted: true, ourPrice: 2.25, category: 'cds', priceRange: "$60-71.99", rankRange: "100k-200k" };
     }
     if (price >= 72) {
       return { accepted: true, ourPrice: 2.5, category: 'cds', priceRange: "$72+", rankRange: "100k-200k" };
@@ -262,6 +428,7 @@ function calculateCDPrice(price: number, salesRank: number): PricingResult {
     };
   }
 
+  // CD / DVD / GAME: rank 200k-300k — AYNI
   if (salesRank <= 300000) {
     if (price >= 75) {
       return { accepted: true, ourPrice: 1.5, category: 'cds', priceRange: "$75+", rankRange: "200k-300k" };
@@ -271,7 +438,7 @@ function calculateCDPrice(price: number, salesRank: number): PricingResult {
       accepted: false,
       reason: "Does not meet our purchasing criteria",
       category: 'cds',
-      priceRange: `$${price} `
+      priceRange: `$${price}`
     };
   }
 
