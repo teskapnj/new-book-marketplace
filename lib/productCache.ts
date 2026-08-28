@@ -118,7 +118,18 @@ export class ProductCacheService {
       };
       
       const docRef = db.collection(this.collectionName).doc(normalizedId);
-      await docRef.set(cacheEntry);
+
+      const CACHE_WRITE_TIMEOUT_MS = 5000;
+      
+      await Promise.race([
+        docRef.set(cacheEntry),
+        new Promise<never>((_, reject) =>
+          setTimeout(
+            () => reject(new Error(`Cache write timed out after ${CACHE_WRITE_TIMEOUT_MS}ms`)),
+            CACHE_WRITE_TIMEOUT_MS
+          )
+        )
+      ]);
       
       console.log(`Saved to cache: ${normalizedId} (Expires: ${expiresAt})`);
       
