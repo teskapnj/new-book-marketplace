@@ -647,10 +647,21 @@ const lastRejectedCameraCodeRef = useRef<string | null>(null);
     } catch (err: unknown) {
       console.error('Amazon API error:', err);
       let errorMessage = 'Unable to check product. Please try again later.';
+
       if (axios.isAxiosError(err) && err.response?.data?.error) {
         errorMessage = err.response.data.error;
       }
-      
+
+      // Kamera ayni bulunamayan barkodu kadrajda tutuyorsa
+      // 404 sonrasi tekrar tekrar API / Keepa sorgusu yapma.
+      if (
+        source === 'camera' &&
+        axios.isAxiosError(err) &&
+        err.response?.status === 404
+      ) {
+        lastRejectedCameraCodeRef.current = code;
+      }
+
       trackEvent('item_lookup_error', {
         reason: errorMessage.substring(0, 100)
       });

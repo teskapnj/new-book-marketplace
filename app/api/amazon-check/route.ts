@@ -391,6 +391,8 @@ export async function POST(request: NextRequest) {
     const { isbn_upc } = body;
 
     if (!isbn_upc || typeof isbn_upc !== 'string') {
+      console.warn('INVALID PRODUCT CODE: missing or non-string isbn_upc');
+    
       return NextResponse.json(
         { success: false, error: 'only valid ISBN or UPC code or ASIN' } as ApiResponse,
         { status: 400 }
@@ -401,6 +403,8 @@ export async function POST(request: NextRequest) {
     const codeInfo = detectCodeType(cleanCode);
 
     if (codeInfo.type === 'unknown') {
+      console.warn(`INVALID PRODUCT CODE FORMAT: ${cleanCode}`);
+    
       return NextResponse.json(
         { success: false, error: 'invalid ISBN/UPC format' } as ApiResponse,
         { status: 400 }
@@ -477,7 +481,8 @@ export async function POST(request: NextRequest) {
     const bestProduct = pickBestKeepaProduct(products, codeInfo.searchCode);
     
     if (!bestProduct) {
-      console.log(`Product not found: ${cleanCode}`);
+      console.warn(`PRODUCT NOT FOUND: ${cleanCode} (${codeInfo.type})`);
+    
       return NextResponse.json(
         { success: false, error: 'Product not found. Please check the barcode and try again later.' } as ApiResponse,
         { status: 404 }
