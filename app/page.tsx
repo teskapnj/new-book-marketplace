@@ -293,6 +293,10 @@ export default function HomePage() {
 
   const resultTimerRef = useRef<NodeJS.Timeout | null>(null);
   const minimumReachedFiredRef = useRef(false);
+  
+  // Bir urun API'de kontrol edilirken yeni barkodlar isleme alinmaz.
+  // Kamera acik kalmaya devam eder.
+  const scanInProgressRef = useRef(false);
 
   const totalOurPrice = bundleItems.reduce((total, item) => {
     return total + (item.price * item.quantity);
@@ -508,6 +512,10 @@ export default function HomePage() {
   const handleBarcodeScanned = useCallback(async (code: string) => {
     if (!code || !code.trim()) return;
 
+    // Bir urunun API sorgusu devam ediyorsa yeni taramayi isleme alma.
+    // Kamera kapanmaz; sadece callback sessizce yok sayilir.
+    if (scanInProgressRef.current) return;
+
     trackEvent('barcode_scanned');
 
     // Kisa bip sesi
@@ -539,6 +547,8 @@ export default function HomePage() {
       }
       return;
     }
+
+    scanInProgressRef.current = true;
 
     try {
       // Farkli bir barkod okundu: bekleyen duplicate uyarisi otomatik "No" sayilir
@@ -631,6 +641,7 @@ export default function HomePage() {
         setAmazonResult(null);
       }, 8000);
     } finally {
+      scanInProgressRef.current = false;
       setIsCheckingAmazon(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
