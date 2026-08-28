@@ -462,8 +462,20 @@ export async function POST(request: NextRequest) {
     console.log(`🎫 Tokens: consumed=${keepaResponse?.tokensConsumed}, left=${keepaResponse?.tokensLeft}, keepaMs=${keepaResponse?.processingTimeInMs}, roundTrip=${Date.now() - keepaStart}ms`);
 
     const products = keepaResponse?.products;
-    const bestProduct = pickBestKeepaProduct(products, codeInfo.searchCode);
 
+    console.log('📦 KEEPA RESULT:', {
+      cleanCode,
+      searchCode: codeInfo.searchCode,
+      lookupType: codeInfo.needsCodeLookup ? 'code' : 'asin',
+      productCount: Array.isArray(products) ? products.length : 0,
+      asins: Array.isArray(products)
+        ? products.map((p: any) => p?.asin).filter(Boolean)
+        : [],
+      error: keepaResponse?.error || null
+    });
+    
+    const bestProduct = pickBestKeepaProduct(products, codeInfo.searchCode);
+    
     if (!bestProduct) {
       console.log(`Product not found: ${cleanCode}`);
       return NextResponse.json(
