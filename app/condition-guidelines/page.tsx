@@ -3,36 +3,28 @@
 import Link from "next/link";
 
 const ACCEPT = [
-  "Items that play or function perfectly without issues",
-  "Minor surface wear or light scuffs that don't affect function",
-  "Complete with all original inserts, artwork, and manuals",
-  "Discs and artwork clean — no stickers, writing, or markings",
-  "Clean, readable, and odor-free",
+  "Clean, complete items in good usable condition",
+  "Normal shelf wear, light scuffs, and minor signs of use",
+  "Books with intact covers and readable pages",
+  "Discs that play properly and are free from major damage",
+  "Original cases and cover artwork when applicable",
 ];
 
 const REJECT = [
-  { text: "Any writing, highlighting, underlining, or annotations", strong: true },
-  { text: "CDs or DVDs with stickers, writing, or markings on the disc or artwork", strong: true },
-  { text: "Deep scratches that affect playback or reading", strong: true },
-  { text: "Ex-library books and ex-rental discs", strong: true },
-  { text: "Cracked, broken, or badly damaged items", strong: false },
-  { text: "Water damage, stains, mold, or warped items", strong: false },
-  { text: "Missing original case, cover art, inserts, or manuals", strong: false },
-  { text: "Strong odors (smoke, mildew, and similar)", strong: false },
-  { text: "Promotional copies or bootleg items", strong: false },
-  { text: "Advance Reader Copies (ARCs) or items marked \"Not for Resale\"", strong: false },
-  { text: "Magazines, newspapers, or periodicals", strong: false },
-  { text: "Audiobooks and spoken-word CDs", strong: true },
-  { text: "Region-locked or non-US format discs (for example PAL)", strong: false },
-  { text: "Digital or streaming codes, or download-only items", strong: false },
-  { text: "VHS tapes, cassette tapes, and vinyl records", strong: true },
+  "Heavy writing, highlighting, or excessive markings",
+  "Deep scratches or damage that affects playback",
+  "Water damage, mold, heavy stains, or strong odors",
+  "Missing pages, discs, or essential parts",
+  "Cracked, broken, or severely damaged items",
+  "Ex-library books or ex-rental media",
+  "Bootlegs, promotional copies, or items marked Not for Resale",
+  "VHS tapes, cassette tapes, vinyl records, audiobooks, or digital-only items",
 ];
 
 const PROCESS = [
-  { text: "Check your items against this guide", tone: "blue" as const },
-  { text: "Send only items in very good condition", tone: "blue" as const },
-  { text: "We inspect and pay for qualifying items", tone: "blue" as const },
-  { text: "Non-qualifying items are recycled, not returned", tone: "red" as const },
+  "Check your items using this simple guide",
+  "Pack and send your qualifying items",
+  "We inspect your shipment and issue payment",
 ];
 
 const CATEGORIES = [
@@ -45,7 +37,8 @@ const CATEGORIES = [
 export default function ConditionGuidelines() {
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* ===================== BASLIK BANDI ===================== */}
+
+      {/* ===================== HEADER ===================== */}
       <header className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(129,140,248,0.25),transparent_60%)]" />
 
@@ -55,11 +48,22 @@ export default function ConditionGuidelines() {
               onClick={() => window.history.back()}
               className="inline-flex items-center text-sm font-medium text-blue-200 transition-colors hover:text-white"
             >
-              <svg className="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              <svg
+                className="mr-1.5 h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
               </svg>
               Back
             </button>
+
             <Link
               href="/"
               className="inline-flex items-center text-sm font-medium text-blue-200 transition-colors hover:text-white"
@@ -77,44 +81,57 @@ export default function ConditionGuidelines() {
           </h1>
 
           <p className="mt-5 text-lg sm:text-xl leading-relaxed text-blue-100">
-            We only accept items in very good condition. Please check these criteria carefully before
-            sending your items — anything that doesn&rsquo;t meet the standard is recycled rather than
-            returned.
+            We accept clean, complete items in good usable condition.
+            Normal signs of use are okay. Use this quick guide to make
+            sure your items are ready to send.
           </p>
         </div>
       </header>
 
-      <div className="max-w-3xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
-        {/* ---------- Tek kural ---------- */}
+      <main className="max-w-3xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
+
+        {/* ===================== SIMPLE STANDARD ===================== */}
         <section className="mb-14">
           <div className="rounded-2xl border-l-4 border-blue-500 bg-white px-6 py-6 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
-              The standard
+              Simple standard
             </p>
+
             <h2 className="mt-2 font-serif text-2xl font-bold text-slate-900">
-              Very good condition
+              Good, usable condition
             </h2>
+
             <p className="mt-3 text-[17px] leading-relaxed text-slate-700">
-              All items must be in very good condition, with minimal wear from normal use only.
+              Your items don&apos;t need to look brand new. Normal wear
+              from regular use is fine. They should simply be clean,
+              complete, and usable.
             </p>
           </div>
         </section>
 
-        {/* ---------- Kabul / Red ---------- */}
+        {/* ===================== ACCEPT / DON'T ACCEPT ===================== */}
         <section className="mb-14">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
-            The two lists
+            Quick check
           </p>
+
           <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
-            What we accept, and what we don&rsquo;t
+            What we accept
           </h2>
 
+          <p className="mt-3 text-[16px] leading-relaxed text-slate-600">
+            Most gently used items are perfectly fine. We mainly look
+            for major damage, missing parts, or problems that affect use.
+          </p>
+
           <div className="mt-6 grid gap-4 md:grid-cols-2 md:items-start">
-            {/* Kabul */}
+
+            {/* ACCEPT */}
             <div className="overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-sm">
               <p className="border-b border-emerald-100 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-800">
-                We accept
+                Good to send
               </p>
+
               <ul className="space-y-3 px-5 py-5 text-[15px] leading-relaxed text-slate-700">
                 {ACCEPT.map((item) => (
                   <li key={item} className="flex items-start gap-2.5">
@@ -129,32 +146,37 @@ export default function ConditionGuidelines() {
                         strokeWidth={3}
                         viewBox="0 0 24 24"
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M5 13l4 4L19 7"
+                        />
                       </svg>
                     </span>
+
                     {item}
                   </li>
                 ))}
               </ul>
+
               <p className="border-t border-emerald-100 bg-emerald-50/50 px-5 py-4 text-[15px] leading-relaxed text-emerald-900">
-                <span className="font-semibold">On cases:</span> we don&rsquo;t judge the outer case
-                condition. A worn or scuffed case is fine — but the case and artwork must be present,
-                and the disc and artwork themselves must meet the standard.
+                <span className="font-semibold">Normal wear is okay.</span>{" "}
+                Light shelf wear, minor case scuffs, and other small signs
+                of normal use generally aren&apos;t a problem.
               </p>
             </div>
 
-            {/* Red */}
-            <div className="overflow-hidden rounded-2xl border border-rose-200 bg-white shadow-sm">
-              <p className="border-b border-rose-100 bg-rose-50 px-5 py-3 text-sm font-semibold text-rose-800">
-                We don&rsquo;t accept
+            {/* REJECT */}
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <p className="border-b border-slate-200 bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-800">
+                Please don&apos;t send
               </p>
+
               <ul className="space-y-3 px-5 py-5 text-[15px] leading-relaxed text-slate-700">
                 {REJECT.map((item) => (
-                  <li key={item.text} className="flex items-start gap-2.5">
-                    <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-rose-500" />
-                    <span className={item.strong ? "font-semibold text-slate-900" : ""}>
-                      {item.text}
-                    </span>
+                  <li key={item} className="flex items-start gap-2.5">
+                    <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-slate-400" />
+                    <span>{item}</span>
                   </li>
                 ))}
               </ul>
@@ -162,42 +184,12 @@ export default function ConditionGuidelines() {
           </div>
         </section>
 
-        {/* ---------- Iki net kural ---------- */}
+        {/* ===================== CATEGORY DETAILS ===================== */}
         <section className="mb-14">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
-            Strictly enforced
+            What you can sell
           </p>
-          <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
-            Two rules with no exceptions
-          </h2>
 
-          <div className="mt-6 space-y-4">
-            <div className="rounded-xl border-l-4 border-amber-500 bg-white px-5 py-5 shadow-sm">
-              <h3 className="font-semibold text-slate-900">No writing, stickers, or markings</h3>
-              <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
-                We can&rsquo;t accept items with writing, highlighting, underlining, marker stains,
-                stickers, or markings of any kind. This applies to books as well as the discs and
-                artwork of CDs and DVDs, across every product category.
-              </p>
-            </div>
-
-            <div className="rounded-xl border-l-4 border-amber-500 bg-white px-5 py-5 shadow-sm">
-              <h3 className="font-semibold text-slate-900">No ex-library or ex-rental copies</h3>
-              <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
-                Library copies carry stamps, stickers, spine labels, or pocket inserts. Former rental
-                discs — Redbox, Blockbuster, library rentals — usually come in generic cases, carry
-                rental stickers, or are missing the original artwork. Neither can be accepted, even if
-                the disc plays perfectly or the pages are clean.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* ---------- Kategoriler ---------- */}
-        <section className="mb-14">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
-            What goes in the box
-          </p>
           <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
             Categories we accept
           </h2>
@@ -211,53 +203,111 @@ export default function ConditionGuidelines() {
                 <div className="text-3xl" aria-hidden="true">
                   {cat.icon}
                 </div>
-                <div className="mt-2 font-semibold text-slate-900">{cat.name}</div>
+
+                <div className="mt-2 font-semibold text-slate-900">
+                  {cat.name}
+                </div>
               </div>
             ))}
           </div>
 
-          <p className="mt-4 text-[15px] leading-relaxed text-slate-600">
-            Music CDs, DVDs, Blu-ray, and 4K UHD discs are all welcome. Audiobooks, spoken-word CDs,
-            VHS, cassette tapes, and vinyl records are not accepted.
+          <p className="mt-5 text-[15px] leading-relaxed text-slate-600">
+            We buy books, music CDs, DVDs, Blu-rays, 4K UHD discs, and
+            qualifying video games.
+          </p>
+
+          <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
+            We currently don&apos;t purchase audiobooks, spoken-word CDs,
+            VHS tapes, cassette tapes, vinyl records, or digital/download-only
+            products.
           </p>
         </section>
 
-        {/* ---------- Surec ---------- */}
+        {/* ===================== CATEGORY TIPS ===================== */}
         <section className="mb-14">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
-            Start to finish
+            A few helpful tips
           </p>
+
           <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
-            How the check works
+            Before packing your box
+          </h2>
+
+          <div className="mt-6 space-y-3">
+
+            <div className="rounded-xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
+              <h3 className="font-semibold text-slate-900">
+                Books
+              </h3>
+
+              <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
+                Covers and pages should be intact and readable. Normal
+                shelf wear is okay, but please avoid sending books with
+                major water damage, mold, missing pages, or excessive
+                writing and highlighting.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
+              <h3 className="font-semibold text-slate-900">
+                CDs, DVDs, Blu-rays &amp; 4K
+              </h3>
+
+              <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
+                Discs should be playable and free from cracks or deep
+                scratches. Light surface marks and normal case wear are
+                generally fine.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
+              <h3 className="font-semibold text-slate-900">
+                Video games
+              </h3>
+
+              <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
+                Games should be complete enough to use normally and the
+                disc or cartridge should be in working condition.
+              </p>
+            </div>
+
+          </div>
+        </section>
+
+        {/* ===================== PROCESS ===================== */}
+        <section className="mb-14">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+            Simple process
+          </p>
+
+          <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
+            What happens after you send your items?
           </h2>
 
           <ol className="mt-6 space-y-3">
             {PROCESS.map((step, i) => (
               <li
-                key={step.text}
-                className={`flex items-start gap-4 rounded-xl border bg-white px-5 py-4 shadow-sm ${
-                  step.tone === "red" ? "border-rose-200" : "border-slate-200"
-                }`}
+                key={step}
+                className="flex items-start gap-4 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm"
               >
-                <span
-                  className={`font-mono text-sm font-bold tabular-nums ${
-                    step.tone === "red" ? "text-rose-600" : "text-blue-600"
-                  }`}
-                >
+                <span className="font-mono text-sm font-bold tabular-nums text-blue-600">
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <span className="text-[16px] leading-relaxed text-slate-700">{step.text}</span>
+
+                <span className="text-[16px] leading-relaxed text-slate-700">
+                  {step}
+                </span>
               </li>
             ))}
           </ol>
         </section>
 
-        {/* ---------- Iade yok ---------- */}
+        {/* ===================== IMPORTANT NOTE ===================== */}
         <section className="mb-14">
-          <div className="rounded-2xl border-2 border-rose-300 bg-white px-6 py-6 shadow-md">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50/60 px-6 py-6">
             <div className="flex items-start gap-3">
               <svg
-                className="mt-0.5 h-6 w-6 flex-shrink-0 text-rose-500"
+                className="mt-0.5 h-6 w-6 flex-shrink-0 text-amber-600"
                 viewBox="0 0 20 20"
                 fill="currentColor"
                 aria-hidden="true"
@@ -268,30 +318,39 @@ export default function ConditionGuidelines() {
                   clipRule="evenodd"
                 />
               </svg>
+
               <div>
-                <h2 className="font-serif text-xl font-bold text-slate-900">No returns</h2>
+                <h2 className="font-serif text-xl font-bold text-slate-900">
+                  Before you ship
+                </h2>
+
                 <p className="mt-2 text-[16px] leading-relaxed text-slate-700">
-                  Items that don&rsquo;t meet our very good condition standard are recycled and not
-                  returned to you. Please check your items carefully before sending them.
+                  Please review your items before sending them. Items that
+                  don&apos;t meet our condition requirements may not qualify
+                  for payment and cannot be returned.
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ---------- Iletisim ---------- */}
+        {/* ===================== CONTACT ===================== */}
         <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 px-6 py-10 text-center sm:px-10">
           <h2 className="font-serif text-2xl font-bold text-white">
             Not sure about an item?
           </h2>
+
           <p className="mx-auto mt-3 max-w-md text-blue-100">
-            If you&rsquo;re unsure whether something meets the standard, ask us before you send it.
+            If you&apos;re unsure about the condition of something,
+            just contact us before sending it. We&apos;re happy to help.
           </p>
+
           <Link
             href="/contact"
             className="mt-7 inline-flex items-center rounded-xl bg-white px-7 py-3.5 text-base font-bold text-blue-700 shadow-lg transition-transform hover:scale-[1.02]"
           >
             Contact support
+
             <svg
               className="ml-2 h-5 w-5"
               fill="none"
@@ -299,11 +358,16 @@ export default function ConditionGuidelines() {
               strokeWidth={2}
               viewBox="0 0 24 24"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M5 12h14M12 5l7 7-7 7"
+              />
             </svg>
           </Link>
         </div>
-      </div>
+
+      </main>
     </div>
   );
 }
