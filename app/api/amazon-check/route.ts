@@ -1,6 +1,6 @@
 // /app/api/amazon-check/route.ts
 // KEEPA API - SINGLE PRODUCT LOOKUP (Oxylabs'tan geçiş)
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import axios from 'axios';
 import { productCache } from '@/lib/productCache';
 
@@ -528,13 +528,26 @@ export async function POST(request: NextRequest) {
       timings: { totalTime }
     };
 
-        // Cache yazmasi kullaniciyi bekletmemeli - arka planda gonderilir.
-    // Yazma basarisiz olsa bile cevap dogru, sadece bir sonraki sorgu tekrar Keepa'ya gider.
-    const cacheWriteStart = Date.now();
-    productCache
-      .saveToCache(cleanCode, codeInfo.type, product, pricingResult, message, debugInfo)
-      .then(() => console.log(`⏱️ cacheWrite=${Date.now() - cacheWriteStart}ms (arka plan)`))
-      .catch(err => console.error('Cache save error:', err));
+    // Cache yazmasi kullaniciyi bekletmez.
+// Next.js after() response dondükten sonra islemin tamamlanmasina izin verir.
+const cacheWriteStart = Date.now();
+
+after(async () => {
+  try {
+    await productCache.saveToCache(
+      cleanCode,
+      codeInfo.type,
+      product,
+      pricingResult,
+      message,
+      debugInfo
+    );
+
+    console.log(`⏱️ cacheWrite=${Date.now() - cacheWriteStart}ms (after)`);
+  } catch (err) {
+    console.error('Cache save error:', err);
+  }
+});
 
     const speedLabel = totalTime < 1000 ? 'ULTRA FAST' : totalTime < 2000 ? 'FAST' : 'NORMAL';
     console.log(`[${speedLabel}] ${totalTime}ms - Keepa lookup (${debugInfo.lookupType})`);
