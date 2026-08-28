@@ -96,7 +96,7 @@ export function detectCategory(amazonCategory: string): ProductCategory {
     return 'dvds';
   }
 
-  if (category.includes('game') || category.includes('video game') || category.includes('gaming')) {
+  if (category === 'video games') {
     return 'games';
   }
 
