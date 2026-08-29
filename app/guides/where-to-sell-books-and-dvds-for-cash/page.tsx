@@ -5,58 +5,62 @@ import RelatedGuides from "@/components/RelatedGuides";
 export const metadata: Metadata = {
   title: "Where to Sell Used Books and DVDs for Cash (2026 Guide) | SellBookMedia",
   description:
-    "Looking for where to sell used books, DVDs, CDs, and video games for cash? Compare your options and see how SellBookMedia offers instant quotes with free shipping.",
+    "Compare ways to sell used books, DVDs, CDs, Blu-rays, 4K movies, and video games for cash. Check an instant offer online with free shipping.",
 };
 
 const DIFFERENCES = [
   {
-    title: "One platform, four categories",
-    body: "Most buyback sites only take books. We accept books, CDs, DVDs, and video games in the same box — no need to sort items across different services.",
+    title: "One box for multiple categories",
+    body: "Books, CDs, DVDs, Blu-rays, 4K movies, and qualifying video games can be combined in the same order.",
   },
   {
-    title: "Real cash, not cents",
-    body: "Our offers are based on current demand and resale value. Scan your item to see whether it qualifies and what we can offer.",
+    title: "Instant barcode offers",
+    body: "Scan or enter the barcode and see whether that exact item qualifies for an offer before deciding what to send.",
   },
   {
-    title: "Free shipping label",
-    body: "Once your bundle is submitted, we email you a free shipping label — no cost to send your box.",
+    title: "Free shipping",
+    body: "When you're ready to ship your order, we provide a prepaid shipping label.",
   },
   {
-    title: "Fast payment",
-    body: "Once we receive and inspect your items, payment is sent to your PayPal within 2 business days.",
+    title: "PayPal payment",
+    body: "Qualifying items are paid through PayPal after your shipment is received and inspected.",
   },
 ];
 
 const STEPS = [
-  "Scan the barcode on each book, CD, DVD, or game using your phone's camera — no account needed to start.",
-  "See your cash offer for each item instantly, based on current market value.",
-  "Once your accepted offers reach $7.50, log in or sign up to continue.",
-  "Print your free shipping label and send your box.",
-  "Get paid via PayPal within 2 business days of us receiving your items.",
+  "Scan the barcode on a book, CD, DVD, Blu-ray, 4K movie, or game — no app required.",
+  "See your offer instantly for qualifying items.",
+  "Keep adding accepted items until your order reaches the checkout minimum.",
+  "Use the prepaid shipping label we email you to send everything together.",
+  "After your shipment is received and inspected, qualifying items are paid through PayPal.",
 ];
 
 const NOT_ACCEPTED = [
-  "Writing or highlighting",
+  "Heavy writing or excessive highlighting",
   "Deep scratches that affect playback",
-  "Water damage",
-  "Missing cases or inserts",
-  "Strong odors",
-  "Ex-library and bootleg copies",
-  "VHS and cassette tapes",
+  "Water damage, mold, or heavy stains",
+  "Missing pages, discs, or essential parts",
+  "Strong smoke or mildew odors",
+  "Ex-library or bootleg copies",
+  "VHS tapes and cassette tapes",
 ];
 
 const FAQ = [
   {
-    q: "Do I need an account to check my items' value?",
-    a: "No. You can scan and add items without creating an account. You'll only need to log in or sign up once you're ready to ship your box.",
+    q: "Do I need an account to check what my items are worth?",
+    a: "No. You can scan or enter barcodes and check offers before creating an account.",
   },
   {
     q: "Is there a minimum number of items?",
-    a: "Yes, we require a minimum cash offer of $7.50 per order so that a single shipping label covers the cost of shipping and processing.",
+    a: "No. The checkout requirement is based on the total value of your accepted offers, not a fixed number of items.",
+  },
+  {
+    q: "Can I mix books, CDs, DVDs, and games in the same box?",
+    a: "Yes. Qualifying books, CDs, DVDs, Blu-rays, 4K movies, and video games can be combined in the same order.",
   },
   {
     q: "What happens if an item doesn't meet the condition guidelines?",
-    a: "Items that don't meet our very good condition standard are recycled rather than returned, so it's worth double-checking condition before you ship.",
+    a: "Items are inspected after they arrive. Please review the condition guidelines before shipping so you know what types of wear and damage we can accept.",
   },
 ];
 
@@ -68,16 +72,25 @@ export default function WhereToSellGuide() {
         "@type": "Article",
         headline: "Where to Sell Used Books and DVDs for Cash",
         datePublished: "2026-08-18",
-        dateModified: "2026-08-18",
-        author: { "@type": "Organization", name: "SellBookMedia" },
-        publisher: { "@type": "Organization", name: "SellBookMedia" },
+        dateModified: "2026-08-29",
+        author: {
+          "@type": "Organization",
+          name: "SellBookMedia",
+        },
+        publisher: {
+          "@type": "Organization",
+          name: "SellBookMedia",
+        },
       },
       {
         "@type": "FAQPage",
         mainEntity: FAQ.map((item) => ({
           "@type": "Question",
           name: item.q,
-          acceptedAnswer: { "@type": "Answer", text: item.a },
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: item.a,
+          },
         })),
       },
     ],
@@ -90,7 +103,7 @@ export default function WhereToSellGuide() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* ===================== BASLIK BANDI ===================== */}
+      {/* ===================== HEADER ===================== */}
       <header className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(129,140,248,0.25),transparent_60%)]" />
 
@@ -99,8 +112,18 @@ export default function WhereToSellGuide() {
             href="/"
             className="inline-flex items-center text-sm font-medium text-blue-200 hover:text-white transition-colors"
           >
-            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            <svg
+              className="w-4 h-4 mr-1.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+              />
             </svg>
             Back to home
           </Link>
@@ -110,24 +133,20 @@ export default function WhereToSellGuide() {
           </p>
 
           <h1 className="mt-3 font-serif text-4xl sm:text-5xl font-bold leading-[1.1] text-white">
-            Where to sell used books and DVDs for cash
+            Where to sell used books, DVDs, CDs, and games for cash
           </h1>
 
           <p className="mt-5 text-lg sm:text-xl leading-relaxed text-blue-100">
-            If you&rsquo;ve got a box of books, DVDs, CDs, or video games gathering dust, you have
-            more options than you might think. Here&rsquo;s a straightforward look at where to sell
-            them — and what each route costs you in time.
+            You can sell used media locally, list items yourself, or use
+            a buyback service. The best option depends on how much work
+            you want to do and what kinds of items you have.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-white/15 pt-5 text-sm text-blue-200">
             <span className="font-medium text-white">SellBookMedia</span>
-            <span aria-hidden="true" className="text-white/30">
-              /
-            </span>
-            <time dateTime="2026-08-18">Updated August 2026</time>
-            <span aria-hidden="true" className="text-white/30">
-              /
-            </span>
+            <span aria-hidden="true" className="text-white/30">/</span>
+            <time dateTime="2026-08-29">Updated August 2026</time>
+            <span aria-hidden="true" className="text-white/30">/</span>
             <span>5 min read</span>
           </div>
         </div>
@@ -135,80 +154,102 @@ export default function WhereToSellGuide() {
 
       <div className="max-w-3xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
         <article>
-          {/* ---------- IMZA: uc yol yan yana ---------- */}
-          <section className="mb-14">
+
+          {/* ===================== OPTIONS ===================== */}
+          <section className="mb-12">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
               Pick your route
             </p>
+
             <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
-              Your main options
+              Three common ways to sell used media
             </h2>
 
+            <p className="mt-5 text-[17px] leading-[1.75] text-slate-700">
+              Each option has a different balance of convenience, time,
+              and control over the sale.
+            </p>
+
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
-              {/* Yerel dukkan */}
               <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <p className="border-b border-slate-100 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
                   Local shop
                 </p>
-                <div className="px-4 py-5">
-                  <p className="font-serif text-xl font-bold text-slate-900">Same-day cash</p>
-                  <dl className="mt-4 space-y-2 border-t border-dashed border-slate-200 pt-3 text-sm">
-                    <div>
-                      <dt className="text-slate-500">Offers</dt>
-                      <dd className="font-medium text-slate-700">In person, item by item</dd>
-                    </div>
-                    <div>
-                      <dt className="text-slate-500">Catch</dt>
-                      <dd className="font-medium text-slate-700">
-                        Varies by who&rsquo;s at the counter
-                      </dd>
-                    </div>
-                  </dl>
-                </div>
-              </div>
 
-              {/* Marketplace */}
-              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <p className="border-b border-slate-100 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  eBay / Marketplace
-                </p>
                 <div className="px-4 py-5">
-                  <p className="font-serif text-xl font-bold text-slate-900">Most per item</p>
+                  <p className="font-serif text-xl font-bold text-slate-900">
+                    Quick and in person
+                  </p>
+
                   <dl className="mt-4 space-y-2 border-t border-dashed border-slate-200 pt-3 text-sm">
                     <div>
                       <dt className="text-slate-500">Effort</dt>
-                      <dd className="font-medium text-slate-700">All of it, per sale</dd>
-                    </div>
-                    <div>
-                      <dt className="text-slate-500">Catch</dt>
                       <dd className="font-medium text-slate-700">
-                        Photos, listings, buyer messages
+                        Low
+                      </dd>
+                    </div>
+
+                    <div>
+                      <dt className="text-slate-500">Best for</dt>
+                      <dd className="font-medium text-slate-700">
+                        Selling locally
                       </dd>
                     </div>
                   </dl>
                 </div>
               </div>
 
-              {/* Buyback */}
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <p className="border-b border-slate-100 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Marketplace
+                </p>
+
+                <div className="px-4 py-5">
+                  <p className="font-serif text-xl font-bold text-slate-900">
+                    Manage the sale yourself
+                  </p>
+
+                  <dl className="mt-4 space-y-2 border-t border-dashed border-slate-200 pt-3 text-sm">
+                    <div>
+                      <dt className="text-slate-500">Effort</dt>
+                      <dd className="font-medium text-slate-700">
+                        Higher, per item
+                      </dd>
+                    </div>
+
+                    <div>
+                      <dt className="text-slate-500">Includes</dt>
+                      <dd className="font-medium text-slate-700">
+                        Listings, buyers, fees &amp; shipping
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+              </div>
+
               <div className="overflow-hidden rounded-2xl border-2 border-emerald-300 bg-white shadow-md">
                 <p className="border-b border-emerald-100 bg-emerald-50 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-emerald-800">
-                  Buyback (us)
+                  SellBookMedia
                 </p>
+
                 <div className="px-4 py-5">
-                  <div className="flex flex-wrap items-baseline gap-x-2">
-                    <span className="font-mono text-3xl font-bold text-emerald-700 tabular-nums">
-                      VARIES
-                    </span>
-                    <span className="font-medium text-slate-700">and up</span>
-                  </div>
+                  <p className="font-serif text-xl font-bold text-slate-900">
+                    Scan, ship, get paid
+                  </p>
+
                   <dl className="mt-4 space-y-2 border-t border-dashed border-emerald-200 pt-3 text-sm">
                     <div>
                       <dt className="text-slate-500">Effort</dt>
-                      <dd className="font-medium text-slate-700">Scan and ship once</dd>
+                      <dd className="font-medium text-slate-700">
+                        Scan and ship together
+                      </dd>
                     </div>
+
                     <div>
-                      <dt className="text-slate-500">Paid in</dt>
-                      <dd className="font-medium text-slate-700">PayPal cash</dd>
+                      <dt className="text-slate-500">Payment</dt>
+                      <dd className="font-medium text-slate-700">
+                        PayPal
+                      </dd>
                     </div>
                   </dl>
                 </div>
@@ -216,19 +257,77 @@ export default function WhereToSellGuide() {
             </div>
 
             <p className="mt-6 text-[16px] leading-relaxed text-slate-600">
-              Scan a barcode, get an instant cash offer, ship a whole box at once with a free label —
-              no listings, no back-and-forth with buyers.
+              If you&apos;re selling individually, remember to factor in
+              photos, listings, buyer messages, marketplace fees,
+              promoted-listing costs, packing, shipping, and possible returns.
+              A buyback service trades some of that control for a simpler
+              one-box process.
             </p>
           </section>
 
-          {/* ---------- Farkimiz ---------- */}
+          {/* ===================== EARLY CTA ===================== */}
+          <section className="mb-14">
+            <div className="overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-sm">
+              <div className="px-6 py-8 sm:px-8 sm:py-9">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+                  Compare before you decide
+                </p>
+
+                <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
+                  See our offer for one item
+                </h2>
+
+                <p className="mt-3 max-w-xl text-[16px] sm:text-[17px] leading-relaxed text-slate-600">
+                  Scan a book, CD, DVD, Blu-ray, 4K movie, or game and
+                  see what we&apos;ll pay. No app required and no account
+                  needed just to check.
+                </p>
+
+                <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+                  <Link
+                    href="/"
+                    className="inline-flex items-center rounded-xl bg-blue-600 px-6 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-blue-700"
+                  >
+                    Check My Item
+
+                    <svg
+                      className="ml-2 h-5 w-5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 12h14M12 5l7 7-7 7"
+                      />
+                    </svg>
+                  </Link>
+
+                  <span className="text-sm text-slate-500">
+                    Instant offer • Free shipping • PayPal payment
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ===================== DIFFERENCES ===================== */}
           <section className="mb-14">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
-              The details
+              Why use SellBookMedia?
             </p>
+
             <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
-              What makes SellBookMedia different
+              A simpler way to clear out mixed media
             </h2>
+
+            <p className="mt-5 text-[17px] leading-[1.75] text-slate-700">
+              SellBookMedia is built for people who have more than one
+              kind of media sitting around and don&apos;t want to manage
+              individual listings and buyers.
+            </p>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               {DIFFERENCES.map((item) => (
@@ -236,20 +335,26 @@ export default function WhereToSellGuide() {
                   key={item.title}
                   className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
                 >
-                  <h3 className="font-semibold text-slate-900">{item.title}</h3>
-                  <p className="mt-2 text-[15px] leading-relaxed text-slate-600">{item.body}</p>
+                  <h3 className="font-semibold text-slate-900">
+                    {item.title}
+                  </h3>
+
+                  <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
+                    {item.body}
+                  </p>
                 </div>
               ))}
             </div>
           </section>
 
-          {/* ---------- Nasil calisir ---------- */}
+          {/* ===================== HOW IT WORKS ===================== */}
           <section className="mb-14">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
               Start to finish
             </p>
+
             <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
-              How it works
+              How selling to SellBookMedia works
             </h2>
 
             <ol className="mt-6 space-y-3">
@@ -261,35 +366,41 @@ export default function WhereToSellGuide() {
                   <span className="font-mono text-sm font-bold text-blue-600 tabular-nums">
                     {String(i + 1).padStart(2, "0")}
                   </span>
-                  <span className="text-[16px] leading-relaxed text-slate-700">{step}</span>
+
+                  <span className="text-[16px] leading-relaxed text-slate-700">
+                    {step}
+                  </span>
                 </li>
               ))}
             </ol>
           </section>
 
-          {/* ---------- Durum ---------- */}
+          {/* ===================== CONDITION ===================== */}
           <section className="mb-14">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
               Before you pack
             </p>
+
             <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
-              What condition do your items need to be in?
+              Normal signs of use are okay
             </h2>
 
             <p className="mt-6 text-[17px] leading-[1.75] text-slate-700">
-              We accept items in <strong className="text-slate-900">very good condition</strong>:
-              fully functional, clean, and complete with their original case, cover art, and inserts.
-              Minor surface wear is fine — we focus on the disc or book itself.
+              Items don&apos;t need to look brand new. Normal shelf wear,
+              light case scuffs, and ordinary signs of use are generally
+              fine. Items should be clean, complete, usable, and free from
+              major damage.
             </p>
 
-            <div className="mt-6 rounded-xl border border-rose-200 bg-white shadow-sm">
-              <p className="border-b border-rose-100 bg-rose-50 px-5 py-3 text-sm font-semibold text-rose-800">
-                We can&rsquo;t accept
+            <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
+              <p className="border-b border-slate-200 bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-800">
+                Please don&apos;t send
               </p>
+
               <ul className="grid gap-2 px-5 py-4 text-[15px] text-slate-700 sm:grid-cols-2">
                 {NOT_ACCEPTED.map((item) => (
                   <li key={item} className="flex items-start gap-2">
-                    <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-rose-500" />
+                    <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-slate-400" />
                     {item}
                   </li>
                 ))}
@@ -301,6 +412,7 @@ export default function WhereToSellGuide() {
               className="mt-5 inline-flex items-center text-sm font-semibold text-blue-600 hover:text-blue-700"
             >
               See the full condition guidelines
+
               <svg
                 className="ml-1.5 h-4 w-4"
                 fill="none"
@@ -308,25 +420,35 @@ export default function WhereToSellGuide() {
                 strokeWidth={2}
                 viewBox="0 0 24 24"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5 12h14M12 5l7 7-7 7"
+                />
               </svg>
             </Link>
           </section>
 
-          {/* ---------- SSS ---------- */}
+          {/* ===================== FAQ ===================== */}
           <section className="mb-14">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
-              Still wondering
-            </p>
-            <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
               Common questions
+            </p>
+
+            <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
+              Selling books and used media online
             </h2>
 
             <dl className="mt-6 divide-y divide-slate-200 border-y border-slate-200">
               {FAQ.map((item) => (
                 <div key={item.q} className="py-6">
-                  <dt className="font-serif text-lg font-semibold text-slate-900">{item.q}</dt>
-                  <dd className="mt-2 text-[16px] leading-[1.75] text-slate-600">{item.a}</dd>
+                  <dt className="font-serif text-lg font-semibold text-slate-900">
+                    {item.q}
+                  </dt>
+
+                  <dd className="mt-2 text-[16px] leading-[1.75] text-slate-600">
+                    {item.a}
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -334,19 +456,27 @@ export default function WhereToSellGuide() {
 
           <RelatedGuides currentSlug="where-to-sell-books-and-dvds-for-cash" />
 
-          {/* ---------- CTA ---------- */}
-          <div className="mt-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 px-6 py-10 text-center sm:px-10">
-            <h2 className="font-serif text-2xl font-bold text-white">
-              Ready to see what your items are worth?
-            </h2>
-            <p className="mx-auto mt-3 max-w-md text-blue-100">
-              Scan your first barcode and get an instant cash offer. No account required to start.
+          {/* ===================== FINAL CTA ===================== */}
+          <div className="mt-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 px-6 py-10 text-center sm:px-10 sm:py-12">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-200">
+              Compare before you choose
             </p>
+
+            <h2 className="mt-3 font-serif text-2xl sm:text-3xl font-bold text-white">
+              See what we&apos;ll pay
+            </h2>
+
+            <p className="mx-auto mt-3 max-w-lg text-[16px] leading-relaxed text-blue-100">
+              Scan one barcode and see your offer in seconds. No app
+              required and no commitment to sell.
+            </p>
+
             <Link
               href="/"
               className="mt-7 inline-flex items-center rounded-xl bg-white px-7 py-3.5 text-base font-bold text-blue-700 shadow-lg transition-transform hover:scale-[1.02]"
             >
-              Start scanning
+              Check My Item
+
               <svg
                 className="ml-2 h-5 w-5"
                 fill="none"
@@ -354,10 +484,23 @@ export default function WhereToSellGuide() {
                 strokeWidth={2}
                 viewBox="0 0 24 24"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5 12h14M12 5l7 7-7 7"
+                />
               </svg>
             </Link>
+
+            <div className="mt-5 flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs text-blue-200">
+              <span>Instant offers</span>
+              <span aria-hidden="true">•</span>
+              <span>Free shipping</span>
+              <span aria-hidden="true">•</span>
+              <span>PayPal payment</span>
+            </div>
           </div>
+
         </article>
       </div>
     </div>

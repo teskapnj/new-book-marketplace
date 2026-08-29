@@ -3,18 +3,23 @@ import type { Metadata } from "next";
 import RelatedGuides from "@/components/RelatedGuides";
 
 export const metadata: Metadata = {
-  title: "Best Places to Sell Used CDs, DVDs & Video Games for Cash (2026) | SellBookMedia",
+  title:
+    "Best Places to Sell Used CDs, DVDs & Video Games for Cash (2026) | SellBookMedia",
   description:
-    "Compare the best places to sell used CDs, DVDs, and video games for cash in 2026. See how buyback sites stack up on payouts, shipping, and payment speed.",
+    "Compare ways to sell used CDs, DVDs, Blu-rays, and video games for cash. Learn what affects offers, shipping, payment, and which option may fit you best.",
 };
 
-// Rehber sayfalarinda kullanilan karsilastirma verisi.
-// Sadece yazida iddia edilen bilgiler - emin olmadigimiz alanlar "—" birakildi.
 const COMPARISON = [
+  {
+    name: "SellBookMedia",
+    takes: "Books, CDs, DVDs, Blu-rays, 4K & games",
+    payment: "PayPal",
+    note: "Scan a barcode and get an instant offer. No app required, with free shipping.",
+    highlight: true,
+  },
   {
     name: "Eagle Saver",
     takes: "Books, CDs, DVDs, Blu-rays, games",
-    account: "Required",
     payment: "Check or PayPal",
     note: "Region 1 DVDs only. No textbooks or club editions.",
     highlight: false,
@@ -22,49 +27,61 @@ const COMPARISON = [
   {
     name: "musicMagpie",
     takes: "CDs, DVDs, games, books",
-    account: "—",
     payment: "—",
-    note: "Formerly ran Decluttr. Reviews often flag low per-item payouts.",
+    note: "Formerly ran Decluttr. Availability and buying options may vary.",
     highlight: false,
   },
   {
     name: "Bonavendi",
     takes: "Not a buyer — compares buyers",
-    account: "Not required",
     payment: "n/a",
-    note: "Useful for rare titles where offers vary a lot between buyers.",
+    note: "Useful when you want to compare offers from multiple buyers.",
     highlight: false,
   },
   {
     name: "eBay / Marketplace",
-    takes: "Anything you can photograph",
-    account: "Required",
+    takes: "Most items you can list yourself",
     payment: "Varies",
-    note: "Best price on rare titles, but you do the listing work and pay fees.",
+    note: "Can work well for rare or collectible titles, but you handle listings, buyers, fees, and shipping.",
     highlight: false,
-  },
-  {
-    name: "SellBookMedia",
-    takes: "Books, CDs, DVDs, games — one box",
-    account: "Not required to scan",
-    payment: "PayPal, 2 business days",
-    note: "Instant quotes based on current demand and resale value. Free shipping once approved.",
-    highlight: true,
   },
 ];
 
 const FAQ = [
   {
     q: "Is it worth selling common DVDs and CDs?",
-    a: "It depends on the buyer. At sites paying cents per disc, a small collection may not be worth the effort. Services like ours focus on titles that currently have enough demand and resale value to qualify for an offer.",
+    a: "It depends on the individual title. Demand and resale value vary widely, so the easiest way to know whether an item qualifies is to scan its barcode and check the offer.",
   },
   {
     q: "Do I need the original case?",
-    a: "For most buyback sites, yes — items should be complete with their original case and artwork, and discs should play without deep scratches. Check the specific condition guidelines before shipping.",
+    a: "Media items should generally be complete and usable. Original cases and artwork are preferred when applicable. Review the condition guidelines before shipping your order.",
   },
   {
     q: "How fast do I get paid?",
-    a: "It varies by service. Some pay by check, some by PayPal, and timing ranges from a day to a week after your items are received and inspected. With SellBookMedia, payment is sent via PayPal within 2 business days of us receiving your box.",
+    a: "Payment timing varies by service. SellBookMedia uses PayPal and processes qualifying orders after the shipment is received and inspected.",
+  },
+  {
+    q: "Do I need an account just to check a price?",
+    a: "No. With SellBookMedia, you can start scanning and checking offers without creating an account first.",
+  },
+];
+
+const OFFER_FACTORS = [
+  {
+    title: "Current demand",
+    text: "Titles people are actively buying may qualify for stronger offers.",
+  },
+  {
+    title: "Resale value",
+    text: "Current market value plays an important role in each offer.",
+  },
+  {
+    title: "Sales activity",
+    text: "Items with healthier sales activity are generally more attractive to buyback services.",
+  },
+  {
+    title: "Format & condition",
+    text: "Complete, usable items in accepted formats have the best chance of qualifying.",
   },
 ];
 
@@ -74,18 +91,28 @@ export default function BestPlacesGuide() {
     "@graph": [
       {
         "@type": "Article",
-        headline: "Best Places to Sell Used CDs, DVDs, and Video Games for Cash",
+        headline:
+          "Best Places to Sell Used CDs, DVDs, and Video Games for Cash",
         datePublished: "2026-08-18",
-        dateModified: "2026-08-18",
-        author: { "@type": "Organization", name: "SellBookMedia" },
-        publisher: { "@type": "Organization", name: "SellBookMedia" },
+        dateModified: "2026-08-29",
+        author: {
+          "@type": "Organization",
+          name: "SellBookMedia",
+        },
+        publisher: {
+          "@type": "Organization",
+          name: "SellBookMedia",
+        },
       },
       {
         "@type": "FAQPage",
         mainEntity: FAQ.map((item) => ({
           "@type": "Question",
           name: item.q,
-          acceptedAnswer: { "@type": "Answer", text: item.a },
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: item.a,
+          },
         })),
       },
     ],
@@ -98,7 +125,7 @@ export default function BestPlacesGuide() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* ===================== BASLIK BANDI ===================== */}
+      {/* ===================== HEADER ===================== */}
       <header className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(129,140,248,0.25),transparent_60%)]" />
 
@@ -107,14 +134,24 @@ export default function BestPlacesGuide() {
             href="/"
             className="inline-flex items-center text-sm font-medium text-blue-200 hover:text-white transition-colors"
           >
-            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            <svg
+              className="w-4 h-4 mr-1.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+              />
             </svg>
             Back to home
           </Link>
 
           <p className="mt-10 text-xs font-semibold uppercase tracking-[0.2em] text-blue-300">
-            Buying guide
+            Selling guide
           </p>
 
           <h1 className="mt-3 font-serif text-4xl sm:text-5xl font-bold leading-[1.1] text-white">
@@ -122,146 +159,202 @@ export default function BestPlacesGuide() {
           </h1>
 
           <p className="mt-5 text-lg sm:text-xl leading-relaxed text-blue-100">
-            Got a stack of discs and games you&rsquo;ll never use again? Here&rsquo;s an honest look
-            at your options in 2026 — how the main buyback sites compare, and what to check before
-            you ship anything.
+            Clearing out a shelf or an entire collection? Here&apos;s how
+            the main selling options compare, what affects your offers,
+            and what to consider before you choose where to sell.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-white/15 pt-5 text-sm text-blue-200">
             <span className="font-medium text-white">SellBookMedia</span>
+
             <span aria-hidden="true" className="text-white/30">
               /
             </span>
-            <time dateTime="2026-08-18">Updated August 2026</time>
+
+            <time dateTime="2026-08-29">Updated August 2026</time>
+
             <span aria-hidden="true" className="text-white/30">
               /
             </span>
+
             <span>5 min read</span>
           </div>
         </div>
       </header>
 
-      {/* ===================== MAKALE ===================== */}
+      {/* ===================== ARTICLE ===================== */}
       <div className="max-w-3xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
         <article>
-          {/* ---------- Buyback vs kendin satmak ---------- */}
-          <section className="mb-14">
+
+          {/* ===================== BUYBACK VS SELL YOURSELF ===================== */}
+          <section className="mb-12">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
               The trade-off
             </p>
+
             <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
-              Buyback sites vs. selling it yourself
+              Buyback sites vs. selling items yourself
             </h2>
 
             <div className="mt-6 space-y-5 text-[17px] leading-[1.75] text-slate-700">
               <p>
-                <strong className="text-slate-900">Selling individually</strong> on eBay or Facebook
-                Marketplace can earn more per item for rare or collectible titles, but you handle
-                photos, listings, buyer messages, fees, and shipping one sale at a time. For a box of
-                common discs, the effort rarely pays off.
+              <strong className="text-slate-900">
+  Selling individually
+</strong>{" "}
+on eBay or Facebook Marketplace can make sense for rare,
+collectible, or especially valuable titles. The trade-off
+is that you do more of the work yourself: taking photos,
+creating listings, answering buyer messages, packing each
+order, and shipping items one at a time. You may also need
+to factor in marketplace selling fees, optional advertising
+or promoted-listing costs, payment processing fees, and the
+time or expense involved if a buyer requests a return or
+refund.
               </p>
+
               <p>
-                <strong className="text-slate-900">Buyback services</strong> flip that trade-off: you
-                scan barcodes, get instant offers, and ship everything in one box with a free label.
-                You earn less per rare item but save hours of work, which makes them the better choice
-                for clearing out a collection of ordinary titles.
+                <strong className="text-slate-900">
+                  Buyback services
+                </strong>{" "}
+                are designed for convenience. You scan your items, receive
+                offers, combine qualifying products into one shipment, and
+                avoid managing individual buyers.
+              </p>
+
+              <p>
+                For many people, the right choice depends on what they value
+                more: maximizing the price of a few special items or saving
+                time while clearing out a larger collection.
               </p>
             </div>
           </section>
 
-          {/* ---------- IMZA: fiyat farki ---------- */}
+          {/* ===================== FIRST CTA ===================== */}
+          <section className="mb-14">
+            <div className="overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-sm">
+              <div className="px-6 py-8 sm:px-8 sm:py-9">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+                  Compare for yourself
+                </p>
+
+                <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
+                  See our offer before you decide
+                </h2>
+
+                <p className="mt-3 max-w-xl text-[16px] sm:text-[17px] leading-relaxed text-slate-600">
+                  Scan one barcode and see what we&apos;ll pay. There&apos;s
+                  no account required just to check an offer.
+                </p>
+
+                <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+                  <Link
+                    href="/"
+                    className="inline-flex items-center rounded-xl bg-blue-600 px-6 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-blue-700"
+                  >
+                    Check My Item
+
+                    <svg
+                      className="ml-2 h-5 w-5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 12h14M12 5l7 7-7 7"
+                      />
+                    </svg>
+                  </Link>
+
+                  <span className="text-sm text-slate-500">
+                  Free shipping • PayPal payment
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ===================== OFFER FACTORS ===================== */}
           <section className="mb-14">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
-              Set your expectations
+              What affects value
             </p>
+
             <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
-              What common discs actually pay
+              Why one title may be worth more than another
             </h2>
 
             <p className="mt-6 text-[17px] leading-[1.75] text-slate-700">
-              Before you start sorting, it helps to know the real numbers. Based on current buyback
-              market data, this is the rough range for common titles across the industry — and why
-              the per-item floor matters more than any headline offer.
+              There isn&apos;t one fixed price for used CDs, DVDs, Blu-rays,
+              or games. Two items that look almost identical can have very
+              different resale values depending on current demand and the
+              exact edition.
             </p>
 
-            <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
-              <div className="space-y-7">
-                {/* Tipik teklif */}
-                <div>
-                  <div className="flex items-baseline justify-between gap-4">
-                    <span className="text-sm font-medium text-slate-600">
-                      Typical offer, common DVD
-                    </span>
-                    <span className="font-mono text-sm font-semibold text-slate-500 tabular-nums">
-                      $0.10&ndash;$0.65
-                    </span>
-                  </div>
-                  <div className="mt-2 h-3 w-full rounded-full bg-slate-100">
-                    <div className="h-3 rounded-full bg-slate-300" style={{ width: "12%" }} />
-                  </div>
-                </div>
+            <div className="mt-7 grid gap-4 sm:grid-cols-2">
+              {OFFER_FACTORS.map((factor) => (
+                <div
+                  key={factor.title}
+                  className="rounded-xl border border-slate-200 bg-white px-5 py-5 shadow-sm"
+                >
+                  <h3 className="font-semibold text-slate-900">
+                    {factor.title}
+                  </h3>
 
-                {/* Bizim taban */}
-                <div>
-                  <div className="flex items-baseline justify-between gap-4">
-                    <span className="text-sm font-medium text-slate-900">
-                      Our minimum, any accepted item
-                    </span>
-                    <span className="font-mono text-sm font-semibold text-emerald-700 tabular-nums">
-                      VARIES
-                    </span>
-                  </div>
-                  <div className="mt-2 h-3 w-full rounded-full bg-slate-100">
-                    <div
-                      className="h-3 rounded-full bg-gradient-to-r from-emerald-500 to-green-500"
-                      style={{ width: "68%" }}
-                    />
-                  </div>
+                  <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
+                    {factor.text}
+                  </p>
                 </div>
-              </div>
-
-              <p className="mt-7 border-t border-slate-100 pt-5 text-sm leading-relaxed text-slate-600">
-                A site paying a dime per disc means a box of 50 might only be worth a few dollars.
-                We focus on items that currently meet our purchasing criteria, so we simply don&rsquo;t accept
-                items we&rsquo;d only value at pennies.
-              </p>
+              ))}
             </div>
 
-            <ul className="mt-6 grid gap-2 text-[15px] text-slate-700 sm:grid-cols-2">
-              <li className="rounded-lg bg-white border border-slate-200 px-4 py-3">
-                <span className="font-medium text-slate-900">Common CDs</span> — around
-                $0.10&ndash;$0.90 each
-              </li>
-              <li className="rounded-lg bg-white border border-slate-200 px-4 py-3">
-                <span className="font-medium text-slate-900">Box sets, Blu-rays, rare titles</span> —
-                $2&ndash;$15+
-              </li>
-              <li className="rounded-lg bg-white border border-slate-200 px-4 py-3 sm:col-span-2">
-                <span className="font-medium text-slate-900">Video games</span> — vary widely by
-                platform and title
-              </li>
-            </ul>
+            <div className="mt-6 rounded-xl border-l-4 border-blue-500 bg-blue-50/60 px-5 py-4">
+              <p className="text-[16px] leading-relaxed text-slate-700">
+                <strong className="text-slate-900">
+                  The easiest way to know?
+                </strong>{" "}
+                Scan the barcode. Your offer is based on the specific item,
+                not a generic category estimate.
+              </p>
+            </div>
           </section>
 
-          {/* ---------- Karsilastirma tablosu ---------- */}
+          {/* ===================== COMPARISON ===================== */}
           <section className="mb-14">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
               Side by side
             </p>
+
             <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
-              The main buyback options
+              The main selling options
             </h2>
+
+            <p className="mt-4 text-[16px] leading-relaxed text-slate-600">
+              Different services work better for different types of
+              collections. Here&apos;s a quick comparison of some common
+              options.
+            </p>
 
             <div className="mt-6 -mx-5 overflow-x-auto px-5 sm:mx-0 sm:px-0">
               <table className="w-full min-w-[720px] border-collapse text-left text-sm">
                 <thead>
                   <tr className="border-b-2 border-slate-900">
-                    <th className="py-3 pr-4 font-semibold text-slate-900">Service</th>
-                    <th className="py-3 pr-4 font-semibold text-slate-900">What they take</th>
-                    <th className="py-3 pr-4 font-semibold text-slate-900">Account to quote</th>
-                    <th className="py-3 pr-4 font-semibold text-slate-900">Payment</th>
+                    <th className="py-3 pr-4 font-semibold text-slate-900">
+                      Service
+                    </th>
+
+                    <th className="py-3 pr-4 font-semibold text-slate-900">
+                      What they take
+                    </th>
+
+                    <th className="py-3 pr-4 font-semibold text-slate-900">
+                      Payment
+                    </th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {COMPARISON.map((row) => (
                     <tr
@@ -273,18 +366,26 @@ export default function BestPlacesGuide() {
                       <td className="py-4 pr-4">
                         <span
                           className={`font-semibold ${
-                            row.highlight ? "text-emerald-800" : "text-slate-900"
+                            row.highlight
+                              ? "text-emerald-800"
+                              : "text-slate-900"
                           }`}
                         >
                           {row.name}
                         </span>
+
                         <p className="mt-1 max-w-[15rem] text-xs leading-relaxed text-slate-500">
                           {row.note}
                         </p>
                       </td>
-                      <td className="py-4 pr-4 text-slate-700">{row.takes}</td>
-                      <td className="py-4 pr-4 text-slate-700">{row.account}</td>
-                      <td className="py-4 pr-4 text-slate-700">{row.payment}</td>
+
+                      <td className="py-4 pr-4 text-slate-700">
+                        {row.takes}
+                      </td>
+
+                      <td className="py-4 pr-4 text-slate-700">
+                        {row.payment}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -292,50 +393,118 @@ export default function BestPlacesGuide() {
             </div>
 
             <p className="mt-4 text-xs text-slate-500">
-              Details change — check each site&rsquo;s own terms before you ship.
+              Service details can change. Check each company&apos;s current
+              terms before shipping.
             </p>
           </section>
 
-          {/* ---------- Karar rehberi ---------- */}
+          {/* ===================== CHOOSE OPTION ===================== */}
           <section className="mb-14">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
               Pick your route
             </p>
+
             <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
-              How to choose the right option
+              Which option makes the most sense?
             </h2>
 
             <div className="mt-6 space-y-4">
               <div className="rounded-xl border-l-4 border-blue-500 bg-white px-5 py-4 shadow-sm">
-                <p className="font-semibold text-slate-900">Clearing a box of common titles fast?</p>
+                <p className="font-semibold text-slate-900">
+                  Clearing out a box of everyday titles?
+                </p>
+
                 <p className="mt-1 text-[15px] leading-relaxed text-slate-600">
-                  A buyback site that pays real per-item offers and covers shipping is your best bet.
+                  A buyback service can save you the work of creating and
+                  managing dozens of individual listings.
                 </p>
               </div>
+
               <div className="rounded-xl border-l-4 border-amber-500 bg-white px-5 py-4 shadow-sm">
-                <p className="font-semibold text-slate-900">Have a rare box set or collectible?</p>
+                <p className="font-semibold text-slate-900">
+                  Have a rare box set or collectible?
+                </p>
+
                 <p className="mt-1 text-[15px] leading-relaxed text-slate-600">
-                  Check eBay sold listings or a comparison tool first — a single collector may pay far
-                  more than any bulk buyer.
+                  Check recent marketplace sales first. A collector may be
+                  willing to pay more than a bulk buyer for an unusual or
+                  highly desirable item.
                 </p>
               </div>
+
               <div className="rounded-xl border-l-4 border-emerald-500 bg-white px-5 py-4 shadow-sm">
                 <p className="font-semibold text-slate-900">
                   Mixed box of books, CDs, DVDs, and games?
                 </p>
+
                 <p className="mt-1 text-[15px] leading-relaxed text-slate-600">
-                  Look for a service that takes all four in one shipment so you&rsquo;re not splitting
-                  your collection across sites.
+                  A service that accepts multiple categories in one order
+                  can keep you from splitting the collection across several
+                  different buyers.
                 </p>
               </div>
             </div>
           </section>
 
-          {/* ---------- SSS ---------- */}
+          {/* ===================== TRUST / HOW IT WORKS ===================== */}
           <section className="mb-14">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
-              Before you ship
+              Keep it simple
             </p>
+
+            <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
+              What selling to SellBookMedia looks like
+            </h2>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
+                <span className="text-sm font-bold text-blue-600">01</span>
+                <h3 className="mt-2 font-semibold text-slate-900">
+                  Scan the barcode
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  Check your item without downloading an app.
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
+                <span className="text-sm font-bold text-blue-600">02</span>
+                <h3 className="mt-2 font-semibold text-slate-900">
+                  See your offer
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  Accepted items are added to your bundle automatically.
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
+                <span className="text-sm font-bold text-blue-600">03</span>
+                <h3 className="mt-2 font-semibold text-slate-900">
+                  Ship your order
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  Approved orders receive a prepaid shipping label.
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
+                <span className="text-sm font-bold text-blue-600">04</span>
+                <h3 className="mt-2 font-semibold text-slate-900">
+                  Get paid
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  Qualifying items are paid through PayPal after inspection.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* ===================== FAQ ===================== */}
+          <section className="mb-14">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+              Before you sell
+            </p>
+
             <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
               Common questions
             </h2>
@@ -343,8 +512,13 @@ export default function BestPlacesGuide() {
             <dl className="mt-6 divide-y divide-slate-200 border-y border-slate-200">
               {FAQ.map((item) => (
                 <div key={item.q} className="py-6">
-                  <dt className="font-serif text-lg font-semibold text-slate-900">{item.q}</dt>
-                  <dd className="mt-2 text-[16px] leading-[1.75] text-slate-600">{item.a}</dd>
+                  <dt className="font-serif text-lg font-semibold text-slate-900">
+                    {item.q}
+                  </dt>
+
+                  <dd className="mt-2 text-[16px] leading-[1.75] text-slate-600">
+                    {item.a}
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -352,20 +526,28 @@ export default function BestPlacesGuide() {
 
           <RelatedGuides currentSlug="best-places-to-sell-cds-dvds-games" />
 
-          {/* ---------- CTA ---------- */}
-          <div className="mt-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 px-6 py-10 text-center sm:px-10">
-            <h2 className="font-serif text-2xl font-bold text-white">
-              See what your collection is worth
-            </h2>
-            <p className="mx-auto mt-3 max-w-md text-blue-100">
-              Scan a barcode and get an instant offer. No account needed to start, and shipping is
-              free once your bundle is approved.
+          {/* ===================== FINAL CTA ===================== */}
+          <div className="mt-12 overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 px-6 py-10 text-center sm:px-10 sm:py-12">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-200">
+              Takes only a few seconds
             </p>
+
+            <h2 className="mt-3 font-serif text-2xl sm:text-3xl font-bold text-white">
+              See our offer before you decide
+            </h2>
+
+            <p className="mx-auto mt-3 max-w-lg text-[16px] leading-relaxed text-blue-100">
+              Have a CD, DVD, Blu-ray, book, or game nearby? Scan one
+              barcode and see what we&apos;ll pay. No app required and no
+              account needed just to check.
+            </p>
+
             <Link
               href="/"
               className="mt-7 inline-flex items-center rounded-xl bg-white px-7 py-3.5 text-base font-bold text-blue-700 shadow-lg transition-transform hover:scale-[1.02]"
             >
-              Start scanning
+              Check My Item
+
               <svg
                 className="ml-2 h-5 w-5"
                 fill="none"
@@ -373,9 +555,21 @@ export default function BestPlacesGuide() {
                 strokeWidth={2}
                 viewBox="0 0 24 24"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5 12h14M12 5l7 7-7 7"
+                />
               </svg>
             </Link>
+
+            <div className="mt-5 flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs text-blue-200">
+              <span>No app required</span>
+              <span aria-hidden="true">•</span>
+              <span>Free shipping</span>
+              <span aria-hidden="true">•</span>
+              <span>PayPal payment</span>
+            </div>
           </div>
         </article>
       </div>

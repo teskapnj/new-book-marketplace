@@ -5,74 +5,75 @@ import RelatedGuides from "@/components/RelatedGuides";
 export const metadata: Metadata = {
   title: "What to Do With Old DVDs and CDs You No Longer Want | SellBookMedia",
   description:
-    "Before you give away that shelf of discs, find out which ones are worth money. Here are your real options for old DVDs and CDs, and how to tell them apart in minutes.",
+    "Wondering what to do with old DVDs and CDs? Compare your options and check whether your discs qualify for an instant cash offer before you donate or give them away.",
 };
 
 const OPTIONS = [
   {
-    name: "Sell the ones that are worth something",
-    bestFor: "Most people, 20+ discs",
-    payout: "Moderate",
-    effort: "Minutes",
+    name: "Check what they're worth first",
+    bestFor: "Most collections",
+    effort: "A quick barcode scan",
     tone: "primary" as const,
-    body: "Buyback services check each barcode against current market value and make an instant offer. You only ship the ones they'll pay for, shipping is free, and the whole thing takes minutes rather than weeks. You won't get top dollar for a rare disc this way, but for a mixed shelf it's the best return on your time by a wide margin.",
+    body: "Before you donate, sell locally, or give your collection away, check the barcodes first. Some titles may qualify for an instant offer, and you can decide what to do after you know what you have.",
   },
   {
-    name: "List rare titles individually",
-    bestFor: "Out-of-print films, box sets, collector's editions",
-    payout: "Highest",
-    effort: "High, per disc",
+    name: "Sell collectible titles individually",
+    bestFor: "Rare, unusual, or highly collectible releases",
+    effort: "Higher, per item",
     tone: "normal" as const,
-    body: "If you know you have something genuinely scarce, a collector will pay more than any bulk buyer. Check completed sold listings on eBay to see what people actually paid, not what sellers are asking. Be realistic about the effort though: photographing, listing, packing, and shipping each disc adds up fast.",
+    body: "If you know you have a genuinely rare box set, limited edition, or collectible pressing, selling directly to a collector can sometimes make sense. The trade-off is the extra work of researching prices, creating listings, answering buyers, packing, shipping, handling marketplace fees, and dealing with possible returns.",
   },
   {
-    name: "Sell the whole lot locally",
-    bestFor: "Very large collections you want gone this weekend",
-    payout: "Low",
-    effort: "One afternoon",
+    name: "Sell the collection locally",
+    bestFor: "Large collections you want to move quickly",
+    effort: "One local transaction",
     tone: "normal" as const,
-    body: "Facebook Marketplace, a garage sale, or a local used media shop will take a big collection off your hands in one go. Expect low offers — often a flat price for the whole box — but it's immediate and there's no shipping involved.",
+    body: "A local media store, Facebook Marketplace buyer, or garage sale can be convenient if your main goal is clearing everything at once. Offers may vary significantly, so checking a few individual barcodes first can help you avoid including a title you would rather sell separately.",
   },
   {
-    name: "Donate what's left over",
-    bestFor: "Common titles nobody will pay for",
-    payout: "None",
+    name: "Donate what you don't want to sell",
+    bestFor: "Items you simply want to pass along",
     effort: "One trip",
     tone: "normal" as const,
-    body: "Goodwill and most thrift stores do accept discs, and it's a genuinely good home for the ones with no resale value. Libraries, senior centers, and nursing homes are often glad to take them too. Our only suggestion: scan the barcodes first. It takes a couple of seconds each, and it means you'll know you aren't giving away the one disc on the shelf that was worth $20.",
+    body: "Donation can be a great option for usable discs you no longer want. Before you drop off the whole collection, scan a few barcodes first so you can make the decision with a better idea of what you have.",
   },
   {
-    name: "Recycle the rest properly",
-    bestFor: "Damaged, scratched, or unsellable discs",
-    payout: "None",
-    effort: "One trip",
+    name: "Recycle damaged items responsibly",
+    bestFor: "Broken or unusable discs and cases",
+    effort: "Varies locally",
     tone: "normal" as const,
-    body: "Discs and cases are made from polycarbonate and polystyrene, which most curbside programs won't accept. Look for a mail-in disc recycling program, or check whether your local waste authority runs a hard-plastics drop-off. It's a better ending than a landfill, and it takes one trip.",
+    body: "Badly damaged discs may not be suitable for resale or donation. Recycling options vary by location, so check with your local recycling or waste authority for accepted materials and drop-off options.",
   },
 ];
 
 const STEPS = [
-  "Scan each barcode. You'll see an offer or a clear \"not accepted\" within a couple of seconds, so you can sort into two piles as you go.",
-  "Set aside anything that looks unusual — foreign releases, box sets, discs you don't recognise — and check those on eBay separately.",
-  "Donate or recycle whatever's left. By this point you'll know you haven't thrown away anything valuable.",
+  "Pick up a CD or DVD and scan the barcode with your phone, or enter it manually — no app required.",
+  "See instantly whether that exact title qualifies for an offer.",
+  "Keep checking your shelf and add the offers you want to your order.",
+  "Combine qualifying CDs, DVDs, Blu-rays, books, and games in the same shipment.",
+  "Use the prepaid shipping label we email you and get paid through PayPal after inspection.",
 ];
 
 const FAQ = [
   {
-    q: "Is it worth selling DVDs at all, or should I just donate them?",
-    a: "Scanning costs you nothing and takes seconds per disc, so it's worth finding out before you give a collection away. Most people are surprised by which titles hold value — it's rarely the blockbusters.",
+    q: "Is it worth checking old DVDs and CDs before donating them?",
+    a: "Yes. Values vary by title and edition, so scanning the barcode is the easiest way to know whether something qualifies for an offer before you give it away.",
   },
   {
-    q: "Should I just donate them to Goodwill instead?",
-    a: "For common titles, donating is a perfectly good option and we'd never talk you out of it. It's just worth scanning the shelf first — the discs that hold value are rarely the ones people expect, and a large collection often has $20 to $50 sitting in it.",
+    q: "Should I just donate the whole collection?",
+    a: "That's completely up to you. Donation is a good option for items you no longer want, but checking the barcodes first only takes a moment and lets you make the decision with more information.",
   },
   {
     q: "What about VHS tapes, vinyl records, and cassettes?",
-    a: "We don't currently buy those formats. Vinyl in particular has an active collector market, so a local record shop or eBay is usually a better route for records.",
+    a: "We don't currently buy those formats. SellBookMedia focuses on CDs, DVDs, Blu-rays, 4K UHD, books, and qualifying video games.",
   },
   {
     q: "Do I need to sell everything at once?",
-    a: "No. Your accepted offers need to reach at least .50 to ship a box, but there's no upper limit and no obligation to send everything you own in one go.",
+    a: "No. You can scan as many items as you want and choose which qualifying offers to include in your order. Different accepted media categories can be combined in the same box.",
+  },
+  {
+    q: "Do I need an account just to check an offer?",
+    a: "No. You can scan or enter a barcode and see whether an item qualifies before creating an account.",
   },
 ];
 
@@ -84,16 +85,25 @@ export default function WhatToDoWithOldDvdsAndCds() {
         "@type": "Article",
         headline: "What to Do With Old DVDs and CDs You No Longer Want",
         datePublished: "2026-08-18",
-        dateModified: "2026-08-18",
-        author: { "@type": "Organization", name: "SellBookMedia" },
-        publisher: { "@type": "Organization", name: "SellBookMedia" },
+        dateModified: "2026-08-29",
+        author: {
+          "@type": "Organization",
+          name: "SellBookMedia",
+        },
+        publisher: {
+          "@type": "Organization",
+          name: "SellBookMedia",
+        },
       },
       {
         "@type": "FAQPage",
         mainEntity: FAQ.map((item) => ({
           "@type": "Question",
           name: item.q,
-          acceptedAnswer: { "@type": "Answer", text: item.a },
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: item.a,
+          },
         })),
       },
     ],
@@ -106,7 +116,7 @@ export default function WhatToDoWithOldDvdsAndCds() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* ===================== BASLIK BANDI ===================== */}
+      {/* ===================== HEADER ===================== */}
       <header className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(129,140,248,0.25),transparent_60%)]" />
 
@@ -115,99 +125,142 @@ export default function WhatToDoWithOldDvdsAndCds() {
             href="/"
             className="inline-flex items-center text-sm font-medium text-blue-200 hover:text-white transition-colors"
           >
-            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            <svg
+              className="w-4 h-4 mr-1.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+              />
             </svg>
             Back to home
           </Link>
 
           <p className="mt-10 text-xs font-semibold uppercase tracking-[0.2em] text-blue-300">
-            Clearing out
+            Clearing out your collection?
           </p>
 
           <h1 className="mt-3 font-serif text-4xl sm:text-5xl font-bold leading-[1.1] text-white">
-            What to do with old DVDs and CDs
+            What should you do with old DVDs and CDs?
           </h1>
 
           <p className="mt-5 text-lg sm:text-xl leading-relaxed text-blue-100">
-            They&rsquo;re taking up a shelf you&rsquo;d rather have back. Before you load the car for
-            the donation bin, it&rsquo;s worth knowing that a shelf of discs almost always contains a
-            few worth real money. Here&rsquo;s an honest look at every option.
+            Before you donate, give away, or sell the whole shelf for one
+            price, it&apos;s worth checking what you actually have. Used
+            media values vary by title, edition, and current demand.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-white/15 pt-5 text-sm text-blue-200">
             <span className="font-medium text-white">SellBookMedia</span>
-            <span aria-hidden="true" className="text-white/30">
-              /
-            </span>
-            <time dateTime="2026-08-18">Updated August 2026</time>
-            <span aria-hidden="true" className="text-white/30">
-              /
-            </span>
-            <span>6 min read</span>
+            <span aria-hidden="true" className="text-white/30">/</span>
+            <time dateTime="2026-08-29">Updated August 2026</time>
+            <span aria-hidden="true" className="text-white/30">/</span>
+            <span>5 min read</span>
           </div>
         </div>
       </header>
 
       <div className="max-w-3xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
         <article>
-          {/* ---------- Piyasa baglami ---------- */}
-          <section className="mb-14">
+
+          {/* ===================== INTRO ===================== */}
+          <section className="mb-12">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
-              What changed
+              Before you clear the shelf
             </p>
+
             <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
-              Why nobody seems to want them anymore
+              Don&apos;t assume every disc has the same value
             </h2>
-
-            <p className="mt-6 text-[17px] leading-[1.75] text-slate-700">
-              It isn&rsquo;t your imagination. Two things happened in the same year, and the disc
-              market hasn&rsquo;t looked the same since.
-            </p>
-
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <p className="font-mono text-4xl font-bold text-slate-900 tabular-nums">2023</p>
-                <p className="mt-2 font-semibold text-slate-900">Netflix mailed its last DVD</p>
-                <p className="mt-1 text-[15px] leading-relaxed text-slate-600">
-                  The service that put discs in millions of mailboxes shut the program down.
-                </p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <p className="font-mono text-4xl font-bold text-slate-900 tabular-nums">2023</p>
-                <p className="mt-2 font-semibold text-slate-900">Best Buy stopped selling discs</p>
-                <p className="mt-1 text-[15px] leading-relaxed text-slate-600">
-                  One of the last big-box retailers to carry them walked away.
-                </p>
-              </div>
-            </div>
 
             <div className="mt-6 space-y-5 text-[17px] leading-[1.75] text-slate-700">
               <p>
-                Thrift stores now receive far more discs than they can put on the shelf, and most of
-                what&rsquo;s donated ends up sold for pocket change or recycled. At the same time, an
-                enormous number of households are clearing out at once — downsizing, moving, or
-                settling a family estate. Supply went up sharply while demand went the other way.
+                Streaming changed the way people watch movies and listen to
+                music, but physical media didn&apos;t disappear. Collectors,
+                fans, and people looking for specific editions still buy CDs,
+                DVDs, Blu-rays, and 4K releases.
+              </p>
+
+              <p>
+                The important part is that demand isn&apos;t equal across an
+                entire collection. A common release, a box set, an import,
+                and an out-of-print title can all have very different resale
+                markets.
               </p>
             </div>
 
-            <p className="mt-6 rounded-xl border-l-4 border-blue-500 bg-white px-5 py-4 text-[16px] leading-relaxed text-slate-700 shadow-sm">
-              Here&rsquo;s the part most people get wrong:{" "}
-              <strong className="text-slate-900">
-                this is true for common titles, not all of them.
-              </strong>{" "}
-              A shelf of 200 discs almost always contains a handful still worth real money. The trick
-              is knowing which ones without checking each title by hand.
-            </p>
+            <div className="mt-7 rounded-xl border-l-4 border-blue-500 bg-white px-5 py-4 shadow-sm">
+              <p className="text-[16px] leading-relaxed text-slate-700">
+                <strong className="text-slate-900">
+                  The easiest first step:
+                </strong>{" "}
+                check a few barcodes before deciding what to do with the
+                entire collection.
+              </p>
+            </div>
           </section>
 
-          {/* ---------- IMZA: bes secenek ---------- */}
+          {/* ===================== EARLY CTA ===================== */}
+          <section className="mb-14">
+            <div className="overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-sm">
+              <div className="px-6 py-8 sm:px-8 sm:py-9">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+                  Before you donate or give it away
+                </p>
+
+                <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
+                  See what we&apos;ll pay first
+                </h2>
+
+                <p className="mt-3 max-w-xl text-[16px] sm:text-[17px] leading-relaxed text-slate-600">
+                  Grab one CD or DVD, scan the barcode, and see your offer
+                  in seconds. No app required and no account needed just
+                  to check.
+                </p>
+
+                <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+                  <Link
+                    href="/"
+                    className="inline-flex items-center rounded-xl bg-blue-600 px-6 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-blue-700"
+                  >
+                    Check My Item
+
+                    <svg
+                      className="ml-2 h-5 w-5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 12h14M12 5l7 7-7 7"
+                      />
+                    </svg>
+                  </Link>
+
+                  <span className="text-sm text-slate-500">
+                    Instant offer • Free shipping • PayPal payment
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ===================== OPTIONS ===================== */}
           <section className="mb-14">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
-              Pick your route
+              Your options
             </p>
+
             <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
-              Your five realistic options
+              Five practical things you can do with old media
             </h2>
 
             <div className="mt-8 space-y-4">
@@ -229,12 +282,17 @@ export default function WhatToDoWithOldDvdsAndCds() {
                   >
                     <span
                       className={`font-mono text-sm font-bold tabular-nums ${
-                        opt.tone === "primary" ? "text-emerald-700" : "text-slate-400"
+                        opt.tone === "primary"
+                          ? "text-emerald-700"
+                          : "text-slate-400"
                       }`}
                     >
                       {String(i + 1).padStart(2, "0")}
                     </span>
-                    <h3 className="font-semibold text-slate-900">{opt.name}</h3>
+
+                    <h3 className="font-semibold text-slate-900">
+                      {opt.name}
+                    </h3>
                   </div>
 
                   <div className="px-5 py-5">
@@ -242,32 +300,35 @@ export default function WhatToDoWithOldDvdsAndCds() {
                       <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-800">
                         Best for: {opt.bestFor}
                       </span>
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                        Payout: {opt.payout}
-                      </span>
+
                       <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
                         Effort: {opt.effort}
                       </span>
                     </div>
-                    <p className="mt-3 text-[15px] leading-relaxed text-slate-600">{opt.body}</p>
+
+                    <p className="mt-3 text-[15px] leading-relaxed text-slate-600">
+                      {opt.body}
+                    </p>
                   </div>
                 </div>
               ))}
             </div>
           </section>
 
-          {/* ---------- Hizli ayiklama ---------- */}
+          {/* ===================== HOW TO SORT ===================== */}
           <section className="mb-14">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
-              The practical bit
+              Make it easy
             </p>
+
             <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
-              How to sort a big collection quickly
+              How to work through a larger collection
             </h2>
 
             <p className="mt-6 text-[17px] leading-[1.75] text-slate-700">
-              If you have hundreds of discs, don&rsquo;t try to research titles one at a time. Work
-              through the shelf with your phone instead.
+              If you have a shelf or several boxes of media, there&apos;s no
+              need to research each title manually. Work through the
+              barcodes and let the exact item tell you whether it qualifies.
             </p>
 
             <ol className="mt-6 space-y-3">
@@ -279,36 +340,50 @@ export default function WhatToDoWithOldDvdsAndCds() {
                   <span className="font-mono text-sm font-bold text-blue-600 tabular-nums">
                     {String(i + 1).padStart(2, "0")}
                   </span>
-                  <span className="text-[16px] leading-relaxed text-slate-700">{step}</span>
+
+                  <span className="text-[16px] leading-relaxed text-slate-700">
+                    {step}
+                  </span>
                 </li>
               ))}
             </ol>
           </section>
 
-          {/* ---------- Durum ---------- */}
+          {/* ===================== CONDITION ===================== */}
           <section className="mb-14">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
               Before you pack
             </p>
+
             <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
-              Condition decides everything
+              Normal signs of use are okay
             </h2>
 
             <p className="mt-6 text-[17px] leading-[1.75] text-slate-700">
-              Whichever route you take, condition decides whether a disc has any value at all. Discs
-              should play without skipping, be free of deep scratches, and come with their original
-              case and cover art.
+              Used discs don&apos;t need to look brand new. Light surface
+              marks and normal case wear are generally fine. Items should
+              be complete, usable, and free from serious damage.
             </p>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <div className="rounded-xl border-l-4 border-emerald-500 bg-white px-5 py-4 shadow-sm">
-                <p className="text-sm font-semibold text-emerald-800">Fine</p>
-                <p className="mt-1 text-[15px] text-slate-600">Light surface marks</p>
-              </div>
-              <div className="rounded-xl border-l-4 border-rose-500 bg-white px-5 py-4 shadow-sm">
-                <p className="text-sm font-semibold text-rose-800">Not accepted</p>
+                <p className="text-sm font-semibold text-emerald-800">
+                  Generally fine
+                </p>
+
                 <p className="mt-1 text-[15px] text-slate-600">
-                  Deep scratches, missing case or cover art
+                  Light surface marks and normal case wear
+                </p>
+              </div>
+
+              <div className="rounded-xl border-l-4 border-slate-400 bg-white px-5 py-4 shadow-sm">
+                <p className="text-sm font-semibold text-slate-800">
+                  Please don&apos;t send
+                </p>
+
+                <p className="mt-1 text-[15px] text-slate-600">
+                  Broken discs, deep playback-affecting scratches, or
+                  missing essential parts
                 </p>
               </div>
             </div>
@@ -318,6 +393,7 @@ export default function WhatToDoWithOldDvdsAndCds() {
               className="mt-5 inline-flex items-center text-sm font-semibold text-blue-600 hover:text-blue-700"
             >
               See the full condition guidelines
+
               <svg
                 className="ml-1.5 h-4 w-4"
                 fill="none"
@@ -325,25 +401,35 @@ export default function WhatToDoWithOldDvdsAndCds() {
                 strokeWidth={2}
                 viewBox="0 0 24 24"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5 12h14M12 5l7 7-7 7"
+                />
               </svg>
             </Link>
           </section>
 
-          {/* ---------- SSS ---------- */}
+          {/* ===================== FAQ ===================== */}
           <section className="mb-14">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
-              Still wondering
-            </p>
-            <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
               Common questions
+            </p>
+
+            <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
+              Clearing out old CDs and DVDs
             </h2>
 
             <dl className="mt-6 divide-y divide-slate-200 border-y border-slate-200">
               {FAQ.map((item) => (
                 <div key={item.q} className="py-6">
-                  <dt className="font-serif text-lg font-semibold text-slate-900">{item.q}</dt>
-                  <dd className="mt-2 text-[16px] leading-[1.75] text-slate-600">{item.a}</dd>
+                  <dt className="font-serif text-lg font-semibold text-slate-900">
+                    {item.q}
+                  </dt>
+
+                  <dd className="mt-2 text-[16px] leading-[1.75] text-slate-600">
+                    {item.a}
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -351,19 +437,27 @@ export default function WhatToDoWithOldDvdsAndCds() {
 
           <RelatedGuides currentSlug="what-to-do-with-old-dvds-and-cds" />
 
-          {/* ---------- CTA ---------- */}
-          <div className="mt-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 px-6 py-10 text-center sm:px-10">
-            <h2 className="font-serif text-2xl font-bold text-white">
-              Find out which of yours are worth keeping
-            </h2>
-            <p className="mx-auto mt-3 max-w-md text-blue-100">
-              Scan a barcode and see an offer in seconds. No account required to start.
+          {/* ===================== FINAL CTA ===================== */}
+          <div className="mt-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 px-6 py-10 text-center sm:px-10 sm:py-12">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-200">
+              Before you clear the shelf
             </p>
+
+            <h2 className="mt-3 font-serif text-2xl sm:text-3xl font-bold text-white">
+              Check what we&apos;ll pay first
+            </h2>
+
+            <p className="mx-auto mt-3 max-w-lg text-[16px] leading-relaxed text-blue-100">
+              Scan one CD or DVD barcode and see your offer in seconds.
+              No app required and no commitment to sell.
+            </p>
+
             <Link
               href="/"
               className="mt-7 inline-flex items-center rounded-xl bg-white px-7 py-3.5 text-base font-bold text-blue-700 shadow-lg transition-transform hover:scale-[1.02]"
             >
-              Start scanning
+              Check My Item
+
               <svg
                 className="ml-2 h-5 w-5"
                 fill="none"
@@ -371,10 +465,23 @@ export default function WhatToDoWithOldDvdsAndCds() {
                 strokeWidth={2}
                 viewBox="0 0 24 24"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5 12h14M12 5l7 7-7 7"
+                />
               </svg>
             </Link>
+
+            <div className="mt-5 flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs text-blue-200">
+              <span>Instant offers</span>
+              <span aria-hidden="true">•</span>
+              <span>Free shipping</span>
+              <span aria-hidden="true">•</span>
+              <span>PayPal payment</span>
+            </div>
           </div>
+
         </article>
       </div>
     </div>
