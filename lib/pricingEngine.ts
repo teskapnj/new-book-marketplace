@@ -154,25 +154,31 @@ function calculateBookPrice(price: number, salesRank: number): PricingResult {
       return { accepted: true, ourPrice: 1.75, category: 'books', priceRange: "$31-39.99", rankRange: "≤ 200k" };
     }
     if (price >= 40 && price < 50) {
-      return { accepted: true, ourPrice: 2.25, category: 'books', priceRange: "$40-49.99", rankRange: "≤ 200k" };
+      return { accepted: true, ourPrice: 3.25, category: 'books', priceRange: "$40-49.99", rankRange: "≤ 200k" };
     }
+    
     if (price >= 50 && price < 60) {
-      return { accepted: true, ourPrice: 2.75, category: 'books', priceRange: "$50-59.99", rankRange: "≤ 200k" };
+      return { accepted: true, ourPrice: 3.75, category: 'books', priceRange: "$50-59.99", rankRange: "≤ 200k" };
     }
+    
     if (price >= 60 && price < 70) {
-      return { accepted: true, ourPrice: 3.5, category: 'books', priceRange: "$60-69.99", rankRange: "≤ 200k" };
+      return { accepted: true, ourPrice: 4.5, category: 'books', priceRange: "$60-69.99", rankRange: "≤ 200k" };
     }
+    
     if (price >= 70 && price < 80) {
-      return { accepted: true, ourPrice: 4.5, category: 'books', priceRange: "$70-79.99", rankRange: "≤ 200k" };
+      return { accepted: true, ourPrice: 5.5, category: 'books', priceRange: "$70-79.99", rankRange: "≤ 200k" };
     }
+    
     if (price >= 80 && price < 110) {
-      return { accepted: true, ourPrice: 5.5, category: 'books', priceRange: "$80-109.99", rankRange: "≤ 200k" };
+      return { accepted: true, ourPrice: 6.5, category: 'books', priceRange: "$80-109.99", rankRange: "≤ 200k" };
     }
+    
     if (price >= 110 && price < 140) {
-      return { accepted: true, ourPrice: 6.5, category: 'books', priceRange: "$110-139.99", rankRange: "≤ 200k" };
+      return { accepted: true, ourPrice: 7.5, category: 'books', priceRange: "$110-139.99", rankRange: "≤ 200k" };
     }
+    
     if (price >= 140) {
-      return { accepted: true, ourPrice: 7.5, category: 'books', priceRange: "$140+", rankRange: "≤ 200k" };
+      return { accepted: true, ourPrice: 8.5, category: 'books', priceRange: "$140+", rankRange: "≤ 200k" };
     }
 
     return {
