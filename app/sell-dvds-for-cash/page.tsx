@@ -26,7 +26,7 @@ const dvdFaqs = [
   },
   {
     q: "Do I have to pay for shipping?",
-    a: "No. Approved orders receive a prepaid shipping label.",
+    a: "No. We provide a prepaid shipping label.",
   },
   {
     q: "How many items do I need?",
@@ -173,7 +173,7 @@ offer instantly. Shipping is free, and payment is sent via PayPal.
                 Ship Free &amp; Get Paid
               </h3>
               <p className="mt-3 text-gray-600 leading-relaxed">
-                Once your order is approved, use your prepaid shipping label.
+                Once your order is submitted, use your prepaid shipping label.
                 After inspection, payment is sent via PayPal.
               </p>
             </div>
@@ -214,8 +214,7 @@ offer instantly. Shipping is free, and payment is sent via PayPal.
                 Free Shipping
               </h3>
               <p className="mt-2 text-gray-600">
-                Approved orders receive a prepaid shipping label, so you
-                don&apos;t pay shipping out of pocket.
+                We provide a prepaid shipping label, so you don&apos;t pay shipping out of pocket.
               </p>
             </div>
 
@@ -299,7 +298,7 @@ offer instantly. Shipping is free, and payment is sent via PayPal.
                 Do I have to pay for shipping?
               </h3>
               <p className="mt-2 text-gray-600 leading-relaxed">
-                No. Approved orders receive a prepaid shipping label.
+                No. We provide a prepaid shipping label.
               </p>
             </div>
 

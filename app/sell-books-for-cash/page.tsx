@@ -43,7 +43,7 @@ const faqs = [
   },
   {
     q: "Is shipping really free?",
-    a: "Yes. Approved orders receive a prepaid shipping label, so you do not pay shipping out of pocket.",
+    a: "Yes. We provide a prepaid shipping label, so you do not pay shipping out of pocket.",
   },
   {
     q: "How do I get paid?",
@@ -384,7 +384,7 @@ export default function SellBooksForCashPage() {
               </h3>
 
               <p className="text-gray-600 leading-relaxed">
-                Submit your order and, once approved, use the prepaid shipping
+                Submit your order and use the prepaid shipping
                 label we send you to ship your books.
               </p>
             </div>
@@ -498,8 +498,7 @@ export default function SellBooksForCashPage() {
                 Free Shipping
               </h3>
               <p className="mt-2 text-gray-600">
-                Approved orders receive a prepaid shipping label, so you
-                don&apos;t pay shipping out of pocket.
+                We provide a prepaid shipping label, so you don&apos;t pay shipping out of pocket.
               </p>
             </div>
 

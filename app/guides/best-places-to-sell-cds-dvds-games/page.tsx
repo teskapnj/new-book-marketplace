@@ -483,7 +483,7 @@ refund.
                   Ship your order
                 </h3>
                 <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                  Approved orders receive a prepaid shipping label.
+                  We provide a prepaid shipping label.
                 </p>
               </div>
 

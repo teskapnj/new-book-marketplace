@@ -30,7 +30,7 @@ const cdFaqs = [
   },
   {
     q: "Is shipping free?",
-    a: "Yes. Approved orders receive a prepaid shipping label, so you do not have to pay shipping out of pocket.",
+    a: "Yes. We provide a prepaid shipping label, so you do not have to pay shipping out of pocket.",
   },
   {
     q: "How do I get paid?",
@@ -174,7 +174,7 @@ export default function SellCdsForCashPage() {
                 Ship Free &amp; Get Paid
               </h3>
               <p className="mt-3 text-gray-600">
-                Once your order is approved, use your prepaid shipping label.
+                Once your order is submitted, use your prepaid shipping label.
                 After inspection, payment is sent via PayPal.
               </p>
             </div>
@@ -234,7 +234,7 @@ export default function SellCdsForCashPage() {
         </summary>
 
         <p className="mt-4 text-gray-600 leading-relaxed">
-          Yes. Approved orders receive a prepaid shipping label, so you do not
+          Yes. We provide a prepaid shipping label, so you do not
           have to pay shipping out of pocket.
         </p>
       </details>

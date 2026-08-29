@@ -1718,7 +1718,7 @@ useEffect(() => {
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-4">Ship for Free</h3>
 <p className="text-gray-600 leading-relaxed">
-  Submit your order and, once approved, receive a prepaid shipping label by email.
+  Submit your order and receive a prepaid shipping label by email.
 </p>
             </div>
             <div className="group text-center">

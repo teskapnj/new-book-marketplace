@@ -43,7 +43,7 @@ const faqs = [
   },
   {
     q: "Is shipping free?",
-    a: "Yes. Approved orders receive a prepaid shipping label, so you do not pay shipping out of pocket.",
+    a: "Yes. We provide a prepaid shipping label, so you do not pay shipping out of pocket.",
   },
   {
     q: "How do I get paid?",
@@ -242,7 +242,7 @@ export default function SellVideoGamesForCashPage() {
               </h3>
 
               <p className="text-gray-600 leading-relaxed">
-                Submit your order and, once approved, use your prepaid shipping
+                Submit your order and use your prepaid shipping
                 label to send your games.
               </p>
             </div>
