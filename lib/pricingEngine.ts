@@ -233,8 +233,8 @@ function calculateBookPrice(price: number, salesRank: number): PricingResult {
   // BOOKS: rank 500k-1M
   // ------------------------------------------------------------
   if (salesRank <= 1000000) {
-    if (price >= 24.99 && price < 30) {
-      return { accepted: true, ourPrice: 0.25, category: 'books', priceRange: "$24.99-29.99", rankRange: "500k-1M" };
+    if (price >= 21.99 && price < 30) {
+      return { accepted: true, ourPrice: 0.25, category: 'books', priceRange: "$21.99-29.99", rankRange: "500k-1M" };
     }
     if (price >= 30 && price < 35) {
       return { accepted: true, ourPrice: 0.75, category: 'books', priceRange: "$30-34.99", rankRange: "500k-1M" };
