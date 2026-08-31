@@ -546,6 +546,16 @@ const lastRejectedCameraCodeRef = useRef<string | null>(null);
 
     trackEvent('barcode_scanned');
 
+    if (typeof window !== 'undefined') {
+      const fbq = (window as typeof window & {
+        fbq?: (...args: unknown[]) => void;
+      }).fbq;
+    
+      if (fbq) {
+        fbq('trackCustom', 'ItemScanned');
+      }
+    }
+
     // Kisa bip sesi
     try {
       const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
@@ -627,6 +637,17 @@ const lastRejectedCameraCodeRef = useRef<string | null>(null);
             amazon_price: sanitizedProduct.price || 0,
             reason: sanitizedMessage ? sanitizedMessage.substring(0, 100) : 'not_accepted'
           });
+          if (typeof window !== 'undefined') {
+            const fbq = (window as typeof window & {
+              fbq?: (...args: unknown[]) => void;
+            }).fbq;
+          
+            if (fbq) {
+              fbq('trackCustom', 'ItemRejected', {
+                category: sanitizedPricing.category || 'unknown'
+              });
+            }
+          }
           setIsbnInput("");
         }
 
@@ -782,11 +803,35 @@ const lastRejectedCameraCodeRef = useRef<string | null>(null);
       item_count: bundleItems.length,
       total_value: totalOurPrice
     });
+    if (typeof window !== 'undefined') {
+      const fbq = (window as typeof window & {
+        fbq?: (...args: unknown[]) => void;
+      }).fbq;
+    
+      if (fbq) {
+        fbq('trackCustom', 'ShippingStarted', {
+          value: totalOurPrice,
+          currency: 'USD'
+        });
+      }
+    }
     saveToStorage();
     setShowCheckout(true);
   };
 
   const handleCheckoutSuccess = () => {
+    if (typeof window !== 'undefined') {
+      const fbq = (window as typeof window & {
+        fbq?: (...args: unknown[]) => void;
+      }).fbq;
+    
+      if (fbq) {
+        fbq('trackCustom', 'ListingSubmitted', {
+          value: totalOurPrice,
+          currency: 'USD'
+        });
+      }
+    }
     setBundleItems([]);
     setShowCheckout(false);
     minimumReachedFiredRef.current = false;
@@ -825,6 +870,18 @@ if (totalOurPrice < 7.5) return;
     item_count: bundleItems.length,
     total_value: totalOurPrice
   });
+  if (typeof window !== 'undefined') {
+    const fbq = (window as typeof window & {
+      fbq?: (...args: unknown[]) => void;
+    }).fbq;
+  
+    if (fbq) {
+      fbq('trackCustom', 'ShippingStarted', {
+        value: totalOurPrice,
+        currency: 'USD'
+      });
+    }
+  }
 
   setShowAuthOptions(false);
   setShowCheckout(true);
