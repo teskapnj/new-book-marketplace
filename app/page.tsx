@@ -506,6 +506,19 @@ const lastRejectedCameraCodeRef = useRef<string | null>(null);
       category: newItem.category,
       price: newItem.price
     });
+    if (typeof window !== 'undefined') {
+      const fbq = (window as typeof window & {
+        fbq?: (...args: unknown[]) => void;
+      }).fbq;
+    
+      if (fbq) {
+        fbq('trackCustom', 'ItemAccepted', {
+          category: newItem.category,
+          value: newItem.price,
+          currency: 'USD'
+        });
+      }
+    }
 
     setBundleItems(prev => [...prev, newItem]);
     setIsbnInput("");
@@ -700,6 +713,20 @@ const lastRejectedCameraCodeRef = useRef<string | null>(null);
       category: newItem.category,
       price: newItem.price
     });
+    if (typeof window !== 'undefined') {
+      const fbq = (window as typeof window & {
+        fbq?: (...args: unknown[]) => void;
+      }).fbq;
+    
+      if (fbq) {
+        fbq('trackCustom', 'ItemAccepted', {
+          category: newItem.category,
+          value: newItem.price,
+          currency: 'USD'
+        });
+      }
+    }
+
 
     setBundleItems(prev => [...prev, newItem]);
     setDuplicateConfirm(null);
