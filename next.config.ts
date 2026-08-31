@@ -107,6 +107,11 @@ const nextConfig: NextConfig = {
         destination: '/sell-books-for-cash',
         permanent: true,
       },
+      {
+        source: '/browse',
+        destination: '/',
+        permanent: true,
+      },
     ];
   },
   
