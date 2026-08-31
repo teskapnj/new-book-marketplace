@@ -76,8 +76,7 @@ const nextConfig: NextConfig = {
                 https://va.vercel-scripts.com
                 https://googleads.g.doubleclick.net
                 https://www.googleadservices.com
-                https://www.google-analytics.com
-                https://connect.facebook.net;
+                https://www.google-analytics.com;
               style-src 'self' 'unsafe-inline';
               img-src 'self' data: https:
                 https://firebasestorage.googleapis.com
