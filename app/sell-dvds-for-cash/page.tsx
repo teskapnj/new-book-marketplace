@@ -4,9 +4,9 @@ import MediaCategoryLinks from "../../components/MediaCategoryLinks";
 import LandingCtaLink from "../../components/LandingCtaLink";
 
 export const metadata: Metadata = {
-    title: "Sell DVDs, Blu-rays & 4K Movies for Cash Online",
-    description:
-    "Sell used DVDs, Blu-rays and 4K UHD movies for cash with SellBookMedia. Scan the UPC, get an instant offer, ship for free, and get paid via PayPal.",
+  title: "Sell DVDs for Cash Online - Free Shipping | SellBookMedia",
+  description:
+  "Sell used DVDs for cash online with SellBookMedia. Scan your DVD, Blu-ray, or 4K movie barcode for an instant offer, ship free, and get paid via PayPal.",
     alternates: {
     canonical: "https://www.sellbookmedia.com/sell-dvds-for-cash",
   },
@@ -34,6 +34,14 @@ const dvdFaqs = [
   {
     q: "How will I get paid?",
     a: "Payment is processed through PayPal after your shipment arrives and the items pass inspection.",
+  },
+  {
+    q: "Where can I sell used DVDs for cash online?",
+    a: "You can sell eligible used DVDs directly to SellBookMedia. Scan or enter the UPC barcode to see whether we are currently buying the title and view your cash offer.",
+  },
+  {
+    q: "How much are used DVDs worth?",
+    a: "Used DVD values vary by title, demand, condition, edition, and current resale value. Scan the UPC barcode to see whether your DVD qualifies for an offer.",
   },
 ];
 
@@ -81,7 +89,7 @@ export default function SellDvdsForCashPage() {
       <section className="bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 text-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
           <p className="text-sm sm:text-base font-semibold text-blue-100 mb-3">
-            SELL USED DVDs ONLINE
+          SELL DVDs FOR CASH ONLINE
           </p>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">
@@ -117,7 +125,7 @@ offer instantly. Shipping is free, and payment is sent via PayPal.
       <section className="py-16 sm:py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 text-center">
-            An Easy Way to Sell Used DVDs Online
+          Sell Used DVDs for Cash Online
           </h2>
 
           <p className="mt-6 text-lg text-gray-600 leading-relaxed">
@@ -132,6 +140,13 @@ offer instantly. Shipping is free, and payment is sent via PayPal.
             case. If we&apos;re currently buying the title, you&apos;ll see
             our cash offer immediately.
           </p>
+
+          <p className="mt-4 text-lg text-gray-600 leading-relaxed">
+  If you&apos;re wondering where to sell used DVDs for cash, SellBookMedia
+  gives you a simple way to check eligible titles online and get an instant
+  offer without creating marketplace listings.
+</p>
+
         </div>
       </section>
 
@@ -270,6 +285,12 @@ offer instantly. Shipping is free, and payment is sent via PayPal.
           >
             View our condition guidelines →
           </Link>
+          <Link
+  href="/guides/where-to-sell-books-and-dvds-for-cash"
+  className="inline-block mt-4 font-semibold text-blue-600 hover:text-blue-800"
+>
+  Read our guide to selling used books and DVDs →
+</Link>
         </div>
       </section>
       <MediaCategoryLinks current="dvds" />

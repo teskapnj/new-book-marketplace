@@ -396,6 +396,26 @@ refund.
               Service details can change. Check each company&apos;s current
               terms before shipping.
             </p>
+            <section className="mt-10 rounded-2xl border border-slate-200 bg-white px-6 py-7 shadow-sm">
+  <h2 className="font-serif text-2xl sm:text-3xl font-bold text-slate-900">
+    Is Bonavendi worth using?
+  </h2>
+
+  <div className="mt-5 space-y-4 text-[17px] leading-[1.75] text-slate-700">
+    <p>
+      Bonavendi is a comparison service rather than a direct buyer. It can be
+      useful if you want to compare offers from multiple buyback companies
+      before deciding where to sell your used books, CDs, DVDs, or games.
+    </p>
+
+    <p>
+      If comparing several buyers feels like more work than you want,
+      SellBookMedia offers a simpler option. You can check books, CDs, DVDs,
+      Blu-rays, and games in one place, get an instant offer, and ship
+      qualifying items together with free prepaid shipping.
+    </p>
+  </div>
+</section>
           </section>
 
           {/* ===================== CHOOSE OPTION ===================== */}

@@ -47,6 +47,10 @@ const NOT_ACCEPTED = [
 
 const FAQ = [
   {
+    q: "Where can I sell books and DVDs for cash?",
+    a: "You can sell books and DVDs through local stores, online marketplaces, or buyback services. SellBookMedia lets you scan eligible books, DVDs, CDs, Blu-rays, and games, see an instant offer, and combine accepted items in one shipment with free prepaid shipping.",
+  },
+  {
     q: "Do I need an account to check what my items are worth?",
     a: "No. You can scan or enter barcodes and check offers before creating an account.",
   },
@@ -169,6 +173,12 @@ export default function WhereToSellGuide() {
               Each option has a different balance of convenience, time,
               and control over the sale.
             </p>
+            <p className="mt-4 text-[17px] leading-[1.75] text-slate-700">
+  If you&apos;re wondering where to sell books and DVDs for cash,
+  the main choice is between selling items yourself, taking them to
+  a local store, or using an online buyback service that gives you
+  an offer before you ship.
+</p>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
               <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -345,6 +355,21 @@ export default function WhereToSellGuide() {
                 </div>
               ))}
             </div>
+            <div className="mt-7 flex flex-wrap gap-4">
+  <Link
+    href="/sell-books-for-cash"
+    className="font-semibold text-blue-600 hover:text-blue-800"
+  >
+    Sell books for cash →
+  </Link>
+
+  <Link
+    href="/sell-dvds-for-cash"
+    className="font-semibold text-blue-600 hover:text-blue-800"
+  >
+    Sell DVDs for cash →
+  </Link>
+</div>
           </section>
 
           {/* ===================== HOW IT WORKS ===================== */}
@@ -436,8 +461,8 @@ export default function WhereToSellGuide() {
             </p>
 
             <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
-              Selling books and used media online
-            </h2>
+  Where to Sell Books and DVDs for Cash: Common Questions
+</h2>
 
             <dl className="mt-6 divide-y divide-slate-200 border-y border-slate-200">
               {FAQ.map((item) => (

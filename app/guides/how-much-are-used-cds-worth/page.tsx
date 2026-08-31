@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import RelatedGuides from "@/components/RelatedGuides";
 
 export const metadata: Metadata = {
-  title: "How Much Are Used CDs Worth? (2026 Price Guide) | SellBookMedia",
+  title: "Used CD Value: How Much Are Your CDs Worth? (2026) | SellBookMedia",
   description:
-    "Find out what affects the value of used CDs, which types may be worth more, and how to get an instant cash offer by scanning the barcode.",
+  "Check used CD value and learn what affects how much your CDs are worth. Scan the barcode for an instant cash offer with free shipping and PayPal payment.",
 };
 
 const VALUABLE = [
@@ -33,6 +33,10 @@ const VALUABLE = [
     name: "Limited, early, or unusual editions",
     tell: "Special packaging, early pressing, or uncommon release",
     body: "A less common edition can sometimes have very different resale demand from the standard version of the same album.",
+  },
+  {
+    q: "How do I find the value of a used CD?",
+    a: "The easiest way is to identify the exact release using its barcode. Used CD value can vary by edition, demand, condition, and current resale activity, so scanning the specific title gives a more useful result than estimating from the album name alone.",
   },
 ];
 
