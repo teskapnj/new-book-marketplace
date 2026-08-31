@@ -11,50 +11,51 @@ export default function CatchAll() {
     setPathname(window.location.pathname);
   }, []);
 
-  // Analyze the URL
-  const pathSegments = pathname.split('/').filter(Boolean);
-  const lastSegment = pathSegments[pathSegments.length - 1] || '';
-  
-  // Create suggestions
   const suggestions = [
     { text: "Go to homepage", href: "/" },
-    { text: "View all products", href: "/browse" },
-    { text: "Check your cart", href: "/cart" },
+    { text: "Sell books for cash", href: "/sell-books-for-cash" },
+    { text: "Seller guide", href: "/seller-guide" },
     { text: "Get help", href: "/help" },
   ];
 
-  // If something similar to a product ID exists
-  if (/^\d+$/.test(lastSegment)) {
-    suggestions.unshift({ text: "View products", href: "/browse" });
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center px-4">
-      <div className="max-w-4xl mx-auto text-center">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 flex items-center justify-center px-4 py-12">
+      <div className="max-w-3xl w-full mx-auto text-center">
         {/* Error visual */}
         <div className="mb-8">
-          <div className="text-8xl mb-4">🚫</div>
+          <div className="text-7xl mb-4">🚫</div>
+
+          <p className="text-sm font-semibold uppercase tracking-wider text-blue-600 mb-2">
+            404 Error
+          </p>
+
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             Page Not Found
           </h1>
-          <p className="text-lg text-gray-700 mb-2">
-            <code className="bg-gray-800 text-white px-2 py-1 rounded">
-              {pathname}
-            </code>
-          </p>
-          <p className="text-gray-600">
-            The page you are looking for does not exist or there may be an error in the URL.
+
+          {pathname && (
+            <p className="text-lg text-gray-700 mb-4">
+              <code className="bg-gray-800 text-white px-3 py-1.5 rounded">
+                {pathname}
+              </code>
+            </p>
+          )}
+
+          <p className="text-gray-600 max-w-xl mx-auto">
+            The page you are looking for does not exist or the URL may be
+            incorrect.
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+        <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 mb-8">
+          <h2 className="text-lg font-semibold text-gray-800 mb-5">
             What would you like to do?
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {suggestions.map((suggestion, index) => (
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {suggestions.map((suggestion) => (
               <Link
-                key={index}
+                key={suggestion.href}
                 href={suggestion.href}
                 className="bg-blue-50 text-blue-700 p-4 rounded-lg hover:bg-blue-100 transition text-center font-medium"
               >
@@ -64,46 +65,33 @@ export default function CatchAll() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
-            Search
-          </h3>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <input
-              type="text"
-              placeholder="Search for a product, category, or seller..."
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition">
-              Search
-            </button>
-          </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-2">
+            Sell your media for cash
+          </h2>
+
+          <p className="text-gray-600 mb-5">
+            Scan the barcode on your books, CDs, DVDs, Blu-rays, or video games
+            to see if we can make you an offer.
+          </p>
+
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+          >
+            Scan a Barcode
+          </Link>
+
+          <p className="mt-4 text-sm text-gray-500">
+            Instant offers • Free prepaid shipping • PayPal payments
+          </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white p-4 rounded-lg shadow-sm">
-            <div className="text-2xl font-bold text-blue-600 mb-1">10K+</div>
-            <p className="text-gray-600">Products</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm">
-            <div className="text-2xl font-bold text-green-600 mb-1">500+</div>
-            <p className="text-gray-600">Sellers</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm">
-            <div className="text-2xl font-bold text-purple-600 mb-1">50+</div>
-            <p className="text-gray-600">Categories</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm">
-            <div className="text-2xl font-bold text-red-600 mb-1">24/7</div>
-            <p className="text-gray-600">Support</p>
-          </div>
-        </div>
-
-        <div className="mt-8 pt-8 border-t border-gray-200">
+        <div className="mt-8 pt-6 border-t border-gray-200">
           <p className="text-gray-600">
-            Still need help?{" "}
-            <Link href="/contact" className="text-blue-600 hover:underline">
-              Contact our support team
+            Need help?{" "}
+            <Link href="/help" className="text-blue-600 hover:underline">
+              Visit our Help Center
             </Link>
           </p>
         </div>
