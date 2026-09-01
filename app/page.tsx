@@ -1406,7 +1406,9 @@ useEffect(() => {
                 )}
               </button>
             </div>
-
+            <p className="mt-2 text-sm text-gray-500 hidden md:block">
+  Tip: Barcode camera scanning works on mobile phones.
+</p>
           
 
 <div className="mt-4 pt-4 border-t border-gray-100">
