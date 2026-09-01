@@ -3,12 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { auth, db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { auth } from "@/lib/firebase";
 import DOMPurify from "isomorphic-dompurify";
 
 // ---------------------------------------------------------------------------
-// Iletisim formu - Firebase kaydi. Mantik degismedi.
+// Iletisim formu - Kayit ve email server API uzerinden.
 // ---------------------------------------------------------------------------
 function ContactForm() {
   const [user] = useAuthState(auth);
@@ -87,42 +86,28 @@ function ContactForm() {
     setSubmitStatus(null);
 
     try {
-      const messagesRef = collection(db, "contact_messages");
+      const idToken = user ? await user.getIdToken() : null;
 
-      await addDoc(messagesRef, {
-        name: DOMPurify.sanitize(formData.name).substring(0, 100),
-        email: DOMPurify.sanitize(formData.email).substring(0, 254),
-        subject: DOMPurify.sanitize(formData.subject).substring(0, 200),
-        message: DOMPurify.sanitize(formData.message).substring(0, 1000),
-        status: "unread",
-        createdAt: serverTimestamp(),
-        userId: user?.uid || null,
-        userAgent: DOMPurify.sanitize(navigator.userAgent).substring(0, 500),
-        replied: false,
-        source: "contact_page",
+      const response = await fetch("/api/send-contact-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+        },
+        body: JSON.stringify({
+          name: DOMPurify.sanitize(formData.name).substring(0, 100),
+          email: DOMPurify.sanitize(formData.email).substring(0, 254),
+          subject: DOMPurify.sanitize(formData.subject).substring(0, 200),
+          message: DOMPurify.sanitize(formData.message).substring(0, 1000),
+        }),
       });
 
-      try {
-        const emailResponse = await fetch("/api/send-contact-email", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: DOMPurify.sanitize(formData.name).substring(0, 100),
-            email: DOMPurify.sanitize(formData.email).substring(0, 254),
-            subject: DOMPurify.sanitize(formData.subject).substring(0, 200),
-            message: DOMPurify.sanitize(formData.message).substring(0, 1000),
-          }),
-        });
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
 
-        if (!emailResponse.ok && process.env.NODE_ENV === "development") {
-          console.error("Contact email notification failed");
-        }
-      } catch (emailError) {
-        if (process.env.NODE_ENV === "development") {
-          console.error("Contact email notification error:", emailError);
-        }
+        throw new Error(
+          data?.error || "Couldn't send your message. Please try again in a moment."
+        );
       }
 
       setSubmitStatus({
@@ -136,9 +121,13 @@ function ContactForm() {
       if (process.env.NODE_ENV === "development") {
         console.error("Error submitting message:", error);
       }
+
       setSubmitStatus({
         type: "error",
-        message: "Couldn't send your message. Please try again in a moment.",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Couldn't send your message. Please try again in a moment.",
       });
     } finally {
       setIsSubmitting(false);

@@ -3,8 +3,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import { createHmac } from 'crypto';
+import { db } from '@/lib/firebaseAdmin';
 
 export const runtime = 'nodejs';
+
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 5;
+const MAX_REQUEST_BYTES = 10_000;
 
 const transporter = nodemailer.createTransport({
   host: 'mail.privateemail.com',
@@ -25,19 +31,231 @@ function escapeHtml(value: string): string {
     .replace(/'/g, '&#039;');
 }
 
+function cleanText(value: unknown, maxLength: number): string {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  return value
+    .replace(
+      /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g,
+      ''
+    )
+    .trim()
+    .substring(0, maxLength);
+}
+
+function getClientIp(request: NextRequest): string {
+  const forwardedFor = request.headers.get('x-forwarded-for');
+
+  if (forwardedFor) {
+    return forwardedFor.split(',')[0].trim();
+  }
+
+  const realIp = request.headers.get('x-real-ip');
+
+  if (realIp) {
+    return realIp.trim();
+  }
+
+  return 'unknown';
+}
+
+function getRateLimitId(ip: string): string {
+  const secret =
+    process.env.RATE_LIMIT_SECRET ||
+    process.env.EMAIL_PASS ||
+    'sellbookmedia-contact-rate-limit';
+
+  return createHmac('sha256', secret)
+    .update(ip)
+    .digest('hex');
+}
+
+async function checkRateLimit(ip: string): Promise<boolean> {
+  const rateLimitId = getRateLimitId(ip);
+
+  const rateLimitRef = db
+    .collection('contact_rate_limits')
+    .doc(rateLimitId);
+
+  return db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(rateLimitRef);
+
+    const now = Date.now();
+
+    if (!snapshot.exists) {
+      transaction.set(rateLimitRef, {
+        count: 1,
+        windowStartedAt: new Date(now),
+        lastAttemptAt: new Date(now)
+      });
+
+      return true;
+    }
+
+    const data = snapshot.data();
+
+    const windowStartedAt =
+      data?.windowStartedAt &&
+      typeof data.windowStartedAt.toDate === 'function'
+        ? data.windowStartedAt.toDate()
+        : null;
+
+    if (
+      !windowStartedAt ||
+      now - windowStartedAt.getTime() >= RATE_LIMIT_WINDOW_MS
+    ) {
+      transaction.set(rateLimitRef, {
+        count: 1,
+        windowStartedAt: new Date(now),
+        lastAttemptAt: new Date(now)
+      });
+
+      return true;
+    }
+
+    const currentCount =
+      typeof data?.count === 'number'
+        ? data.count
+        : 0;
+
+    if (currentCount >= RATE_LIMIT_MAX_REQUESTS) {
+      return false;
+    }
+
+    transaction.update(rateLimitRef, {
+      count: currentCount + 1,
+      lastAttemptAt: new Date(now)
+    });
+
+    return true;
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const data = await request.json();
+    const contentType =
+      request.headers.get('content-type') || '';
 
-    const name = String(data?.name || '').trim().substring(0, 100);
-    const email = String(data?.email || '').trim().substring(0, 254);
-    const subject = String(data?.subject || '')
+    if (!contentType.includes('application/json')) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Invalid request'
+        },
+        { status: 415 }
+      );
+    }
+
+    const contentLengthHeader =
+      request.headers.get('content-length');
+
+    if (contentLengthHeader) {
+      const contentLength =
+        Number(contentLengthHeader);
+
+      if (
+        Number.isFinite(contentLength) &&
+        contentLength > MAX_REQUEST_BYTES
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Request too large'
+          },
+          { status: 413 }
+        );
+      }
+    }
+
+    const clientIp = getClientIp(request);
+
+    const allowed = await checkRateLimit(clientIp);
+
+    if (!allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'Too many messages. Please wait a few minutes and try again.'
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': '600'
+          }
+        }
+      );
+    }
+
+    const rawBody = await request.text();
+
+    if (
+      Buffer.byteLength(rawBody, 'utf8') >
+      MAX_REQUEST_BYTES
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Request too large'
+        },
+        { status: 413 }
+      );
+    }
+
+    let data: unknown;
+
+    try {
+      data = JSON.parse(rawBody);
+    } catch {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Invalid request'
+        },
+        { status: 400 }
+      );
+    }
+
+    if (
+      !data ||
+      typeof data !== 'object' ||
+      Array.isArray(data)
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Invalid request'
+        },
+        { status: 400 }
+      );
+    }
+
+    const body = data as Record<string, unknown>;
+
+    const name = cleanText(body.name, 100);
+
+    const email = cleanText(
+      body.email,
+      254
+    ).toLowerCase();
+
+    const subject = cleanText(body.subject, 200)
       .replace(/[\r\n]+/g, ' ')
-      .trim()
-      .substring(0, 200);
-    const message = String(data?.message || '').trim().substring(0, 1000);
+      .trim();
 
-    if (!name || !email || !subject || !message) {
+    const message = cleanText(
+      body.message,
+      1000
+    );
+
+    if (
+      !name ||
+      !email ||
+      !subject ||
+      !message
+    ) {
       return NextResponse.json(
         {
           success: false,
@@ -47,7 +265,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    ) {
       return NextResponse.json(
         {
           success: false,
@@ -57,12 +277,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      console.error('Contact email configuration is missing');
+    if (message.length < 10) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Email configuration error'
+          error:
+            'Message must be at least 10 characters long'
+        },
+        { status: 400 }
+      );
+    }
+
+    if (
+      !process.env.EMAIL_USER ||
+      !process.env.EMAIL_PASS
+    ) {
+      console.error(
+        'Contact email configuration is missing'
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Unable to send message'
         },
         { status: 500 }
       );
@@ -71,10 +308,30 @@ export async function POST(request: NextRequest) {
     const safeName = escapeHtml(name);
     const safeEmail = escapeHtml(email);
     const safeSubject = escapeHtml(subject);
-    const safeMessage = escapeHtml(message).replace(/\n/g, '<br>');
 
-    const dateStr = new Date().toLocaleString('en-US', {
-      timeZone: 'America/New_York'
+    const safeMessage = escapeHtml(message)
+      .replace(/\n/g, '<br>');
+
+    const dateStr = new Date().toLocaleString(
+      'en-US',
+      {
+        timeZone: 'America/New_York'
+      }
+    );
+
+    await db.collection('contact_messages').add({
+      name,
+      email,
+      subject,
+      message,
+      status: 'unread',
+      createdAt: new Date(),
+      userAgent: cleanText(
+        request.headers.get('user-agent'),
+        500
+      ),
+      replied: false,
+      source: 'contact_page'
     });
 
     const emailHtml = `<!DOCTYPE html>
@@ -154,19 +411,23 @@ ${dateStr} EST`;
       text: emailText
     });
 
-    console.log(`Contact email sent from ${email}`);
+    console.log('Contact email sent successfully');
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true
+    });
+
   } catch (error: unknown) {
-    console.error('Contact email error:', error);
-
-    const message =
-      error instanceof Error ? error.message : 'Unknown error';
+    console.error(
+      'Contact email error:',
+      error
+    );
 
     return NextResponse.json(
       {
         success: false,
-        error: message
+        error:
+          'Unable to send your message. Please try again later.'
       },
       { status: 500 }
     );
