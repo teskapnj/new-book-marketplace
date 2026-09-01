@@ -102,6 +102,29 @@ function ContactForm() {
         source: "contact_page",
       });
 
+      try {
+        const emailResponse = await fetch("/api/send-contact-email", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: DOMPurify.sanitize(formData.name).substring(0, 100),
+            email: DOMPurify.sanitize(formData.email).substring(0, 254),
+            subject: DOMPurify.sanitize(formData.subject).substring(0, 200),
+            message: DOMPurify.sanitize(formData.message).substring(0, 1000),
+          }),
+        });
+
+        if (!emailResponse.ok && process.env.NODE_ENV === "development") {
+          console.error("Contact email notification failed");
+        }
+      } catch (emailError) {
+        if (process.env.NODE_ENV === "development") {
+          console.error("Contact email notification error:", emailError);
+        }
+      }
+
       setSubmitStatus({
         type: "success",
         message:
