@@ -1226,22 +1226,25 @@ useEffect(() => {
                   <span className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></span>
                 </Link>
               )}
-              <button
-                onClick={() => {
-                  if (user) {
-                    switch (userRole) {
-                      case UserRole.ADMIN: router.push('/admin/dashboard'); break;
-                      case UserRole.BUYER: router.push('/listings'); break;
-                      default: router.push('/');
-                    }
-                  } else {
-                    router.push('/login');
-                  }
-                }}
-                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"
-              >
-                <UserIcon size={20} />
-              </button>
+             {user && (
+  <button
+    onClick={() => {
+      switch (userRole) {
+        case UserRole.ADMIN:
+          router.push('/admin/dashboard');
+          break;
+        case UserRole.BUYER:
+          router.push('/listings');
+          break;
+        default:
+          router.push('/');
+      }
+    }}
+    className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"
+  >
+    <UserIcon size={20} />
+  </button>
+)}
             </div>
           </div>
 
@@ -1281,11 +1284,7 @@ useEffect(() => {
                     Logout
                   </button>
                 </>
-              ) : (
-                <Link href="/login" className="font-medium text-gray-700 hover:text-gray-900 transition-colors">
-                  Login
-                </Link>
-              )}
+             ) : null}
             </div>
           </div>
         </div>
@@ -1327,11 +1326,7 @@ useEffect(() => {
                     Logout
                   </button>
                 </>
-              ) : (
-                <Link href="/login" className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors">
-                  Login
-                </Link>
-              )}
+              ) : null}
             </div>
           </div>
         )}
