@@ -77,21 +77,39 @@ export async function POST(request: NextRequest) {
             </td>
           </tr>
 
-          <!-- CTA Button -->
-          <tr>
-            <td style="padding:24px 24px 8px 24px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td style="border-radius:12px; background-color:#10b981; text-align:center;">
-                    <a href="${shippingLabelUrl}" target="_blank" style="display:block; padding:20px 16px; font-size:18px; font-weight:700; color:#ffffff; text-decoration:none; border-radius:12px;">
-                      View &amp; Print Shipping Label
-                    </a>
-                  </td>
-                </tr>
-              </table>
-              <div style="margin-top:10px; font-size:13px; color:#94a3b8; text-align:center;">Opens your prepaid label in a new tab</div>
-            </td>
-          </tr>
+         <!-- CTA Button -->
+<tr>
+  <td style="padding:24px 24px 8px 24px;">
+
+    <div style="font-size:22px; font-weight:800; color:#0f172a; text-align:center; margin-bottom:8px;">
+      Step 1 &mdash; Print Your Shipping Label
+    </div>
+
+    <div style="font-size:16px; line-height:1.6; color:#475569; text-align:center; margin-bottom:18px;">
+      Click the green button below to open your prepaid shipping label.
+      Then choose <strong>Print</strong> on your phone or computer.
+    </div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="border-radius:12px; background-color:#10b981; text-align:center;">
+          <a
+            href="${shippingLabelUrl}"
+            target="_blank"
+            style="display:block; padding:22px 16px; font-size:20px; font-weight:800; color:#ffffff; text-decoration:none; border-radius:12px;"
+          >
+            OPEN &amp; PRINT YOUR SHIPPING LABEL
+          </a>
+        </td>
+      </tr>
+    </table>
+
+    <div style="margin-top:12px; font-size:14px; line-height:1.5; color:#64748b; text-align:center;">
+      Your label will open in a new tab or window.
+    </div>
+
+  </td>
+</tr>
 
           <!-- Shipping -->
           <tr>
