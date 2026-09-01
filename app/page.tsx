@@ -1197,6 +1197,9 @@ useEffect(() => {
             </div>
           </div>
         </div>
+        <p className="mt-4 text-center text-sm text-gray-500">
+  If you don&apos;t receive your shipping label within 24 hours, please contact us at support@sellbookmedia.com.
+</p>
       </div>
     </div>
   </div>
