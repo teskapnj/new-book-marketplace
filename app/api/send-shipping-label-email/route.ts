@@ -236,13 +236,6 @@ export async function POST(request: NextRequest) {
                 </tr>
               </table>
 
-              <div style="margin-top:12px; font-size:14px; line-height:1.5; color:#64748b; text-align:center;">
-                Your label will open in a new tab or window.
-              </div>
-              <div style="margin-top:14px; font-size:14px; line-height:1.5; color:#475569; text-align:center;">
-  Your shipping label is also attached to this email as a PDF.
-</div>
-
               ${
                 labelAttachment
                   ? `
