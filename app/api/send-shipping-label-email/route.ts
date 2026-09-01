@@ -224,21 +224,24 @@ export async function POST(request: NextRequest) {
                 cellspacing="0"
               >
                 <tr>
-                  <td style="border-radius:12px; background-color:#10b981; text-align:center;">
-                    <a
-                      href="${shippingLabelUrl}"
-                      target="_blank"
-                      style="display:block; padding:22px 16px; font-size:20px; font-weight:800; color:#ffffff; text-decoration:none; border-radius:12px;"
-                    >
-                      OPEN &amp; PRINT YOUR SHIPPING LABEL
-                    </a>
-                  </td>
+                  <td style="border-radius:12px; background-color:#10b981; text-align:center; box-shadow:0 8px 18px rgba(16,185,129,0.28); border:2px solid #059669;">
+  <a
+    href="${shippingLabelUrl}"
+    target="_blank"
+    style="display:block; padding:24px 18px; font-size:20px; font-weight:800; color:#ffffff; text-decoration:none; border-radius:12px;"
+  >
+    OPEN &amp; PRINT YOUR SHIPPING LABEL
+  </a>
+</td>
                 </tr>
               </table>
 
               <div style="margin-top:12px; font-size:14px; line-height:1.5; color:#64748b; text-align:center;">
                 Your label will open in a new tab or window.
               </div>
+              <div style="margin-top:14px; font-size:14px; line-height:1.5; color:#475569; text-align:center;">
+  Your shipping label is also attached to this email as a PDF.
+</div>
 
               ${
                 labelAttachment
