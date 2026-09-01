@@ -61,6 +61,10 @@ const faqs = [
     q: "Do you buy every book?",
     a: "No. Offers depend on current demand, resale value, edition, and condition. If a book does not meet our current buying criteria, it will show as not accepted.",
   },
+  {
+    q: "Where can I sell used books for cash online?",
+    a: "You can sell eligible used books directly to SellBookMedia. Scan or enter the ISBN to check your book, see our current cash offer instantly, and ship accepted books using our prepaid shipping label.",
+  },
 ];
 
 function FreeShipIcon() {
@@ -336,10 +340,17 @@ export default function SellBooksForCashPage() {
             </p>
 
             <p>
-              Whether you&apos;re clearing a bookshelf, downsizing a
-              collection, selling textbooks, or simply making room at home,
-              SellBookMedia gives you a simple way to turn eligible books into
-              cash.
+            Whether you&apos;re clearing a bookshelf, downsizing a
+collection, selling textbooks, or simply making room at home,
+SellBookMedia gives you a simple way to turn eligible books into
+cash. If you&apos;re wondering what your books may be worth, read our{" "}
+<Link
+  href="/guides/how-much-are-used-books-worth"
+  className="text-blue-600 font-medium hover:text-blue-800"
+>
+  guide to used book values
+</Link>
+.
             </p>
           </div>
         </div>
@@ -416,8 +427,8 @@ export default function SellBooksForCashPage() {
             </h2>
 
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              We buy eligible books with valid ISBNs based on current demand
-              and resale value.
+            We buy eligible used books, textbooks, hardcovers, paperbacks,
+            and book sets with valid ISBNs based on current demand and resale value.
             </p>
           </div>
 
