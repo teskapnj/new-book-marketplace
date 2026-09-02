@@ -7,7 +7,7 @@ const SITE_URL = "https://www.sellbookmedia.com";
 const PAGE_URL = `${SITE_URL}/sell-books-for-cash`;
 
 export const metadata: Metadata = {
-  title: "Sell Books for Cash Online | Free Shipping | SellBookMedia",
+  title: "Sell Books for Cash Online | SellBookMedia",
   description:
     "Sell used books for cash with SellBookMedia. Scan or enter the ISBN for an instant quote, ship for free, and get paid by PayPal.",
 

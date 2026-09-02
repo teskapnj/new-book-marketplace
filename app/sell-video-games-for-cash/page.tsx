@@ -7,7 +7,7 @@ const SITE_URL = "https://www.sellbookmedia.com";
 const PAGE_URL = `${SITE_URL}/sell-video-games-for-cash`;
 
 export const metadata: Metadata = {
-  title: "Sell Video Games for Cash Online | Free Shipping | SellBookMedia",
+  title: "Sell Video Games for Cash Online | SellBookMedia",
   description:
     "Sell used video games for cash with SellBookMedia. Get competitive cash offers for eligible games, scan the UPC for an instant quote, ship for free, and get paid by PayPal.",
 

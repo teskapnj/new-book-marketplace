@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import RelatedGuides from "@/components/RelatedGuides";
 
 export const metadata: Metadata = {
-  title: "How Much Are Used Books Worth? (2026 Price Guide) | SellBookMedia",
+  title: "How Much Are Used Books Worth? | SellBookMedia",
   description:
     "Find out what affects used book value, which types of books may be worth more, and how to get an instant cash offer by scanning the ISBN or barcode.",
 };

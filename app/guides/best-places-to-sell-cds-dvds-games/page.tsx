@@ -4,7 +4,7 @@ import RelatedGuides from "@/components/RelatedGuides";
 
 export const metadata: Metadata = {
   title:
-    "Best Places to Sell Used CDs, DVDs & Video Games for Cash (2026) | SellBookMedia",
+    "Best Places to Sell CDs, DVDs & Games for Cash | SellBookMedia",
   description:
     "Compare ways to sell used CDs, DVDs, Blu-rays, and video games for cash. Learn what affects offers, shipping, payment, and which option may fit you best.",
 };
