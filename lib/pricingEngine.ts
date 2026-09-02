@@ -481,8 +481,8 @@ function calculateGamePrice(
   const hasGameUsedPrice = gameUsedPrice > 0;
   const hasGameNewPrice = gameNewPrice > 0;
 
-  // GAME USED $20 veya üzeri -> USED fiyatın %20'si
-  if (hasGameUsedPrice && gameUsedPrice >= 20) {
+  // GAME USED $40 veya üzeri -> USED fiyatın %20'si
+  if (hasGameUsedPrice && gameUsedPrice >= 40) {
     return {
       accepted: true,
       ourPrice: Math.min(
@@ -495,8 +495,8 @@ function calculateGamePrice(
     };
   }
 
-  // GAME USED var ama $20 altında
-  if (hasGameUsedPrice && gameUsedPrice < 20) {
+  // GAME USED var ama $40 altında
+  if (hasGameUsedPrice && gameUsedPrice < 40) {
     // NEW fiyat da varsa CD/DVD fiyat tablosunu kullan
     if (hasGameNewPrice) {
       const gameResult = calculateCDPrice(gameNewPrice, salesRank);
@@ -507,12 +507,12 @@ function calculateGamePrice(
       };
     }
 
-    // USED <$20 ve NEW yok
+    // USED <$40 ve NEW yok
     return {
       accepted: true,
       ourPrice: 1.5,
       category: 'games',
-      priceRange: "Game used under $20, no new price",
+      priceRange: "Game used under $40, no new price",
       rankRange: "≤ 100k"
     };
   }
