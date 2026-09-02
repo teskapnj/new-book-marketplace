@@ -101,31 +101,54 @@ function detectCodeType(code: string): {
     return { type: 'isbn', searchCode: cleanCode };
   }
 
-  // ISBN-13 (978 önekli -> ISBN-10'a çevrilebilir, 979 önekli -> code lookup gerekir)
-  if (cleanCode.length === 13 && /^97[89]\d{10}$/.test(cleanCode)) {
-    if (cleanCode.startsWith('978')) {
-      const isbn10 = convertISBN13toISBN10(cleanCode);
-      if (isbn10) {
-        console.log(`ISBN-13 converted: ${cleanCode} → ${isbn10}`);
-        return { type: 'isbn', searchCode: isbn10, converted: true };
-      }
+ // ISBN-13 (978 önekli -> ISBN-10'a çevrilebilir, 979 önekli -> code lookup gerekir)
+if (cleanCode.length === 13 && /^97[89]\d{10}$/.test(cleanCode)) {
+  if (cleanCode.startsWith('978')) {
+    const isbn10 = convertISBN13toISBN10(cleanCode);
+    if (isbn10) {
+      console.log(`ISBN-13 converted: ${cleanCode} → ${isbn10}`);
+      return { type: 'isbn', searchCode: isbn10, converted: true };
     }
-    // 979 önekli ISBN-13 -> Keepa'nın "code" parametresiyle arattırılır
-    console.log(`ISBN-13 needs Keepa code lookup: ${cleanCode}`);
-    return { type: 'isbn', searchCode: cleanCode, needsCodeLookup: true };
   }
 
-  // UPC (CD/DVD/Oyun) -> Keepa "code" parametresiyle arattırılır
-  if (cleanCode.length === 12 && /^\d{12}$/.test(cleanCode)) {
-    return { type: 'upc', searchCode: cleanCode, needsCodeLookup: true };
-  }
+  // 979 önekli ISBN-13 -> Keepa'nın "code" parametresiyle arattırılır
+  console.log(`ISBN-13 needs Keepa code lookup: ${cleanCode}`);
 
-  // EAN-8
-  if (cleanCode.length === 8 && /^\d{8}$/.test(cleanCode)) {
-    return { type: 'upc', searchCode: cleanCode, needsCodeLookup: true };
-  }
+  return {
+    type: 'isbn',
+    searchCode: cleanCode,
+    needsCodeLookup: true
+  };
+}
 
-  return { type: 'unknown', searchCode: cleanCode };
+// EAN-13 (CD/DVD/Oyun vb.) -> Keepa "code" parametresiyle arattırılır
+if (cleanCode.length === 13 && /^\d{13}$/.test(cleanCode)) {
+  return {
+    type: 'upc',
+    searchCode: cleanCode,
+    needsCodeLookup: true
+  };
+}
+
+// UPC (CD/DVD/Oyun) -> Keepa "code" parametresiyle arattırılır
+if (cleanCode.length === 12 && /^\d{12}$/.test(cleanCode)) {
+  return {
+    type: 'upc',
+    searchCode: cleanCode,
+    needsCodeLookup: true
+  };
+}
+
+// EAN-8
+if (cleanCode.length === 8 && /^\d{8}$/.test(cleanCode)) {
+  return {
+    type: 'upc',
+    searchCode: cleanCode,
+    needsCodeLookup: true
+  };
+}
+
+return { type: 'unknown', searchCode: cleanCode };
 }
 
 // ==================== KEEPA API ÇAĞRILARI ====================
