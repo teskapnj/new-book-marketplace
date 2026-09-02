@@ -524,14 +524,14 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
             <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
             <input type="text" value={shippingInfo.address.city}
               onChange={e => handleAddressChange("city", e.target.value)}
-              placeholder="New York" className={inputClass} />
+              placeholder="New York City" className={inputClass} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
               <input type="text" value={shippingInfo.address.state}
                 onChange={e => handleAddressChange("state", e.target.value)}
-                placeholder="NY" className={inputClass} />
+                placeholder="New York" className={inputClass} />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">ZIP</label>

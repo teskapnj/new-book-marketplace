@@ -335,7 +335,7 @@ function calculateCDPrice(price: number, salesRank: number): PricingResult {
     };
   }
 
-  // CD / DVD / GAME: rank ≤ 50k
+  // CD / DVD /: rank ≤ 50k
   if (salesRank <= 50000) {
     if (price >= 15 && price < 18) {
       return { accepted: true, ourPrice: 0.25, category: 'cds', priceRange: "$15-17.99", rankRange: "≤ 50k" };
@@ -370,7 +370,7 @@ function calculateCDPrice(price: number, salesRank: number): PricingResult {
     };
   }
 
-  // CD / DVD / GAME: rank 50k-100k
+  // CD / DVD /: rank 50k-100k
   if (salesRank <= 100000) {
     if (price >= 18 && price < 21) {
       return { accepted: true, ourPrice: 0.25, category: 'cds', priceRange: "$18-20.99", rankRange: "50k-100k" };
@@ -405,7 +405,7 @@ function calculateCDPrice(price: number, salesRank: number): PricingResult {
     };
   }
 
-  // CD / DVD / GAME: rank 100k-200k
+  // CD / DVD / : rank 100k-200k
   if (salesRank <= 200000) {
     if (price >= 24 && price < 28) {
       return { accepted: true, ourPrice: 0.25, category: 'cds', priceRange: "$24-27.99", rankRange: "100k-200k" };
@@ -437,7 +437,7 @@ function calculateCDPrice(price: number, salesRank: number): PricingResult {
     };
   }
 
-  // CD / DVD / GAME: rank 200k-300k — AYNI
+  // CD / DVD / : rank 200k-300k — AYNI
   if (salesRank <= 300000) {
     if (price >= 75) {
       return { accepted: true, ourPrice: 1.5, category: 'cds', priceRange: "$75+", rankRange: "200k-300k" };
@@ -583,7 +583,6 @@ function handleNoPriceScenario(category: ProductCategory, salesRank: number): Pr
 
     case 'cds':
     case 'dvds':
-    case 'games':
       if (salesRank <= NO_PRICE_MEDIA_RANK_LIMIT) {
         return {
           accepted: true,
@@ -646,7 +645,6 @@ function handleUsedOnlyScenario(category: ProductCategory, salesRank: number): P
   };
     case 'cds':
     case 'dvds':
-    case 'games':
       if (salesRank <= USED_ONLY_MEDIA_RANK_LIMIT) {
         return {
           accepted: true,
