@@ -1352,23 +1352,22 @@ useEffect(() => {
           >
 
            {/* Mobil: kamera butonu - isMounted beklenir, yoksa masaustu/mobil gecisi goruluyor */}
-           {isMounted && isMobile && (
-              <>
-                <button
-                  type="button"
-                  onClick={handleScanBarcode}
-                  disabled={isCheckingAmazon}
-                  className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl py-6 shadow-md active:scale-95 transition-transform disabled:opacity-60"
-                >
-                                   <CameraIcon size={40} className="text-white mx-auto mb-2" />
-                  <span className="block text-xl font-extrabold text-white">Scan Barcode</span>
-                  <span className="block text-sm font-medium text-white/85 mt-0.5">
-                    Opens your camera
-                  </span>
-                </button>
-                <div className="text-sm text-gray-500 my-3">or type it in</div>
-              </>
-            )}
+           <div className="md:hidden">
+  <button
+    type="button"
+    onClick={handleScanBarcode}
+    disabled={isCheckingAmazon}
+    className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl py-6 shadow-md active:scale-95 transition-transform disabled:opacity-60"
+  >
+    <CameraIcon size={40} className="text-white mx-auto mb-2" />
+    <span className="block text-xl font-extrabold text-white">Scan Barcode</span>
+    <span className="block text-sm font-medium text-white/85 mt-0.5">
+      Opens your camera
+    </span>
+  </button>
+
+  <div className="text-sm text-gray-500 my-3">or type it in</div>
+</div>
 
             {/* Input + buton */}
             <div className="flex rounded-xl overflow-hidden border-2 border-gray-300 focus-within:border-blue-500 transition-colors">
