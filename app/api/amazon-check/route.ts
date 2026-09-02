@@ -609,11 +609,6 @@ after(async () => {
 
     const speedLabel = totalTime < 1000 ? 'ULTRA FAST' : totalTime < 2000 ? 'FAST' : 'NORMAL';
     console.log(`[${speedLabel}] ${totalTime}ms - Keepa lookup (${debugInfo.lookupType})`);
-    console.log("🎮 GAME PRICE DEBUG:", {
-      gameNewPrice: priceAnalysis.gameNewPrice,
-      gameUsedPrice: priceAnalysis.gameUsedPrice,
-      rank: salesRank
-    });
     
     console.log(`💰 Price: $${priceAnalysis.price} (${priceAnalysis.bestCondition}) | Rank: ${salesRank} | Category: ${category} | Binding: ${product.binding} | Type: ${product.type}`);
     console.log(`💰 Price: $${priceAnalysis.price} (${priceAnalysis.bestCondition}) | Rank: ${salesRank} | Category: ${category} | Binding: ${product.binding} | Type: ${product.type}`);
