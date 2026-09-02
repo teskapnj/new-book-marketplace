@@ -60,18 +60,26 @@ export class ProductCacheService {
         const data = docSnap.data() as ProductCacheEntry;
         
         // Check expiration
-        const now = new Date();
-        const expiresAt = data.expiresAt.toDate();
-        
-        if (now > expiresAt) {
-          console.log(`Cache expired: ${normalizedId} (Expired: ${expiresAt})`);
-          // Remove expired cache
-          await this.removeFromCache(normalizedId);
-          return null;
-        }
-        
-        console.log(`Found in cache: ${normalizedId} (Expires: ${expiresAt})`);
-        return data;
+const now = new Date();
+
+// Eski cache kayıtlarında expiresAt alanı olmayabilir.
+// Böyle bir kayıt varsa sil ve canlı Keepa sorgusuna düş.
+if (!data.expiresAt || typeof (data.expiresAt as any).toDate !== 'function') {
+  console.log(`Cache record missing valid expiresAt: ${normalizedId}`);
+  await this.removeFromCache(normalizedId);
+  return null;
+}
+
+const expiresAt = data.expiresAt.toDate();
+
+if (now > expiresAt) {
+  console.log(`Cache expired: ${normalizedId} (Expired: ${expiresAt})`);
+  await this.removeFromCache(normalizedId);
+  return null;
+}
+
+console.log(`Found in cache: ${normalizedId} (Expires: ${expiresAt})`);
+return data;
       }
       
       console.log(`Not found in cache: ${normalizedId}`);

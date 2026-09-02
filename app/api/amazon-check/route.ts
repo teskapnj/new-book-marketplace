@@ -22,6 +22,9 @@ interface AmazonProduct {
   category: string;
   asin: string;
   priceType?: 'new' | 'used' | 'none';
+  // GAME için Keepa NEW ve USED fiyatları ayrı tutulur
+gameNewPrice?: number;
+gameUsedPrice?: number;
   // Keepa format bilgisi (kategori filtresi icin pricingEngine'e gecer)
   binding?: string;
   type?: string;
@@ -202,22 +205,42 @@ function extractKeepaPricing(product: any): {
   hasNewPrice: boolean;
   bestCondition: string;
   analysisDetails: string;
+  gameNewPrice: number;
+  gameUsedPrice: number;
 } {
   const current = product?.stats?.current;
 
   if (!current) {
-    return { price: 0, hasNewPrice: false, bestCondition: 'unknown', analysisDetails: 'No stats available' };
+    return {
+      price: 0,
+      hasNewPrice: false,
+      bestCondition: 'unknown',
+      analysisDetails: 'No stats available',
+      gameNewPrice: 0,
+      gameUsedPrice: 0
+    };
   }
 
   const newPriceCents = current[1];
   const usedPriceCents = current[2];
+  const gameNewPrice =
+  typeof newPriceCents === 'number' && newPriceCents > 0
+    ? newPriceCents / 100
+    : 0;
+
+const gameUsedPrice =
+  typeof usedPriceCents === 'number' && usedPriceCents > 0
+    ? usedPriceCents / 100
+    : 0;
 
   if (typeof newPriceCents === 'number' && newPriceCents > 0) {
     return {
       price: newPriceCents / 100,
       hasNewPrice: true,
       bestCondition: 'new',
-      analysisDetails: `Keepa NEW price: $${(newPriceCents / 100).toFixed(2)}`
+      analysisDetails: `Keepa NEW price: $${(newPriceCents / 100).toFixed(2)}`,
+      gameNewPrice,
+      gameUsedPrice
     };
   }
 
@@ -226,11 +249,20 @@ function extractKeepaPricing(product: any): {
       price: usedPriceCents / 100,
       hasNewPrice: false,
       bestCondition: 'used',
-      analysisDetails: `Keepa lowest USED price: $${(usedPriceCents / 100).toFixed(2)}`
+      analysisDetails: `Keepa lowest USED price: $${(usedPriceCents / 100).toFixed(2)}`,
+      gameNewPrice,
+      gameUsedPrice
     };
   }
 
-  return { price: 0, hasNewPrice: false, bestCondition: 'unknown', analysisDetails: 'No valid price in stats.current' };
+  return {
+    price: 0,
+    hasNewPrice: false,
+    bestCondition: 'unknown',
+    analysisDetails: 'No valid price in stats.current',
+    gameNewPrice: 0,
+    gameUsedPrice: 0
+  };
 }
 
 function extractKeepaSalesRank(product: any): number {
@@ -530,6 +562,9 @@ export async function POST(request: NextRequest) {
       priceType: priceAnalysis.price <= 0
         ? 'none'
         : priceAnalysis.hasNewPrice ? 'new' : 'used',
+        // GAME pricingEngine için ayrı Keepa fiyatları
+gameNewPrice: priceAnalysis.gameNewPrice,
+gameUsedPrice: priceAnalysis.gameUsedPrice,
       // Keepa format bilgisi -> pricingEngine kategori filtresi icin
       binding: bestProduct.binding || '',
       type: bestProduct.type || ''
@@ -574,6 +609,13 @@ after(async () => {
 
     const speedLabel = totalTime < 1000 ? 'ULTRA FAST' : totalTime < 2000 ? 'FAST' : 'NORMAL';
     console.log(`[${speedLabel}] ${totalTime}ms - Keepa lookup (${debugInfo.lookupType})`);
+    console.log("🎮 GAME PRICE DEBUG:", {
+      gameNewPrice: priceAnalysis.gameNewPrice,
+      gameUsedPrice: priceAnalysis.gameUsedPrice,
+      rank: salesRank
+    });
+    
+    console.log(`💰 Price: $${priceAnalysis.price} (${priceAnalysis.bestCondition}) | Rank: ${salesRank} | Category: ${category} | Binding: ${product.binding} | Type: ${product.type}`);
     console.log(`💰 Price: $${priceAnalysis.price} (${priceAnalysis.bestCondition}) | Rank: ${salesRank} | Category: ${category} | Binding: ${product.binding} | Type: ${product.type}`);
 
     return NextResponse.json({

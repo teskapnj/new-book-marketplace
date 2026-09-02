@@ -16,6 +16,9 @@ export interface AmazonProduct {
   // 'used' -> NEW yoktu, USED fiyatına düşüldü, sabit fiyat kuralı uygulanır
   // 'none' -> ne NEW ne USED fiyatı var, price alanı 0/boş
   priceType?: 'new' | 'used' | 'none';
+  // GAME için Keepa'dan ayrı fiyatlar
+gameNewPrice?: number;
+gameUsedPrice?: number;
   // YENİ ALANLAR: Keepa'dan gelen format bilgisi (kategori filtresi için)
   // binding -> ör. 'audioCD', 'lp_record', 'VHStape', 'cassette'
   // type    -> ör. 'ABIS_MUSIC', 'ABIS_VIDEO', 'DOWNLOADABLE_AUDIO'
@@ -460,9 +463,87 @@ function calculateDVDPrice(price: number, salesRank: number): PricingResult {
   return { ...result, category: 'dvds' };
 }
 
-function calculateGamePrice(price: number, salesRank: number): PricingResult {
-  const result = calculateCDPrice(price, salesRank);
-  return { ...result, category: 'games' };
+function calculateGamePrice(
+  gameNewPrice: number,
+  gameUsedPrice: number,
+  salesRank: number
+): PricingResult {
+  // GAME: sadece rank 100k ve altı
+  if (salesRank > 100000) {
+    return {
+      accepted: false,
+      reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
+      category: 'games',
+      rankRange: "> 100,000"
+    };
+  }
+
+  const hasGameUsedPrice = gameUsedPrice > 0;
+  const hasGameNewPrice = gameNewPrice > 0;
+
+  // GAME USED $20 veya üzeri -> USED fiyatın %20'si
+  if (hasGameUsedPrice && gameUsedPrice >= 20) {
+    return {
+      accepted: true,
+      ourPrice: Math.min(
+        Math.round(gameUsedPrice * 0.20 * 100) / 100,
+        50
+      ),
+      category: 'games',
+      priceRange: `Game used $${gameUsedPrice}`,
+      rankRange: "≤ 100k"
+    };
+  }
+
+  // GAME USED var ama $20 altında
+  if (hasGameUsedPrice && gameUsedPrice < 20) {
+    // NEW fiyat da varsa CD/DVD fiyat tablosunu kullan
+    if (hasGameNewPrice) {
+      const gameResult = calculateCDPrice(gameNewPrice, salesRank);
+
+      return {
+        ...gameResult,
+        category: 'games'
+      };
+    }
+
+    // USED <$20 ve NEW yok
+    return {
+      accepted: true,
+      ourPrice: 1.5,
+      category: 'games',
+      priceRange: "Game used under $20, no new price",
+      rankRange: "≤ 100k"
+    };
+  }
+
+  // GAME USED fiyat hiç yok
+  if (!hasGameUsedPrice) {
+    // NEW varsa CD/DVD fiyat tablosunu kullan
+    if (hasGameNewPrice) {
+      const gameResult = calculateCDPrice(gameNewPrice, salesRank);
+
+      return {
+        ...gameResult,
+        category: 'games'
+      };
+    }
+
+    // GAME USED yok + NEW yok
+    return {
+      accepted: true,
+      ourPrice: 5,
+      category: 'games',
+      priceRange: "Game has no used or new price",
+      rankRange: "≤ 100k"
+    };
+  }
+
+  return {
+    accepted: false,
+    reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
+    category: 'games'
+  };
 }
 
 /**
@@ -616,6 +697,14 @@ export function calculateOurPrice(product: AmazonProduct): PricingResult {
       category
     };
   }
+  // GAME kendi özel fiyat motorunu kullanır
+if (category === 'games') {
+  return calculateGamePrice(
+    product.gameNewPrice || 0,
+    product.gameUsedPrice || 0,
+    product.sales_rank
+  );
+}
 
   const hasPrice = !!product.price && product.price > 0;
 
@@ -637,8 +726,7 @@ export function calculateOurPrice(product: AmazonProduct): PricingResult {
       return calculateCDPrice(product.price, product.sales_rank);
     case 'dvds':
       return calculateDVDPrice(product.price, product.sales_rank);
-    case 'games':
-      return calculateGamePrice(product.price, product.sales_rank);
+  
     default:
       return {
         accepted: false,
