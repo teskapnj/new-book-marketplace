@@ -9,7 +9,7 @@ const PAGE_URL = `${SITE_URL}/sell-video-games-for-cash`;
 export const metadata: Metadata = {
   title: "Sell Video Games for Cash Online | Free Shipping | SellBookMedia",
   description:
-    "Sell used video games for cash with SellBookMedia. Scan the UPC, get an instant quote, ship for free, and get paid by PayPal.",
+    "Sell used video games for cash with SellBookMedia. Get competitive cash offers for eligible games, scan the UPC for an instant quote, ship for free, and get paid by PayPal.",
 
   alternates: {
     canonical: PAGE_URL,
@@ -36,6 +36,10 @@ const faqs = [
   {
     q: "What video games can I sell?",
     a: "We buy eligible video games with a readable UPC or barcode. Scan or enter the barcode to see whether we are currently buying the game and what we will pay.",
+  },
+  {
+    q: "Do you buy PS1 and PS2 games?",
+    a: "Yes. We buy eligible PS1 and PS2 games, along with other PlayStation, Xbox, Nintendo, GameCube, and retro game titles. Scan or enter the barcode to see whether we are currently buying the game and what we will pay.",
   },
   {
     q: "How do I find out how much my game is worth?",
@@ -158,9 +162,8 @@ export default function SellVideoGamesForCashPage() {
             </h1>
 
             <p className="text-xl sm:text-2xl text-blue-100 mb-8 leading-relaxed">
-              Scan the barcode on your game and see our cash offer instantly.
-              Shipping is free, and payment is
-              sent via PayPal.
+            Get competitive cash offers for eligible video games. Scan the barcode
+            to see your offer instantly, ship for free, and get paid via PayPal.
             </p>
 
             <div className="mt-12">
@@ -274,17 +277,18 @@ export default function SellVideoGamesForCashPage() {
             </h2>
 
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              We buy eligible physical video games based on current demand,
-              platform, edition, and resale value.
-            </p>
+  We buy eligible physical video games based on current demand,
+  platform, edition, and resale value, including many PS1, PS2,
+  GameCube, Xbox, and other retro game titles.
+</p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             {[
-              { name: "PlayStation Games", icon: "🎮" },
+              { name: "PS1 & PS2 Games", icon: "🎮" },
               { name: "Xbox Games", icon: "🎮" },
-              { name: "Nintendo Games", icon: "🕹️" },
-              { name: "Game Collections", icon: "📦" },
+              { name: "GameCube & Nintendo Games", icon: "🕹️" },
+              { name: "Retro Game Collections", icon: "📦" },
             ].map((game) => (
               <div
                 key={game.name}

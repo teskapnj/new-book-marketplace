@@ -5,7 +5,7 @@ import RelatedGuides from "@/components/RelatedGuides";
 export const metadata: Metadata = {
   title: "Sell Video Games for Cash: Complete Guide (2026) | SellBookMedia",
   description:
-    "Sell used video games for cash online. Learn what affects game value and get an instant offer by scanning the barcode — no app required.",
+    "Sell used video games for cash online. Learn what PS1, PS2, GameCube, retro, and modern games may be worth and get an instant barcode offer.",
 };
 
 const HOLDS_VALUE = [
@@ -367,6 +367,49 @@ export default function SellGamesGuide() {
               </p>
             </div>
           </section>
+
+          {/* ===================== RETRO / PS1 / PS2 ===================== */}
+<section className="mb-14">
+  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+    Retro game values
+  </p>
+
+  <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
+    Are PS1, PS2, and older video games worth money?
+  </h2>
+
+  <p className="mt-6 text-[17px] leading-[1.75] text-slate-700">
+    Some older video games can still have strong resale demand. PS1 and PS2
+    games, GameCube titles, older Xbox releases, and other retro games can vary
+    significantly in value depending on the exact title, edition, availability,
+    and current buyer demand.
+  </p>
+
+  <p className="mt-4 text-[17px] leading-[1.75] text-slate-700">
+    Popular titles are not always the most valuable. Some harder-to-find,
+    discontinued, niche, or collectible games can be worth considerably more
+    than common releases. Complete copies with the original case, artwork, and
+    inserts may also be more desirable.
+  </p>
+
+  <div className="mt-6 rounded-xl border-l-4 border-emerald-500 bg-white px-5 py-4 shadow-sm">
+    <p className="text-[16px] leading-relaxed text-slate-700">
+      <strong className="text-slate-900">
+        Have old PS1, PS2, GameCube, Xbox, or Nintendo games?
+      </strong>{" "}
+      Scan the barcode to check whether SellBookMedia is currently buying the
+      title and see your cash offer instantly.
+    </p>
+  </div>
+
+  <Link
+    href="/sell-video-games-for-cash"
+    className="mt-5 inline-flex items-center text-sm font-semibold text-blue-600 hover:text-blue-700"
+  >
+    Sell video games for cash
+    <span className="ml-1.5">→</span>
+  </Link>
+</section>
 
           {/* ===================== OFFERS ===================== */}
           <section className="mb-14">
