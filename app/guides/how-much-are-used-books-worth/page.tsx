@@ -518,6 +518,26 @@ export default function BookValueGuide() {
             </dl>
           </section>
 
+          <section className="mb-14">
+  <div className="rounded-2xl border border-blue-200 bg-blue-50 px-6 py-7">
+    <h2 className="font-serif text-2xl font-bold text-slate-900">
+      Want to check a specific book by ISBN?
+    </h2>
+
+    <p className="mt-3 text-[16px] leading-relaxed text-slate-700">
+      An ISBN helps identify the exact edition of a book. Learn how to find
+      the ISBN and use it to check a book&apos;s current value in our{" "}
+      <Link
+        href="/guides/how-to-find-book-value-by-isbn"
+        className="font-semibold text-blue-600 hover:text-blue-800"
+      >
+        guide to finding book value by ISBN
+      </Link>
+      .
+    </p>
+  </div>
+</section>
+
           <RelatedGuides currentSlug="how-much-are-used-books-worth" />
 
           {/* ===================== FINAL CTA ===================== */}

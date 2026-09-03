@@ -94,6 +94,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     {
+      url: 'https://www.sellbookmedia.com/guides/how-to-find-book-value-by-isbn',
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
+    {
       url: 'https://www.sellbookmedia.com/guides/what-to-do-with-old-dvds-and-cds',
       lastModified: new Date(),
       changeFrequency: 'monthly',
