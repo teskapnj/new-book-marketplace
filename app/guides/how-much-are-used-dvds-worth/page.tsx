@@ -459,6 +459,17 @@ export default function DvdValueGuide() {
             </dl>
           </section>
 
+          <p className="mt-6 text-[16px] leading-relaxed text-slate-600">
+  Have a DVD, Blu-ray, or 4K movie in front of you? Learn how to{" "}
+  <Link
+    href="/guides/media-value-by-barcode"
+    className="font-semibold text-blue-600 hover:text-blue-800"
+  >
+    check its value using the barcode
+  </Link>
+  .
+</p>
+
           <RelatedGuides currentSlug="how-much-are-used-dvds-worth" />
 
           {/* ===================== FINAL CTA ===================== */}

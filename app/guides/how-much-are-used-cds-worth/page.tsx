@@ -462,6 +462,16 @@ export default function CdValueGuide() {
               ))}
             </dl>
           </section>
+          <p className="mt-6 text-[16px] leading-relaxed text-slate-600">
+  Have a CD in front of you? Learn how to{" "}
+  <Link
+    href="/guides/media-value-by-barcode"
+    className="font-semibold text-blue-600 hover:text-blue-800"
+  >
+    check CD value using the barcode
+  </Link>
+  .
+</p>
 
           <RelatedGuides currentSlug="how-much-are-used-cds-worth" />
 
