@@ -1366,7 +1366,9 @@ useEffect(() => {
     </span>
   </button>
 
-  <div className="text-sm text-gray-500 my-3">or type it in</div>
+  <div className="text-sm text-gray-500 my-3">
+  or enter barcode manually
+</div>
 </div>
 
             {/* Input + buton */}
@@ -1381,7 +1383,7 @@ useEffect(() => {
                     handleBarcodeScanned(isbnInput.trim());
                   }
                 }}
-                placeholder={isMounted && isMobile ? "ISBN / UPC" : "Enter the ISBN or UPC under the barcode"}
+                placeholder="Enter barcode"
                 disabled={isCheckingAmazon}
                 className="flex-1 min-w-0 px-4 sm:px-5 py-3 sm:py-4 text-base border-0 focus:ring-0 outline-none text-gray-900 bg-white"
               />
@@ -1425,9 +1427,7 @@ useEffect(() => {
     </span>
   </div>
 
-  <p className="mt-4 text-base text-gray-700 font-medium">
-  <span className="font-bold">Minimum order value:</span> $7.50
-</p>
+
 </div>
           </div>
         </div>
