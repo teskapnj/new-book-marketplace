@@ -148,7 +148,31 @@ export async function POST(request: NextRequest) {
               </p>
             </td>
           </tr>
-
+          <!-- Review request -->
+          <tr>
+            <td style="padding:0 40px 32px 40px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc; border-radius:12px; border:1px solid #e2e8f0;">
+                <tr>
+                  <td style="padding:24px 26px; text-align:center;">
+                    <div style="font-size:16px; font-weight:700; color:#0f172a; margin-bottom:8px;">
+                      How was your experience with SellBookMedia?
+                    </div>
+                    <div style="font-size:14px; color:#64748b; line-height:1.6; margin-bottom:18px;">
+                      Your feedback helps other sellers know what to expect.
+                    </div>
+                    <a
+                      href="https://www.trustpilot.com/evaluate/sellbookmedia.com"
+                      target="_blank"
+                      style="display:inline-block; background-color:#10b981; color:#ffffff; text-decoration:none; font-size:14px; font-weight:700; padding:12px 22px; border-radius:8px;"
+                    >
+                      Leave a Review
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
           <!-- Footer -->
           <tr>
             <td style="background-color:#f8fafc; padding:24px 40px; text-align:center; border-top:1px solid #e2e8f0;">
@@ -188,7 +212,13 @@ What's Next?
 - Payment typically appears within 5-10 minutes
 - Keep this email for your records
 
-Thank you for selling with SellBook Media!`
+Thank you for selling with SellBook Media!
+
+How was your experience with SellBookMedia?
+Your feedback helps other sellers know what to expect.
+
+Leave a review:
+https://www.trustpilot.com/evaluate/sellbookmedia.com`
     };
 
     await transporter.sendMail(mailOptions);
