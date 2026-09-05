@@ -11,7 +11,7 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.sellbookmedia.com'),
   title: {
-    default: 'Sell Books, CDs, DVDs & Games for Cash - Free Shipping | SellBook Media',
+    default: 'Sell Books, CDs, DVDs & Games for Cash | SellBook Media',
     template: '%s | SellBook Media',
   },
   description:
