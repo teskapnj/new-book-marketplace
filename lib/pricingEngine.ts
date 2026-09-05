@@ -111,29 +111,33 @@ export function detectCategory(amazonCategory: string): ProductCategory {
 // Senaryo: Hiç fiyat yok (ne NEW ne USED)
 const NO_PRICE_BOOK_RANK_LIMIT = 1_000_000;
 const NO_PRICE_BOOK_PRICE = 3;
-const NO_PRICE_BOOK_HIGH_RANK_LIMIT = 2_000_000;
-const NO_PRICE_BOOK_HIGH_RANK_PRICE = 1.5;
-const NO_PRICE_MEDIA_RANK_LIMIT = 200_000; // CD / DVD / Oyun ortak
+const NO_PRICE_BOOK_HIGH_RANK_LIMIT = 1_500_000;
+const NO_PRICE_BOOK_HIGH_RANK_PRICE = 0.75;
+const NO_PRICE_MEDIA_RANK_LIMIT = 200_000; // CD / DVD
 const NO_PRICE_MEDIA_PRICE = 3;
+const NO_PRICE_MEDIA_HIGH_RANK_LIMIT = 300_000;
+const NO_PRICE_MEDIA_HIGH_RANK_PRICE = 0.75;
 
 // Senaryo: NEW yok, USED var
 const USED_ONLY_BOOK_RANK_LIMIT = 1_000_000;
 const USED_ONLY_BOOK_PRICE = 1.5;
-const USED_ONLY_BOOK_HIGH_RANK_LIMIT = 2_000_000;
-const USED_ONLY_BOOK_HIGH_RANK_PRICE = 1.5;
-const USED_ONLY_MEDIA_RANK_LIMIT = 200_000; // CD / DVD / Oyun ortak
+const USED_ONLY_BOOK_HIGH_RANK_LIMIT = 1_500_000;
+const USED_ONLY_BOOK_HIGH_RANK_PRICE = 0.75;
+const USED_ONLY_MEDIA_RANK_LIMIT = 200_000; // CD / DVD
 const USED_ONLY_MEDIA_PRICE = 1.5;
+const USED_ONLY_MEDIA_HIGH_RANK_LIMIT = 300_000;
+const USED_ONLY_MEDIA_HIGH_RANK_PRICE = 0.75;
 
 /**
  * Kitap kategorisi için fiyatlandırma kuralları (NEW fiyat mevcutken kullanılır)
  */
 function calculateBookPrice(price: number, salesRank: number): PricingResult {
-  if (salesRank > 2000000) {
+  if (salesRank > 1500000) {
     return {
       accepted: false,
       reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
       category: 'books',
-      rankRange: "> 2,000,000"
+      rankRange: "> 1,500,000"
     };
   }
 
@@ -297,14 +301,14 @@ function calculateBookPrice(price: number, salesRank: number): PricingResult {
   }
 
   // ------------------------------------------------------------
-  // BOOKS: rank 1M-2M — DEGİŞMEDİ
+  // BOOKS: rank 1M-1.5M
   // ------------------------------------------------------------
-  if (salesRank <= 2000000) {
+  if (salesRank <= 1500000) {
     if (price >= 56 && price < 100) {
-      return { accepted: true, ourPrice: 1.5, category: 'books', priceRange: "$56-99.99", rankRange: "1M-2M" };
+      return { accepted: true, ourPrice: 1.5, category: 'books', priceRange: "$56-99.99", rankRange: "1M-1.5M" };
     }
     if (price >= 100) {
-      return { accepted: true, ourPrice: 2.5, category: 'books', priceRange: "$100+", rankRange: "1M-2M" };
+      return { accepted: true, ourPrice: 2.5, category: 'books', priceRange: "$100+", rankRange: "1M-1.5M" };
     }
 
     return {
@@ -548,8 +552,8 @@ function calculateGamePrice(
 
 /**
  * SENARYO 1-2: Hiç fiyat yok (ne NEW ne USED)
-* Kitap: rank ≤ 1,000,000 ise $3, 1M-2M ise $1.5, üstündeyse reddet
- * CD/DVD/Oyun: rank ≤ 150,000 ise $3, üstündeyse reddet
+* Kitap: rank ≤ 1,000,000 ise $3, 1M-1.5M ise $0.75, üstündeyse reddet
+ * CD/DVD: rank ≤ 200,000 ise $3, 200k-300k ise $0.75, üstündeyse reddet
  */
 function handleNoPriceScenario(category: ProductCategory, salesRank: number): PricingResult {
   switch (category) {
@@ -570,7 +574,7 @@ function handleNoPriceScenario(category: ProductCategory, salesRank: number): Pr
       ourPrice: NO_PRICE_BOOK_HIGH_RANK_PRICE,
       category: 'books',
       priceRange: "No price available",
-      rankRange: "1M-2M"
+      rankRange: "1M-1.5M"
     };
   }
 
@@ -581,7 +585,7 @@ function handleNoPriceScenario(category: ProductCategory, salesRank: number): Pr
     rankRange: `> ${NO_PRICE_BOOK_HIGH_RANK_LIMIT.toLocaleString()}`
   };
 
-    case 'cds':
+  case 'cds':
     case 'dvds':
       if (salesRank <= NO_PRICE_MEDIA_RANK_LIMIT) {
         return {
@@ -592,11 +596,22 @@ function handleNoPriceScenario(category: ProductCategory, salesRank: number): Pr
           rankRange: `≤ ${NO_PRICE_MEDIA_RANK_LIMIT.toLocaleString()}`
         };
       }
+
+      if (salesRank <= NO_PRICE_MEDIA_HIGH_RANK_LIMIT) {
+        return {
+          accepted: true,
+          ourPrice: NO_PRICE_MEDIA_HIGH_RANK_PRICE,
+          category,
+          priceRange: "No price available",
+          rankRange: "200k-300k"
+        };
+      }
+
       return {
         accepted: false,
         reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
         category,
-        rankRange: `> ${NO_PRICE_MEDIA_RANK_LIMIT.toLocaleString()}`
+        rankRange: `> ${NO_PRICE_MEDIA_HIGH_RANK_LIMIT.toLocaleString()}`
       };
 
     default:
@@ -610,8 +625,8 @@ function handleNoPriceScenario(category: ProductCategory, salesRank: number): Pr
 
 /**
  * SENARYO 3-4: NEW fiyat yok, USED fiyat var
- * Kitap: rank ≤ 2,000,000 ise $1.5, üstündeyse reddet
- * CD/DVD/Oyun: rank ≤ 150,000 ise $1.5, üstündeyse reddet
+ * Kitap: rank ≤ 1,000,000 ise $1.5, 1M-1.5M ise $0.75, üstündeyse reddet
+ * CD/DVD: rank ≤ 200,000 ise $1.5, 200k-300k ise $0.75, üstündeyse reddet
  * NOT: Used fiyatın kendi tutarı burada kriter olarak kullanılmıyor, sadece rank bakılıyor.
  */
 function handleUsedOnlyScenario(category: ProductCategory, salesRank: number): PricingResult {
@@ -633,7 +648,7 @@ function handleUsedOnlyScenario(category: ProductCategory, salesRank: number): P
       ourPrice: USED_ONLY_BOOK_HIGH_RANK_PRICE,
       category: 'books',
       priceRange: "Used price only",
-      rankRange: "1M-2M"
+      rankRange: "1M-1.5M"
     };
   }
 
@@ -643,7 +658,7 @@ function handleUsedOnlyScenario(category: ProductCategory, salesRank: number): P
     category: 'books',
     rankRange: `> ${USED_ONLY_BOOK_HIGH_RANK_LIMIT.toLocaleString()}`
   };
-    case 'cds':
+  case 'cds':
     case 'dvds':
       if (salesRank <= USED_ONLY_MEDIA_RANK_LIMIT) {
         return {
@@ -654,11 +669,22 @@ function handleUsedOnlyScenario(category: ProductCategory, salesRank: number): P
           rankRange: `≤ ${USED_ONLY_MEDIA_RANK_LIMIT.toLocaleString()}`
         };
       }
+
+      if (salesRank <= USED_ONLY_MEDIA_HIGH_RANK_LIMIT) {
+        return {
+          accepted: true,
+          ourPrice: USED_ONLY_MEDIA_HIGH_RANK_PRICE,
+          category,
+          priceRange: "Used price only",
+          rankRange: "200k-300k"
+        };
+      }
+
       return {
         accepted: false,
         reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
         category,
-        rankRange: `> ${USED_ONLY_MEDIA_RANK_LIMIT.toLocaleString()}`
+        rankRange: `> ${USED_ONLY_MEDIA_HIGH_RANK_LIMIT.toLocaleString()}`
       };
 
     default:
@@ -757,13 +783,13 @@ export function testPricingEngine() {
 
     // NEW yok, USED var - sabit $1.5
     { title: "Test Book (used only, rank ok)", image: "", price: 20, sales_rank: 800000, category: "Books", priceType: 'used' },
-    { title: "Test Book (used only, rank too high)", image: "", price: 20, sales_rank: 1200000, category: "Books", priceType: 'used' },
+    { title: "Test Book (used only, rank too high)", image: "", price: 20, sales_rank: 1600000, category: "Books", priceType: 'used' },
     { title: "Test DVD (used only, rank ok)", image: "", price: 15, sales_rank: 100000, category: "Movies & TV", priceType: 'used' },
     { title: "Test DVD (used only, rank too high)", image: "", price: 15, sales_rank: 200000, category: "Movies & TV", priceType: 'used' },
 
     // Hiç fiyat yok - sabit $3
     { title: "Test Book (no price, rank ok)", image: "", price: 0, sales_rank: 900000, category: "Books", priceType: 'none' },
-    { title: "Test Book (no price, rank too high)", image: "", price: 0, sales_rank: 1500000, category: "Books", priceType: 'none' },
+    { title: "Test Book (no price, rank too high)", image: "", price: 0, sales_rank: 1600000, category: "Books", priceType: 'none' },
     { title: "Test Game (no price, rank ok)", image: "", price: 0, sales_rank: 120000, category: "Video Games", priceType: 'none' },
     { title: "Test Game (no price, rank too high)", image: "", price: 0, sales_rank: 180000, category: "Video Games", priceType: 'none' },
 
