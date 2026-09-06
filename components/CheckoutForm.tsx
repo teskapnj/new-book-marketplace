@@ -451,7 +451,8 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
           sellerEmail: user.email || "",
           totalItems,
           totalValue,
-          submissionId: docRef.id
+          submissionId: docRef.id,
+          items
         })
       }).catch(err => console.error("Seller email error:", err));
 

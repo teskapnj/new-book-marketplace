@@ -8,19 +8,47 @@ export async function POST(request: NextRequest) {
       sellerEmail,
       totalItems,
       totalValue,
-      submissionId
+      submissionId,
+      items = []
     } = await request.json();
 
     // Namecheap için transporter yapılandırması
     const transporter = nodemailer.createTransport({
-      host: 'mail.privateemail.com', // Namecheap Private Email SMTP sunucusu
+      host: 'mail.privateemail.com',
       port: 465,
-      secure: true, // SSL kullanımı için true
+      secure: true,
       auth: {
-        user: process.env.EMAIL_USER, // Namecheap e-posta adresiniz
-        pass: process.env.EMAIL_PASS  // Namecheap e-posta şifreniz
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
       }
     });
+
+    const itemRows = Array.isArray(items)
+      ? items.map((item: any) => {
+          const title =
+            item?.amazonData?.title ||
+            `${item?.category || 'Item'} ${item?.isbn || ''}`.trim();
+
+          const barcode = item?.isbn || '';
+          const offer = Number(item?.price || 0);
+
+          return `
+        <tr>
+          <td style="padding:7px 0;border-bottom:1px solid #e2e8f0;">
+            <div style="font-size:13px;font-weight:600;color:#0f172a;line-height:1.4;">
+              ${title}
+            </div>
+            <div style="margin-top:2px;font-size:11px;color:#64748b;text-decoration:none;">
+              ${barcode ? `ISBN/UPC: ${barcode}` : ''}
+            </div>
+          </td>
+          <td style="padding:7px 0;border-bottom:1px solid #e2e8f0;font-size:12px;font-weight:700;color:#0f172a;text-align:right;white-space:nowrap;">
+            $${offer.toFixed(2)}
+          </td>
+        </tr>
+      `;
+        }).join('')
+      : '';
 
     const emailHtml = `<!DOCTYPE html>
 <html lang="en">
@@ -28,11 +56,18 @@ export async function POST(request: NextRequest) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light">
+  <meta name="format-detection" content="telephone=no,date=no,address=no,email=no,url=no">
+  <style>
+    a[x-apple-data-detectors] {
+      color: inherit !important;
+      text-decoration: none !important;
+    }
+  </style>
   <title>Submission Received</title>
 </head>
 <body style="margin:0; padding:0; background-color:#f1f5f9; -webkit-font-smoothing:antialiased;">
   <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;">
-    We received your items and will review them within 24 hours.
+    We received your submission. Your prepaid shipping label will be emailed within 24 hours.
   </div>
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f1f5f9; padding:24px 0;">
@@ -43,21 +78,21 @@ export async function POST(request: NextRequest) {
 
           <!-- Header -->
           <tr>
-            <td style="background-color:#10b981; padding:36px 40px; text-align:center;">
-              <div style="font-size:13px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:#d1fae5; margin-bottom:12px;">SellBook Media</div>
-              <div style="font-size:26px; font-weight:700; color:#ffffff; line-height:1.3;">We received your submission</div>
-              <div style="font-size:15px; color:#d1fae5; margin-top:8px;">Thanks for your submission.</div>
+            <td style="background-color:#10b981; padding:30px 40px; text-align:center;">
+              <div style="font-size:18px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:#d1fae5; margin-bottom:10px;">SellBook Media</div>
+              <div style="font-size:24px; font-weight:700; color:#ffffff; line-height:1.3;">We received your submission</div>
+              <div style="font-size:21px; color:#d1fae5; margin-top:7px;">Thanks for your submission.</div>
             </td>
           </tr>
 
           <!-- Greeting -->
           <tr>
-            <td style="padding:32px 40px 8px 40px;">
-              <p style="margin:0 0 16px 0; font-size:16px; line-height:1.6; color:#334155;">
+            <td style="padding:26px 40px 8px 40px;">
+              <p style="margin:0 0 14px 0; font-size:22.5px; line-height:1.6; color:#334155;">
                 Hi ${sellerName},
               </p>
-              <p style="margin:0; font-size:16px; line-height:1.6; color:#334155;">
-                We've received your submission. Our team will review your items and send a free shipping label within 24 hours.
+              <p style="margin:0; font-size:22.5px; line-height:1.6; color:#334155;">
+                We've received your submission. We'll email your free prepaid shipping label within 24 hours.
               </p>
             </td>
           </tr>
@@ -67,24 +102,24 @@ export async function POST(request: NextRequest) {
             <td style="padding:16px 40px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc; border-radius:12px; border:1px solid #e2e8f0;">
                 <tr>
-                  <td style="padding:20px 24px 8px 24px;">
-                    <div style="font-size:13px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; color:#10b981;">Submission Details</div>
+                  <td style="padding:18px 24px 8px 24px;">
+                    <div style="font-size:18px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; color:#10b981;">Submission Details</div>
                   </td>
                 </tr>
                 <tr>
                   <td style="padding:0 24px 16px 24px;">
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                       <tr>
-                        <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:14px; color:#64748b;">Total Items</td>
-                        <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:14px; color:#0f172a; font-weight:600; text-align:right;">${totalItems}</td>
+                        <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:19.5px; color:#64748b;">Total Items</td>
+                        <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:19.5px; color:#0f172a; font-weight:600; text-align:right;">${totalItems}</td>
                       </tr>
                       <tr>
-                        <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:14px; color:#64748b;">Estimated Value</td>
-                        <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:14px; color:#0f172a; font-weight:600; text-align:right;">$${totalValue.toFixed(2)}</td>
+                        <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:19.5px; color:#64748b;">Estimated Value</td>
+                        <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:19.5px; color:#0f172a; font-weight:600; text-align:right;">$${totalValue.toFixed(2)}</td>
                       </tr>
                       <tr>
-                        <td style="padding:10px 0; font-size:14px; color:#64748b;">Submission ID</td>
-                        <td style="padding:10px 0; font-size:14px; color:#0f172a; font-weight:600; text-align:right; font-family:monospace;">${submissionId}</td>
+                        <td style="padding:10px 0; font-size:19.5px; color:#64748b;">Submission ID</td>
+                        <td style="padding:10px 0; font-size:19.5px; color:#0f172a; font-weight:600; text-align:right; font-family:monospace;">${submissionId}</td>
                       </tr>
                     </table>
                   </td>
@@ -99,13 +134,12 @@ export async function POST(request: NextRequest) {
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc; border-radius:12px; border:1px solid #e2e8f0;">
                 <tr>
                   <td style="padding:22px 26px;">
-                    <div style="font-size:13px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; color:#10b981; margin-bottom:14px;">What Happens Next</div>
-                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px; color:#334155; line-height:1.5;">
-                      <tr><td style="padding:6px 0;"><strong>1.</strong>&nbsp;&nbsp;Our team reviews your submission (within 24 hours)</td></tr>
-                      <tr><td style="padding:6px 0;"><strong>2.</strong>&nbsp;&nbsp;If approved, you'll receive a free shipping label by email</td></tr>
-                      <tr><td style="padding:6px 0;"><strong>3.</strong>&nbsp;&nbsp;Pack your items securely</td></tr>
-                      <tr><td style="padding:6px 0;"><strong>4.</strong>&nbsp;&nbsp;Attach the label and drop off at any authorized location</td></tr>
-                      <tr><td style="padding:6px 0;"><strong>5.</strong>&nbsp;&nbsp;We process your items and send payment to your PayPal once received</td></tr>
+                    <div style="font-size:18px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; color:#10b981; margin-bottom:12px;">What Happens Next</div>
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:19.5px; color:#334155; line-height:1.5;">
+                      <tr><td style="padding:6px 0;"><strong>1.</strong>&nbsp;&nbsp;We'll email your prepaid shipping label within 24 hours</td></tr>
+                      <tr><td style="padding:6px 0;"><strong>2.</strong>&nbsp;&nbsp;Pack your items securely and attach the label</td></tr>
+                      <tr><td style="padding:6px 0;"><strong>3.</strong>&nbsp;&nbsp;Drop off your package</td></tr>
+                      <tr><td style="padding:6px 0;"><strong>4.</strong>&nbsp;&nbsp;Once we receive and inspect your items, we'll send your payment to PayPal</td></tr>
                     </table>
                   </td>
                 </tr>
@@ -118,7 +152,7 @@ export async function POST(request: NextRequest) {
             <td style="padding:8px 40px 16px 40px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fffbeb; border-radius:12px; border:1px solid #fde68a;">
                 <tr>
-                  <td style="padding:18px 24px; font-size:14px; color:#78350f; line-height:1.5;">
+                  <td style="padding:16px 22px; font-size:19.5px; color:#78350f; line-height:1.5;">
                     <strong>Important:</strong> Your shipping label will arrive in a separate email. Please check your inbox (and your spam folder, just in case) for it.
                   </td>
                 </tr>
@@ -128,18 +162,48 @@ export async function POST(request: NextRequest) {
 
           <!-- Sign-off -->
           <tr>
-            <td style="padding:8px 40px 32px 40px;">
-              <p style="margin:0; font-size:15px; line-height:1.6; color:#334155;">
+            <td style="padding:8px 40px 26px 40px;">
+              <p style="margin:0; font-size:21px; line-height:1.6; color:#334155;">
                 If you have any questions, just reply to this email — we're happy to help.
               </p>
+            </td>
+          </tr>
+
+          <!-- Submitted Items -->
+          <tr>
+            <td style="padding:0 40px 24px 40px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #e2e8f0;">
+                <tr>
+                  <td style="padding:18px 0 8px 0;">
+                    <div style="font-size:15px;font-weight:700;color:#0f172a;">
+                      Submitted Items
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                      ${itemRows}
+                      <tr>
+                        <td style="padding:10px 0 0;border-top:2px solid #334155;font-size:13px;font-weight:700;color:#0f172a;">
+                          Total Offer
+                        </td>
+                        <td style="padding:10px 0 0;border-top:2px solid #334155;font-size:13px;font-weight:700;color:#0f172a;text-align:right;">
+                          $${totalValue.toFixed(2)}
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
             <td style="background-color:#f8fafc; padding:24px 40px; text-align:center; border-top:1px solid #e2e8f0;">
-              <div style="font-size:14px; font-weight:600; color:#475569;">SellBook Media</div>
-              <div style="font-size:12px; color:#94a3b8; margin-top:6px;">Submission ${submissionId} &nbsp;·&nbsp; ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })}</div>
+              <div style="font-size:19.5px; font-weight:600; color:#475569;">SellBook Media</div>
+              <div style="font-size:16.5px; color:#94a3b8; margin-top:5px;">Submission ${submissionId} &nbsp;·&nbsp; ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })}</div>
             </td>
           </tr>
 
@@ -152,15 +216,15 @@ export async function POST(request: NextRequest) {
 </html>`;
 
     const mailOptions = {
-      from: `"SellBook Media" <${process.env.EMAIL_USER}>`, // Görünen ad eklendi
+      from: `"SellBook Media" <${process.env.EMAIL_USER}>`,
       to: sellerEmail,
-      subject: 'Your items were submitted successfully - SellBook Media',
+      subject: 'We received your submission - SellBook Media',
       html: emailHtml,
       text: `Thank you for your submission!
 
 Hi ${sellerName},
 
-We've received your submission and our team will review your items and send a free shipping label within 24 hours.
+We've received your submission. We'll email your free prepaid shipping label within 24 hours.
 
 Submission Details:
 - Total Items: ${totalItems}
@@ -168,11 +232,10 @@ Submission Details:
 - Submission ID: ${submissionId}
 
 What happens next?
-1. Our team reviews your submission (within 24 hours)
-2. If approved, you'll receive a free shipping label by email
-3. Package your items securely
-4. Attach the shipping label and drop off at any authorized location
-5. We process your items and send payment to your PayPal once received
+1. We'll email your prepaid shipping label within 24 hours
+2. Pack your items securely and attach the label
+3. Drop off your package
+4. Once we receive and inspect your items, we'll send your payment to PayPal
 
 Important: Please check your email (including your spam folder) for the shipping label in a separate email.
 
