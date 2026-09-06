@@ -490,7 +490,7 @@ function calculateGamePrice(
     return {
       accepted: true,
       ourPrice: Math.min(
-        Math.round(gameUsedPrice * 0.20 * 100) / 100,
+        Math.round(gameUsedPrice * 0.10 * 100) / 100,
         50
       ),
       category: 'games',
