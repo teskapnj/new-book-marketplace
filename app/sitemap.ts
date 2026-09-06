@@ -82,6 +82,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     {
+      url: 'https://www.sellbookmedia.com/guides/are-old-dvds-worth-anything',
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
+    {
       url: 'https://www.sellbookmedia.com/guides/sell-video-games-for-cash',
       lastModified: new Date(),
       changeFrequency: 'monthly',
