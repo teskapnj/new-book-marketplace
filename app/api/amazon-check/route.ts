@@ -408,16 +408,17 @@ function pickBestKeepaProduct(products: any[], searchCode: string): any | null {
 
   let cheapest: any | null = null;
   let cheapestPrice = Infinity;
-
+  
   for (const p of products) {
     const pricing = extractKeepaPricing(p);
-
-    if (pricing.price > 0 && pricing.price < cheapestPrice) {
+    const rank = extractKeepaSalesRank(p);
+  
+    if (rank > 0 && pricing.price > 0 && pricing.price < cheapestPrice) {
       cheapestPrice = pricing.price;
       cheapest = p;
     }
   }
-
+  
   if (cheapest) return cheapest;
 
   // Hicbirinde fiyat yoksa en iyi gecerli ana rank'i sec.
