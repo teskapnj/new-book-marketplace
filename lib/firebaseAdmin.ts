@@ -1,7 +1,9 @@
 // lib/firebaseAdmin.ts
 import admin from 'firebase-admin';
 
-if (!admin.apps.length) {
+const isNewApp = !admin.apps.length;
+
+if (isNewApp) {
   try {
     const serviceAccount = {
       projectId: process.env.FIREBASE_PROJECT_ID,
@@ -12,6 +14,7 @@ if (!admin.apps.length) {
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
     });
+
     console.log('Firebase Admin initialized successfully');
   } catch (error) {
     console.error('Firebase Admin initialization error:', error);
@@ -25,8 +28,10 @@ export const db = admin.firestore();
 
 // Vercel/serverless ortaminda uzun gRPC retry/deadline sorunlarini azalt.
 // Firestore HTTP/REST transport kullanir.
-db.settings({
-  preferRest: true,
-});
+if (isNewApp) {
+  db.settings({
+    preferRest: true,
+  });
+}
 
 export const FieldValue = admin.firestore.FieldValue;

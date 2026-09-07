@@ -547,7 +547,8 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
       {/* PayPal */}
       <div className="border-t border-gray-100 pt-5">
         <h3 className="text-lg font-semibold text-gray-900 mb-1">Where should we send your money?</h3>
-        <p className="text-sm text-gray-500 mb-3">Paid within 2 business days after your items pass our check.</p>
+        <p className="text-sm text-gray-500 mb-3">  Enter the email address linked to your PayPal account. Payment is sent within 2 business days after your items pass our check.
+        </p>
         <input type="email" value={shippingInfo.paypalAccount}
           onChange={e => handlePaypalChange(e.target.value)}
           placeholder="your-paypal-email@example.com" className={inputClass} />
