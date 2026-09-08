@@ -102,7 +102,7 @@ export default function TermsPage() {
           </p>
 
           <p className="mt-8 border-t border-white/15 pt-5 text-sm text-blue-200">
-            Effective <time dateTime="2026-08-18">August 18, 2026</time>
+            Effective <time dateTime="2026-09-08">September 8, 2026</time>
           </p>
         </div>
       </header>
@@ -278,12 +278,21 @@ export default function TermsPage() {
             <List
               items={[
                 "Free prepaid shipping labels provided within 24 hours of submission approval",
-                "Labels are valid for 30 days from issuance",
+                "Labels are valid for 15 days from issuance",
                 "You are responsible for proper packaging and label attachment",
                 "Tracking information is provided with all shipments",
-                "Items must arrive at our facility within 30 days of label generation",
+                "Items must arrive at our facility within 20 days of label generation",
               ]}
             />
+            <Callout tone="warn" label="Shipping loss or damage">
+  Once USPS tracking confirms that USPS has accepted and taken possession of your package,
+  you will not be held responsible for loss or verified transit damage caused during normal
+  shipping. If USPS confirms that a shipment has been lost, we may honor the quoted payout
+  after reviewing the tracking and shipment details. Items damaged during transit may also
+  qualify for the quoted payout when the package was reasonably and securely packed. Damage
+  caused by inadequate packaging may not be covered. If tracking does not show USPS acceptance,
+  we may request a drop-off receipt or other proof of shipment.
+</Callout>
           </section>
 
           <section id="prohibited" className="scroll-mt-8">
@@ -336,11 +345,13 @@ export default function TermsPage() {
           <section id="liability" className="scroll-mt-8">
             <SectionHeading n="11" title="Limitation of liability" />
             <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-              Our liability is limited to the value of accepted items only. We are not responsible for
-              items lost in transit, items damaged due to improper packaging, or any indirect or
-              consequential damages. Our maximum liability will not exceed the total amount paid for
-              your accepted items.
-            </p>
+  Our liability is limited to the quoted value of eligible items. For shipments where USPS
+  tracking confirms carrier acceptance, we may provide payment for items that are confirmed
+  lost in transit or damaged during normal transportation, subject to review of the shipment
+  and tracking details. We are not responsible for loss occurring before carrier acceptance,
+  damage caused by inadequate packaging, or any indirect or consequential damages. Our
+  maximum liability will not exceed the quoted payout for the affected items.
+</p>
           </section>
 
           <section id="ip" className="scroll-mt-8">
@@ -453,7 +464,7 @@ export default function TermsPage() {
         {/* ---------- Kapanis ---------- */}
         <div className="mt-14 rounded-2xl border border-slate-200 bg-white px-6 py-6 shadow-sm">
         <p className="text-sm font-semibold text-slate-900">
-            Effective <time dateTime="2026-08-18">August 18, 2026</time>
+            Effective <time dateTime="2026-09-08">September 8, 2026</time>
           </p>
           <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
             By submitting items to our platform, you acknowledge that you have read, understood, and
