@@ -173,7 +173,7 @@ export default function TermsPage() {
                 </>,
                 "Ensure items have no writing, highlighting, markings, or damage",
                 "Package items securely using appropriate materials",
-                "Ship items within 30 days of receiving prepaid shipping labels",
+                "Ship items within 10 days of receiving prepaid shipping labels",
                 "Provide accurate package dimensions and weight information",
               ]}
             />
@@ -217,8 +217,9 @@ export default function TermsPage() {
               ]}
             />
             <Callout tone="danger" label="Important">
-              Items that do not meet our condition standards will not be paid for and will be sent
-              directly to recycling. We do not return rejected items under any circumstances.
+            Except for verified transit damage covered under our shipping policy, items that do not
+meet our condition standards will not be paid for and will be sent directly to recycling.
+We do not return rejected items under any circumstances.
             </Callout>
             <Link
               href="/condition-guidelines"
