@@ -474,7 +474,19 @@ export async function POST(request: NextRequest) {
     const cachedResult = await productCache.getFromCache(cleanCode);
     console.log(`⏱️ cacheRead=${Date.now() - cacheReadStart}ms`);
     if (cachedResult) {
-      console.log(`Cache hit: ${cleanCode}`);
+      const cachedProduct: any = cachedResult.product;
+      const cachedPricing: any = cachedResult.pricing;
+    
+      console.log(
+        `⚡ CACHE HIT: ${cleanCode} | ` +
+        `Price: $${cachedProduct?.price ?? 0} (${cachedProduct?.priceType || 'unknown'}) | ` +
+        `Rank: ${cachedProduct?.sales_rank ?? 0} | ` +
+        `Category: ${cachedProduct?.category || 'Unknown'} | ` +
+        `Binding: ${cachedProduct?.binding || 'N/A'} | ` +
+        `Type: ${cachedProduct?.type || 'N/A'} | ` +
+        `Status: ${cachedPricing?.accepted ? 'ACCEPTED' : 'REJECTED'} | ` +
+        `Offer: ${cachedPricing?.accepted && cachedPricing?.ourPrice != null ? `$${cachedPricing.ourPrice}` : 'N/A'}`
+      );
       return NextResponse.json({
         success: true,
         data: {
@@ -611,8 +623,16 @@ after(async () => {
     const speedLabel = totalTime < 1000 ? 'ULTRA FAST' : totalTime < 2000 ? 'FAST' : 'NORMAL';
     console.log(`[${speedLabel}] ${totalTime}ms - Keepa lookup (${debugInfo.lookupType})`);
     
-    console.log(`💰 Price: $${priceAnalysis.price} (${priceAnalysis.bestCondition}) | Rank: ${salesRank} | Category: ${category} | Binding: ${product.binding} | Type: ${product.type}`);
-    console.log(`💰 Price: $${priceAnalysis.price} (${priceAnalysis.bestCondition}) | Rank: ${salesRank} | Category: ${category} | Binding: ${product.binding} | Type: ${product.type}`);
+    console.log(
+      `💰 KEEPA: ${cleanCode} | ` +
+      `Price: $${priceAnalysis.price} (${priceAnalysis.bestCondition}) | ` +
+      `Rank: ${salesRank} | ` +
+      `Category: ${category} | ` +
+      `Binding: ${product.binding || 'N/A'} | ` +
+      `Type: ${product.type || 'N/A'} | ` +
+      `Status: ${pricingResult.accepted ? 'ACCEPTED' : 'REJECTED'} | ` +
+      `Offer: ${pricingResult.accepted && pricingResult.ourPrice != null ? `$${pricingResult.ourPrice}` : 'N/A'}`
+    );
 
     return NextResponse.json({
       success: true,

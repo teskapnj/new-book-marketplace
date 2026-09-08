@@ -282,8 +282,16 @@ export default function HomePage() {
     // --- Tek sayfa checkout ---
     const [showCheckout, setShowCheckout] = useState(false);
     const checkoutFormRef = useRef<HTMLDivElement | null>(null);
-    const barcodeSectionRef = useRef<HTMLDivElement | null>(null);
-    const barcodeSectionViewedFiredRef = useRef(false);
+const barcodeSectionRef = useRef<HTMLDivElement | null>(null);
+const barcodeInputRef = useRef<HTMLInputElement | null>(null);
+const barcodeSectionViewedFiredRef = useRef(false);
+useEffect(() => {
+  const isDesktop = window.matchMedia('(min-width: 768px)').matches;
+
+  if (isDesktop && !isCheckingAmazon && !showScanner && !showCheckout) {
+    barcodeInputRef.current?.focus();
+  }
+}, [isCheckingAmazon, showScanner, showCheckout]);
 
   // Storage state
   const [isPrivateMode, setIsPrivateMode] = useState(false);
@@ -640,7 +648,8 @@ const lastRejectedCameraCodeRef = useRef<string | null>(null);
         }
       
         setScanError(errorMessage);
-        setTimeout(() => {
+setIsbnInput("");
+setTimeout(() => {
           setScanError("");
           setAmazonResult(null);
         }, 5000);
@@ -668,6 +677,7 @@ const lastRejectedCameraCodeRef = useRef<string | null>(null);
       });
       
       setScanError(errorMessage);
+      setIsbnInput("");
       setTimeout(() => {
         setScanError("");
         setAmazonResult(null);
@@ -1373,9 +1383,10 @@ useEffect(() => {
 
             {/* Input + buton */}
             <div className="flex rounded-xl overflow-hidden border-2 border-gray-300 focus-within:border-blue-500 transition-colors">
-              <input
-                type="text"
-                value={isbnInput}
+            <input
+  ref={barcodeInputRef}
+  type="text"
+  value={isbnInput}
                 onChange={(e) => setIsbnInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && isbnInput.trim()) {
