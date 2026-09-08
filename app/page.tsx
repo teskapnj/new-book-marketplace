@@ -1745,8 +1745,8 @@ useEffect(() => {
                 </div>
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-4">Get Paid Fast</h3>
-<p className="text-gray-600 leading-relaxed">
-  After your items arrive and pass inspection, your payment is processed to your PayPal account within 2 business days.
+              <p className="text-gray-600 leading-relaxed">
+  Once your items arrive and pass inspection, payment is sent directly to your PayPal account. Most payments are sent the same day and are typically completed within 2 business days.
 </p>
             </div>
           </div>
