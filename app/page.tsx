@@ -1999,6 +1999,7 @@ useEffect(() => {
               <ul className="space-y-3">
                 <li><Link href="/help" className="text-gray-400 hover:text-white transition-colors">Help Center</Link></li>
                 <li><Link href="/contact" className="text-gray-400 hover:text-white transition-colors">Contact Us</Link></li>
+                <li><Link href="/about" className="text-gray-400 hover:text-white transition-colors">About Us</Link></li>
                 <li><Link href="/terms" className="text-gray-400 hover:text-white transition-colors">Terms of Service</Link></li>
                 <li><Link href="/privacy-policy" className="text-gray-400 hover:text-white transition-colors">Privacy Policy</Link></li>
               </ul>
