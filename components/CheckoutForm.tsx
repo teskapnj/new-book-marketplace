@@ -243,7 +243,13 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
       return false;
     }
     if (!shippingInfo.paypalAccount.trim()) {
-      setShippingError("Please enter your PayPal account email");
+      setShippingError(
+        shippingInfo.paymentMethod === "venmo"
+          ? "Please enter your Venmo username"
+          : shippingInfo.paymentMethod === "paypal"
+            ? "Please enter your PayPal account email"
+            : "Please select PayPal or Venmo"
+      );
       return false;
     }
     if (
