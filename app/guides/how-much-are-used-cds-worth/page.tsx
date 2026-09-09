@@ -462,16 +462,29 @@ export default function CdValueGuide() {
               ))}
             </dl>
           </section>
-          <p className="mt-6 text-[16px] leading-relaxed text-slate-600">
-  Have a CD in front of you? Learn how to{" "}
-  <Link
-    href="/guides/media-value-by-barcode"
-    className="font-semibold text-blue-600 hover:text-blue-800"
-  >
-    check CD value using the barcode
-  </Link>
-  .
-</p>
+          <div className="mt-6 space-y-3 text-[16px] leading-relaxed text-slate-600">
+  <p>
+    Have a CD in front of you? Learn how to{" "}
+    <Link
+      href="/guides/media-value-by-barcode"
+      className="font-semibold text-blue-600 hover:text-blue-800"
+    >
+      check CD value using the barcode
+    </Link>
+    .
+  </p>
+
+  <p>
+    Have hundreds of CDs? Read our{" "}
+    <Link
+      href="/guides/how-to-sell-a-cd-collection"
+      className="font-semibold text-blue-600 hover:text-blue-800"
+    >
+      guide to selling a large CD collection
+    </Link>
+    .
+  </p>
+</div>
 
           <RelatedGuides currentSlug="how-much-are-used-cds-worth" />
 

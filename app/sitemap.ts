@@ -123,6 +123,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.9,
     },
+    {
+      url: 'https://www.sellbookmedia.com/guides/how-to-sell-a-cd-collection',
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
 
     // ✅ SUPPORT & POLICY PAGES
     {

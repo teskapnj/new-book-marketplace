@@ -9,7 +9,8 @@ const ALL_GUIDES = [
   { slug: "decluttr-shut-down-alternative", title: "Best Decluttr Alternative" },
   { slug: "what-to-do-with-old-dvds-and-cds", title: "What to Do With Old DVDs and CDs" },
   { slug: "how-much-are-used-cds-worth", title: "How Much Are Used CDs Worth?" },
-];
+  { slug: "how-to-sell-a-cd-collection", title: "How to Sell a Large CD Collection" },
+  ];
 
 export default function RelatedGuides({ currentSlug }: { currentSlug: string }) {
   const others = ALL_GUIDES.filter((g) => g.slug !== currentSlug);
