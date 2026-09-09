@@ -1352,7 +1352,9 @@ useEffect(() => {
           Turn Your Books, CDs, DVDs &amp; Games Into Cash
           </h1>
           <p className="text-base sm:text-lg text-blue-100 mb-6 sm:mb-8">
-          Scan the barcode and see our cash offer instantly. Shipping is free, payment is sent via PayPal, and there&apos;s no app to download.
+          <p className="text-base sm:text-lg text-blue-100 mb-6 sm:mb-8">
+  Scan the barcode and see our cash offer instantly. Shipping is free, payment is sent via PayPal or Venmo, and there&apos;s no app to download.
+</p>
           </p>
 
           {/* ---------- QUOTE BOX (solid white - mordan net ayrilir) ---------- */}
@@ -1425,9 +1427,9 @@ useEffect(() => {
       Free Shipping
     </span>
     <span className="flex items-center gap-1">
-      <CheckIcon size={14} className="text-green-600" />
-      PayPal Payment
-    </span>
+  <CheckIcon size={14} className="text-green-600" />
+  PayPal & Venmo
+</span>
     <span className="flex items-center gap-1">
       <CheckIcon size={14} className="text-green-600" />
       No Seller Fees
@@ -1686,10 +1688,10 @@ useEffect(() => {
 <div className="text-xl sm:text-2xl font-bold text-gray-900">INSTANT</div>
 <div className="text-xs sm:text-sm text-gray-500 mt-1">Cash Offers</div>
 </div>
-          <div className="py-5 sm:py-6 text-center">
-            <div className="text-xl sm:text-2xl font-bold text-gray-900">PayPal</div>
-            <div className="text-xs sm:text-sm text-gray-500 mt-1">Fast payment</div>
-          </div>
+<div className="py-5 sm:py-6 text-center">
+  <div className="text-xl sm:text-2xl font-bold text-gray-900">PayPal & Venmo</div>
+  <div className="text-xs sm:text-sm text-gray-500 mt-1">Fast payment</div>
+</div>
           <div className="py-5 sm:py-6 text-center">
             <div className="text-xl sm:text-2xl font-bold text-gray-900">No app</div>
             <div className="text-xs sm:text-sm text-gray-500 mt-1">Works in browser</div>
@@ -1745,8 +1747,8 @@ useEffect(() => {
                 </div>
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-4">Get Paid Fast</h3>
-              <p className="text-gray-600 leading-relaxed">
-  Once your items arrive and pass inspection, payment is sent directly to your PayPal account. Most payments are sent the same day and are typically completed within 2 business days.
+<p className="text-gray-600 leading-relaxed">
+  Once your items arrive and pass inspection, payment is sent directly through PayPal or Venmo. Most payments are sent the same day and are typically completed within 2 business days.
 </p>
             </div>
           </div>

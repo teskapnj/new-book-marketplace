@@ -55,6 +55,7 @@ interface ShippingInfo {
   lastName: string;
   address: Address;
   packageDimensions: PackageDimensions;
+  paymentMethod: "" | "paypal" | "venmo";
   paypalAccount: string;
 }
 
@@ -69,6 +70,7 @@ interface CheckoutFormProps {
 const EMPTY_SHIPPING: ShippingInfo = {
   firstName: "",
   lastName: "",
+  paymentMethod: "",
   paypalAccount: "",
   address: { street: "", city: "", state: "", zip: "", country: "US" },
   packageDimensions: { length: 0, width: 0, height: 0, weight: 0 }
@@ -128,6 +130,10 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
           setShippingInfo({
             firstName: typeof s.firstName === "string" ? s.firstName : "",
             lastName: typeof s.lastName === "string" ? s.lastName : "",
+            paymentMethod:
+              s.paymentMethod === "paypal" || s.paymentMethod === "venmo"
+                ? s.paymentMethod
+                : "",
             paypalAccount: typeof s.paypalAccount === "string" ? s.paypalAccount : "",
             address: {
               street: s.address?.street || "",
@@ -240,7 +246,10 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
       setShippingError("Please enter your PayPal account email");
       return false;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shippingInfo.paypalAccount)) {
+    if (
+      shippingInfo.paymentMethod === "paypal" &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shippingInfo.paypalAccount)
+    ) {
       setShippingError("Please enter a valid PayPal email address");
       return false;
     }
@@ -396,7 +405,11 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
         shippingInfo: {
           firstName: DOMPurify.sanitize(shippingInfo.firstName).substring(0, 50),
           lastName: DOMPurify.sanitize(shippingInfo.lastName).substring(0, 50),
-          paypalAccount: DOMPurify.sanitize(shippingInfo.paypalAccount).substring(0, 254),
+          paypalAccount: DOMPurify.sanitize(
+            shippingInfo.paymentMethod === "venmo"
+              ? `VENMO: ${shippingInfo.paypalAccount}`
+              : shippingInfo.paypalAccount
+          ).substring(0, 254),
           address: {
             street: DOMPurify.sanitize(shippingInfo.address.street).substring(0, 200),
             city: DOMPurify.sanitize(shippingInfo.address.city).substring(0, 100),
@@ -433,7 +446,10 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
         body: JSON.stringify({
           sellerName,
           sellerEmail: user.email || "",
-          paypalEmail: shippingInfo.paypalAccount,
+          paypalEmail:
+          shippingInfo.paymentMethod === "venmo"
+            ? `VENMO: ${shippingInfo.paypalAccount}`
+            : shippingInfo.paypalAccount,
           totalItems,
           totalValue,
           totalAmazonValue,
@@ -544,15 +560,80 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
         </div>
       </div>
 
-      {/* PayPal */}
-      <div className="border-t border-gray-100 pt-5">
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">Where should we send your money?</h3>
-        <p className="text-sm text-gray-500 mb-3">  Enter the email address linked to your PayPal account. Payment is sent within 2 business days after your items pass our check.
-        </p>
-        <input type="email" value={shippingInfo.paypalAccount}
-          onChange={e => handlePaypalChange(e.target.value)}
-          placeholder="your-paypal-email@example.com" className={inputClass} />
-      </div>
+      {/* Payment */}
+<div className="border-t border-gray-100 pt-5">
+  <h3 className="text-lg font-semibold text-gray-900 mb-3">
+    How would you like to get paid?
+  </h3>
+
+  <div className="grid grid-cols-2 gap-3 mb-4">
+    <button
+      type="button"
+      onClick={() =>
+        setShippingInfo(prev => ({
+          ...prev,
+          paymentMethod: "paypal",
+          paypalAccount: ""
+        }))
+      }
+      className={`rounded-lg border px-4 py-3 text-sm font-semibold transition-all ${
+        shippingInfo.paymentMethod === "paypal"
+          ? "border-blue-600 bg-blue-50 text-blue-700"
+          : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+      }`}
+    >
+      PayPal
+    </button>
+
+    <button
+      type="button"
+      onClick={() =>
+        setShippingInfo(prev => ({
+          ...prev,
+          paymentMethod: "venmo",
+          paypalAccount: ""
+        }))
+      }
+      className={`rounded-lg border px-4 py-3 text-sm font-semibold transition-all ${
+        shippingInfo.paymentMethod === "venmo"
+          ? "border-blue-600 bg-blue-50 text-blue-700"
+          : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+      }`}
+    >
+      Venmo
+    </button>
+  </div>
+
+  {shippingInfo.paymentMethod === "paypal" && (
+    <>
+      <p className="text-sm text-gray-500 mb-3">
+        Enter the email address linked to your PayPal account.
+      </p>
+      <input
+        type="email"
+        value={shippingInfo.paypalAccount}
+        onChange={e => handlePaypalChange(e.target.value)}
+        placeholder="your-paypal-email@example.com"
+        className={inputClass}
+      />
+    </>
+  )}
+
+  {shippingInfo.paymentMethod === "venmo" && (
+    <>
+      <p className="text-sm text-gray-500 mb-3">
+        Enter your Venmo username.
+      </p>
+      <input
+        type="text"
+        value={shippingInfo.paypalAccount}
+        onChange={e => handlePaypalChange(e.target.value)}
+        placeholder="@username"
+        className={inputClass}
+      />
+    </>
+  )}
+</div>
 
       {/* Kutu */}
       <div className="border-t border-gray-100 pt-5">
