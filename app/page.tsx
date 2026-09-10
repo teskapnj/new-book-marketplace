@@ -1227,7 +1227,7 @@ useEffect(() => {
               {mobileMenuOpen ? <XIcon size={24} /> : <MenuIcon size={24} />}
             </button>
             <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              SellBook Media
+              SellBookMedia
             </Link>
             <div className="flex items-center space-x-2">
               {userRole === UserRole.BUYER && (
@@ -1343,52 +1343,55 @@ useEffect(() => {
       </header>
 
    {/* ===================== HERO + SCAN ===================== */}
-   <section id="quote" className="relative py-10 sm:py-12 overflow-hidden scroll-mt-24">
+   <section id="quote" className="relative py-8 sm:py-14 overflow-hidden scroll-mt-24">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700"></div>
         <div className="absolute inset-0 bg-black/20"></div>
 
         <div className="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-3xl sm:text-5xl font-bold text-white mb-3 sm:mb-4 leading-tight">
-          Turn Your Books, CDs, DVDs &amp; Games Into Cash
-          </h1>
-          <p className="text-base sm:text-lg text-blue-100 mb-6 sm:mb-8">
-          <p className="text-base sm:text-lg text-blue-100 mb-6 sm:mb-8">
-  Scan the barcode and see our cash offer instantly. Shipping is free, payment is sent via PayPal or Venmo, and there&apos;s no app to download.
-</p>
+          <p className="text-xs sm:text-sm font-semibold tracking-[0.16em] text-blue-100 mb-2 sm:mb-3">
+            SELL BOOKS, CDs, DVDs &amp; GAMES ONLINE
           </p>
 
-          {/* ---------- QUOTE BOX (solid white - mordan net ayrilir) ---------- */}
+          <h1 className="text-3xl sm:text-5xl font-bold text-white mb-3 sm:mb-4 leading-tight">
+            Turn Your Books, CDs, DVDs &amp; Games Into Cash
+          </h1>
+
+          <p className="text-base sm:text-lg text-blue-100 mb-5 sm:mb-7 max-w-2xl mx-auto leading-relaxed">
+            Scan your barcode, see our cash offer, and skip the listings, buyer messages, and waiting.
+            Shipping is free with our prepaid label. Choose PayPal or Venmo for payment.
+          </p>
+
+          {/* ---------- QUOTE BOX ---------- */}
           <div
             ref={barcodeSectionRef}
-            className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6"
+            className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6 max-w-2xl mx-auto"
           >
+            {/* Mobile camera button */}
+            <div className="md:hidden">
+              <button
+                type="button"
+                onClick={handleScanBarcode}
+                disabled={isCheckingAmazon}
+                className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl py-5 shadow-md active:scale-[0.99] transition-transform disabled:opacity-60"
+              >
+                <CameraIcon size={36} className="text-white mx-auto mb-1.5" />
+                <span className="block text-xl font-extrabold text-white">Scan Barcode</span>
+                <span className="block text-sm font-medium text-white/90 mt-0.5">
+                  Opens your camera
+                </span>
+              </button>
 
-           {/* Mobil: kamera butonu - isMounted beklenir, yoksa masaustu/mobil gecisi goruluyor */}
-           <div className="md:hidden">
-  <button
-    type="button"
-    onClick={handleScanBarcode}
-    disabled={isCheckingAmazon}
-    className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl py-6 shadow-md active:scale-95 transition-transform disabled:opacity-60"
-  >
-    <CameraIcon size={40} className="text-white mx-auto mb-2" />
-    <span className="block text-xl font-extrabold text-white">Scan Barcode</span>
-    <span className="block text-sm font-medium text-white/85 mt-0.5">
-      Opens your camera
-    </span>
-  </button>
+              <div className="text-xs font-medium uppercase tracking-[0.14em] text-gray-400 my-3">
+                or enter barcode manually
+              </div>
+            </div>
 
-  <div className="text-sm text-gray-500 my-3">
-  or enter barcode manually
-</div>
-</div>
-
-            {/* Input + buton */}
-            <div className="flex rounded-xl overflow-hidden border-2 border-gray-300 focus-within:border-blue-500 transition-colors">
-            <input
-  ref={barcodeInputRef}
-  type="text"
-  value={isbnInput}
+            {/* Manual entry */}
+            <div className="flex rounded-xl overflow-hidden border-2 border-gray-300 focus-within:border-blue-500 transition-colors bg-white">
+              <input
+                ref={barcodeInputRef}
+                type="text"
+                value={isbnInput}
                 onChange={(e) => setIsbnInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && isbnInput.trim()) {
@@ -1396,7 +1399,7 @@ useEffect(() => {
                     handleBarcodeScanned(isbnInput.trim());
                   }
                 }}
-                placeholder="Enter barcode"
+                placeholder="Enter ISBN, UPC or barcode"
                 disabled={isCheckingAmazon}
                 className="flex-1 min-w-0 px-4 sm:px-5 py-3 sm:py-4 text-base border-0 focus:ring-0 outline-none text-gray-900 bg-white"
               />
@@ -1415,33 +1418,33 @@ useEffect(() => {
                 )}
               </button>
             </div>
+
             <p className="mt-2 text-sm text-gray-500 hidden md:block">
-  Tip: Barcode camera scanning works on mobile phones.
-</p>
-          
+              Tip: Camera barcode scanning is available on mobile phones.
+            </p>
 
-<div className="mt-4 pt-4 border-t border-gray-100">
-  <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs sm:text-sm text-gray-600">
-    <span className="flex items-center gap-1">
-      <CheckIcon size={14} className="text-green-600" />
-      Free Shipping
-    </span>
-    <span className="flex items-center gap-1">
-  <CheckIcon size={14} className="text-green-600" />
-  PayPal & Venmo
-</span>
-    <span className="flex items-center gap-1">
-      <CheckIcon size={14} className="text-green-600" />
-      No Seller Fees
-    </span>
-    <span className="flex items-center gap-1">
-      <CheckIcon size={14} className="text-green-600" />
-      No App Required
-    </span>
-  </div>
-
-
-</div>
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  ["Free", "Prepaid shipping"],
+                  ["Instant", "Cash offers"],
+                  ["PayPal + Venmo", "Payment choice"],
+                  ["No fees", "Seller fees"],
+                ].map(([title, subtitle]) => (
+                  <div
+                    key={title}
+                    className="min-h-[68px] rounded-xl bg-slate-50 border border-gray-100 px-2 py-2.5 flex flex-col items-center justify-center"
+                  >
+                    <div className="text-sm sm:text-base font-extrabold text-gray-900 leading-tight">
+                      {title}
+                    </div>
+                    <div className="mt-1 text-xs sm:text-sm text-gray-500 leading-tight">
+                      {subtitle}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -1679,192 +1682,417 @@ useEffect(() => {
 
       {/* ===================== TRUST STRIP ===================== */}
       <section className="bg-white border-b border-gray-100">
-        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-gray-100">
-        <div className="py-5 sm:py-6 text-center">
-  <div className="text-xl sm:text-2xl font-bold text-gray-900">FREE</div>
-  <div className="text-xs sm:text-sm text-gray-500 mt-1">Prepaid Label by Email</div>
-</div>
-<div className="py-5 sm:py-6 text-center">
-<div className="text-xl sm:text-2xl font-bold text-gray-900">INSTANT</div>
-<div className="text-xs sm:text-sm text-gray-500 mt-1">Cash Offers</div>
-</div>
-<div className="py-5 sm:py-6 text-center">
-  <div className="text-xl sm:text-2xl font-bold text-gray-900">PayPal & Venmo</div>
-  <div className="text-xs sm:text-sm text-gray-500 mt-1">Fast payment</div>
-</div>
-          <div className="py-5 sm:py-6 text-center">
-            <div className="text-xl sm:text-2xl font-bold text-gray-900">No app</div>
-            <div className="text-xs sm:text-sm text-gray-500 mt-1">Works in browser</div>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="py-5 sm:py-6 grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-4 text-center">
+            <div>
+              <div className="text-sm sm:text-base font-bold text-gray-900">Happy Customers</div>
+              <div className="text-xs sm:text-sm text-gray-500 mt-1">A simple, direct buyback experience</div>
+            </div>
+            <div>
+              <div className="text-sm sm:text-base font-bold text-gray-900">Know Your Offer First</div>
+              <div className="text-xs sm:text-sm text-gray-500 mt-1">Before you ship</div>
+            </div>
+            <div>
+              <div className="text-sm sm:text-base font-bold text-gray-900">No Marketplace Listings</div>
+              <div className="text-xs sm:text-sm text-gray-500 mt-1">No photos or buyer messages</div>
+            </div>
+            <div>
+              <div className="text-sm sm:text-base font-bold text-gray-900">No App Required</div>
+              <div className="text-xs sm:text-sm text-gray-500 mt-1">Scan in your browser</div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* ===================== HOW IT WORKS ===================== */}
-      <section className="py-16 sm:py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">How It Works</h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Start selling your used media in three simple steps
+      <section className="py-14 sm:py-20 bg-slate-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10 sm:mb-14">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">
+              Simple from quote to payout
+            </p>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-gray-900">
+              How SellBookMedia Works
+            </h2>
+            <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+              Check your items, ship qualifying media together, and get paid after inspection.
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
-            <div className="group text-center">
-              <div className="relative mb-8">
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl flex items-center justify-center mx-auto shadow-xl group-hover:shadow-2xl transition-all duration-300">
-                  <span className="text-3xl font-bold text-white">1</span>
-                </div>
-                <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <SparklesIcon size={16} className="text-yellow-600 m-auto mt-1" />
-                </div>
+
+          <div className="grid md:grid-cols-3 gap-5 sm:gap-7">
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-7 shadow-sm">
+              <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-xl">
+                1
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Scan &amp; Get Your Offer</h3>
-<p className="text-gray-600 leading-relaxed">
-  Scan or enter the ISBN, UPC, and instantly see our cash offer.
-</p>
+              <h3 className="mt-5 text-xl font-bold text-gray-900">Scan &amp; See Your Offer</h3>
+              <p className="mt-3 text-gray-600 leading-relaxed">
+                Scan or enter an ISBN, UPC, or barcode and see whether we&apos;re currently
+                buying the exact item in your hand.
+              </p>
             </div>
-            <div className="group text-center">
-              <div className="relative mb-8">
-                <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-3xl flex items-center justify-center mx-auto shadow-xl group-hover:shadow-2xl transition-all duration-300">
-                  <span className="text-3xl font-bold text-white">2</span>
-                </div>
-                <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <SparklesIcon size={16} className="text-yellow-600 m-auto mt-1" />
-                </div>
+
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-7 shadow-sm">
+              <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xl">
+                2
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Ship for Free</h3>
-<p className="text-gray-600 leading-relaxed">
-  Submit your order and receive a prepaid shipping label by email.
-</p>
+              <h3 className="mt-5 text-xl font-bold text-gray-900">Ship for Free</h3>
+              <p className="mt-3 text-gray-600 leading-relaxed">
+                Build an order of accepted items, submit once your offer reaches $7.50,
+                and use the prepaid shipping label we email you.
+              </p>
             </div>
-            <div className="group text-center">
-              <div className="relative mb-8">
-                <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-purple-600 rounded-3xl flex items-center justify-center mx-auto shadow-xl group-hover:shadow-2xl transition-all duration-300">
-                  <span className="text-3xl font-bold text-white">3</span>
-                </div>
-                <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <SparklesIcon size={16} className="text-yellow-600 m-auto mt-1" />
-                </div>
+
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-7 shadow-sm">
+              <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold text-xl">
+                3
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Get Paid Fast</h3>
-<p className="text-gray-600 leading-relaxed">
-  Once your items arrive and pass inspection, payment is sent directly through PayPal or Venmo. Most payments are sent the same day and are typically completed within 2 business days.
-</p>
+              <h3 className="mt-5 text-xl font-bold text-gray-900">Choose PayPal or Venmo</h3>
+              <p className="mt-3 text-gray-600 leading-relaxed">
+                After your shipment arrives and your items pass inspection, payment is sent
+                through the method you selected.
+              </p>
             </div>
           </div>
         </div>
       </section>
-      <section className="py-12 bg-white">
-  <div className="max-w-5xl mx-auto px-4 sm:px-6">
-    <div className="text-center mb-8">
-      <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
-        Sell Your Media for Cash
-      </h2>
-      <p className="mt-2 text-gray-600">
-        Learn more about what we buy and how to sell your collection.
-      </p>
-    </div>
 
-    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-    <Link
-  href="/sell-books-for-cash"
-  className="block rounded-2xl border border-gray-200 bg-gray-50 p-6 hover:border-blue-300 hover:shadow-md transition-all"
->
-  <div className="text-3xl mb-3">📚</div>
+      {/* ===================== WHY SELLBOOKMEDIA ===================== */}
+      <section className="py-14 sm:py-20 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-[0.9fr_1.1fr] gap-8 lg:gap-12 items-center">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">
+                A simpler alternative to listing everything yourself
+              </p>
+              <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-gray-900 leading-tight">
+                Sell Used Media Without Turning It Into a Second Job
+              </h2>
+              <p className="mt-5 text-lg text-gray-600 leading-relaxed">
+                SellBookMedia is a direct buyback service. You see our offer before shipping,
+                so there&apos;s no need to create individual marketplace listings, take product
+                photos, negotiate with buyers, or wait for each item to sell.
+              </p>
+              <p className="mt-4 text-gray-600 leading-relaxed">
+                Books, CDs, DVDs, Blu-rays, 4K movies, and eligible video games can be combined
+                in the same order, making it easier to clear a mixed collection in one workflow.
+              </p>
+              <Link
+                href="/seller-guide"
+                className="inline-flex items-center mt-6 font-semibold text-blue-600 hover:text-blue-800"
+              >
+                See the complete seller guide
+                <ArrowRightIcon size={18} className="ml-2" />
+              </Link>
+            </div>
 
-  <h3 className="text-xl font-bold text-gray-900">
-    Sell Books for Cash
-  </h3>
+            <div className="grid sm:grid-cols-2 gap-4">
+              {[
+                {
+                  title: "Know the price first",
+                  body: "See our cash offer before you decide whether to add an item to your order.",
+                },
+                {
+                  title: "No seller fees",
+                  body: "SellBookMedia does not charge you a marketplace-style seller fee.",
+                },
+                {
+                  title: "Mixed media in one order",
+                  body: "Combine eligible books, CDs, movies, and games until you reach the minimum.",
+                },
+                {
+                  title: "Straightforward payout",
+                  body: "Choose PayPal or Venmo and receive payment after arrival and inspection.",
+                },
+              ].map((item) => (
+                <div key={item.title} className="rounded-2xl border border-gray-200 bg-slate-50 p-5 sm:p-6">
+                  <div className="w-9 h-9 rounded-full bg-green-100 text-green-700 flex items-center justify-center">
+                    <CheckIcon size={18} />
+                  </div>
+                  <h3 className="mt-4 text-lg font-bold text-gray-900">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-gray-600">{item.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
 
-  <p className="mt-2 text-sm text-gray-600">
-    Learn how to sell your used books and textbooks for cash.
-  </p>
+      {/* ===================== COLLECTION + ONE ORDER + CONDITION ===================== */}
+      <section className="py-14 sm:py-20 bg-slate-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">
+              Built for real clean-outs
+            </p>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-gray-900">
+              From One Shelf to a Whole Collection
+            </h2>
+            <p className="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">
+              Start with a few items or work through a larger collection at your own pace.
+              Scan each barcode, keep the offers you want, and build one straightforward order.
+            </p>
+          </div>
 
-  <span className="inline-flex items-center mt-4 font-semibold text-blue-600">
-    Learn More
-    <ArrowRightIcon size={18} className="ml-2" />
-  </span>
-</Link>
-      <Link
-        href="/sell-dvds-for-cash"
-        className="block rounded-2xl border border-gray-200 bg-gray-50 p-6 hover:border-blue-300 hover:shadow-md transition-all"
-      >
-        <div className="text-3xl mb-3">📀</div>
-        <h3 className="text-xl font-bold text-gray-900">
-          Sell DVDs, Blu-rays &amp; 4K
-        </h3>
-        <p className="mt-2 text-sm text-gray-600">
-          Learn how to sell your used movies for cash.
-        </p>
-        <span className="inline-flex items-center mt-4 font-semibold text-blue-600">
-          Learn More
-          <ArrowRightIcon size={18} className="ml-2" />
-        </span>
-      </Link>
+          <div className="grid md:grid-cols-3 gap-5">
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="text-3xl">📦</div>
+              <h3 className="mt-4 text-xl font-bold text-gray-900">
+                Clearing Out a Shelf, Closet or Collection?
+              </h3>
+              <p className="mt-3 text-gray-600 leading-relaxed">
+                There&apos;s no need to photograph and list every item one by one. Scan what you have,
+                see which items qualify, and keep building your order as you go.
+              </p>
+              <Link
+                href="/seller-guide"
+                className="inline-flex items-center mt-5 text-sm font-semibold text-blue-600 hover:text-blue-800"
+              >
+                See the seller guide
+                <ArrowRightIcon size={16} className="ml-1.5" />
+              </Link>
+            </div>
 
-      <Link
-        href="/sell-cds-for-cash"
-        className="block rounded-2xl border border-gray-200 bg-gray-50 p-6 hover:border-blue-300 hover:shadow-md transition-all"
-      >
-        <div className="text-3xl mb-3">💿</div>
-        <h3 className="text-xl font-bold text-gray-900">
-          Sell CDs for Cash
-        </h3>
-        <p className="mt-2 text-sm text-gray-600">
-          Learn how to sell your used CDs and music collection.
-        </p>
-        <span className="inline-flex items-center mt-4 font-semibold text-blue-600">
-          Learn More
-          <ArrowRightIcon size={18} className="ml-2" />
-        </span>
-      </Link>
-      <Link
-  href="/sell-video-games-for-cash"
-  className="block rounded-2xl border border-gray-200 bg-gray-50 p-6 hover:border-blue-300 hover:shadow-md transition-all"
->
-  <div className="text-3xl mb-3">🎮</div>
+            <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
+              <div className="text-3xl">📚💿📀🎮</div>
+              <h3 className="mt-4 text-xl font-bold text-gray-900">
+                One Order. Different Media.
+              </h3>
+              <p className="mt-3 text-gray-600 leading-relaxed">
+                Combine eligible books, CDs, DVDs, Blu-rays, 4K movies, and video games in the same order.
+                Once your accepted total reaches $7.50, submit the order and use your prepaid label.
+              </p>
+              <a
+                href="#quote"
+                className="inline-flex items-center mt-5 text-sm font-semibold text-blue-600 hover:text-blue-800"
+              >
+                Start scanning
+                <ArrowRightIcon size={16} className="ml-1.5" />
+              </a>
+            </div>
 
-  <h3 className="text-xl font-bold text-gray-900">
-    Sell Video Games for Cash
-  </h3>
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="text-3xl">✅</div>
+              <h3 className="mt-4 text-xl font-bold text-gray-900">
+                What Condition Should My Items Be In?
+              </h3>
+              <p className="mt-3 text-gray-600 leading-relaxed">
+                Condition matters when your shipment is inspected. Before shipping, review our guidelines
+                for books, discs, cases, artwork, inserts, and complete sets.
+              </p>
+              <Link
+                href="/condition-guidelines"
+                className="inline-flex items-center mt-5 text-sm font-semibold text-blue-600 hover:text-blue-800"
+              >
+                View condition guidelines
+                <ArrowRightIcon size={16} className="ml-1.5" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
 
-  <p className="mt-2 text-sm text-gray-600">
-    Learn how to sell your used video games for cash.
-  </p>
+      {/* ===================== DIRECT BUYBACK VS MARKETPLACE ===================== */}
+      <section className="py-14 sm:py-20 bg-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">
+              Skip the marketplace hassle
+            </p>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-gray-900">
+              SellBookMedia vs. Listing Items Yourself
+            </h2>
+            <p className="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">
+              Marketplaces can make sense for truly collectible items. SellBookMedia is built for sellers
+              who would rather see an offer now and avoid turning every item into a separate sale.
+            </p>
+          </div>
 
-  <span className="inline-flex items-center mt-4 font-semibold text-blue-600">
-    Learn More
-    <ArrowRightIcon size={18} className="ml-2" />
-  </span>
-</Link>
-    </div>
-  </div>
-</section>
+          <div className="overflow-hidden rounded-2xl border border-gray-200 shadow-sm">
+            <div className="grid grid-cols-3 bg-slate-900 text-white text-xs sm:text-base font-semibold">
+              <div className="p-3 sm:p-5">What changes?</div>
+              <div className="p-3 sm:p-5 border-l border-white/10">SellBookMedia</div>
+              <div className="p-3 sm:p-5 border-l border-white/10">Marketplace</div>
+            </div>
+
+            {[
+              ["Knowing your price", "See our cash offer first", "Set a price and wait for a buyer"],
+              ["Creating listings", "No individual listing to create", "Create listings item by item"],
+              ["Photos & messages", "No product photos or buyer messages", "Often part of the selling process"],
+              ["Shipping", "Use the prepaid label for your submitted order", "Usually ship each sale separately"],
+              ["Seller fees", "No SellBookMedia seller fees", "Marketplace fees may apply"],
+            ].map((row, index) => (
+              <div
+                key={row[0]}
+                className={`grid grid-cols-3 text-[11px] sm:text-sm ${index % 2 === 0 ? "bg-white" : "bg-slate-50"}`}
+              >
+                <div className="p-3 sm:p-5 font-semibold text-gray-900 leading-relaxed">{row[0]}</div>
+                <div className="p-3 sm:p-5 border-l border-gray-200 text-gray-700 leading-relaxed">{row[1]}</div>
+                <div className="p-3 sm:p-5 border-l border-gray-200 text-gray-600 leading-relaxed">{row[2]}</div>
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-5 text-sm text-gray-500 text-center">
+            Have something rare or collectible? Comparing recent sold listings can still be worthwhile.
+            For everyday used media, direct buyback is designed to keep the process simple.
+          </p>
+        </div>
+      </section>
+
+      {/* ===================== CATEGORY LANDING PAGES ===================== */}
+      <section className="py-14 sm:py-20 bg-slate-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">
+              What we buy
+            </p>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-gray-900">
+              Sell Your Media for Cash
+            </h2>
+            <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+              Choose a category to learn what affects value, what we accept, and how to get an instant quote.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {[
+              {
+                href: "/sell-books-for-cash",
+                icon: "📚",
+                title: "Sell Books for Cash",
+                body: "Check used books and textbooks by ISBN and see your current cash offer.",
+              },
+              {
+                href: "/sell-dvds-for-cash",
+                icon: "📀",
+                title: "Sell DVDs, Blu-rays & 4K",
+                body: "Check movies, box sets, Blu-rays, and 4K UHD releases by barcode.",
+              },
+              {
+                href: "/sell-cds-for-cash",
+                icon: "💿",
+                title: "Sell CDs for Cash",
+                body: "Check used CDs, box sets, imports, and music collections by UPC.",
+              },
+              {
+                href: "/sell-video-games-for-cash",
+                icon: "🎮",
+                title: "Sell Video Games for Cash",
+                body: "Check eligible PlayStation, Xbox, Nintendo, GameCube, and retro games.",
+              },
+            ].map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="group block rounded-2xl border border-gray-200 bg-white p-6 hover:border-blue-300 hover:shadow-md transition-all"
+              >
+                <div className="text-3xl">{item.icon}</div>
+                <h3 className="mt-4 text-xl font-bold text-gray-900 group-hover:text-blue-700">
+                  {item.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-gray-600">{item.body}</p>
+                <span className="inline-flex items-center mt-5 font-semibold text-blue-600">
+                  Learn More
+                  <ArrowRightIcon size={18} className="ml-2" />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===================== GUIDES ===================== */}
+      <section className="py-14 sm:py-20 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">
+              Helpful resources
+            </p>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-gray-900">
+              Selling &amp; Value Guides
+            </h2>
+            <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+              Learn how to identify the exact item you own, understand what can affect value,
+              and choose the easiest way to sell a collection.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[
+              {
+                href: "/guides/how-to-find-book-value-by-isbn",
+                title: "Find Book Value by ISBN",
+                body: "Use the ISBN to identify the exact book edition before checking its value.",
+              },
+              {
+                href: "/guides/media-value-by-barcode",
+                title: "Find Media Value by Barcode",
+                body: "See why the exact UPC matters for CDs, DVDs, Blu-rays, 4K movies, and games.",
+              },
+              {
+                href: "/guides/how-much-are-used-books-worth",
+                title: "How Much Are Used Books Worth?",
+                body: "Learn what can affect the value of used books and textbooks.",
+              },
+              {
+                href: "/guides/how-much-are-used-dvds-worth",
+                title: "How Much Are Used DVDs Worth?",
+                body: "See how format, edition, condition, and demand can affect DVD value.",
+              },
+              {
+                href: "/guides/how-much-are-used-cds-worth",
+                title: "How Much Are Used CDs Worth?",
+                body: "Learn which CD releases may be more worth checking and why.",
+              },
+              {
+                href: "/guides/best-places-to-sell-cds-dvds-games",
+                title: "Best Places to Sell Used Media",
+                body: "Compare direct buyback, marketplaces, and other ways to sell physical media.",
+              },
+            ].map((guide) => (
+              <Link
+                key={guide.href}
+                href={guide.href}
+                className="group rounded-2xl border border-gray-200 bg-white p-6 hover:border-blue-300 hover:shadow-md transition-all"
+              >
+                <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-700">
+                  {guide.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-gray-600">{guide.body}</p>
+                <span className="inline-flex items-center mt-4 text-sm font-semibold text-blue-600">
+                  Read guide
+                  <ArrowRightIcon size={16} className="ml-1.5" />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* ===================== CTA ===================== */}
       <section className="py-16 sm:py-20 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 relative overflow-hidden">
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6"> Ready to Turn Your Old Media Into Cash?</h2>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-5">Ready to See What Your Media Is Worth?</h2>
           <p className="text-xl sm:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto leading-relaxed">
-          Scan your first barcode and see what your books, CDs, DVDs, and games are worth.
+            Scan your first barcode for an instant cash offer. No app, no marketplace listing, and no seller fees.
           </p>
-          <div className="mt-12 flex flex-wrap justify-center gap-6 sm:gap-8 text-blue-200">
+          <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-3 text-blue-100">
             <div className="flex items-center">
               <ShieldCheckIcon size={20} className="mr-2" />
-              <span className="text-sm sm:text-base">Free Shipping</span>
+              <span className="text-sm sm:text-base">Free prepaid shipping</span>
             </div>
             <div className="flex items-center">
               <PackageIcon size={20} className="mr-2" />
-              <span className="text-sm sm:text-base">No Hidden Fees</span>
+              <span className="text-sm sm:text-base">PayPal or Venmo</span>
             </div>
             <div className="flex items-center">
               <TrendingUpIcon size={20} className="mr-2" />
-              <span className="text-sm sm:text-base">Free Quotes</span>
+              <span className="text-sm sm:text-base">$7.50 minimum order</span>
             </div>
           </div>
 
-          <div className="mt-12 flex justify-center">
+          <div className="mt-8 flex justify-center">
             {userRole === UserRole.ADMIN ? (
               <Link href="/admin/dashboard" className="inline-flex items-center px-8 py-4 bg-white text-purple-600 font-bold text-lg rounded-2xl hover:bg-gray-100 transition-all duration-300 shadow-lg">
                 <AdminIcon size={24} className="mr-3" />
@@ -1900,15 +2128,15 @@ useEffect(() => {
                 SellBookMedia
               </Link>
               <p className="text-gray-400 leading-relaxed mb-6">
-                We buy used books, CDs, DVDs, and games for cash.
-                Turn your collection into money with confidence.
+                We buy eligible books, CDs, DVDs, Blu-rays, 4K movies, and video games for cash.
+                Check your barcode first, use our free prepaid shipping label, and choose PayPal or Venmo.
               </p>
                             
              <a               
                 href="https://www.facebook.com/sellbookmedia"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="SellBook Media on Facebook"
+                aria-label="SellBookMedia on Facebook"
                 className="inline-flex items-center gap-2.5 text-gray-300 hover:text-white transition-colors"
               >
                 <FacebookIcon size={28} className="text-[#1877F2]" />
@@ -1985,14 +2213,14 @@ useEffect(() => {
             <div>
               <h4 className="font-bold text-lg mb-6 text-white">Guides</h4>
               <ul className="space-y-3">
+                <li><Link href="/guides/how-to-find-book-value-by-isbn" className="text-gray-400 hover:text-white transition-colors">Book Value by ISBN</Link></li>
+                <li><Link href="/guides/media-value-by-barcode" className="text-gray-400 hover:text-white transition-colors">Media Value by Barcode</Link></li>
                 <li><Link href="/guides/how-much-are-used-books-worth" className="text-gray-400 hover:text-white transition-colors">What Are Books Worth?</Link></li>
                 <li><Link href="/guides/how-much-are-used-dvds-worth" className="text-gray-400 hover:text-white transition-colors">What Are DVDs Worth?</Link></li>
-                <li><Link href="/guides/sell-video-games-for-cash" className="text-gray-400 hover:text-white transition-colors">Sell Video Games</Link></li>
-                <li><Link href="/guides/best-places-to-sell-cds-dvds-games" className="text-gray-400 hover:text-white transition-colors">Best Places to Sell</Link></li>
-                <li><Link href="/guides/where-to-sell-books-and-dvds-for-cash" className="text-gray-400 hover:text-white transition-colors">Where to Sell for Cash</Link></li>
-                <li><Link href="/guides/decluttr-shut-down-alternative" className="text-gray-400 hover:text-white transition-colors">Decluttr Alternative</Link></li>
-                <li><Link href="/guides/what-to-do-with-old-dvds-and-cds" className="text-gray-400 hover:text-white transition-colors">What to Do With Old DVDs</Link></li>
                 <li><Link href="/guides/how-much-are-used-cds-worth" className="text-gray-400 hover:text-white transition-colors">What Are CDs Worth?</Link></li>
+                <li><Link href="/guides/best-places-to-sell-cds-dvds-games" className="text-gray-400 hover:text-white transition-colors">Best Places to Sell</Link></li>
+                <li><Link href="/guides/decluttr-shut-down-alternative" className="text-gray-400 hover:text-white transition-colors">Decluttr Alternative</Link></li>
+                <li><Link href="/guides/what-to-do-with-old-dvds-and-cds" className="text-gray-400 hover:text-white transition-colors">What to Do With Old Media</Link></li>
               </ul>
             </div>
 
@@ -2011,7 +2239,7 @@ useEffect(() => {
             <div className="flex flex-col sm:flex-row justify-between items-center">
               <p className="text-gray-400 text-sm">© 2026 SellBookMedia. All rights reserved.</p>
               <div className="flex items-center space-x-6 mt-4 sm:mt-0">
-                <span className="text-gray-400 text-sm">Made with ❤️ for collectors</span>
+                <span className="text-gray-400 text-sm">Less waste. More second chances.</span>
               </div>
             </div>
           </div>
