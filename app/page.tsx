@@ -1765,7 +1765,7 @@ useEffect(() => {
                 A simpler alternative to listing everything yourself
               </p>
               <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-gray-900 leading-tight">
-                Sell Used Media Without Turning It Into a Second Job
+                Sell Your Media Without Turning It Into a Second Job
               </h2>
               <p className="mt-5 text-lg text-gray-600 leading-relaxed">
                 SellBookMedia is a direct buyback service. You see our offer before shipping,
@@ -1934,7 +1934,7 @@ useEffect(() => {
 
           <p className="mt-5 text-sm text-gray-500 text-center">
             Have something rare or collectible? Comparing recent sold listings can still be worthwhile.
-            For everyday used media, direct buyback is designed to keep the process simple.
+            For everyday media, direct buyback is designed to keep the process simple.
           </p>
         </div>
       </section>
@@ -1960,7 +1960,7 @@ useEffect(() => {
                 href: "/sell-books-for-cash",
                 icon: "📚",
                 title: "Sell Books for Cash",
-                body: "Check used books and textbooks by ISBN and see your current cash offer.",
+                body: "Check books and textbooks by ISBN and see your current cash offer.",
               },
               {
                 href: "/sell-dvds-for-cash",
@@ -1972,7 +1972,7 @@ useEffect(() => {
                 href: "/sell-cds-for-cash",
                 icon: "💿",
                 title: "Sell CDs for Cash",
-                body: "Check used CDs, box sets, imports, and music collections by UPC.",
+                body: "Check CDs, box sets, imports, and music collections by UPC.",
               },
               {
                 href: "/sell-video-games-for-cash",

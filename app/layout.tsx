@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     template: '%s | SellBook Media',
   },
   description:
-    'Sell your used books, CDs, DVDs, Blu-rays, 4K movies, and video games for cash. Get instant barcode offers, free prepaid shipping, and fast PayPal payments.',
+    'Sell your books, CDs, DVDs, Blu-rays, 4K movies, and video games for cash. Get instant barcode offers, free prepaid shipping, and fast PayPal payments.',
 
   // ❌ KEYWORDS KALDIRILDI - Google kullanmıyor (deprecated since 2009)
   // keywords: [...],
@@ -58,7 +58,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'SellBook Media - Sell Your Books for Cash',
     description:
-      'Turn your used books into cash with instant quotes, free prepaid shipping, and fast PayPal payments.',
+      'Turn your books into cash with instant quotes, free prepaid shipping, and fast PayPal payments.',
     images: ['/twitter-image.jpg'],
   },
 
@@ -83,7 +83,7 @@ const structuredData = {
         height: 512,
       },
       description:
-        'Buy used books, CDs, DVDs, and video games from customers nationwide',
+        'Buy books, CDs, DVDs, Blu-rays, 4K movies, and video games from customers nationwide',
       sameAs: ['https://www.facebook.com/sellbookmedia'],
 
       // ⚠️ ADDRESS - Eğer fiziksel ofis YOKSA kaldırın
@@ -126,7 +126,7 @@ const structuredData = {
       '@type': 'Service',
       name: 'Media Buyback Service',
       description:
-        'We buy used books, CDs, DVDs, and video games for cash with free shipping',
+        'We buy books, CDs, DVDs, Blu-rays, 4K movies, and video games for cash with free shipping',
       provider: {
         '@id': 'https://www.sellbookmedia.com/#organization',
       },
@@ -137,7 +137,7 @@ const structuredData = {
       },
       offers: {
         '@type': 'Offer',
-        description: 'Cash for used media with free shipping',
+        description: 'Cash for eligible media with free shipping',
         availability: 'https://schema.org/InStock',
       },
     },
