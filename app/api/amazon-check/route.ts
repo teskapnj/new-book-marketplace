@@ -276,17 +276,22 @@ function extractKeepaSalesRank(product: any): number {
   });
 
   const rankFromStats = product?.stats?.current?.[3];
-  const rootCategory = product?.rootCategory;
   const salesRankReference = product?.salesRankReference;
 
-  // Sadece ana/root kategori sales rank kabul edilir.
-  // Alt kategori rank'lari fallback olarak kullanilmaz.
+  // SADECE ana Amazon kategori rank'lari kabul edilir.
+  // Alt kategori rank'lari hiçbir şartta kullanılmaz.
+  const MAIN_SALES_RANK_REFERENCES = new Set([
+    283155,      // Books
+    5174,        // CDs & Vinyl
+    2625373011,  // Movies & TV
+    468642       // Video Games
+  ]);
+
   if (
     typeof rankFromStats === 'number' &&
     rankFromStats > 0 &&
-    typeof rootCategory === 'number' &&
-    rootCategory > 0 &&
-    salesRankReference === rootCategory
+    typeof salesRankReference === 'number' &&
+    MAIN_SALES_RANK_REFERENCES.has(salesRankReference)
   ) {
     return rankFromStats;
   }
