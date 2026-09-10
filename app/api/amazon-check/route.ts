@@ -630,7 +630,15 @@ after(async () => {
       debugInfo
     );
 
-    console.log(`⏱️ cacheWrite=${Date.now() - cacheWriteStart}ms (after)`);
+    console.log(
+      `💾 CACHE WRITE: ${cleanCode} | ` +
+      `Price: $${product.price ?? 0} (${product.priceType || 'unknown'}) | ` +
+      `Rank: ${product.sales_rank ?? 0} | ` +
+      `Category: ${product.category || 'Unknown'} | ` +
+      `Status: ${pricingResult.accepted ? 'ACCEPTED' : 'REJECTED'} | ` +
+      `Offer: ${pricingResult.accepted && pricingResult.ourPrice != null ? `$${pricingResult.ourPrice}` : 'N/A'} | ` +
+      `${Date.now() - cacheWriteStart}ms`
+    );
   } catch (err) {
     console.error('Cache save error:', err);
   }
