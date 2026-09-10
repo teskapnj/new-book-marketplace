@@ -25,6 +25,7 @@ interface AmazonProduct {
   // GAME için Keepa NEW ve USED fiyatları ayrı tutulur
 gameNewPrice?: number;
 gameUsedPrice?: number;
+  gamePlatform?: string;
   // Keepa format bilgisi (kategori filtresi icin pricingEngine'e gecer)
   binding?: string;
   type?: string;
@@ -307,6 +308,15 @@ function extractKeepaCategory(product: any): string {
   return 'Unknown';
 }
 
+function extractKeepaGamePlatform(product: any): string {
+  if (!Array.isArray(product?.categoryTree)) return '';
+
+  return product.categoryTree
+    .map((node: any) => String(node?.name || '').trim())
+    .filter(Boolean)
+    .join(' > ');
+}
+
 function extractKeepaImage(product: any): string {
   // 1. Eski format: imagesCSV (virgülle ayrılmış dosya adları)
   if (product?.imagesCSV) {
@@ -583,6 +593,7 @@ export async function POST(request: NextRequest) {
         // GAME pricingEngine için ayrı Keepa fiyatları
 gameNewPrice: priceAnalysis.gameNewPrice,
 gameUsedPrice: priceAnalysis.gameUsedPrice,
+      gamePlatform: extractKeepaGamePlatform(bestProduct),
       // Keepa format bilgisi -> pricingEngine kategori filtresi icin
       binding: bestProduct.binding || '',
       type: bestProduct.type || ''

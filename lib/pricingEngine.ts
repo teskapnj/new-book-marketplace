@@ -19,6 +19,8 @@ export interface AmazonProduct {
   // GAME için Keepa'dan ayrı fiyatlar
 gameNewPrice?: number;
 gameUsedPrice?: number;
+  // Keepa categoryTree yolu; oyun platformunu ayırmak için kullanılır
+  gamePlatform?: string;
   // YENİ ALANLAR: Keepa'dan gelen format bilgisi (kategori filtresi için)
   // binding -> ör. 'audioCD', 'lp_record', 'VHStape', 'cassette'
   // type    -> ör. 'ABIS_MUSIC', 'ABIS_VIDEO', 'DOWNLOADABLE_AUDIO'
@@ -467,10 +469,30 @@ function calculateDVDPrice(price: number, salesRank: number): PricingResult {
   return { ...result, category: 'dvds' };
 }
 
+function usesExistingGamePricing(gamePlatform: string): boolean {
+  const platform = (gamePlatform || '').toLowerCase();
+
+  // SADECE bu 6 platform mevcut oyun motorunda kalır.
+  // Wii U özellikle Wii sayılmaz.
+  if (platform.includes('wii u')) return false;
+
+  return (
+    /\bps5\b|playstation\s*5/.test(platform) ||
+    /\bps4\b|playstation\s*4/.test(platform) ||
+    /\bps3\b|playstation\s*3/.test(platform) ||
+    /\bps2\b|playstation\s*2/.test(platform) ||
+    /\bps1\b|playstation\s*1/.test(platform) ||
+    // Keepa eski PS1 kategorisini yalnızca "PlayStation" diye döndürebilir.
+    platform.split('>').some((part) => part.trim() === 'playstation') ||
+    platform.split('>').some((part) => part.trim() === 'wii')
+  );
+}
+
 function calculateGamePrice(
   gameNewPrice: number,
   gameUsedPrice: number,
-  salesRank: number
+  salesRank: number,
+  gamePlatform: string
 ): PricingResult {
   // GAME: sadece rank 100k ve altı
   if (salesRank > 100000) {
@@ -484,8 +506,36 @@ function calculateGamePrice(
 
   const hasGameUsedPrice = gameUsedPrice > 0;
   const hasGameNewPrice = gameNewPrice > 0;
+  const keepExistingPricing = usesExistingGamePricing(gamePlatform);
 
-  // GAME USED $40 veya üzeri -> USED fiyatın %20'si
+  // PS1, PS2, Wii, PS3, PS4, PS5 DISINDAKI TUM OYUNLAR:
+  // NEW tamamen yok sayılır. Yalnızca USED kullanılır.
+  if (!keepExistingPricing) {
+    if (!hasGameUsedPrice || gameUsedPrice < 20) {
+      return {
+        accepted: false,
+        reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
+        category: 'games',
+        priceRange: hasGameUsedPrice
+          ? `Game used $${gameUsedPrice} (< $20)`
+          : "No used game price",
+        rankRange: "≤ 100k"
+      };
+    }
+
+    return {
+      accepted: true,
+      ourPrice: Math.min(
+        Math.round(gameUsedPrice * 0.10 * 100) / 100,
+        50
+      ),
+      category: 'games',
+      priceRange: `Game used $${gameUsedPrice} (10%)`,
+      rankRange: "≤ 100k"
+    };
+  }
+
+  // PS1, PS2, Wii, PS3, PS4, PS5: MEVCUT oyun motoru AYNEN korunur.
   if (hasGameUsedPrice && gameUsedPrice >= 40) {
     return {
       accepted: true,
@@ -499,9 +549,7 @@ function calculateGamePrice(
     };
   }
 
-  // GAME USED var ama $40 altında
   if (hasGameUsedPrice && gameUsedPrice < 40) {
-    // NEW fiyat da varsa CD/DVD fiyat tablosunu kullan
     if (hasGameNewPrice) {
       const gameResult = calculateCDPrice(gameNewPrice, salesRank);
 
@@ -511,7 +559,6 @@ function calculateGamePrice(
       };
     }
 
-    // USED <$40 ve NEW yok
     return {
       accepted: true,
       ourPrice: 1.5,
@@ -521,9 +568,7 @@ function calculateGamePrice(
     };
   }
 
-  // GAME USED fiyat hiç yok
   if (!hasGameUsedPrice) {
-    // NEW varsa CD/DVD fiyat tablosunu kullan
     if (hasGameNewPrice) {
       const gameResult = calculateCDPrice(gameNewPrice, salesRank);
 
@@ -533,7 +578,6 @@ function calculateGamePrice(
       };
     }
 
-    // GAME USED yok + NEW yok
     return {
       accepted: true,
       ourPrice: 5,
@@ -726,7 +770,8 @@ if (category === 'games') {
   return calculateGamePrice(
     product.gameNewPrice || 0,
     product.gameUsedPrice || 0,
-    product.sales_rank
+    product.sales_rank,
+    product.gamePlatform || ''
   );
 }
 
