@@ -138,6 +138,15 @@ interface Listing {
   paymentSentBy?: string | null;
   shippingLabelName?: string;
   shippingLabelType?: string;
+
+  // Reporting fields
+  acceptedItemCount?: number;
+  rejectedItemCount?: number;
+  acceptedValue?: number;
+  rejectedValue?: number;
+  actualShippingCost?: number;
+  excludeFromReports?: boolean;
+
   reviewedBy?: string; // Bu satırı ekle
 }
 
@@ -730,7 +739,16 @@ export default function AdminListingsPage() {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [activeTab, setActiveTab] = useState<"listings" | "orders" | "sellers">("listings");
+  const [activeTab, setActiveTab] = useState<"listings" | "orders" | "sellers" | "reports">("listings");
+
+  // Reports
+  const [reportMonth, setReportMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
+  const [reportSearchTerm, setReportSearchTerm] = useState("");
+  const [reportShippingInputs, setReportShippingInputs] = useState<Record<string, string>>({});
+  const [reportSavingId, setReportSavingId] = useState<string | null>(null);
   
   // 🆕 Yeni state'ler - shipping label ve tracking için
   const [shippingLabel, setShippingLabel] = useState<File | null>(null);
@@ -797,7 +815,7 @@ export default function AdminListingsPage() {
 
   // 🔥 Real-time Firebase listener for listings
   useEffect(() => {
-    if (!user || !isAdmin || activeTab !== "listings") return;
+    if (!user || !isAdmin || (activeTab !== "listings" && activeTab !== "reports")) return;
     
     let unsubscribe: () => void;
     
@@ -839,7 +857,14 @@ export default function AdminListingsPage() {
                 paymentTransactionId: data.paymentTransactionId || null,
                 paymentNotes: data.paymentNotes || null,
                 paymentSentAt: data.paymentSentAt || null,
-                paymentSentBy: data.paymentSentBy || null
+                paymentSentBy: data.paymentSentBy || null,
+
+                acceptedItemCount: data.acceptedItemCount ?? 0,
+                rejectedItemCount: data.rejectedItemCount ?? 0,
+                acceptedValue: data.acceptedValue ?? 0,
+                rejectedValue: data.rejectedValue ?? 0,
+                actualShippingCost: data.actualShippingCost ?? 0,
+                excludeFromReports: data.excludeFromReports ?? false
               });
             });
             
@@ -887,7 +912,14 @@ export default function AdminListingsPage() {
                     paymentTransactionId: data.paymentTransactionId || null,
                     paymentNotes: data.paymentNotes || null,
                     paymentSentAt: data.paymentSentAt || null,
-                    paymentSentBy: data.paymentSentBy || null
+                    paymentSentBy: data.paymentSentBy || null,
+
+                    acceptedItemCount: data.acceptedItemCount ?? 0,
+                    rejectedItemCount: data.rejectedItemCount ?? 0,
+                    acceptedValue: data.acceptedValue ?? 0,
+                    rejectedValue: data.rejectedValue ?? 0,
+                    actualShippingCost: data.actualShippingCost ?? 0,
+                    excludeFromReports: data.excludeFromReports ?? false
                   });
                 });
                 
@@ -1036,6 +1068,68 @@ export default function AdminListingsPage() {
     };
   }, [user, isAdmin, activeTab]);
 
+  // Reports - save actual shipping cost
+  const saveReportShippingCost = async (listingId: string) => {
+    const rawValue = reportShippingInputs[listingId];
+
+    if (rawValue === undefined || rawValue.trim() === "") {
+      alert("Please enter a shipping cost");
+      return;
+    }
+
+    const cost = Number(rawValue);
+
+    if (!Number.isFinite(cost) || cost < 0) {
+      alert("Please enter a valid shipping cost");
+      return;
+    }
+
+    if (!checkRateLimit("saving shipping cost")) return;
+    adminRateLimit.recordAttempt();
+
+    setReportSavingId(listingId);
+
+    try {
+      await updateDoc(doc(db, "listings", listingId), {
+        actualShippingCost: cost
+      });
+
+      setReportShippingInputs((prev) => ({
+        ...prev,
+        [listingId]: cost.toFixed(2)
+      }));
+    } catch (error) {
+      console.error("Error saving shipping cost:", error);
+      alert("Failed to save shipping cost");
+    } finally {
+      setReportSavingId(null);
+    }
+  };
+
+  const excludeListingFromReports = async (listingId: string) => {
+    const confirmed = window.confirm(
+      "Exclude this listing from reports? The listing will not be deleted."
+    );
+
+    if (!confirmed) return;
+
+    if (!checkRateLimit("excluding listing from reports")) return;
+    adminRateLimit.recordAttempt();
+
+    setReportSavingId(listingId);
+
+    try {
+      await updateDoc(doc(db, "listings", listingId), {
+        excludeFromReports: true
+      });
+    } catch (error) {
+      console.error("Error excluding listing from reports:", error);
+      alert("Failed to exclude listing from reports");
+    } finally {
+      setReportSavingId(null);
+    }
+  };
+
   // 📈 Computed values for listings
   const pendingListings = listings.filter(l => l.status === "pending");
   const approvedListings = listings.filter(l => l.status === "approved");
@@ -1043,6 +1137,76 @@ export default function AdminListingsPage() {
   const paymentSentListings = listings.filter(l => l.status === "payment_sent");
   const rejectedListings = listings.filter(l => l.status === "rejected");
   const soldListings = listings.filter(l => l.status === "sold");
+
+  // 📊 Monthly report calculations
+  const [reportYear, reportMonthNumber] = reportMonth.split("-").map(Number);
+
+  const monthlyListings = listings.filter((listing) => {
+    const date = listing.createdAt;
+    return (
+      !listing.excludeFromReports &&
+      date.getFullYear() === reportYear &&
+      date.getMonth() + 1 === reportMonthNumber
+    );
+  });
+
+  const reportSearchClean = reportSearchTerm.toLowerCase().replace(/\s/g, "");
+
+  const reportFilteredListings = monthlyListings.filter((listing) => {
+    if (!reportSearchClean) return true;
+
+    return (
+      (listing.trackingNumber || "").toLowerCase().replace(/\s/g, "").includes(reportSearchClean) ||
+      listing.id.toLowerCase().includes(reportSearchClean) ||
+      listing.vendorName.toLowerCase().replace(/\s/g, "").includes(reportSearchClean) ||
+      (listing.shippingInfo?.firstName || "").toLowerCase().replace(/\s/g, "").includes(reportSearchClean) ||
+      (listing.shippingInfo?.lastName || "").toLowerCase().replace(/\s/g, "").includes(reportSearchClean)
+    );
+  });
+
+  const reportOrdersSubmitted = monthlyListings.length;
+
+  const reportPackagesArrived = monthlyListings.filter(
+    (listing) =>
+      listing.paymentSent ||
+      listing.status === "payment_sent" ||
+      listing.status === "sold"
+  ).length;
+
+  const reportTotalItems = monthlyListings.reduce(
+    (sum, listing) => sum + (listing.totalItems || 0),
+    0
+  );
+
+  const reportAcceptedItems = monthlyListings.reduce(
+    (sum, listing) => sum + (listing.acceptedItemCount || 0),
+    0
+  );
+
+  const reportRejectedItems = monthlyListings.reduce(
+    (sum, listing) => sum + (listing.rejectedItemCount || 0),
+    0
+  );
+
+  const reportTotalOffer = monthlyListings.reduce(
+    (sum, listing) => sum + (listing.totalValue || 0),
+    0
+  );
+
+  const reportAmazonValue = monthlyListings.reduce(
+    (sum, listing) => sum + (listing.totalAmazonValue || 0),
+    0
+  );
+
+  const reportTotalPaid = monthlyListings.reduce(
+    (sum, listing) => sum + (listing.paymentAmount || 0),
+    0
+  );
+
+  const reportShippingCost = monthlyListings.reduce(
+    (sum, listing) => sum + (listing.actualShippingCost || 0),
+    0
+  );
 
   // 📈 Computed values for orders
   const pendingOrders = orders.filter(o => o.status === "pending");
@@ -1777,6 +1941,16 @@ export default function AdminListingsPage() {
               >
                 Sellers
               </button>
+
+              <button
+                onClick={() => setActiveTab("reports")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "reports"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+              >
+                Reports
+              </button>
             </nav>
           </div>
         </div>
@@ -2477,6 +2651,221 @@ export default function AdminListingsPage() {
         {activeTab === "sellers" && (
           <SellerManagement />
         )}
+
+        {activeTab === "reports" && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Monthly Report</h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Listing, package, payment and shipping summary
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Month
+                  </label>
+                  <input
+                    type="month"
+                    value={reportMonth}
+                    onChange={(e) => setReportMonth(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Search by Tracking Number, Customer Name or Listing ID
+              </label>
+              <input
+                type="text"
+                value={reportSearchTerm}
+                onChange={(e) => setReportSearchTerm(e.target.value)}
+                placeholder="Enter tracking number, customer name or listing ID..."
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-blue-500">
+                <p className="text-sm text-gray-500">Orders Submitted</p>
+                <p className="text-2xl font-bold text-gray-900">{reportOrdersSubmitted}</p>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-green-500">
+                <p className="text-sm text-gray-500">Packages Arrived</p>
+                <p className="text-2xl font-bold text-gray-900">{reportPackagesArrived}</p>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-indigo-500">
+                <p className="text-sm text-gray-500">Total Items</p>
+                <p className="text-2xl font-bold text-gray-900">{reportTotalItems}</p>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-emerald-500">
+                <p className="text-sm text-gray-500">Accepted Items</p>
+                <p className="text-2xl font-bold text-gray-900">{reportAcceptedItems}</p>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-red-500">
+                <p className="text-sm text-gray-500">Rejected Items</p>
+                <p className="text-2xl font-bold text-gray-900">{reportRejectedItems}</p>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-yellow-500">
+                <p className="text-sm text-gray-500">Total Offer</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  ${reportTotalOffer.toFixed(2)}
+                </p>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-orange-500">
+                <p className="text-sm text-gray-500">Amazon Value</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  ${reportAmazonValue.toFixed(2)}
+                </p>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-purple-500">
+                <p className="text-sm text-gray-500">Total Paid</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  ${reportTotalPaid.toFixed(2)}
+                </p>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-cyan-500">
+                <p className="text-sm text-gray-500">Shipping Cost</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  ${reportShippingCost.toFixed(2)}
+                </p>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-gray-500">
+                <p className="text-sm text-gray-500">Paid + Shipping</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  ${(reportTotalPaid + reportShippingCost).toFixed(2)}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Monthly Listings
+                </h3>
+                <p className="text-sm text-gray-500">
+                  {reportFilteredListings.length} record(s)
+                </p>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-medium text-gray-600">Date</th>
+                      <th className="px-4 py-3 text-left font-medium text-gray-600">Customer</th>
+                      <th className="px-4 py-3 text-left font-medium text-gray-600">Tracking</th>
+                      <th className="px-4 py-3 text-right font-medium text-gray-600">Items</th>
+                      <th className="px-4 py-3 text-right font-medium text-gray-600">Accepted</th>
+                      <th className="px-4 py-3 text-right font-medium text-gray-600">Rejected</th>
+                      <th className="px-4 py-3 text-right font-medium text-gray-600">Offer</th>
+                      <th className="px-4 py-3 text-right font-medium text-gray-600">Amazon</th>
+                      <th className="px-4 py-3 text-right font-medium text-gray-600">Paid</th>
+                      <th className="px-4 py-3 text-right font-medium text-gray-600">Shipping</th>
+                      <th className="px-4 py-3 text-center font-medium text-gray-600">Arrived</th>
+                      <th className="px-4 py-3 text-center font-medium text-gray-600">Action</th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {reportFilteredListings.length === 0 ? (
+                      <tr>
+                        <td colSpan={12} className="px-4 py-8 text-center text-gray-500">
+                          No listings found for this month.
+                        </td>
+                      </tr>
+                    ) : (
+                      reportFilteredListings.map((listing) => (
+                        <tr key={listing.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            {listing.createdAt.toLocaleDateString()}
+                          </td>
+
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            {listing.shippingInfo?.firstName || listing.shippingInfo?.lastName
+                              ? `${listing.shippingInfo?.firstName || ""} ${listing.shippingInfo?.lastName || ""}`.trim()
+                              : listing.vendorName}
+                          </td>
+
+                          <td className="px-4 py-3 whitespace-nowrap font-mono text-xs">
+                            {listing.trackingNumber || "—"}
+                          </td>
+
+                          <td className="px-4 py-3 text-right">
+                            {listing.totalItems || 0}
+                          </td>
+
+                          <td className="px-4 py-3 text-right text-green-700 font-medium">
+                            {listing.acceptedItemCount || 0}
+                          </td>
+
+                          <td className="px-4 py-3 text-right text-red-700 font-medium">
+                            {listing.rejectedItemCount || 0}
+                          </td>
+
+                          <td className="px-4 py-3 text-right">
+                            ${(listing.totalValue || 0).toFixed(2)}
+                          </td>
+
+                          <td className="px-4 py-3 text-right">
+                            ${(listing.totalAmazonValue || 0).toFixed(2)}
+                          </td>
+
+                          <td className="px-4 py-3 text-right">
+                            ${(listing.paymentAmount || 0).toFixed(2)}
+                          </td>
+
+                          <td className="px-4 py-3 text-right whitespace-nowrap">
+                            {listing.actualShippingCost !== undefined && listing.actualShippingCost !== null
+                              ? `$${listing.actualShippingCost.toFixed(2)}`
+                              : "—"}
+                          </td>
+
+                          <td className="px-4 py-3 text-center">
+                            {listing.paymentSent ||
+                            listing.status === "payment_sent" ||
+                            listing.status === "sold" ? (
+                              <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                ✓ Arrived
+                              </span>
+                            ) : (
+                              <span className="text-gray-400">—</span>
+                            )}
+                          </td>
+
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => excludeListingFromReports(listing.id)}
+                              disabled={reportSavingId === listing.id}
+                              className="px-3 py-1 rounded border border-red-300 text-red-600 hover:bg-red-50 text-xs font-medium disabled:opacity-50"
+                            >
+                              {reportSavingId === listing.id ? "..." : "Exclude"}
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* 🔍 Review Modal for Listings - GÜNCELLENDİ */}
         {selectedListing && (
@@ -2702,22 +3091,43 @@ export default function AdminListingsPage() {
                         );
                         const originalTotal = selectedListing.totalValue || 0;
 
-                        const applyToPayment = () => {
+                        const acceptedItemCount = items.reduce(
+                          (sum, it, i) => acceptedItems.has(i) ? sum + (it.quantity || 1) : sum,
+                          0
+                        );
+
+                        const rejectedItemCount = items.reduce(
+                          (sum, it, i) => !acceptedItems.has(i) ? sum + (it.quantity || 1) : sum,
+                          0
+                        );
+
+                        const applyToPayment = async () => {
                           setPaymentAmount(acceptedTotal.toFixed(2));
 
-                          if (rejected.length === 0) {
+                          if (rejectedItemCount === 0) {
                             setPaymentNotes(
-                              `All ${items.length} items accepted. Paid in full: $${acceptedTotal.toFixed(2)}`
+                              `All ${acceptedItemCount} items accepted. Paid in full: $${acceptedTotal.toFixed(2)}`
                             );
-                            return;
+                          } else {
+                            const codes = rejected.map(({ it }) => it.isbn).join(", ");
+                            setPaymentNotes(
+                              `Not accepted (${rejectedItemCount} item${rejectedItemCount !== 1 ? "s" : ""}): ${codes}\n` +
+                              `Deducted: $${rejectedTotal.toFixed(2)}\n` +
+                              `Original offer: $${originalTotal.toFixed(2)} — Paid: $${acceptedTotal.toFixed(2)}`
+                            );
                           }
 
-                          const codes = rejected.map(({ it }) => it.isbn).join(", ");
-                          setPaymentNotes(
-                            `Not accepted (${rejected.length} item${rejected.length !== 1 ? "s" : ""}): ${codes}\n` +
-                            `Deducted: $${rejectedTotal.toFixed(2)}\n` +
-                            `Original offer: $${originalTotal.toFixed(2)} — Paid: $${acceptedTotal.toFixed(2)}`
-                          );
+                          try {
+                            await updateDoc(doc(db, "listings", selectedListing.id), {
+                              acceptedItemCount,
+                              rejectedItemCount,
+                              acceptedValue: acceptedTotal,
+                              rejectedValue: rejectedTotal
+                            });
+                          } catch (error) {
+                            console.error("Error saving item verification report:", error);
+                            alert("Payment amount was prepared, but item verification could not be saved.");
+                          }
                         };
 
                         return (
@@ -2726,13 +3136,13 @@ export default function AdminListingsPage() {
                               <div className="bg-green-50 border border-green-200 rounded p-3">
                                 <p className="text-xs text-green-700">Accepted</p>
                                 <p className="font-bold text-green-800">
-                                  {acceptedItems.size} items · ${acceptedTotal.toFixed(2)}
+                                  {acceptedItemCount} items · ${acceptedTotal.toFixed(2)}
                                 </p>
                               </div>
                               <div className="bg-red-50 border border-red-200 rounded p-3">
                                 <p className="text-xs text-red-700">Not accepted</p>
                                 <p className="font-bold text-red-800">
-                                  {rejected.length} items · ${rejectedTotal.toFixed(2)}
+                                  {rejectedItemCount} items · ${rejectedTotal.toFixed(2)}
                                 </p>
                               </div>
                             </div>
@@ -3432,6 +3842,57 @@ export default function AdminListingsPage() {
                           </div>
                         </div>
                       </div>
+                    </>
+                  )}
+                  
+                  {selectedListing.status !== "pending" && selectedListing.status !== "rejected" && (
+                    <>
+                      {/* Internal Shipping Cost */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">
+                          Internal Shipping Cost
+                        </h4>
+                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                          <div className="flex items-center gap-3">
+                            <div className="relative flex-1">
+                              <span className="absolute left-3 top-2 text-gray-500">$</span>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={
+                                  reportShippingInputs[selectedListing.id] ??
+                                  (selectedListing.actualShippingCost
+                                    ? selectedListing.actualShippingCost.toFixed(2)
+                                    : "")
+                                }
+                                onChange={(e) =>
+                                  setReportShippingInputs((prev) => ({
+                                    ...prev,
+                                    [selectedListing.id]: e.target.value
+                                  }))
+                                }
+                                placeholder="0.00"
+                                className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg text-sm"
+                              />
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => saveReportShippingCost(selectedListing.id)}
+                              disabled={reportSavingId === selectedListing.id}
+                              className="px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white text-sm font-medium rounded-lg disabled:opacity-50"
+                            >
+                              {reportSavingId === selectedListing.id ? "Saving..." : "Save"}
+                            </button>
+                          </div>
+
+                          <p className="text-xs text-gray-500 mt-2">
+                            Internal reporting only. Customers cannot see this amount.
+                          </p>
+                        </div>
+                      </div>
+                      
                     </>
                   )}
                   
