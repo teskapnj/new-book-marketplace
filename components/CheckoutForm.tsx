@@ -19,6 +19,12 @@ import DOMPurify from "isomorphic-dompurify";
 import { trackEvent } from "@/lib/analytics";
 import { AmazonProduct } from "@/lib/pricingEngine";
 
+declare global {
+  interface Window {
+    uetq?: any[];
+  }
+}
+
 // Ana sayfadaki BundleItem ile ayni yapida olmali (ayni localStorage kaydi)
 export interface BundleItem {
   id: string;
@@ -443,6 +449,10 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
         item_count: bundleItems.length,
         total_value: totalOurPrice
       });
+      if (typeof window !== "undefined") {
+        window.uetq = window.uetq || [];
+        window.uetq.push("event", "submit_lead_form", {});
+      }
 
       // Mailler arka planda - kullanici beklemez
       const sellerName = `${shippingInfo.firstName} ${shippingInfo.lastName}`.trim();
