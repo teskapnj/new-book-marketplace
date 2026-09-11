@@ -85,20 +85,6 @@ const structuredData = {
       description:
         'Buy books, CDs, DVDs, Blu-rays, 4K movies, and video games from customers nationwide',
       sameAs: ['https://www.facebook.com/sellbookmedia'],
-
-      // ⚠️ ADDRESS - Eğer fiziksel ofis YOKSA kaldırın
-      // address: {
-      //   '@type': 'PostalAddress',
-      //   addressCountry: 'US',
-      // },
-
-      // ⚠️ AGGREGATE RATING - Gerçek yorum verisi yoksa kullanmayın
-      // aggregateRating: {
-      //   '@type': 'AggregateRating',
-      //   ratingValue: '4.8',
-      //   bestRating: '5',
-      //   ratingCount: '500',
-      // },
     },
 
     {
@@ -109,17 +95,6 @@ const structuredData = {
       publisher: {
         '@id': 'https://www.sellbookmedia.com/#organization',
       },
-
-      // ⚠️ SEARCH ACTION - /search sayfanız yoksa kullanmayın
-      // potentialAction: {
-      //   '@type': 'SearchAction',
-      //   target: {
-      //     '@type': 'EntryPoint',
-      //     urlTemplate:
-      //       'https://www.sellbookmedia.com/search?q={search_term_string}',
-      //   },
-      //   'query-input': 'required name=search_term_string',
-      // },
     },
 
     {
@@ -157,6 +132,39 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify(structuredData),
+          }}
+        />
+
+        {/* Microsoft Advertising UET */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function(w, d, t, u, o) {
+                w[u] = w[u] || [];
+                o.ts = (new Date).getTime();
+
+                var n = d.createElement(t);
+                n.src = "https://bat.bing.net/bat.js?ti=" + o.ti + ("uetq" != u ? "&q=" + u : "");
+                n.async = 1;
+
+                n.onload = n.onreadystatechange = function() {
+                  var s = this.readyState;
+                  s && "loaded" !== s && "complete" !== s ||
+                  (
+                    o.q = w[u],
+                    w[u] = new UET(o),
+                    w[u].push("pageLoad"),
+                    n.onload = n.onreadystatechange = null
+                  );
+                };
+
+                var i = d.getElementsByTagName(t)[0];
+                i.parentNode.insertBefore(n, i);
+              })(window, document, "script", "uetq", {
+                ti: "343271771",
+                enableAutoSpaTracking: true
+              });
+            `,
           }}
         />
 
