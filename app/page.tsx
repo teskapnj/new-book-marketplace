@@ -24,6 +24,11 @@ import {
   secureLogout,
   logSecurityAttempt
 } from "@/lib/auth-utils";
+declare global {
+  interface Window {
+    uetq?: any[];
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Tipler - create-listing ile ayni yapida olmali (ayni localStorage anahtari)
@@ -540,6 +545,11 @@ const lastRejectedCameraCodeRef = useRef<string | null>(null);
     }
 
     trackEvent('barcode_scanned');
+
+if (typeof window !== 'undefined') {
+  window.uetq = window.uetq || [];
+  window.uetq.push('event', 'other', {});
+}
 
     // Kisa bip sesi
     try {
