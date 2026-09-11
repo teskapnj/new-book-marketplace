@@ -24,6 +24,11 @@ export const metadata: Metadata = {
   creator: 'SellBook Media',
   publisher: 'SellBook Media',
 
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+  },
+
   robots: {
     index: true,
     follow: true,
