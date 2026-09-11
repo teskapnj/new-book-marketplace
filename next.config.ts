@@ -76,7 +76,8 @@ const nextConfig: NextConfig = {
                 https://va.vercel-scripts.com
                 https://googleads.g.doubleclick.net
                 https://www.googleadservices.com
-                https://www.google-analytics.com;
+                https://www.google-analytics.com
+                https://bat.bing.net;
               style-src 'self' 'unsafe-inline';
               img-src 'self' data: https:
                 https://firebasestorage.googleapis.com
@@ -86,7 +87,9 @@ const nextConfig: NextConfig = {
               connect-src 'self' https: wss:
                 https://*.firebaseio.com
                 https://*.googleapis.com
-                https://*.gstatic.com;
+                https://*.gstatic.com
+                https://bat.bing.com
+                https://bat.bing.net;
               frame-src https://*.firebaseapp.com https://*.google.com
                 https://googleads.g.doubleclick.net
                 https://td.doubleclick.net;
