@@ -1564,7 +1564,8 @@ export default function AdminListingsPage() {
         trackingNumber: sanitizedTracking,
         carrier: sanitizeInput(carrier),
         shippingLabelName: sanitizedFileName,
-        shippingLabelType: shippingLabel.type
+        shippingLabelType: shippingLabel.type,
+        shippingLabelSentAt: serverTimestamp()
       });
       
       // Get seller's email
