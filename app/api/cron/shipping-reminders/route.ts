@@ -1276,6 +1276,10 @@ export async function GET(
                 listingId: doc.id,
               });
 
+              console.log(
+                `10-day shipping reminder sent | Tracking: ${trackingNumber}`
+              );
+
               reminderSent = true;
               results.reminder10Sent++;
             }
@@ -1352,6 +1356,10 @@ export async function GET(
                 shippingLabelUrl,
                 listingId: doc.id,
               });
+
+              console.log(
+                `5-day shipping reminder sent | Tracking: ${trackingNumber}`
+              );
 
               reminderSent = true;
               results.reminder5Sent++;
