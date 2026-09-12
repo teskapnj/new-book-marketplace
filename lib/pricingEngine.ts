@@ -673,13 +673,21 @@ function handleNoPriceScenario(category: ProductCategory, salesRank: number): Pr
  * CD/DVD: rank ≤ 100,000 ise $1.95, 100k-300k ise $0.95, üstündeyse reddet
  * NOT: Used fiyatın kendi tutarı burada kriter olarak kullanılmıyor, sadece rank bakılıyor.
  */
-function handleUsedOnlyScenario(category: ProductCategory, salesRank: number): PricingResult {
+function handleUsedOnlyScenario(
+  category: ProductCategory,
+  salesRank: number,
+  usedPrice: number
+): PricingResult {
+  const calculateUsedOffer = (maxPrice: number) => {
+    const fivePercent = Math.round(usedPrice * 0.05 * 100) / 100;
+    return Math.min(Math.max(fivePercent, 0.40), maxPrice);
+  };
   switch (category) {
     case 'books':
   if (salesRank <= USED_ONLY_BOOK_RANK_LIMIT) {
     return {
       accepted: true,
-      ourPrice: USED_ONLY_BOOK_PRICE,
+      ourPrice: calculateUsedOffer(USED_ONLY_BOOK_PRICE),
       category: 'books',
       priceRange: "Used price only",
       rankRange: `≤ ${USED_ONLY_BOOK_RANK_LIMIT.toLocaleString()}`
@@ -689,7 +697,7 @@ function handleUsedOnlyScenario(category: ProductCategory, salesRank: number): P
   if (salesRank <= USED_ONLY_BOOK_HIGH_RANK_LIMIT) {
     return {
       accepted: true,
-      ourPrice: USED_ONLY_BOOK_HIGH_RANK_PRICE,
+      ourPrice: calculateUsedOffer(USED_ONLY_BOOK_HIGH_RANK_PRICE),
       category: 'books',
       priceRange: "Used price only",
       rankRange: "1M-1.5M"
@@ -707,7 +715,7 @@ function handleUsedOnlyScenario(category: ProductCategory, salesRank: number): P
       if (salesRank <= USED_ONLY_MEDIA_RANK_LIMIT) {
         return {
           accepted: true,
-          ourPrice: USED_ONLY_MEDIA_PRICE,
+          ourPrice: calculateUsedOffer(USED_ONLY_MEDIA_PRICE),
           category,
           priceRange: "Used price only",
           rankRange: `≤ ${USED_ONLY_MEDIA_RANK_LIMIT.toLocaleString()}`
@@ -717,7 +725,7 @@ function handleUsedOnlyScenario(category: ProductCategory, salesRank: number): P
       if (salesRank <= USED_ONLY_MEDIA_HIGH_RANK_LIMIT) {
         return {
           accepted: true,
-          ourPrice: USED_ONLY_MEDIA_HIGH_RANK_PRICE,
+          ourPrice: calculateUsedOffer(USED_ONLY_MEDIA_HIGH_RANK_PRICE),
           category,
           priceRange: "Used price only",
           rankRange: "100k-300k"
@@ -784,7 +792,11 @@ if (category === 'games') {
 
   // SENARYO 3-4: NEW yok, USED var
   if (product.priceType === 'used') {
-    return handleUsedOnlyScenario(category, product.sales_rank);
+    return handleUsedOnlyScenario(
+      category,
+      product.sales_rank,
+      product.price
+    );
   }
 
   // SENARYO 5-6: NEW fiyat var (priceType 'new' veya belirtilmemişse geriye dönük uyumluluk için 'new' kabul edilir)
