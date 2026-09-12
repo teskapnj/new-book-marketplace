@@ -442,7 +442,7 @@ export async function POST(request: NextRequest) {
                 <tr>
                   <td style="padding:18px 20px; font-size:15px; color:#1e40af; line-height:1.5;">
                     <strong>Your payment:</strong>
-                    Once your items arrive and are checked, we'll send payment straight to your PayPal account.
+                    Once your items arrive and are checked, we'll send payment to your selected PayPal or Venmo account.
                   </td>
                 </tr>
               </table>
@@ -518,7 +518,7 @@ NEXT STEPS
 3. Attach the printed label to the package
 4. Drop it off at ${carrierUpper}
 
-Your payment: Once your items arrive and are checked, we'll send payment straight to your PayPal account.
+Your payment: Once your items arrive and are checked, we'll send payment to your selected PayPal or Venmo account.
 
 Questions? Just reply to this email.
 

@@ -67,7 +67,7 @@ const faqSchema = {
       name: 'How fast do I get paid?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Payment is processed within 2 business days after your items arrive at our facility. We pay directly to your PayPal account. You\'ll receive email confirmation once payment is sent.',
+        text: 'Payment is processed within 2 business days after your items arrive at our facility. We pay directly to your selected PayPal or Venmo account. You\'ll receive email confirmation once payment is sent.',
       },
     },
     {

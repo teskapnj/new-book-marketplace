@@ -89,7 +89,7 @@ const GROUPS: Group[] = [
       },
       {
         q: "How do I get paid?",
-        a: "Payment goes to the PayPal address you entered, within 2 business days of inspection. You'll get an email confirming the details.",
+        a: "Payment goes to the PayPal or Venmo account you selected, within 2 business days of inspection. You'll get an email confirming the details.",
       },
       {
         q: "Do you return items you don't accept?",

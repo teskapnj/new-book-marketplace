@@ -215,7 +215,7 @@ export default function SellLargeCDCollectionGuide() {
               <span aria-hidden="true">•</span>
               <span>Free shipping</span>
               <span aria-hidden="true">•</span>
-              <span>PayPal payment</span>
+              <span>PayPal or Venmo payment</span>
             </div>
           </section>
 
@@ -557,7 +557,7 @@ export default function SellLargeCDCollectionGuide() {
                 When you are ready, complete the order and use the prepaid
                 shipping label provided for your shipment. After the items
                 arrive and pass inspection, qualifying items are paid through
-                PayPal.
+                PayPal or Venmo.
               </p>
             </div>
 
@@ -748,7 +748,7 @@ export default function SellLargeCDCollectionGuide() {
               <span aria-hidden="true">•</span>
               <span>Free shipping</span>
               <span aria-hidden="true">•</span>
-              <span>PayPal payment</span>
+              <span>PayPal or Venmo payment</span>
             </div>
           </div>
 

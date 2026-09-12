@@ -426,7 +426,7 @@ export default function BookValueByIsbnGuide() {
                   </Link>
 
                   <span className="text-sm text-slate-500">
-                    Instant offer • Free shipping • PayPal payment
+                    Instant offer • Free shipping • PayPal or Venmo payment
                   </span>
                 </div>
               </div>
@@ -670,7 +670,7 @@ export default function BookValueByIsbnGuide() {
               <span aria-hidden="true">•</span>
               <span>Free shipping</span>
               <span aria-hidden="true">•</span>
-              <span>PayPal payment</span>
+              <span>PayPal or Venmo payment</span>
             </div>
           </div>
         </article>

@@ -142,7 +142,7 @@ export default function ReturnsPolicyPage() {
               <div className="px-5 py-5">
                 <p className="font-serif text-xl font-bold text-slate-900">You get paid</p>
                 <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
-                  Payment is sent to your PayPal account within 2 business days of inspection.
+                Payment is sent to your selected PayPal or Venmo account within 2 business days of inspection.
                 </p>
               </div>
             </div>

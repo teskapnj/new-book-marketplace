@@ -66,7 +66,7 @@ const STEPS = [
   "See your offer instantly for qualifying books.",
   "Add books, CDs, DVDs, and games to the same order until you reach the checkout minimum.",
   "Use the prepaid shipping label we email you to send your box.",
-  "After your shipment is received and inspected, qualifying items are paid through PayPal.",
+  "After your shipment is received and inspected, qualifying items are paid through PayPal or Venmo.",
 ];
 
 const FAQ = [
@@ -284,7 +284,7 @@ export default function BookValueGuide() {
                   </Link>
 
                   <span className="text-sm text-slate-500">
-                    Instant offer • Free shipping • PayPal payment
+                    Instant offer • Free shipping • PayPal or Venmo payment
                   </span>
                 </div>
               </div>
@@ -581,7 +581,7 @@ export default function BookValueGuide() {
               <span aria-hidden="true">•</span>
               <span>Free shipping</span>
               <span aria-hidden="true">•</span>
-              <span>PayPal payment</span>
+              <span>PayPal or Venmo payment</span>
             </div>
           </div>
 

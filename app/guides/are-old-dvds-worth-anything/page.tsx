@@ -216,7 +216,7 @@ export default function AreOldDVDsWorthAnythingPage() {
               <span aria-hidden="true">•</span>
               <span>Free shipping</span>
               <span aria-hidden="true">•</span>
-              <span>PayPal payment</span>
+              <span>PayPal or Venmo payment</span>
             </div>
           </section>
 
@@ -903,7 +903,7 @@ export default function AreOldDVDsWorthAnythingPage() {
               <span aria-hidden="true">•</span>
               <span>Free shipping</span>
               <span aria-hidden="true">•</span>
-              <span>PayPal payment</span>
+              <span>PayPal or Venmo payment</span>
             </div>
           </div>
         </article>

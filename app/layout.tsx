@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     template: '%s | SellBook Media',
   },
   description:
-    'Sell your books, CDs, DVDs, Blu-rays, 4K movies, and video games for cash. Get instant barcode offers, free prepaid shipping, and fast PayPal payments.',
+    'Sell your books, CDs, DVDs, Blu-rays, 4K movies, and video games for cash. Get instant barcode offers, free prepaid shipping, and fast PayPal or Venmo payments.',
 
   // ❌ KEYWORDS KALDIRILDI - Google kullanmıyor (deprecated since 2009)
   // keywords: [...],
@@ -63,7 +63,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'SellBook Media - Sell Your Books for Cash',
     description:
-      'Turn your books into cash with instant quotes, free prepaid shipping, and fast PayPal payments.',
+      'Turn your books into cash with instant quotes, free prepaid shipping, and fast PayPal or Venmo payments.',
     images: ['/twitter-image.jpg'],
   },
 

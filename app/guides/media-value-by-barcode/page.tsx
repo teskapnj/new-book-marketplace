@@ -299,7 +299,7 @@ export default function MediaValueByBarcodeGuide() {
                   <span aria-hidden="true">•</span>
                   <span>Free shipping</span>
                   <span aria-hidden="true">•</span>
-                  <span>PayPal payment</span>
+                  <span>PayPal or Venmo payment</span>
                 </div>
               </div>
             </div>

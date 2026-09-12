@@ -129,7 +129,7 @@ export default function PrivacyPolicyPage() {
                 "Full name (first and last name)",
                 "Email address",
                 "Shipping address (street address, city, state, ZIP code)",
-                "PayPal account email address",
+                "PayPal or Venmo account information",
               ]}
             />
 
@@ -163,7 +163,7 @@ export default function PrivacyPolicyPage() {
                 "Processing your item submissions and sales",
                 "Generating and sending prepaid shipping labels",
                 "Inspecting and evaluating submitted items",
-                "Processing PayPal payments for accepted items",
+                "Processing PayPal or Venmo payments for accepted items",
                 "Providing customer support and assistance",
               ]}
             />
@@ -199,7 +199,7 @@ export default function PrivacyPolicyPage() {
             <SubHeading>Payment processing</SubHeading>
             <List
               items={[
-                "PayPal receives your email address to process payments",
+                "PayPal or Venmo may receive the account information needed to process your selected payment method",
                 "No financial account details are stored on our servers",
               ]}
             />
@@ -275,7 +275,7 @@ export default function PrivacyPolicyPage() {
               items={[
                 "View and update your account information",
                 "Correct inaccurate personal data",
-                "Update your PayPal email address",
+                "Update your PayPal or Venmo payment information",
               ]}
             />
 

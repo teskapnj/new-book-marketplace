@@ -74,7 +74,7 @@ const guideSchema = {
     {
       '@type': 'HowToStep',
       name: 'Get Paid',
-      text: 'Receive payment within 2 business days after delivery via PayPal.',
+      text: 'Receive payment within 2 business days after delivery via PayPal or Venmo.',
       position: 6,
     },
   ],

@@ -523,14 +523,24 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
       <div>
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Where should we send the label?</h3>
 
-{user?.email && (
-  <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3">
-    <p className="text-sm text-gray-600">
+      {user?.email && (
+  <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-4">
+    <p className="text-sm font-medium text-gray-700">
       Your prepaid shipping label will be sent to:
     </p>
-    <p className="text-sm font-semibold text-gray-900 break-all">
+
+    <p className="mt-1 text-lg font-bold text-gray-900 break-all">
       {user.email}
     </p>
+
+    <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5">
+      <p className="text-sm font-semibold text-amber-900">
+        Please double-check your email address.
+      </p>
+      <p className="mt-1 text-sm text-amber-800">
+        Your shipping label and important order updates will be sent to this email.
+      </p>
+    </div>
   </div>
 )}
 

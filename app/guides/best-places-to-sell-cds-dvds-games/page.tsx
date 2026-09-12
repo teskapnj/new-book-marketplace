@@ -13,7 +13,7 @@ const COMPARISON = [
   {
     name: "SellBookMedia",
     takes: "Books, CDs, DVDs, Blu-rays, 4K & games",
-    payment: "PayPal",
+    payment: "PayPal or Venmo",
     note: "Scan a barcode and get an instant offer. No app required, with free shipping.",
     highlight: true,
   },
@@ -58,7 +58,7 @@ const FAQ = [
   },
   {
     q: "How fast do I get paid?",
-    a: "Payment timing varies by service. SellBookMedia uses PayPal and processes qualifying orders after the shipment is received and inspected.",
+    a: "Payment timing varies by service. SellBookMedia uses PayPal or Venmo and processes qualifying orders after the shipment is received and inspected.",
   },
   {
     q: "Do I need an account just to check a price?",
@@ -269,7 +269,7 @@ refund.
                   </Link>
 
                   <span className="text-sm text-slate-500">
-                  Free shipping • PayPal payment
+                  Free shipping • PayPal or Venmo payment
                   </span>
                 </div>
               </div>
@@ -513,7 +513,7 @@ refund.
                   Get paid
                 </h3>
                 <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                  Qualifying items are paid through PayPal after inspection.
+                  Qualifying items are paid through PayPal or Venmo after inspection.
                 </p>
               </div>
             </div>
@@ -588,7 +588,7 @@ refund.
               <span aria-hidden="true">•</span>
               <span>Free shipping</span>
               <span aria-hidden="true">•</span>
-              <span>PayPal payment</span>
+              <span>PayPal or Venmo payment</span>
             </div>
           </div>
         </article>
