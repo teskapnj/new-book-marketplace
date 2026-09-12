@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 </head>
 <body style="margin:0; padding:0; background-color:#f1f5f9; -webkit-font-smoothing:antialiased;">
   <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;">
-    Your payment of $${paymentAmount} has been sent to your PayPal account.
+    Your payment of $${paymentAmount} has been sent to your selected payment account.
   </div>
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f1f5f9; padding:24px 0;">
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
           <!-- Amount highlight -->
           <tr>
             <td style="padding:32px 40px 8px 40px; text-align:center;">
-              <div style="font-size:14px; color:#64748b; margin-bottom:6px;">Amount sent to your PayPal</div>
+              <div style="font-size:14px; color:#64748b; margin-bottom:6px;">Amount sent</div>
               <div style="font-size:40px; font-weight:800; color:#10b981; line-height:1.1;">$${paymentAmount}</div>
             </td>
           </tr>
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
                 Hi ${sellerName},
               </p>
               <p style="margin:0; font-size:16px; line-height:1.6; color:#334155;">
-                Great news — we've received and checked your items, and your payment has been sent. The funds should appear in your PayPal account within a few minutes.
+                Great news — we've received and checked your items, and your payment has been sent via PayPal or Venmo, based on your selected payment method. The funds should appear in your account within a few minutes.
               </p>
             </td>
           </tr>
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
                         <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:14px; color:#0f172a; font-weight:600; text-align:right;">$${paymentAmount}</td>
                       </tr>
                       <tr>
-                        <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:14px; color:#64748b;">PayPal Transaction ID</td>
+                        <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:14px; color:#64748b;">Payment Transaction ID</td>
                         <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:14px; color:#0f172a; font-weight:600; text-align:right; font-family:monospace;">${transactionId}</td>
                       </tr>
                       <tr>
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
                   <td style="padding:22px 26px;">
                     <div style="font-size:14px; font-weight:700; color:#92400e; margin-bottom:12px;">What's Next</div>
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px; color:#78350f; line-height:1.5;">
-                      <tr><td style="padding:5px 0;">&bull;&nbsp;&nbsp;Check your PayPal account for the incoming payment</td></tr>
+                      <tr><td style="padding:5px 0;">&bull;&nbsp;&nbsp;Check your PayPal or Venmo account for the incoming payment</td></tr>
                       <tr><td style="padding:5px 0;">&bull;&nbsp;&nbsp;Payment typically appears within 5-10 minutes</td></tr>
                       <tr><td style="padding:5px 0;">&bull;&nbsp;&nbsp;Keep this email for your records</td></tr>
                     </table>
@@ -198,17 +198,17 @@ export async function POST(request: NextRequest) {
 
 Hi ${sellerName},
 
-Great news! We've successfully sent your payment for the approved listing. The funds should appear in your PayPal account within a few minutes.
+Great news! We've successfully sent your payment for the approved listing via PayPal or Venmo, based on your selected payment method. The funds should appear in your account within a few minutes.
 
 Payment Details:
 - Listing: ${listingTitle}
 - Amount: $${paymentAmount}
-- PayPal Transaction ID: ${transactionId}
+- Payment Transaction ID: ${transactionId}
 - Listing ID: ${listingId}
 ${notes ? `- Note: ${notes}` : ''}
 
 What's Next?
-- Check your PayPal account for the incoming payment
+- Check your PayPal or Venmo account for the incoming payment
 - Payment typically appears within 5-10 minutes
 - Keep this email for your records
 
