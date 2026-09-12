@@ -116,9 +116,9 @@ const NO_PRICE_BOOK_PRICE = 3;
 const NO_PRICE_BOOK_HIGH_RANK_LIMIT = 1_500_000;
 const NO_PRICE_BOOK_HIGH_RANK_PRICE = 0.75;
 const NO_PRICE_MEDIA_RANK_LIMIT = 100_000; // CD / DVD
-const NO_PRICE_MEDIA_PRICE = 1.5;
+const NO_PRICE_MEDIA_PRICE = 1.95;
 const NO_PRICE_MEDIA_HIGH_RANK_LIMIT = 300_000;
-const NO_PRICE_MEDIA_HIGH_RANK_PRICE = 0.75;
+const NO_PRICE_MEDIA_HIGH_RANK_PRICE = 0.95;
 
 // Senaryo: NEW yok, USED var
 const USED_ONLY_BOOK_RANK_LIMIT = 1_000_000;
@@ -126,9 +126,9 @@ const USED_ONLY_BOOK_PRICE = 1.5;
 const USED_ONLY_BOOK_HIGH_RANK_LIMIT = 1_500_000;
 const USED_ONLY_BOOK_HIGH_RANK_PRICE = 0.75;
 const USED_ONLY_MEDIA_RANK_LIMIT = 100_000; // CD / DVD
-const USED_ONLY_MEDIA_PRICE = 1.5;
+const USED_ONLY_MEDIA_PRICE = 1.95;
 const USED_ONLY_MEDIA_HIGH_RANK_LIMIT = 300_000;
-const USED_ONLY_MEDIA_HIGH_RANK_PRICE = 0.75;
+const USED_ONLY_MEDIA_HIGH_RANK_PRICE = 0.95;
 
 /**
  * Kitap kategorisi için fiyatlandırma kuralları (NEW fiyat mevcutken kullanılır)
@@ -597,7 +597,7 @@ function calculateGamePrice(
 /**
  * SENARYO 1-2: Hiç fiyat yok (ne NEW ne USED)
  * Kitap: rank ≤ 1,000,000 ise $3, 1M-1.5M ise $0.75, üstündeyse reddet
- * CD/DVD: rank ≤ 100,000 ise $1.50, 100k-300k ise $0.75, üstündeyse reddet
+ * CD/DVD: rank ≤ 100,000 ise $1.95, 100k-300k ise $0.95, üstündeyse reddet
  */
 function handleNoPriceScenario(category: ProductCategory, salesRank: number): PricingResult {
   switch (category) {
@@ -670,7 +670,7 @@ function handleNoPriceScenario(category: ProductCategory, salesRank: number): Pr
 /**
  * SENARYO 3-4: NEW fiyat yok, USED fiyat var
  * Kitap: rank ≤ 1,000,000 ise $1.5, 1M-1.5M ise $0.75, üstündeyse reddet
- * CD/DVD: rank ≤ 100,000 ise $1.50, 100k-300k ise $0.75, üstündeyse reddet
+ * CD/DVD: rank ≤ 100,000 ise $1.95, 100k-300k ise $0.95, üstündeyse reddet
  * NOT: Used fiyatın kendi tutarı burada kriter olarak kullanılmıyor, sadece rank bakılıyor.
  */
 function handleUsedOnlyScenario(category: ProductCategory, salesRank: number): PricingResult {
