@@ -495,6 +495,9 @@ export async function POST(request: NextRequest) {
       console.log(
         `⚡ CACHE HIT: ${cleanCode} | ` +
         `Price: $${cachedProduct?.price ?? 0} (${cachedProduct?.priceType || 'unknown'}) | ` +
+        `${cachedPricing?.category === 'games'
+          ? `Platform: ${cachedProduct?.gamePlatform || 'N/A'} | GameNEW: $${cachedProduct?.gameNewPrice ?? 0} | GameUSED: $${cachedProduct?.gameUsedPrice ?? 0} | Rule: ${cachedPricing?.priceRange || 'N/A'} | `
+          : ''}` +
         `Rank: ${cachedProduct?.sales_rank ?? 0} | ` +
         `Category: ${cachedProduct?.category || 'Unknown'} | ` +
         `Binding: ${cachedProduct?.binding || 'N/A'} | ` +
@@ -633,6 +636,9 @@ after(async () => {
     console.log(
       `💾 CACHE WRITE: ${cleanCode} | ` +
       `Price: $${product.price ?? 0} (${product.priceType || 'unknown'}) | ` +
+      `${pricingResult.category === 'games'
+        ? `Platform: ${product.gamePlatform || 'N/A'} | GameNEW: $${product.gameNewPrice ?? 0} | GameUSED: $${product.gameUsedPrice ?? 0} | Rule: ${pricingResult.priceRange || 'N/A'} | `
+        : ''}` +
       `Rank: ${product.sales_rank ?? 0} | ` +
       `Category: ${product.category || 'Unknown'} | ` +
       `Status: ${pricingResult.accepted ? 'ACCEPTED' : 'REJECTED'} | ` +
@@ -650,6 +656,9 @@ after(async () => {
     console.log(
       `💰 KEEPA: ${cleanCode} | ` +
       `Price: $${priceAnalysis.price} (${priceAnalysis.bestCondition}) | ` +
+      `${pricingResult.category === 'games'
+        ? `Platform: ${product.gamePlatform || 'N/A'} | GameNEW: $${product.gameNewPrice ?? 0} | GameUSED: $${product.gameUsedPrice ?? 0} | Rule: ${pricingResult.priceRange || 'N/A'} | `
+        : ''}` +
       `Rank: ${salesRank} | ` +
       `Category: ${category} | ` +
       `Binding: ${product.binding || 'N/A'} | ` +
