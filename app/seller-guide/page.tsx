@@ -284,8 +284,9 @@ export default function SellerGuidePage() {
               <Card title="Before you submit" tone="warn">
                 <Bullets
                   items={[
-                    "Double-check your payment information — that's where the money goes",
-                    "Accurate dimensions matter; a wrong label costs you time",
+                    "Double-check your payment information — that's where your payment will be sent",
+                    "Double-check your email address — your shipping label and important updates will be sent there",
+                    "Make sure your package dimensions are accurate so we can create the correct shipping label",
                     "All fields are required to continue",
                   ]}
                 />
