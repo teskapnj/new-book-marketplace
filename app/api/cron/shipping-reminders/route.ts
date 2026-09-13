@@ -19,6 +19,14 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+const gmailTransporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
+});
+
 function getTimestampMs(value: any): number | null {
   if (!value) return null;
 
@@ -736,6 +744,24 @@ async function sendFiveDayReminder({
 
           ${alreadyShippedBlock()}
 
+          <tr>
+            <td style="padding:16px 24px 0 24px;">
+              <div style="
+                padding:14px 16px;
+                background-color:#f8fafc;
+                border:1px solid #e2e8f0;
+                border-radius:8px;
+                font-size:13px;
+                line-height:1.5;
+                color:#64748b;
+              ">
+                <strong>Friendly reminder:</strong> If you're expecting an email from us in the future,
+                please also check your spam or junk folder. Messages from
+                <strong>support@sellbookmedia.com</strong> may occasionally be filtered there by your email provider.
+              </div>
+            </td>
+          </tr>
+
           ${footerBlock(shortId)}
 
         </table>
@@ -781,15 +807,17 @@ If you no longer want to ship this order, simply reply to this email and let us 
 
 If you already dropped off your package recently, you can ignore this email while USPS updates the tracking information.
 
+Friendly reminder: If you're expecting an email from us in the future, please also check your spam or junk folder. Messages from support@sellbookmedia.com may occasionally be filtered there by your email provider.
+
 Questions? Just reply to this email - we're happy to help.
 
 SellBook Media
 Ref ${shortId}`;
 
-  await transporter.sendMail({
-    from: `"SellBook Media" <${process.env.EMAIL_USER}>`,
-    to: email,
+  await gmailTransporter.sendMail({
+    from: `"SellBook Media" <${process.env.GMAIL_USER}>`,
     replyTo: process.env.EMAIL_USER,
+    to: email,
     subject:
       "Reminder: USPS has not scanned your package yet",
     html: emailHtml,
