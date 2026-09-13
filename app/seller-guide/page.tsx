@@ -19,13 +19,13 @@ const STEPS = [
     id: "label",
     n: "03",
     title: "Get your shipping label",
-    blurb: "Free prepaid label once your bundle is approved",
+    blurb: "Free prepaid shipping label sent by email",
   },
   {
     id: "paid",
     n: "04",
     title: "Ship and get paid",
-    blurb: "Send your box, receive payment via PayPal or Venmo or Venmo",
+    blurb: "Send your box, receive payment via PayPal or Venmo",
   },
 ];
 
