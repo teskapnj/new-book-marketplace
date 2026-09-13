@@ -609,7 +609,7 @@ async function sendFiveDayReminder({
     opacity:0;
     color:transparent;
   ">
-    USPS has not scanned your package yet.
+    Just a quick reminder about your shipment.
   </div>
 
   <table
@@ -672,7 +672,7 @@ async function sendFiveDayReminder({
                 color:#d1fae5;
                 margin-top:8px;
               ">
-                USPS has not scanned your package yet.
+                Just a quick reminder about your shipment.
               </div>
 
             </td>
@@ -699,8 +699,8 @@ async function sendFiveDayReminder({
                 line-height:1.6;
                 color:#334155;
               ">
-                We noticed that USPS has not received
-                or scanned your package yet.
+                It looks like USPS has not scanned your package yet.
+If you haven't had a chance to ship it, no worries.
               </p>
 
               <p style="
@@ -709,15 +709,15 @@ async function sendFiveDayReminder({
                 line-height:1.6;
                 color:#334155;
               ">
-                ${
-                  labelAttachment
-                    ? `Your prepaid shipping label is attached to this email.
-                       Please print the attached PDF, pack your items securely,
-                       attach the label to your box, and drop it off at USPS
-                       as soon as possible.`
-                    : `Please pack your items securely and drop your package
-                       off at USPS as soon as possible.`
-                }
+              ${
+                labelAttachment
+                  ? `Your prepaid shipping label is attached to this email for your convenience.
+                     Whenever you're ready, simply print the attached PDF,
+                     pack your items securely, attach the label to your box,
+                     and drop it off at USPS.`
+                  : `Whenever you're ready, simply pack your items securely
+                     and drop your package off at USPS.`
+              }
               </p>
 
             </td>
@@ -755,10 +755,16 @@ async function sendFiveDayReminder({
                 line-height:1.5;
                 color:#64748b;
               ">
-                <strong>Friendly reminder:</strong> If you're expecting an email from us in the future,
-                please also check your spam or junk folder. Messages from
-                <strong>support@sellbookmedia.com</strong> may occasionally be filtered there by your email provider.
-              </div>
+                If you have any questions, simply reply to this email or contact us at
+<strong>support@sellbookmedia.com</strong>. We're happy to help.
+<br><br>
+<strong>Friendly reminder:</strong> If you're expecting emails from us,
+please also check your spam or junk folder. Messages from
+<strong>support@sellbookmedia.com</strong> may occasionally be filtered there by your email provider.
+<br><br>
+Thank you for using SellBook Media!
+
+</div>
             </td>
           </tr>
 
@@ -773,18 +779,20 @@ async function sendFiveDayReminder({
 </body>
 </html>`;
 
-  const emailText = `Shipping Reminder
+const emailText = `Shipping Reminder
 
 Hi ${sellerName},
 
-We noticed that USPS has not received or scanned your package yet.
+Just a quick reminder about your SellBook Media shipment.
+
+It looks like USPS has not scanned your package yet. If you haven't had a chance to ship it, no worries.
 
 ${
   labelAttachment
-    ? `Your prepaid shipping label is attached to this email.
+    ? `Your prepaid shipping label is attached to this email for your convenience.
 
-Please print the attached PDF, pack your items securely, attach the label to your box, and drop it off at USPS as soon as possible.`
-    : `Please pack your items securely and drop your package off at USPS as soon as possible.`
+Whenever you're ready, simply print the attached PDF, pack your items securely, attach the label to your box, and drop it off at USPS.`
+    : `Whenever you're ready, simply pack your items securely and drop your package off at USPS.`
 }
 
 SHIPPING
@@ -803,13 +811,16 @@ ${
 `
     : ""
 }CHANGED YOUR MIND?
-If you no longer want to ship this order, simply reply to this email and let us know.
+That's okay too. Simply reply to this email and let us know.
 
-If you already dropped off your package recently, you can ignore this email while USPS updates the tracking information.
+ALREADY SHIPPED?
+You can ignore this message. Sometimes USPS tracking takes a little time to update after a package is dropped off.
 
-Friendly reminder: If you're expecting an email from us in the future, please also check your spam or junk folder. Messages from support@sellbookmedia.com may occasionally be filtered there by your email provider.
+If you have any questions, simply reply to this email or contact us at support@sellbookmedia.com. We're happy to help.
 
-Questions? Just reply to this email - we're happy to help.
+Friendly reminder: If you're expecting emails from us, please also check your spam or junk folder. Messages from support@sellbookmedia.com may occasionally be filtered there by your email provider.
+
+Thank you for using SellBook Media!
 
 SellBook Media
 Ref ${shortId}`;
@@ -884,7 +895,7 @@ async function sendTenDayReminder({
     opacity:0;
     color:transparent;
   ">
-    Final shipping reminder: please ship your package within the next 5 days.
+    A friendly final reminder about your SellBook Media shipment.
   </div>
 
   <table
@@ -975,8 +986,17 @@ async function sendTenDayReminder({
                 line-height:1.6;
                 color:#334155;
               ">
-                USPS still has not received or scanned
-                your package.
+                Just a friendly final reminder about your SellBook Media shipment.
+              </p>
+
+              <p style="
+                margin:14px 0 0 0;
+                font-size:16px;
+                line-height:1.6;
+                color:#334155;
+              ">
+                It looks like USPS still hasn't scanned your package.
+                You have <strong>5 days remaining</strong> to send it.
               </p>
 
               <p style="
@@ -987,11 +1007,12 @@ async function sendTenDayReminder({
               ">
                 ${
                   labelAttachment
-                    ? `Your prepaid shipping label is attached to this email.
-                       Please print the attached PDF and ship your package
-                       within the next <strong>5 days</strong>.`
-                    : `Please ship your package within the next
-                       <strong>5 days</strong>.`
+                    ? `Your prepaid shipping label is attached to this email again for your convenience.
+                       When you're ready, simply print the attached PDF,
+                       pack your items securely, attach the label to your box,
+                       and drop it off at USPS.`
+                    : `When you're ready, simply pack your items securely
+                       and drop your package off at USPS within the next 5 days.`
                 }
               </p>
 
@@ -1010,9 +1031,9 @@ async function sendTenDayReminder({
                 cellpadding="0"
                 cellspacing="0"
                 style="
-                  background-color:#fff7ed;
+                  background-color:#fffbeb;
                   border-radius:12px;
-                  border:1px solid #fdba74;
+                  border:1px solid #fde68a;
                 "
               >
                 <tr>
@@ -1023,21 +1044,20 @@ async function sendTenDayReminder({
                       font-weight:700;
                       letter-spacing:1px;
                       text-transform:uppercase;
-                      color:#c2410c;
+                      color:#92400e;
                       margin-bottom:10px;
                     ">
-                      Important
+                      5 Days Remaining
                     </div>
 
                     <div style="
                       font-size:16px;
-                      color:#9a3412;
+                      color:#78350f;
                       line-height:1.6;
                     ">
-                      Please ship your package within
-                      the next <strong>5 days</strong>
-                      to keep your SellBookMedia
-                      shipping window active.
+                      Your shipping window is still open.
+                      Please send your package within the next
+                      <strong>5 days</strong>.
                     </div>
 
                   </td>
@@ -1068,6 +1088,29 @@ async function sendTenDayReminder({
 
           ${alreadyShippedBlock()}
 
+          <tr>
+            <td style="padding:16px 24px 0 24px;">
+              <div style="
+                padding:14px 16px;
+                background-color:#f8fafc;
+                border:1px solid #e2e8f0;
+                border-radius:8px;
+                font-size:13px;
+                line-height:1.5;
+                color:#64748b;
+              ">
+                If you have any questions, simply reply to this email or contact us at
+                <strong>support@sellbookmedia.com</strong>. We're happy to help.
+                <br><br>
+                <strong>Friendly reminder:</strong> If you're expecting emails from us,
+                please also check your spam or junk folder. Messages from
+                <strong>support@sellbookmedia.com</strong> may occasionally be filtered there by your email provider.
+                <br><br>
+                Thank you for using SellBook Media!
+              </div>
+            </td>
+          </tr>
+
           ${footerBlock(shortId)}
 
         </table>
@@ -1079,22 +1122,24 @@ async function sendTenDayReminder({
 </body>
 </html>`;
 
-  const emailText = `Final Shipping Reminder - 5 Days Remaining
+  const emailText = `Final Shipping Reminder
 
 Hi ${sellerName},
 
-USPS still has not received or scanned your package.
+Just a friendly final reminder about your SellBook Media shipment.
+
+It looks like USPS still hasn't scanned your package. You have 5 days remaining to send it.
 
 ${
   labelAttachment
-    ? `Your prepaid shipping label is attached to this email.
+    ? `Your prepaid shipping label is attached to this email again for your convenience.
 
-Please print the attached PDF and ship your package within the next 5 days.`
-    : `Please ship your package within the next 5 days.`
+When you're ready, simply print the attached PDF, pack your items securely, attach the label to your box, and drop it off at USPS.`
+    : `When you're ready, simply pack your items securely and drop your package off at USPS within the next 5 days.`
 }
 
-IMPORTANT
-Please ship your package within the next 5 days to keep your SellBookMedia shipping window active.
+5 DAYS REMAINING
+Your shipping window is still open. Please send your package within the next 5 days.
 
 SHIPPING
 Tracking number: ${trackingNumber}
@@ -1112,11 +1157,16 @@ ${
 `
     : ""
 }CHANGED YOUR MIND?
-If you no longer want to ship this order, simply reply to this email and let us know.
+That's okay too. Simply reply to this email and let us know.
 
-If you already dropped off your package recently, you can ignore this email while USPS updates the tracking information.
+ALREADY SHIPPED?
+You can ignore this message. Sometimes USPS tracking takes a little time to update after a package is dropped off.
 
-Questions? Just reply to this email - we're happy to help.
+If you have any questions, simply reply to this email or contact us at support@sellbookmedia.com. We're happy to help.
+
+Friendly reminder: If you're expecting emails from us, please also check your spam or junk folder. Messages from support@sellbookmedia.com may occasionally be filtered there by your email provider.
+
+Thank you for using SellBook Media!
 
 SellBook Media
 Ref ${shortId}`;
