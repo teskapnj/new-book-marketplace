@@ -1168,7 +1168,7 @@ useEffect(() => {
         </h3>
 
         <p className="text-gray-600 text-center mb-6">
-          Your prepaid shipping label will be emailed to you shortly.
+          Your prepaid shipping label will be sent automatically by email the same day.
         </p>
 
         <div className="bg-blue-50 rounded-lg p-4">
@@ -1218,7 +1218,7 @@ useEffect(() => {
           </div>
         </div>
         <p className="mt-4 text-center text-sm text-gray-500">
-  If you don&apos;t receive your shipping label within 24 hours, please contact us at support@sellbookmedia.com.
+  If you don&apos;t receive your shipping label the same day, please check your spam/junk folder first. If it&apos;s still not there, email us at support@sellbookmedia.com.
 </p>
       </div>
     </div>

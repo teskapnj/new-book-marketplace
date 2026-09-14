@@ -110,9 +110,6 @@ export default function CheckoutForm({
   const [description, setDescription] = useState("");
   const [shippingError, setShippingError] = useState("");
   const [error, setError] = useState("");
-  const [dimensionErrors, setDimensionErrors] = useState({
-    length: "", width: "", height: "", weight: ""
-  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 const [submitStage, setSubmitStage] = useState("");
 const [isLoaded, setIsLoaded] = useState(false);
@@ -216,35 +213,10 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
     setShippingInfo(prev => ({ ...prev, address: { ...prev.address, [field]: value } }));
   };
 
-  const handleDimensionChange = (field: keyof PackageDimensions, value: number) => {
-    const num = isNaN(value) ? 0 : value;
-    setShippingInfo(prev => ({
-      ...prev,
-      packageDimensions: { ...prev.packageDimensions, [field]: num }
-    }));
-
-    const next = { ...dimensionErrors };
-    const limits: Record<keyof PackageDimensions, { max: number; msg: string }> = {
-      length: { max: 18, msg: "Length cannot exceed 18 inches" },
-      width: { max: 16, msg: "Width cannot exceed 16 inches" },
-      height: { max: 16, msg: "Height cannot exceed 16 inches" },
-      weight: { max: 50, msg: "Weight cannot exceed 50 pounds" }
-    };
-    next[field] = num > limits[field].max ? limits[field].msg : "";
-    setDimensionErrors(next);
-
-    if (next.length || next.width || next.height || next.weight) {
-      setShippingError("Package exceeds size or weight limits");
-    } else {
-      setShippingError("");
-    }
-  };
-
   // -------------------------------------------------------------------------
   // Dogrulama
   // -------------------------------------------------------------------------
   const validate = (): boolean => {
-    setDimensionErrors({ length: "", width: "", height: "", weight: "" });
 
     if (!shippingInfo.firstName.trim() || !shippingInfo.lastName.trim()) {
       setShippingError("Please enter your first and last name");
@@ -276,26 +248,6 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
     const a = shippingInfo.address;
     if (!a.street || !a.city || !a.state || !a.zip) {
       setShippingError("Please fill in all address fields");
-      return false;
-    }
-    const d = shippingInfo.packageDimensions;
-    if (d.length <= 0 || d.width <= 0 || d.height <= 0 || d.weight <= 0) {
-      setShippingError("Please enter valid package dimensions and weight");
-      return false;
-    }
-    if (d.weight > 50) {
-      setDimensionErrors(p => ({ ...p, weight: "Weight cannot exceed 50 pounds" }));
-      setShippingError("Package weight cannot exceed 50 pounds");
-      return false;
-    }
-    if (d.length > 18 || d.width > 16 || d.height > 16) {
-      setDimensionErrors({
-        length: d.length > 18 ? "Length cannot exceed 18 inches" : "",
-        width: d.width > 16 ? "Width cannot exceed 16 inches" : "",
-        height: d.height > 16 ? "Height cannot exceed 16 inches" : "",
-        weight: ""
-      });
-      setShippingError("Package dimensions cannot exceed 18x16x16 inches");
       return false;
     }
 
@@ -700,33 +652,28 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
   )}
 </div>
 
-      {/* Kutu */}
+      {/* One box notice */}
       <div className="border-t border-gray-100 pt-5">
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">Your box</h3>
-        <p className="text-sm text-gray-500 mb-3">
-        Approximate measurements are fine. One box per order, max 18 × 16 × 16 in and 50 lbs.
-        </p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {([
-            { key: "length" as const, label: "Approx. Length (in)", max: 18 },
-            { key: "width" as const, label: "Approx. Width (in)", max: 16 },
-            { key: "height" as const, label: "Approx. Height (in)", max: 16 },
-            { key: "weight" as const, label: "Approx. Weight (lb)", max: 50 }
-          ]).map(f => (
-            <div key={f.key}>
-              <label className="block text-xs font-medium text-gray-600 mb-1">{f.label}</label>
-              <input type="number" min="0" max={f.max} step="1"
-                value={shippingInfo.packageDimensions[f.key] || ""}
-                onChange={e => handleDimensionChange(f.key, parseFloat(e.target.value) || 0)}
-                placeholder="0"
-                className={`block w-full px-3 py-2.5 text-base border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  dimensionErrors[f.key] ? "border-red-500" : "border-gray-300"
-                }`} />
-              {dimensionErrors[f.key] && (
-                <p className="text-xs text-red-600 mt-1">{dimensionErrors[f.key]}</p>
-              )}
-            </div>
-          ))}
+        <div className="flex items-start gap-2 rounded-xl border border-gray-200 bg-white p-3">
+          <svg
+            width="16"
+            height="16"
+            className="text-gray-500 flex-shrink-0 mt-0.5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <line x1="16.5" y1="9.4" x2="7.5" y2="4.21" />
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+          </svg>
+
+          <p className="text-xs text-gray-600 leading-relaxed">
+            <span className="font-semibold text-gray-800">One box per order.</span>{" "}
+            Maximum box size 18 × 16 × 16 in, maximum weight 50 lbs. If your items
+            won&apos;t fit in a single box, please submit them as separate orders.
+          </p>
         </div>
       </div>
 
