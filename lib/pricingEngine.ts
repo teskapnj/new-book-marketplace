@@ -12,10 +12,12 @@ export interface AmazonProduct {
   category: string;
   asin?: string;
   // YENİ ALAN: route.ts'ten gelen fiyatın tipini belirtir.
-  // 'new'  -> Keepa'dan gerçek NEW fiyatı geldi, kademeli bant sistemi uygulanır
-  // 'used' -> NEW yoktu, USED fiyatına düşüldü, sabit fiyat kuralı uygulanır
+  // 'new'  -> Keepa'dan gerçek NEW fiyatı geldi (CD/DVD icin kullanilir; BOOKS NEW'i yok sayar)
+  // 'used' -> NEW yoktu, USED fiyatına düşüldü
   // 'none' -> ne NEW ne USED fiyatı var, price alanı 0/boş
   priceType?: 'new' | 'used' | 'none';
+  // BOOKS: Keepa'dan gelen en dusuk USED fiyat. NEW kitap fiyatlandirmasinda kullanilmaz.
+  bookUsedPrice?: number;
   // GAME için Keepa'dan ayrı fiyatlar
 gameNewPrice?: number;
 gameUsedPrice?: number;
@@ -121,20 +123,23 @@ const NO_PRICE_MEDIA_HIGH_RANK_LIMIT = 300_000;
 const NO_PRICE_MEDIA_HIGH_RANK_PRICE = 0.95;
 
 // Senaryo: NEW yok, USED var
-const USED_ONLY_BOOK_RANK_LIMIT = 1_000_000;
-const USED_ONLY_BOOK_PRICE = 1.5;
-const USED_ONLY_BOOK_HIGH_RANK_LIMIT = 1_500_000;
-const USED_ONLY_BOOK_HIGH_RANK_PRICE = 0.75;
 const USED_ONLY_MEDIA_RANK_LIMIT = 100_000; // CD / DVD
 const USED_ONLY_MEDIA_PRICE = 1.95;
 const USED_ONLY_MEDIA_HIGH_RANK_LIMIT = 300_000;
 const USED_ONLY_MEDIA_HIGH_RANK_PRICE = 0.95;
 
 /**
- * Kitap kategorisi için fiyatlandırma kuralları (NEW fiyat mevcutken kullanılır)
+ * BOOKS: Sadece lowest USED fiyat kullanilir. NEW fiyat tamamen yok sayilir.
+ * Rank yuzdeleri:
+ *   <= 200k      -> %9
+ *   200k-500k    -> %7
+ *   500k-1M      -> %6
+ *   1M-1.5M      -> %5
+ * Lowest USED < $20 -> reject
+ * Maximum offer -> $20
  */
-function calculateBookPrice(price: number, salesRank: number): PricingResult {
-  if (salesRank > 1500000) {
+function calculateBookPrice(usedPrice: number, salesRank: number): PricingResult {
+  if (salesRank > 1_500_000) {
     return {
       accepted: false,
       reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
@@ -143,188 +148,43 @@ function calculateBookPrice(price: number, salesRank: number): PricingResult {
     };
   }
 
-  // ------------------------------------------------------------
-  // BOOKS: rank ≤ 200k
-  // ------------------------------------------------------------
-  if (salesRank <= 200000) {
-    if (price >= 16.99 && price < 20) {
-      return { accepted: true, ourPrice: 0.4, category: 'books', priceRange: "$16.99-19.99", rankRange: "≤ 200k" };
-    }
-    if (price >= 20 && price < 24) {
-      return { accepted: true, ourPrice: 0.45, category: 'books', priceRange: "$20-23.99", rankRange: "≤ 200k" };
-    }
-    if (price >= 24 && price < 27) {
-      return { accepted: true, ourPrice: 0.65, category: 'books', priceRange: "$24-26.99", rankRange: "≤ 200k" };
-    }
-    if (price >= 27 && price < 31) {
-      return { accepted: true, ourPrice: 1.2, category: 'books', priceRange: "$27-30.99", rankRange: "≤ 200k" };
-    }
-    if (price >= 31 && price < 40) {
-      return { accepted: true, ourPrice: 1.9, category: 'books', priceRange: "$31-39.99", rankRange: "≤ 200k" };
-    }
-    if (price >= 40 && price < 50) {
-      return { accepted: true, ourPrice: 2.4, category: 'books', priceRange: "$40-49.99", rankRange: "≤ 200k" };
-    }
-    
-    if (price >= 50 && price < 60) {
-      return { accepted: true, ourPrice: 2.9, category: 'books', priceRange: "$50-59.99", rankRange: "≤ 200k" };
-    }
-    
-    if (price >= 60 && price < 70) {
-      return { accepted: true, ourPrice: 3.65, category: 'books', priceRange: "$60-69.99", rankRange: "≤ 200k" };
-    }
-    
-    if (price >= 70 && price < 80) {
-      return { accepted: true, ourPrice: 4.65, category: 'books', priceRange: "$70-79.99", rankRange: "≤ 200k" };
-    }
-    
-    if (price >= 80 && price < 110) {
-      return { accepted: true, ourPrice: 6.65, category: 'books', priceRange: "$80-109.99", rankRange: "≤ 200k" };
-    }
-    
-    if (price >= 110 && price < 140) {
-      return { accepted: true, ourPrice: 7.65, category: 'books', priceRange: "$110-139.99", rankRange: "≤ 200k" };
-    }
-    
-    if (price >= 140) {
-      return { accepted: true, ourPrice: 8.65, category: 'books', priceRange: "$140+", rankRange: "≤ 200k" };
-    }
-
+  if (!usedPrice || usedPrice < 20) {
     return {
       accepted: false,
       reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
       category: 'books',
-      priceRange: `$${price}`
+      priceRange: usedPrice > 0 ? `Lowest used $${usedPrice} (< $20)` : "No used price"
     };
   }
 
-  // ------------------------------------------------------------
-  // BOOKS: rank 200k-500k
-  // ------------------------------------------------------------
-  if (salesRank <= 500000) {
-    if (price >= 19 && price < 23) {
-      return { accepted: true, ourPrice: 0.4, category: 'books', priceRange: "$19-22.99", rankRange: "200k-500k" };
-    }
-    if (price >= 23 && price < 27) {
-      return { accepted: true, ourPrice: 0.45, category: 'books', priceRange: "$23-26.99", rankRange: "200k-500k" };
-    }
-    if (price >= 27 && price < 31) {
-      return { accepted: true, ourPrice: 0.55, category: 'books', priceRange: "$27-30.99", rankRange: "200k-500k" };
-    }
-    if (price >= 31 && price < 40) {
-      return { accepted: true, ourPrice: 1.25, category: 'books', priceRange: "$31-39.99", rankRange: "200k-500k" };
-    }
-    if (price >= 40 && price < 50) {
-      return { accepted: true, ourPrice: 1.95, category: 'books', priceRange: "$40-49.99", rankRange: "200k-500k" };
-    }
-    if (price >= 50 && price < 60) {
-      return { accepted: true, ourPrice: 2.10, category: 'books', priceRange: "$50-59.99", rankRange: "200k-500k" };
-    }
-    if (price >= 60 && price < 70) {
-      return { accepted: true, ourPrice: 2.65, category: 'books', priceRange: "$60-69.99", rankRange: "200k-500k" };
-    }
-    if (price >= 70 && price < 80) {
-      return { accepted: true, ourPrice: 3.65, category: 'books', priceRange: "$70-79.99", rankRange: "200k-500k" };
-    }
-    if (price >= 80 && price < 110) {
-      return { accepted: true, ourPrice: 5.65, category: 'books', priceRange: "$80-109.99", rankRange: "200k-500k" };
-    }
-    if (price >= 110 && price < 140) {
-      return { accepted: true, ourPrice: 6.65, category: 'books', priceRange: "$110-139.99", rankRange: "200k-500k" };
-    }
-    if (price >= 140) {
-      return { accepted: true, ourPrice: 7.65, category: 'books', priceRange: "$140+", rankRange: "200k-500k" };
-    }
+  let percentage: number;
+  let rankRange: string;
 
-    return {
-      accepted: false,
-      reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
-      category: 'books',
-      priceRange: `$${price}`
-    };
+  if (salesRank <= 200_000) {
+    percentage = 0.09;
+    rankRange = "<= 200k";
+  } else if (salesRank <= 500_000) {
+    percentage = 0.07;
+    rankRange = "200k-500k";
+  } else if (salesRank <= 1_000_000) {
+    percentage = 0.06;
+    rankRange = "500k-1M";
+  } else {
+    percentage = 0.05;
+    rankRange = "1M-1.5M";
   }
 
-  // ------------------------------------------------------------
-  // BOOKS: rank 500k-1M
-  // ------------------------------------------------------------
-  if (salesRank <= 1000000) {
-    if (price >= 21.99 && price < 30) {
-      return { accepted: true, ourPrice: 0.4, category: 'books', priceRange: "$21.99-29.99", rankRange: "500k-1M" };
-    }
-    if (price >= 30 && price < 35) {
-      return { accepted: true, ourPrice: 0.5, category: 'books', priceRange: "$30-34.99", rankRange: "500k-1M" };
-    }
-    if (price >= 35 && price < 40) {
-      return { accepted: true, ourPrice: 0.9, category: 'books', priceRange: "$35-39.99", rankRange: "500k-1M" };
-    }
-    if (price >= 40 && price < 45) {
-      return { accepted: true, ourPrice: 1.2, category: 'books', priceRange: "$40-44.99", rankRange: "500k-1M" };
-    }
-    if (price >= 45 && price < 50) {
-      return { accepted: true, ourPrice: 1.65, category: 'books', priceRange: "$45-49.99", rankRange: "500k-1M" };
-    }
-    if (price >= 50 && price < 60) {
-      return { accepted: true, ourPrice: 2.15, category: 'books', priceRange: "$50-59.99", rankRange: "500k-1M" };
-    }
-    if (price >= 60 && price < 70) {
-      return { accepted: true, ourPrice: 2.65, category: 'books', priceRange: "$60-69.99", rankRange: "500k-1M" };
-    }
-    if (price >= 70 && price < 80) {
-      return { accepted: true, ourPrice: 3.15, category: 'books', priceRange: "$70-79.99", rankRange: "500k-1M" };
-    }
-    if (price >= 80 && price < 95) {
-      return { accepted: true, ourPrice: 3.65, category: 'books', priceRange: "$80-94.99", rankRange: "500k-1M" };
-    }
-    if (price >= 95 && price < 110) {
-      return { accepted: true, ourPrice: 4.15, category: 'books', priceRange: "$95-109.99", rankRange: "500k-1M" };
-    }
-    if (price >= 110 && price < 125) {
-      return { accepted: true, ourPrice: 4.65, category: 'books', priceRange: "$110-124.99", rankRange: "500k-1M" };
-    }
-    if (price >= 125 && price < 140) {
-      return { accepted: true, ourPrice: 5.15, category: 'books', priceRange: "$125-139.99", rankRange: "500k-1M" };
-    }
-    if (price >= 140 && price < 160) {
-      return { accepted: true, ourPrice: 5.65, category: 'books', priceRange: "$140-159.99", rankRange: "500k-1M" };
-    }
-    if (price >= 160 && price < 180) {
-      return { accepted: true, ourPrice: 6.15, category: 'books', priceRange: "$160-179.99", rankRange: "500k-1M" };
-    }
-    if (price >= 180) {
-      return { accepted: true, ourPrice: 6.65, category: 'books', priceRange: "$180+", rankRange: "500k-1M" };
-    }
-
-    return {
-      accepted: false,
-      reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
-      category: 'books',
-      priceRange: `$${price}`
-    };
-  }
-
-  // ------------------------------------------------------------
-  // BOOKS: rank 1M-1.5M
-  // ------------------------------------------------------------
-  if (salesRank <= 1500000) {
-    if (price >= 56 && price < 100) {
-      return { accepted: true, ourPrice: 1.65, category: 'books', priceRange: "$56-99.99", rankRange: "1M-1.5M" };
-    }
-    if (price >= 100) {
-      return { accepted: true, ourPrice: 2.65, category: 'books', priceRange: "$100+", rankRange: "1M-1.5M" };
-    }
-
-    return {
-      accepted: false,
-      reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
-      category: 'books',
-      priceRange: `$${price}`
-    };
-  }
+  const ourPrice = Math.min(
+    Math.round(usedPrice * percentage * 100) / 100,
+    20
+  );
 
   return {
-    accepted: false,
-    reason: "Unknown rank range",
-    category: 'books'
+    accepted: true,
+    ourPrice,
+    category: 'books',
+    priceRange: `Lowest used $${usedPrice} (${Math.round(percentage * 100)}%)`,
+    rankRange
   };
 }
 
@@ -602,34 +462,34 @@ function calculateGamePrice(
 function handleNoPriceScenario(category: ProductCategory, salesRank: number): PricingResult {
   switch (category) {
     case 'books':
-  if (salesRank <= NO_PRICE_BOOK_RANK_LIMIT) {
-    return {
-      accepted: true,
-      ourPrice: NO_PRICE_BOOK_PRICE,
-      category: 'books',
-      priceRange: "No price available",
-      rankRange: `≤ ${NO_PRICE_BOOK_RANK_LIMIT.toLocaleString()}`
-    };
-  }
+      if (salesRank <= NO_PRICE_BOOK_RANK_LIMIT) {
+        return {
+          accepted: true,
+          ourPrice: NO_PRICE_BOOK_PRICE,
+          category: 'books',
+          priceRange: "No price available",
+          rankRange: `≤ ${NO_PRICE_BOOK_RANK_LIMIT.toLocaleString()}`
+        };
+      }
 
-  if (salesRank <= NO_PRICE_BOOK_HIGH_RANK_LIMIT) {
-    return {
-      accepted: true,
-      ourPrice: NO_PRICE_BOOK_HIGH_RANK_PRICE,
-      category: 'books',
-      priceRange: "No price available",
-      rankRange: "1M-1.5M"
-    };
-  }
+      if (salesRank <= NO_PRICE_BOOK_HIGH_RANK_LIMIT) {
+        return {
+          accepted: true,
+          ourPrice: NO_PRICE_BOOK_HIGH_RANK_PRICE,
+          category: 'books',
+          priceRange: "No price available",
+          rankRange: "1M-1.5M"
+        };
+      }
 
-  return {
-    accepted: false,
-    reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
-    category: 'books',
-    rankRange: `> ${NO_PRICE_BOOK_HIGH_RANK_LIMIT.toLocaleString()}`
-  };
+      return {
+        accepted: false,
+        reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
+        category: 'books',
+        rankRange: `> ${NO_PRICE_BOOK_HIGH_RANK_LIMIT.toLocaleString()}`
+      };
 
-  case 'cds':
+    case 'cds':
     case 'dvds':
       if (salesRank <= NO_PRICE_MEDIA_RANK_LIMIT) {
         return {
@@ -668,10 +528,9 @@ function handleNoPriceScenario(category: ProductCategory, salesRank: number): Pr
 }
 
 /**
- * SENARYO 3-4: NEW fiyat yok, USED fiyat var
- * Kitap: rank ≤ 1,000,000 ise $1.5, 1M-1.5M ise $0.75, üstündeyse reddet
+ * CD/DVD SENARYOSU: NEW fiyat yok, USED fiyat var
+ * Kitaplar bu fonksiyona gelmez; kitaplar her zaman lowest USED tabanli kendi motorunu kullanir.
  * CD/DVD: rank ≤ 100,000 ise $1.95, 100k-300k ise $0.95, üstündeyse reddet
- * NOT: Used fiyatın kendi tutarı burada kriter olarak kullanılmıyor, sadece rank bakılıyor.
  */
 function handleUsedOnlyScenario(
   category: ProductCategory,
@@ -683,33 +542,6 @@ function handleUsedOnlyScenario(
     return Math.min(Math.max(fivePercent, 0.40), maxPrice);
   };
   switch (category) {
-    case 'books':
-  if (salesRank <= USED_ONLY_BOOK_RANK_LIMIT) {
-    return {
-      accepted: true,
-      ourPrice: calculateUsedOffer(USED_ONLY_BOOK_PRICE),
-      category: 'books',
-      priceRange: "Used price only",
-      rankRange: `≤ ${USED_ONLY_BOOK_RANK_LIMIT.toLocaleString()}`
-    };
-  }
-
-  if (salesRank <= USED_ONLY_BOOK_HIGH_RANK_LIMIT) {
-    return {
-      accepted: true,
-      ourPrice: calculateUsedOffer(USED_ONLY_BOOK_HIGH_RANK_PRICE),
-      category: 'books',
-      priceRange: "Used price only",
-      rankRange: "1M-1.5M"
-    };
-  }
-
-  return {
-    accepted: false,
-    reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
-    category: 'books',
-    rankRange: `> ${USED_ONLY_BOOK_HIGH_RANK_LIMIT.toLocaleString()}`
-  };
   case 'cds':
     case 'dvds':
       if (salesRank <= USED_ONLY_MEDIA_RANK_LIMIT) {
@@ -783,6 +615,21 @@ if (category === 'games') {
   );
 }
 
+  // BOOKS: NEW fiyat tamamen yok sayilir.
+  // Route'tan bookUsedPrice gelirse onu kullaniriz.
+  // Geriye donuk uyumluluk icin priceType === 'used' ise product.price lowest USED kabul edilir.
+  // USED hic yoksa mevcut no-price kitap kurali ($3 / $0.75) korunur.
+  if (category === 'books') {
+    const lowestUsedPrice =
+      product.bookUsedPrice || (product.priceType === 'used' ? product.price : 0);
+
+    if (!lowestUsedPrice || lowestUsedPrice <= 0) {
+      return handleNoPriceScenario('books', product.sales_rank);
+    }
+
+    return calculateBookPrice(lowestUsedPrice, product.sales_rank);
+  }
+
   const hasPrice = !!product.price && product.price > 0;
 
   // SENARYO 1-2: Hiç fiyat yok
@@ -801,8 +648,6 @@ if (category === 'games') {
 
   // SENARYO 5-6: NEW fiyat var (priceType 'new' veya belirtilmemişse geriye dönük uyumluluk için 'new' kabul edilir)
   switch (category) {
-    case 'books':
-      return calculateBookPrice(product.price, product.sales_rank);
     case 'cds':
       return calculateCDPrice(product.price, product.sales_rank);
     case 'dvds':
@@ -834,13 +679,14 @@ export function testPricingEngine() {
   console.log("Testing Pricing Engine - Updated Criteria...");
 
   const testProducts: AmazonProduct[] = [
-    // NEW fiyat var - mevcut bant sistemi
-    { title: "Test Book (new price)", image: "", price: 30, sales_rank: 50000, category: "Books", priceType: 'new' },
+    // BOOKS: NEW fiyat yok sayilir; bookUsedPrice kullanilir. Rank 50k -> %9.
+    { title: "Test Book (NEW ignored, USED $30)", image: "", price: 100, sales_rank: 50000, category: "Books", priceType: 'new', bookUsedPrice: 30 },
     { title: "Test CD (new price)", image: "", price: 35, sales_rank: 50000, category: "CDs & Vinyl", priceType: 'new' },
 
-    // NEW yok, USED var - sabit $1.5
-    { title: "Test Book (used only, rank ok)", image: "", price: 20, sales_rank: 800000, category: "Books", priceType: 'used' },
-    { title: "Test Book (used only, rank too high)", image: "", price: 20, sales_rank: 1600000, category: "Books", priceType: 'used' },
+    // BOOKS: lowest USED >= $20; rank bandina gore yuzde.
+    { title: "Test Book (used $100, rank 800k)", image: "", price: 100, sales_rank: 800000, category: "Books", priceType: 'used', bookUsedPrice: 100 },
+    { title: "Test Book (used under $20)", image: "", price: 15, sales_rank: 100000, category: "Books", priceType: 'used', bookUsedPrice: 15 },
+    { title: "Test Book (used rank too high)", image: "", price: 100, sales_rank: 1600000, category: "Books", priceType: 'used', bookUsedPrice: 100 },
     { title: "Test DVD (used only, rank ok)", image: "", price: 15, sales_rank: 100000, category: "Movies & TV", priceType: 'used' },
     { title: "Test DVD (used only, rank too high)", image: "", price: 15, sales_rank: 200000, category: "Movies & TV", priceType: 'used' },
 

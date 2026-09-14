@@ -22,9 +22,11 @@ interface AmazonProduct {
   category: string;
   asin: string;
   priceType?: 'new' | 'used' | 'none';
+  // BOOKS: Keepa lowest USED fiyatı. NEW olsa bile ayrıca taşınır.
+  bookUsedPrice?: number;
   // GAME için Keepa NEW ve USED fiyatları ayrı tutulur
-gameNewPrice?: number;
-gameUsedPrice?: number;
+  gameNewPrice?: number;
+  gameUsedPrice?: number;
   gamePlatform?: string;
   // Keepa format bilgisi (kategori filtresi icin pricingEngine'e gecer)
   binding?: string;
@@ -55,6 +57,9 @@ interface ApiResponse {
         bestCondition?: string;
         hasNewPrice?: boolean;
         analysisDetails?: string;
+        bookUsedPrice?: number;
+        gameNewPrice?: number;
+        gameUsedPrice?: number;
       };
       timings?: { totalTime?: number };
       [key: string]: any; // eski cache kayıtlarındaki (apiCalls, hasRank vb.) alanlara izin verir
@@ -206,6 +211,7 @@ function extractKeepaPricing(product: any): {
   hasNewPrice: boolean;
   bestCondition: string;
   analysisDetails: string;
+  bookUsedPrice: number;
   gameNewPrice: number;
   gameUsedPrice: number;
 } {
@@ -217,6 +223,7 @@ function extractKeepaPricing(product: any): {
       hasNewPrice: false,
       bestCondition: 'unknown',
       analysisDetails: 'No stats available',
+      bookUsedPrice: 0,
       gameNewPrice: 0,
       gameUsedPrice: 0
     };
@@ -234,12 +241,17 @@ const gameUsedPrice =
     ? usedPriceCents / 100
     : 0;
 
+  // BOOKS da ayni Keepa current[2] lowest USED degerini kullanir.
+  // NEW fiyat mevcut olsa bile bu alan ayrica pricingEngine'e gonderilir.
+  const bookUsedPrice = gameUsedPrice;
+
   if (typeof newPriceCents === 'number' && newPriceCents > 0) {
     return {
       price: newPriceCents / 100,
       hasNewPrice: true,
       bestCondition: 'new',
       analysisDetails: `Keepa NEW price: $${(newPriceCents / 100).toFixed(2)}`,
+      bookUsedPrice,
       gameNewPrice,
       gameUsedPrice
     };
@@ -251,6 +263,7 @@ const gameUsedPrice =
       hasNewPrice: false,
       bestCondition: 'used',
       analysisDetails: `Keepa lowest USED price: $${(usedPriceCents / 100).toFixed(2)}`,
+      bookUsedPrice,
       gameNewPrice,
       gameUsedPrice
     };
@@ -261,6 +274,7 @@ const gameUsedPrice =
     hasNewPrice: false,
     bestCondition: 'unknown',
     analysisDetails: 'No valid price in stats.current',
+    bookUsedPrice: 0,
     gameNewPrice: 0,
     gameUsedPrice: 0
   };
@@ -489,32 +503,70 @@ export async function POST(request: NextRequest) {
     const cachedResult = await productCache.getFromCache(cleanCode);
     console.log(`⏱️ cacheRead=${Date.now() - cacheReadStart}ms`);
     if (cachedResult) {
-      const cachedProduct: any = cachedResult.product;
-      const cachedPricing: any = cachedResult.pricing;
-    
-      console.log(
-        `⚡ CACHE HIT: ${cleanCode} | ` +
-        `Price: $${cachedProduct?.price ?? 0} (${cachedProduct?.priceType || 'unknown'}) | ` +
-        `${cachedPricing?.category === 'games'
-          ? `Platform: ${cachedProduct?.gamePlatform || 'N/A'} | GameNEW: $${cachedProduct?.gameNewPrice ?? 0} | GameUSED: $${cachedProduct?.gameUsedPrice ?? 0} | Rule: ${cachedPricing?.priceRange || 'N/A'} | `
-          : ''}` +
-        `Rank: ${cachedProduct?.sales_rank ?? 0} | ` +
-        `Category: ${cachedProduct?.category || 'Unknown'} | ` +
-        `Binding: ${cachedProduct?.binding || 'N/A'} | ` +
-        `Type: ${cachedProduct?.type || 'N/A'} | ` +
-        `Status: ${cachedPricing?.accepted ? 'ACCEPTED' : 'REJECTED'} | ` +
-        `Offer: ${cachedPricing?.accepted && cachedPricing?.ourPrice != null ? `$${cachedPricing.ourPrice}` : 'N/A'}`
-      );
-      return NextResponse.json({
-        success: true,
-        data: {
-          product: cachedResult.product,
-          pricing: cachedResult.pricing,
-          // Cache bilgisi kullaniciya gosterilmez, debug.cacheHit alaninda zaten var
-          message: cachedResult.message,
-          debug: { ...cachedResult.debug, cacheHit: true }
+      const cachedProduct: any = { ...cachedResult.product };
+
+      // Eski cache kayitlarinda bookUsedPrice olmayabilir.
+      // gameUsedPrice Keepa stats.current[2] degerinden geldigi icin
+      // varsa kitaplar icin lowest USED kaynagi olarak guvenle kullanabiliriz.
+      const cachedCategory = String(cachedProduct?.category || '').toLowerCase();
+      const isCachedBook =
+        cachedCategory.includes('book') || cachedCategory.includes('kindle');
+
+      const isLegacyBookCacheMissingUsedSnapshot =
+        isCachedBook &&
+        cachedProduct.bookUsedPrice == null &&
+        cachedProduct.gameUsedPrice == null &&
+        cachedProduct.priceType !== 'used' &&
+        cachedProduct.priceType !== 'none';
+
+      // Cok eski bir BOOK cache kaydinda NEW fiyat olabilir ama USED snapshot'i hic
+      // saklanmamis olabilir. Bu durumda "USED yok" diye varsaymak yanlis teklif
+      // uretebilir; cache'i kullanmayip Keepa'dan taze veri aliriz.
+      if (isLegacyBookCacheMissingUsedSnapshot) {
+        console.log(`♻️ LEGACY BOOK CACHE REFRESH: ${cleanCode}`);
+      } else {
+        if (isCachedBook && cachedProduct.bookUsedPrice == null) {
+          cachedProduct.bookUsedPrice = cachedProduct.gameUsedPrice || 0;
         }
-      } as ApiResponse);
+
+        // Sadece BOOKS icin yeni kurali cache hit'te yeniden hesapla.
+        // CD/DVD/GAME mevcut cache davranisini aynen korur.
+        const cachedPricing: any = isCachedBook
+          ? calculateOurPrice(cachedProduct)
+          : cachedResult.pricing;
+        const cachedMessage = isCachedBook
+          ? cachedPricing.accepted && cachedPricing.ourPrice
+            ? 'ACCEPTED'
+            : 'DOES NOT MEET OUR PURCHASING CRITERIA'
+          : cachedResult.message;
+
+        console.log(
+          `⚡ CACHE HIT: ${cleanCode} | ` +
+          `Price: $${cachedProduct?.price ?? 0} (${cachedProduct?.priceType || 'unknown'}) | ` +
+          `${cachedPricing?.category === 'books'
+            ? `BookUSED: $${cachedProduct?.bookUsedPrice ?? 0} | Rule: ${cachedPricing?.priceRange || 'N/A'} | `
+            : ''}` +
+          `${cachedPricing?.category === 'games'
+            ? `Platform: ${cachedProduct?.gamePlatform || 'N/A'} | GameNEW: $${cachedProduct?.gameNewPrice ?? 0} | GameUSED: $${cachedProduct?.gameUsedPrice ?? 0} | Rule: ${cachedPricing?.priceRange || 'N/A'} | `
+            : ''}` +
+          `Rank: ${cachedProduct?.sales_rank ?? 0} | ` +
+          `Category: ${cachedProduct?.category || 'Unknown'} | ` +
+          `Binding: ${cachedProduct?.binding || 'N/A'} | ` +
+          `Type: ${cachedProduct?.type || 'N/A'} | ` +
+          `Status: ${cachedPricing?.accepted ? 'ACCEPTED' : 'REJECTED'} | ` +
+          `Offer: ${cachedPricing?.accepted && cachedPricing?.ourPrice != null ? `$${cachedPricing.ourPrice}` : 'N/A'}`
+        );
+
+        return NextResponse.json({
+          success: true,
+          data: {
+            product: cachedProduct,
+            pricing: cachedPricing,
+            message: cachedMessage,
+            debug: { ...cachedResult.debug, cacheHit: true }
+          }
+        } as ApiResponse);
+      }
     }
 
     const apiKey = process.env.KEEPA_API_KEY;
@@ -593,9 +645,11 @@ export async function POST(request: NextRequest) {
       priceType: priceAnalysis.price <= 0
         ? 'none'
         : priceAnalysis.hasNewPrice ? 'new' : 'used',
-        // GAME pricingEngine için ayrı Keepa fiyatları
-gameNewPrice: priceAnalysis.gameNewPrice,
-gameUsedPrice: priceAnalysis.gameUsedPrice,
+      // BOOKS: NEW fiyat olsa bile lowest USED ayrica pricingEngine'e gider
+      bookUsedPrice: priceAnalysis.bookUsedPrice,
+      // GAME pricingEngine için ayrı Keepa fiyatları
+      gameNewPrice: priceAnalysis.gameNewPrice,
+      gameUsedPrice: priceAnalysis.gameUsedPrice,
       gamePlatform: extractKeepaGamePlatform(bestProduct),
       // Keepa format bilgisi -> pricingEngine kategori filtresi icin
       binding: bestProduct.binding || '',
@@ -636,6 +690,9 @@ after(async () => {
     console.log(
       `💾 CACHE WRITE: ${cleanCode} | ` +
       `Price: $${product.price ?? 0} (${product.priceType || 'unknown'}) | ` +
+      `${pricingResult.category === 'books'
+        ? `BookUSED: $${product.bookUsedPrice ?? 0} | Rule: ${pricingResult.priceRange || 'N/A'} | `
+        : ''}` +
       `${pricingResult.category === 'games'
         ? `Platform: ${product.gamePlatform || 'N/A'} | GameNEW: $${product.gameNewPrice ?? 0} | GameUSED: $${product.gameUsedPrice ?? 0} | Rule: ${pricingResult.priceRange || 'N/A'} | `
         : ''}` +
@@ -656,6 +713,9 @@ after(async () => {
     console.log(
       `💰 KEEPA: ${cleanCode} | ` +
       `Price: $${priceAnalysis.price} (${priceAnalysis.bestCondition}) | ` +
+      `${pricingResult.category === 'books'
+        ? `BookUSED: $${product.bookUsedPrice ?? 0} | Rule: ${pricingResult.priceRange || 'N/A'} | `
+        : ''}` +
       `${pricingResult.category === 'games'
         ? `Platform: ${product.gamePlatform || 'N/A'} | GameNEW: $${product.gameNewPrice ?? 0} | GameUSED: $${product.gameUsedPrice ?? 0} | Rule: ${pricingResult.priceRange || 'N/A'} | `
         : ''}` +
