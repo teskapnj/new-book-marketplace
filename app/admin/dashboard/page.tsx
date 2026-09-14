@@ -6,8 +6,6 @@ import Image from 'next/image'; // Next.js Image component'i eklendi
 import { useAuthState } from "react-firebase-hooks/auth";
 import { sanitizeInput } from '@/lib/auth-utils';
 import { auth, db, storage } from "@/lib/firebase";
-import { useRateLimit } from '@/hooks/useRateLimit';
-import { RateLimitWarning } from '@/components/RateLimitWarning';
 import {
   collection,
   onSnapshot,
@@ -706,21 +704,6 @@ export default function AdminListingsPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [checkingAdmin, setCheckingAdmin] = useState(true);
   const [permissionError, setPermissionError] = useState<string | null>(null);
-  
-  const adminRateLimit = useRateLimit({
-    maxAttempts: 15, // 15 admin aksiyonu
-    windowMs: 60 * 1000, // 1 dakika içinde
-    storageKey: 'admin-actions'
-  });
-
-  // Rate limit kontrolü için helper function
-  const checkRateLimit = (actionName: string): boolean => {
-    if (adminRateLimit.isBlocked) {
-      alert(`Too many admin actions. Please wait ${Math.ceil(adminRateLimit.remainingTime / 60)} minutes before ${actionName}.`);
-      return false;
-    }
-    return true;
-  };
 
   // 📊 State management
   const [listings, setListings] = useState<Listing[]>([]);
@@ -1084,9 +1067,6 @@ export default function AdminListingsPage() {
       return;
     }
 
-    if (!checkRateLimit("saving shipping cost")) return;
-    adminRateLimit.recordAttempt();
-
     setReportSavingId(listingId);
 
     try {
@@ -1112,9 +1092,6 @@ export default function AdminListingsPage() {
     );
 
     if (!confirmed) return;
-
-    if (!checkRateLimit("excluding listing from reports")) return;
-    adminRateLimit.recordAttempt();
 
     setReportSavingId(listingId);
 
@@ -1302,10 +1279,6 @@ export default function AdminListingsPage() {
       return;
     }
     
-    // Rate limit kontrolü
-    if (!checkRateLimit('bulk deleting listings')) return;
-    adminRateLimit.recordAttempt();
-    
     setIsBulkDeleting(true);
     try {
       const batch = writeBatch(db);
@@ -1336,9 +1309,6 @@ export default function AdminListingsPage() {
 
   // ✅ Approve listing only - GÜNCELLENDİ
   const approveListingOnly = async (listingId: string) => {
-    // Rate limit kontrolü
-    if (!checkRateLimit('approving listings')) return;
-    adminRateLimit.recordAttempt();
     
     setIsProcessing(true);
     try {
@@ -1393,10 +1363,6 @@ export default function AdminListingsPage() {
       setPaymentError("Please enter PayPal transaction ID");
       return;
     }
-    
-    // Rate limit kontrolü
-    if (!checkRateLimit('recording payments')) return;
-    adminRateLimit.recordAttempt();
     
     setPaymentLoading(true);
     setPaymentError("");
@@ -1541,10 +1507,6 @@ export default function AdminListingsPage() {
       return;
     }
     
-    // Rate limit kontrolü
-    if (!checkRateLimit('uploading shipping labels')) return;
-    adminRateLimit.recordAttempt();
-    
     setIsProcessing(true);
     setUploadingLabel(true);
     setLabelUploadError("");
@@ -1646,10 +1608,6 @@ export default function AdminListingsPage() {
       return;
     }
     
-    // Rate limit kontrolü
-    if (!checkRateLimit('rejecting listings')) return;
-    adminRateLimit.recordAttempt();
-    
     setIsProcessing(true);
     try {
       const listingRef = doc(db, "listings", listingId);
@@ -1686,9 +1644,6 @@ export default function AdminListingsPage() {
 
   // 🗑️ Delete listing function
   const deleteListing = async (listingId: string) => {
-    // Rate limit kontrolü
-    if (!checkRateLimit('deleting listings')) return;
-    adminRateLimit.recordAttempt();
     
     setIsProcessing(true);
     try {
@@ -1719,9 +1674,6 @@ export default function AdminListingsPage() {
 
   // 🔄 Update order status function
   const updateOrderStatus = async (orderId: string, status: string, notes: string) => {
-    // Rate limit kontrolü
-    if (!checkRateLimit('updating orders')) return;
-    adminRateLimit.recordAttempt();
     
     setIsProcessing(true);
     try {
@@ -1877,13 +1829,6 @@ export default function AdminListingsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Rate limit warning */}
-      <RateLimitWarning
-        isBlocked={adminRateLimit.isBlocked}
-        remainingTime={adminRateLimit.remainingTime}
-        attempts={adminRateLimit.attempts}
-        maxAttempts={15}
-      />
       
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {/* 🏠 Navigation Header */}
@@ -2219,8 +2164,21 @@ export default function AdminListingsPage() {
                           <div className="flex space-x-2">
                             <button
                               onClick={() => {
+                                // Reset listing-specific temporary data
+                                setAcceptedItems(new Set());
+                                setScanInput("");
+                                setLastScannedIndex(null);
+                                setScanMessage("");
+                              
+                                setPaymentAmount("");
+                                setPaymentTransactionId("");
+                                setPaymentNotes("");
+                                setPaymentError("");
+                                setPaymentSuccess("");
+                              
                                 setSelectedListing(listing);
-                                // Reset form states
+                              
+                                // Reset shipping form states
                                 setShippingLabel(null);
                                 setShippingLabelPreview(null);
                                 setTrackingNumber("");
