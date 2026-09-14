@@ -51,7 +51,7 @@ const STEPS = [
   "See instantly whether that exact title qualifies for an offer.",
   "Keep checking your shelf and add the offers you want to your order.",
   "Combine qualifying CDs, DVDs, Blu-rays, books, and games in the same shipment.",
-  "Use the prepaid shipping label we email you and get paid through PayPal or Venmo after inspection.",
+  "Use the prepaid shipping label we email you and get paid by PayPal, Venmo, or check by mail after inspection.",
 ];
 
 const FAQ = [
@@ -246,7 +246,7 @@ export default function WhatToDoWithOldDvdsAndCds() {
                   </Link>
 
                   <span className="text-sm text-slate-500">
-                    Instant offer • Free shipping • PayPal or Venmo payment
+                    Instant offer • Free shipping • PayPal, Venmo, or check by mail payment
                   </span>
                 </div>
               </div>
@@ -478,7 +478,7 @@ export default function WhatToDoWithOldDvdsAndCds() {
               <span aria-hidden="true">•</span>
               <span>Free shipping</span>
               <span aria-hidden="true">•</span>
-              <span>PayPal or Venmo payment</span>
+              <span>PayPal, Venmo, or check by mail payment</span>
             </div>
           </div>
 

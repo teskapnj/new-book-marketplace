@@ -36,7 +36,7 @@ const STEPS = [
   "See your offer instantly for qualifying titles.",
   "Add DVDs, Blu-rays, books, CDs, and games to the same order until you reach the checkout minimum.",
   "Use the prepaid shipping label we email you to send your box.",
-  "After your shipment is received and inspected, qualifying items are paid through PayPal or Venmo.",
+  "After your shipment is received and inspected, qualifying items are paid by PayPal, Venmo, or check by mail.",
 ];
 
 const FAQ = [
@@ -234,7 +234,7 @@ export default function DvdValueGuide() {
                   </Link>
 
                   <span className="text-sm text-slate-500">
-                    Instant offer • Free shipping • PayPal or Venmo payment
+                    Instant offer • Free shipping • PayPal, Venmo, or check by mail payment
                   </span>
                 </div>
               </div>
@@ -513,7 +513,7 @@ export default function DvdValueGuide() {
               <span aria-hidden="true">•</span>
               <span>Free shipping</span>
               <span aria-hidden="true">•</span>
-              <span>PayPal or Venmo payment</span>
+              <span>PayPal, Venmo, or check by mail payment</span>
             </div>
           </div>
 

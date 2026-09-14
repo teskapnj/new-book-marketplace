@@ -56,7 +56,7 @@ const STEPS = [
   "See your cash offer instantly and add accepted items to your box.",
   "Once your order reaches the minimum checkout amount, continue with your shipping information.",
   "Use the prepaid shipping label we email you to send your box.",
-  "After your shipment is received and inspected, qualifying items are paid through PayPal or Venmo.",
+  "After your shipment is received and inspected, qualifying items are paid by PayPal, Venmo, or check by mail.",
 ];
 
 const FAQ = [
@@ -269,7 +269,7 @@ export default function DecluttrAlternativeGuide() {
                   </Link>
 
                   <span className="text-sm text-slate-500">
-                    Free shipping • PayPal or Venmo payment
+                    Free shipping • PayPal, Venmo, or check by mail payment
                   </span>
                 </div>
               </div>
@@ -369,7 +369,7 @@ export default function DecluttrAlternativeGuide() {
                   ],
                   ["App", "No app download required"],
                   ["Shipping", "Free prepaid shipping label"],
-                  ["Payment", "PayPal or Venmo after your shipment is inspected"],
+                  ["Payment", "PayPal, Venmo, or check by mail after your shipment is inspected"],
                 ].map(([label, value]) => (
                   <div
                     key={label}
@@ -484,7 +484,7 @@ export default function DecluttrAlternativeGuide() {
               <span aria-hidden="true">•</span>
               <span>Free shipping</span>
               <span aria-hidden="true">•</span>
-              <span>PayPal or Venmo payment</span>
+              <span>PayPal, Venmo, or check by mail payment</span>
             </div>
           </div>
 

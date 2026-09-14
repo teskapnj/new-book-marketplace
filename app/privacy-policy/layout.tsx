@@ -1,23 +1,22 @@
-// app/privacy-policy/layout.tsx
 import { Metadata } from 'next'
 
 // ✅ PRIVACY POLICY METADATA
 export const metadata: Metadata = {
   title: 'Privacy Policy - How We Protect Your Data',
-  description: 'Read our privacy policy to learn how SellBook Media collects, uses, protects, and manages your personal information. GDPR and CCPA compliant.',
-  
+  description: 'Read our privacy policy to learn how SellBook Media collects, uses, protects, and manages personal information related to accounts, shipping, payments, and site usage.',
+
   openGraph: {
     title: 'Privacy Policy - SellBook Media',
-    description: 'Learn how we protect your personal information',
+    description: 'Learn how SellBook Media collects, uses, protects, and manages personal information.',
     url: 'https://www.sellbookmedia.com/privacy-policy',
   },
-  
+
   alternates: {
     canonical: 'https://www.sellbookmedia.com/privacy-policy',
   },
-  
+
   robots: {
-    index: true,  // ✅ Trust signal, legal requirement
+    index: true,
     follow: true,
   },
 }
@@ -33,7 +32,7 @@ const privacySchema = {
     name: 'SellBook Media',
   },
   datePublished: '2025-01-01',
-  dateModified: new Date().toISOString().split('T')[0],
+  dateModified: '2026-09-14',
 }
 
 export default function PrivacyPolicyLayout({
@@ -48,7 +47,7 @@ export default function PrivacyPolicyLayout({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(privacySchema) }}
       />
-      
+
       {/* Page content */}
       {children}
     </>

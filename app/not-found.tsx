@@ -66,7 +66,7 @@ export default function NotFound() {
           </Link>
 
           <p className="mt-4 text-sm text-gray-500">
-            Instant offers • Free prepaid shipping • PayPal or Venmo payments
+            Instant offers • Free prepaid shipping • PayPal, Venmo, or check by mail payments
           </p>
         </div>
 

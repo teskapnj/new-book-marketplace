@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
                       <tr><td style="padding:6px 0;"><strong>1.</strong>&nbsp;&nbsp;We'll email your prepaid shipping label within 24 hours</td></tr>
                       <tr><td style="padding:6px 0;"><strong>2.</strong>&nbsp;&nbsp;Pack your items securely and attach the label</td></tr>
                       <tr><td style="padding:6px 0;"><strong>3.</strong>&nbsp;&nbsp;Drop off your package</td></tr>
-                      <tr><td style="padding:6px 0;"><strong>4.</strong>&nbsp;&nbsp;Once we receive and inspect your items, we'll send your payment via PayPal or Venmo</td></tr>
+                      <tr><td style="padding:6px 0;"><strong>4.</strong>&nbsp;&nbsp;Once we receive and inspect your items, we'll process payment using the method you selected at checkout — PayPal, Venmo, or check by mail</td></tr>
                     </table>
                   </td>
                 </tr>
@@ -235,7 +235,7 @@ What happens next?
 1. We'll email your prepaid shipping label within 24 hours
 2. Pack your items securely and attach the label
 3. Drop off your package
-4. Once we receive and inspect your items, we'll send your payment via PayPal or Venmo
+4. Once we receive and inspect your items, we'll process payment using the method you selected at checkout — PayPal, Venmo, or check by mail
 
 Important: Please check your email (including your spam folder) for the shipping label in a separate email.
 

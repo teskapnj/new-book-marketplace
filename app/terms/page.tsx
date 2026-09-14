@@ -154,7 +154,7 @@ export default function TermsPage() {
                 "Manual search and Amazon ASIN lookup",
                 "Free prepaid shipping labels",
                 "Item inspection and condition verification",
-                "PayPal or Venmo payment processing for accepted items",
+                "PayPal, Venmo, or check by mail payment processing for accepted items",
               ]}
             />
           </section>
@@ -166,7 +166,7 @@ export default function TermsPage() {
             </p>
             <List
               items={[
-                "Provide accurate personal information, payment account details, and shipping address",
+                "Provide accurate personal information, payment method information, and shipping address",
                 <>
                   Only submit items in <strong>very good condition</strong> as defined in our
                   condition guide
@@ -262,9 +262,9 @@ We do not return rejected items under any circumstances.
             <List
               items={[
                 "Only items meeting our condition standards will be paid for",
-                "Payments are processed via PayPal or Venmo",
-                "You must provide valid payment account information for your selected PayPal or Venmo payment method",
-                "Payments are typically processed within 2 business days after inspection",
+                "Payments are processed via PayPal, Venmo, or check by mail",
+                "You must provide accurate payment information and a valid mailing address for your selected payment method",
+                "Payment processing is typically initiated within 2 business days after inspection; mailed checks require additional postal delivery time",
                 "No fees are charged to sellers for our service",
                 "All payments are final and non-refundable",
               ]}
@@ -338,7 +338,7 @@ We do not return rejected items under any circumstances.
             <SectionHeading n="10" title="Account security" />
             <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
               You are responsible for maintaining the security of your account and the accuracy of
-              your information. This includes keeping your payment account information current and
+              your information. This includes keeping your payment information current and
               secure.
             </p>
           </section>

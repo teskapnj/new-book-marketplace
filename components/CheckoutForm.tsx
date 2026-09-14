@@ -61,7 +61,7 @@ interface ShippingInfo {
   lastName: string;
   address: Address;
   packageDimensions: PackageDimensions;
-  paymentMethod: "" | "paypal" | "venmo";
+  paymentMethod: "" | "paypal" | "venmo" | "check";
   paypalAccount: string;
 }
 
@@ -137,7 +137,9 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
             firstName: typeof s.firstName === "string" ? s.firstName : "",
             lastName: typeof s.lastName === "string" ? s.lastName : "",
             paymentMethod:
-              s.paymentMethod === "paypal" || s.paymentMethod === "venmo"
+              s.paymentMethod === "paypal" ||
+              s.paymentMethod === "venmo" ||
+              s.paymentMethod === "check"
                 ? s.paymentMethod
                 : "",
             paypalAccount: typeof s.paypalAccount === "string" ? s.paypalAccount : "",
@@ -248,13 +250,19 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
       setShippingError("Please enter your first and last name");
       return false;
     }
-    if (!shippingInfo.paypalAccount.trim()) {
+    if (!shippingInfo.paymentMethod) {
+      setShippingError("Please select a payment method");
+      return false;
+    }
+
+    if (
+      shippingInfo.paymentMethod !== "check" &&
+      !shippingInfo.paypalAccount.trim()
+    ) {
       setShippingError(
         shippingInfo.paymentMethod === "venmo"
           ? "Please enter your Venmo username"
-          : shippingInfo.paymentMethod === "paypal"
-            ? "Please enter your PayPal account email"
-            : "Please select PayPal or Venmo"
+          : "Please enter your PayPal account email"
       );
       return false;
     }
@@ -417,10 +425,13 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
         shippingInfo: {
           firstName: DOMPurify.sanitize(shippingInfo.firstName).substring(0, 50),
           lastName: DOMPurify.sanitize(shippingInfo.lastName).substring(0, 50),
+          paymentMethod: shippingInfo.paymentMethod,
           paypalAccount: DOMPurify.sanitize(
             shippingInfo.paymentMethod === "venmo"
               ? `VENMO: ${shippingInfo.paypalAccount}`
-              : shippingInfo.paypalAccount
+              : shippingInfo.paymentMethod === "check"
+                ? "CHECK BY MAIL"
+                : shippingInfo.paypalAccount
           ).substring(0, 254),
           address: {
             street: DOMPurify.sanitize(shippingInfo.address.street).substring(0, 200),
@@ -465,7 +476,9 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
           paypalEmail:
           shippingInfo.paymentMethod === "venmo"
             ? `VENMO: ${shippingInfo.paypalAccount}`
-            : shippingInfo.paypalAccount,
+            : shippingInfo.paymentMethod === "check"
+              ? "CHECK BY MAIL"
+              : shippingInfo.paypalAccount,
           totalItems,
           totalValue,
           totalAmazonValue,
@@ -592,7 +605,7 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
     How would you like to get paid?
   </h3>
 
-  <div className="grid grid-cols-2 gap-3 mb-4">
+  <div className="grid grid-cols-3 gap-3 mb-4">
     <button
       type="button"
       onClick={() =>
@@ -628,6 +641,24 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
     >
       Venmo
     </button>
+
+    <button
+      type="button"
+      onClick={() =>
+        setShippingInfo(prev => ({
+          ...prev,
+          paymentMethod: "check",
+          paypalAccount: ""
+        }))
+      }
+      className={`rounded-lg border px-4 py-3 text-sm font-semibold transition-all ${
+        shippingInfo.paymentMethod === "check"
+          ? "border-blue-600 bg-blue-50 text-blue-700"
+          : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+      }`}
+    >
+      Check by Mail
+    </button>
   </div>
 
   {shippingInfo.paymentMethod === "paypal" && (
@@ -658,6 +689,14 @@ const [isResendingVerification, setIsResendingVerification] = useState(false);
         className={inputClass}
       />
     </>
+  )}
+
+  {shippingInfo.paymentMethod === "check" && (
+    <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+      <p className="text-sm text-blue-800">
+        We&apos;ll mail a paper check to the shipping address above after your items arrive and pass inspection.
+      </p>
+    </div>
   )}
 </div>
 

@@ -11,6 +11,8 @@ export async function POST(request: NextRequest) {
       transactionId,
       listingId,
       sellerName,
+      paypalAccount,
+      paypalEmail,
       notes
     } = body;
 
@@ -22,6 +24,41 @@ export async function POST(request: NextRequest) {
           .replace(/>/g, '&gt;')
           .replace(/\r?\n/g, '<br>')
       : '';
+
+    const rawPaymentAccount = String(paypalAccount || paypalEmail || '').trim();
+
+    const isCheckPayment =
+      rawPaymentAccount.toUpperCase() === 'CHECK BY MAIL';
+
+    const isVenmoPayment =
+      rawPaymentAccount.toUpperCase().startsWith('VENMO:') ||
+      rawPaymentAccount.startsWith('@');
+
+    const paymentMethodLabel = isCheckPayment
+      ? 'Check by Mail'
+      : isVenmoPayment
+        ? 'Venmo'
+        : 'PayPal';
+
+    const paymentStatusMessage = isCheckPayment
+      ? `Great news — we've received and checked your items, and your paper check for $${paymentAmount} will be mailed on the next business day to the shipping address on your order.`
+      : `Great news — we've received and checked your items, and your payment has been sent via ${paymentMethodLabel}.`;
+
+    const paymentNextStepsHtml = isCheckPayment
+      ? `
+                      <tr><td style="padding:5px 0;">&bull;&nbsp;&nbsp;Your paper check will be mailed on the next business day to the shipping address on your order</td></tr>
+                      <tr><td style="padding:5px 0;">&bull;&nbsp;&nbsp;Delivery time will depend on USPS mail service</td></tr>
+                      <tr><td style="padding:5px 0;">&bull;&nbsp;&nbsp;Keep this email for your records</td></tr>`
+      : `
+                      <tr><td style="padding:5px 0;">&bull;&nbsp;&nbsp;Check your ${paymentMethodLabel} account for the incoming payment</td></tr>
+                      <tr><td style="padding:5px 0;">&bull;&nbsp;&nbsp;Keep this email for your records</td></tr>`;
+
+    const paymentNextStepsText = isCheckPayment
+      ? `- Your paper check will be mailed on the next business day to the shipping address on your order
+- Delivery time will depend on USPS mail service
+- Keep this email for your records`
+      : `- Check your ${paymentMethodLabel} account for the incoming payment
+- Keep this email for your records`;
 
     // Namecheap için transporter yapılandırması
     const transporter = nodemailer.createTransport({
@@ -44,7 +81,7 @@ export async function POST(request: NextRequest) {
 </head>
 <body style="margin:0; padding:0; background-color:#f1f5f9; -webkit-font-smoothing:antialiased;">
   <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;">
-    Your payment of $${paymentAmount} has been sent to your selected payment account.
+    ${isCheckPayment ? `Your paper check for $${paymentAmount} is being mailed.` : `Your payment of $${paymentAmount} has been sent via ${paymentMethodLabel}.`}
   </div>
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f1f5f9; padding:24px 0;">
@@ -77,7 +114,7 @@ export async function POST(request: NextRequest) {
                 Hi ${sellerName},
               </p>
               <p style="margin:0; font-size:16px; line-height:1.6; color:#334155;">
-                Great news — we've received and checked your items, and your payment has been sent via PayPal or Venmo, based on your selected payment method. The funds should appear in your account within a few minutes.
+                ${paymentStatusMessage}
               </p>
             </td>
           </tr>
@@ -101,6 +138,10 @@ export async function POST(request: NextRequest) {
                       <tr>
                         <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:14px; color:#64748b;">Amount</td>
                         <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:14px; color:#0f172a; font-weight:600; text-align:right;">$${paymentAmount}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:14px; color:#64748b;">Payment Method</td>
+                        <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:14px; color:#0f172a; font-weight:600; text-align:right;">${paymentMethodLabel}</td>
                       </tr>
                       <tr>
                         <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:14px; color:#64748b;">Payment Transaction ID</td>
@@ -130,9 +171,7 @@ export async function POST(request: NextRequest) {
                   <td style="padding:22px 26px;">
                     <div style="font-size:14px; font-weight:700; color:#92400e; margin-bottom:12px;">What's Next</div>
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px; color:#78350f; line-height:1.5;">
-                      <tr><td style="padding:5px 0;">&bull;&nbsp;&nbsp;Check your PayPal or Venmo account for the incoming payment</td></tr>
-                      <tr><td style="padding:5px 0;">&bull;&nbsp;&nbsp;Payment typically appears within 5-10 minutes</td></tr>
-                      <tr><td style="padding:5px 0;">&bull;&nbsp;&nbsp;Keep this email for your records</td></tr>
+${paymentNextStepsHtml}
                     </table>
                   </td>
                 </tr>
@@ -198,19 +237,18 @@ export async function POST(request: NextRequest) {
 
 Hi ${sellerName},
 
-Great news! We've successfully sent your payment for the approved listing via PayPal or Venmo, based on your selected payment method. The funds should appear in your account within a few minutes.
+${paymentStatusMessage}
 
 Payment Details:
 - Listing: ${listingTitle}
 - Amount: $${paymentAmount}
+- Payment Method: ${paymentMethodLabel}
 - Payment Transaction ID: ${transactionId}
 - Listing ID: ${listingId}
 ${notes ? `- Note: ${notes}` : ''}
 
 What's Next?
-- Check your PayPal or Venmo account for the incoming payment
-- Payment typically appears within 5-10 minutes
-- Keep this email for your records
+${paymentNextStepsText}
 
 Thank you for selling with SellBook Media!
 

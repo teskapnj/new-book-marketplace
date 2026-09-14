@@ -9,14 +9,14 @@ const PAGE_URL = `${SITE_URL}/sell-dvds-for-cash`;
 export const metadata: Metadata = {
   title: "Sell DVDs for Cash Online | Blu-ray & 4K | SellBookMedia",
   description:
-    "Sell DVDs, Blu-rays, and 4K movies for cash with SellBookMedia. Scan the UPC for an instant quote, get free prepaid shipping, and choose PayPal or Venmo.",
+    "Sell DVDs, Blu-rays, and 4K movies for cash with SellBookMedia. Scan the UPC for an instant quote, get free prepaid shipping, and choose PayPal, Venmo, or check by mail.",
   alternates: {
     canonical: PAGE_URL,
   },
   openGraph: {
     title: "Sell DVDs, Blu-rays & 4K Movies for Cash | SellBookMedia",
     description:
-      "Scan your movie barcode for an instant cash offer, ship accepted items with a prepaid label, and choose PayPal or Venmo for payment.",
+      "Scan your movie barcode for an instant cash offer, ship accepted items with a prepaid label, and choose PayPal, Venmo, or check by mail for payment.",
     url: PAGE_URL,
     siteName: "SellBookMedia",
     type: "website",
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Sell DVDs for Cash Online | SellBookMedia",
     description:
-      "Check DVDs, Blu-rays, and 4K movies by barcode, ship for free, and choose PayPal or Venmo for payment.",
+      "Check DVDs, Blu-rays, and 4K movies by barcode, ship for free, and choose PayPal, Venmo, or check by mail for payment.",
   },
 };
 
@@ -48,7 +48,7 @@ const dvdFaqs = [
   },
   {
     q: "How do I get paid?",
-    a: "You can choose PayPal or Venmo. After your shipment arrives and the accepted items pass inspection, payment is processed to the payment account you selected at checkout.",
+    a: "You can choose PayPal, Venmo, or check by mail. After your shipment arrives and the accepted items pass inspection, payment is processed using the method you selected at checkout.",
   },
   {
     q: "Is there a minimum order?",
@@ -213,7 +213,7 @@ export default function SellDvdsForCashPage() {
         },
         areaServed: "US",
         description:
-          "Sell DVDs, Blu-rays, and 4K movies for cash with instant UPC quotes, free prepaid shipping, and PayPal or Venmo payment.",
+          "Sell DVDs, Blu-rays, and 4K movies for cash with instant UPC quotes, free prepaid shipping, and PayPal, Venmo, or check by mail payment.",
         url: PAGE_URL,
       },
       {
@@ -298,7 +298,7 @@ export default function SellDvdsForCashPage() {
             </h1>
 
             <p className="text-base sm:text-2xl text-blue-100 mb-5 sm:mb-8 leading-relaxed max-w-2xl mx-auto">
-              Scan the UPC on your DVD, Blu-ray, or 4K movie and see our cash offer instantly. Get free prepaid shipping and choose PayPal or Venmo for payment.
+              Scan the UPC on your DVD, Blu-ray, or 4K movie and see our cash offer instantly. Get free prepaid shipping and choose PayPal, Venmo, or check by mail for payment.
             </p>
 
             <LandingCtaLink
@@ -323,7 +323,7 @@ export default function SellDvdsForCashPage() {
               </div>
 
               <div className="min-h-[78px] sm:min-h-0 rounded-xl sm:rounded-2xl border border-white/15 bg-white/10 px-2 sm:px-5 py-3 sm:py-5 backdrop-blur-sm flex flex-col justify-center">
-                <div className="text-sm sm:text-3xl font-bold text-white leading-tight">PayPal + Venmo</div>
+                <div className="text-sm sm:text-3xl font-bold text-white leading-tight">PayPal + Venmo + Check</div>
                 <div className="text-[11px] sm:text-base leading-tight text-blue-200 mt-1">Payment Choice</div>
               </div>
             </div>
@@ -353,7 +353,7 @@ export default function SellDvdsForCashPage() {
             </div>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 text-gray-700">
               <span className="text-blue-600"><PaymentIcon /></span>
-              <span className="font-medium">PayPal or Venmo</span>
+              <span className="font-medium">PayPal, Venmo or Check</span>
             </div>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 text-gray-700">
               <span className="text-blue-600"><ShieldIcon /></span>
@@ -406,7 +406,7 @@ export default function SellDvdsForCashPage() {
             {[
               ["1", "Scan the UPC", "Scan the barcode on your DVD, Blu-ray, or 4K case, or enter it manually. Use the barcode from the exact release in your hand."],
               ["2", "See Your Cash Offer", "If we are currently buying that release, you will see the offer before deciding whether to add it to your order."],
-              ["3", "Ship Free & Get Paid", "Submit your order, use the prepaid shipping label, and choose PayPal or Venmo for payment after your accepted items arrive and pass inspection."],
+              ["3", "Ship Free & Get Paid", "Submit your order, use the prepaid shipping label, and choose PayPal, Venmo, or check by mail after your accepted items arrive and pass inspection."],
             ].map(([number, title, body]) => (
               <div key={number} className="bg-white rounded-3xl border border-gray-200 p-8 shadow-sm">
                 <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg mb-6">
@@ -628,7 +628,7 @@ export default function SellDvdsForCashPage() {
               ["No Marketplace Listings", "Skip individual photos, descriptions, buyer messages, auctions, and waiting for each movie to sell."],
               ["Exact-Release UPC Quotes", "Use the barcode to check the specific DVD, Blu-ray, 4K, box set, or collector edition you actually own."],
               ["Free Prepaid Shipping", "We provide a prepaid shipping label for an eligible submitted order, so you do not pay shipping out of pocket."],
-              ["PayPal or Venmo", "Choose your preferred supported payment method at checkout."],
+              ["Flexible Payment Options", "Choose PayPal, Venmo, or check by mail at checkout."],
               ["Mix Eligible Media", "Accepted DVDs can be combined with qualifying Blu-rays, 4K movies, CDs, books, and video games in the same order."],
               ["Clear Yes-or-No Results", "If an item does not currently meet our purchasing criteria, the quote tool tells you instead of making you guess."],
             ].map(([title, body]) => (
@@ -768,7 +768,7 @@ export default function SellDvdsForCashPage() {
             <ArrowRight />
           </LandingCtaLink>
 
-          <p className="mt-5 text-sm text-blue-100">Instant quote • Free prepaid shipping • PayPal or Venmo</p>
+          <p className="mt-5 text-sm text-blue-100">Instant quote • Free prepaid shipping • PayPal, Venmo or Check</p>
         </div>
       </section>
 

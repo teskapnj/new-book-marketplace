@@ -87,7 +87,7 @@ export default function PrivacyPolicyPage() {
           </p>
 
           <p className="mt-8 border-t border-white/15 pt-5 text-sm text-blue-200">
-            Effective <time dateTime="2026-08-18">August 18, 2026</time>
+            Effective <time dateTime="2026-09-14">September 14, 2026</time>
           </p>
         </div>
       </header>
@@ -129,7 +129,7 @@ export default function PrivacyPolicyPage() {
                 "Full name (first and last name)",
                 "Email address",
                 "Shipping address (street address, city, state, ZIP code)",
-                "PayPal or Venmo account information",
+                "Payment method information, including PayPal or Venmo account details when selected",
               ]}
             />
 
@@ -163,7 +163,7 @@ export default function PrivacyPolicyPage() {
                 "Processing your item submissions and sales",
                 "Generating and sending prepaid shipping labels",
                 "Inspecting and evaluating submitted items",
-                "Processing PayPal or Venmo payments for accepted items",
+                "Processing payments for accepted items by PayPal, Venmo, or check by mail",
                 "Providing customer support and assistance",
               ]}
             />
@@ -199,8 +199,8 @@ export default function PrivacyPolicyPage() {
             <SubHeading>Payment processing</SubHeading>
             <List
               items={[
-                "PayPal or Venmo may receive the account information needed to process your selected payment method",
-                "No financial account details are stored on our servers",
+                "PayPal or Venmo may receive the account information needed to process an electronic payment when you select one of those methods",
+                "We do not collect or store bank account or card numbers for seller payouts",
               ]}
             />
 
@@ -275,7 +275,7 @@ export default function PrivacyPolicyPage() {
               items={[
                 "View and update your account information",
                 "Correct inaccurate personal data",
-                "Update your PayPal or Venmo payment information",
+                "Update your selected payment method information",
               ]}
             />
 
@@ -328,8 +328,8 @@ export default function PrivacyPolicyPage() {
             <List
               items={[
                 <>
-                  <strong>PayPal</strong> — for payment processing, subject to PayPal&rsquo;s own
-                  privacy policy
+                  <strong>PayPal and Venmo</strong> — for electronic payment processing, subject to
+                  their applicable privacy policies
                 </>,
                 <>
                   <strong>Shipping carriers</strong> — for label generation and package tracking
@@ -417,7 +417,7 @@ export default function PrivacyPolicyPage() {
         {/* ---------- Kapanis ---------- */}
         <div className="mt-14 rounded-2xl border border-slate-200 bg-white px-6 py-6 shadow-sm">
         <p className="text-sm font-semibold text-slate-900">
-            Effective <time dateTime="2026-08-18">August 18, 2026</time>
+            Effective <time dateTime="2026-09-14">September 14, 2026</time>
           </p>
           <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
             By using our service, you acknowledge that you have read and understood this Privacy

@@ -1,11 +1,10 @@
-// app/seller-guide/layout.tsx
 import { Metadata } from 'next'
 
 // ✅ SELLER GUIDE METADATA
 export const metadata: Metadata = {
   title: 'Seller Guide - How to Sell Books, CDs, DVDs & Games for Maximum Value',
-  description: 'Complete guide to selling your used media. Tips for preparing items, maximizing value, packaging properly, and getting paid quickly. Learn the best practices for selling books, CDs, DVDs, and games.',
-  
+  description: 'Complete guide to selling your used media. Tips for preparing items, maximizing value, packaging properly, and getting paid by PayPal, Venmo, or check by mail. Learn the best practices for selling books, CDs, DVDs, and games.',
+
   keywords: [
     'how to sell books online',
     'selling books tips',
@@ -16,20 +15,20 @@ export const metadata: Metadata = {
     'CD selling advice',
     'game selling guide',
   ],
-  
+
   openGraph: {
     title: 'Complete Seller Guide - Maximize Your Earnings',
-    description: 'Learn how to sell your books, CDs, DVDs, and games for maximum value. Expert tips and best practices.',
+    description: 'Learn how to sell your books, CDs, DVDs, and games for maximum value, with free prepaid shipping and flexible payment options.',
     url: 'https://www.sellbookmedia.com/seller-guide',
     type: 'article',
   },
-  
+
   alternates: {
     canonical: 'https://www.sellbookmedia.com/seller-guide',
   },
-  
+
   robots: {
-    index: true,  // ✅ ÇOK YÜKSEK SEO değeri!
+    index: true,
     follow: true,
   },
 }
@@ -74,7 +73,7 @@ const guideSchema = {
     {
       '@type': 'HowToStep',
       name: 'Get Paid',
-      text: 'Receive payment within 2 business days after delivery via PayPal or Venmo.',
+      text: 'After your shipment arrives and accepted items pass inspection, payment is processed using your selected method: PayPal, Venmo, or check by mail.',
       position: 6,
     },
   ],
@@ -98,7 +97,7 @@ export default function SellerGuideLayout({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(guideSchema) }}
       />
-      
+
       {/* Page content */}
       {children}
     </>

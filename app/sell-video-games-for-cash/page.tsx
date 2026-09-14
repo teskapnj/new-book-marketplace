@@ -9,14 +9,14 @@ const PAGE_URL = `${SITE_URL}/sell-video-games-for-cash`;
 export const metadata: Metadata = {
   title: "Sell Video Games for Cash Online | Retro & Used Games | SellBookMedia",
   description:
-    "Sell used video games for cash with SellBookMedia. Check eligible PS1, PS2, GameCube, Nintendo, Xbox, retro, and modern games by barcode, ship free, and choose PayPal or Venmo.",
+    "Sell used video games for cash with SellBookMedia. Check eligible PS1, PS2, GameCube, Nintendo, Xbox, retro, and modern games by barcode, ship free, and choose PayPal, Venmo, or check by mail.",
   alternates: {
     canonical: PAGE_URL,
   },
   openGraph: {
     title: "Sell Video Games for Cash Online | SellBookMedia",
     description:
-      "Scan a game barcode for an instant cash offer, ship accepted games with a prepaid label, and choose PayPal or Venmo for payment.",
+      "Scan a game barcode for an instant cash offer, ship accepted games with a prepaid label, and choose PayPal, Venmo, or check by mail for payment.",
     url: PAGE_URL,
     siteName: "SellBookMedia",
     type: "website",
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Sell Video Games for Cash Online | SellBookMedia",
     description:
-      "Check eligible used and retro video games by barcode, ship for free, and choose PayPal or Venmo for payment.",
+      "Check eligible used and retro video games by barcode, ship for free, and choose PayPal, Venmo, or check by mail for payment.",
   },
 };
 
@@ -56,7 +56,7 @@ const gameFaqs = [
   },
   {
     q: "How do I get paid?",
-    a: "You can choose PayPal or Venmo. After your shipment arrives and the accepted games pass inspection, payment is processed to the payment account you selected at checkout.",
+    a: "You can choose PayPal, Venmo, or check by mail. After your shipment arrives and the accepted games pass inspection, payment is processed using the method you selected at checkout.",
   },
   {
     q: "Is there a minimum order?",
@@ -211,7 +211,7 @@ export default function SellVideoGamesForCashPage() {
         },
         areaServed: "US",
         description:
-          "Sell eligible used and retro video games for cash with instant barcode quotes, free prepaid shipping, and PayPal or Venmo payment.",
+          "Sell eligible used and retro video games for cash with instant barcode quotes, free prepaid shipping, and PayPal, Venmo, or check by mail payment.",
         url: PAGE_URL,
       },
       {
@@ -296,7 +296,7 @@ export default function SellVideoGamesForCashPage() {
             </h1>
 
             <p className="text-base sm:text-2xl text-blue-100 mb-5 sm:mb-8 leading-relaxed max-w-2xl mx-auto">
-              Scan the barcode on an eligible game and see our cash offer instantly. Get free prepaid shipping and choose PayPal or Venmo for payment.
+              Scan the barcode on an eligible game and see our cash offer instantly. Get free prepaid shipping and choose PayPal, Venmo, or check by mail for payment.
             </p>
 
             <LandingCtaLink
@@ -321,7 +321,7 @@ export default function SellVideoGamesForCashPage() {
               </div>
 
               <div className="min-h-[78px] sm:min-h-0 rounded-xl sm:rounded-2xl border border-white/15 bg-white/10 px-2 sm:px-5 py-3 sm:py-5 backdrop-blur-sm flex flex-col justify-center">
-                <div className="text-sm sm:text-3xl font-bold text-white leading-tight">PayPal + Venmo</div>
+                <div className="text-sm sm:text-3xl font-bold text-white leading-tight">PayPal + Venmo + Check</div>
                 <div className="text-[11px] sm:text-base leading-tight text-blue-200 mt-1">Payment Choice</div>
               </div>
             </div>
@@ -351,7 +351,7 @@ export default function SellVideoGamesForCashPage() {
             </div>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 text-gray-700">
               <span className="text-blue-600"><PaymentIcon /></span>
-              <span className="font-medium">PayPal or Venmo</span>
+              <span className="font-medium">PayPal, Venmo or Check</span>
             </div>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 text-gray-700">
               <span className="text-blue-600"><ShieldIcon /></span>
@@ -404,7 +404,7 @@ export default function SellVideoGamesForCashPage() {
             {[
               ["1", "Scan the Barcode", "Scan or enter the UPC or retail barcode from the exact game. If it qualifies, you'll see the current cash offer instantly."],
               ["2", "Build Your Order", "Add accepted games to your order. You can also combine qualifying books, CDs, DVDs, Blu-rays, and 4K movies until you reach the minimum."],
-              ["3", "Ship Free & Get Paid", "Submit your order, use the prepaid shipping label, and choose PayPal or Venmo. Payment is processed after the shipment arrives and accepted items pass inspection."],
+              ["3", "Ship Free & Get Paid", "Submit your order, use the prepaid shipping label, and choose PayPal, Venmo, or check by mail. Payment is processed after the shipment arrives and accepted items pass inspection."],
             ].map(([number, title, body]) => (
               <div key={number} className="bg-white rounded-3xl border border-gray-200 p-8 shadow-sm">
                 <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
@@ -653,7 +653,7 @@ export default function SellVideoGamesForCashPage() {
             {[
               ["Instant barcode quotes", "Check the exact physical game and see whether it qualifies before you ship anything."],
               ["Free prepaid shipping", "Eligible submitted orders receive a prepaid shipping label, so you do not pay shipping out of pocket."],
-              ["PayPal or Venmo", "Choose the payment method that works better for you during checkout."],
+              ["Flexible Payment Options", "Choose PayPal, Venmo, or check by mail during checkout."],
               ["No seller fees", "SellBookMedia does not charge a seller fee on your accepted buyback order."],
               ["No marketplace listing", "Skip photos, listing descriptions, buyer messages, and waiting for individual sales."],
               ["Mix different media", "Combine accepted games with books, CDs, DVDs, Blu-rays, and 4K movies in the same order."],
@@ -795,7 +795,7 @@ export default function SellVideoGamesForCashPage() {
             <span aria-hidden="true">•</span>
             <span>Free prepaid shipping</span>
             <span aria-hidden="true">•</span>
-            <span>PayPal or Venmo</span>
+            <span>PayPal, Venmo or Check</span>
           </div>
         </div>
       </section>

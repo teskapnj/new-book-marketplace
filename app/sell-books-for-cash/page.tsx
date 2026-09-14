@@ -9,7 +9,7 @@ const PAGE_URL = `${SITE_URL}/sell-books-for-cash`;
 export const metadata: Metadata = {
   title: "Sell Books for Cash Online | Free Shipping | SellBookMedia",
   description:
-    "Sell used books and textbooks for cash with SellBookMedia. Scan the ISBN for an instant quote, get free prepaid shipping, and choose PayPal or Venmo for payment.",
+   "Sell used books and textbooks for cash with SellBookMedia. Scan the ISBN for an instant quote, get free prepaid shipping, and choose PayPal, Venmo, or check by mail for payment.",
 
   alternates: {
     canonical: PAGE_URL,
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Sell Books for Cash Online | SellBookMedia",
     description:
-      "Scan your book ISBN for an instant cash offer, ship accepted books with a prepaid label, and choose PayPal or Venmo for payment.",
+      "Scan your book ISBN for an instant cash offer, ship accepted books with a prepaid label, and choose PayPal, Venmo, or check by mail for payment.",
     url: PAGE_URL,
     siteName: "SellBookMedia",
     type: "website",
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Sell Books for Cash Online | SellBookMedia",
     description:
-      "Scan your book ISBN, see your offer instantly, ship for free, and choose PayPal or Venmo for payment.",
+     "Scan your book ISBN, see your offer instantly, ship for free, and choose PayPal, Venmo, or check by mail for payment.",
   },
 };
 
@@ -47,7 +47,7 @@ const faqs = [
   },
   {
     q: "How do I get paid?",
-    a: "You can choose PayPal or Venmo. After your shipment arrives and your books pass our condition inspection, payment is processed to the payment account you selected at checkout.",
+    a: "You can choose PayPal, Venmo, or check by mail. After your shipment arrives and your books pass our condition inspection, payment is processed using the method you selected at checkout.",
   },
   {
     q: "Is there a minimum order?",
@@ -221,7 +221,7 @@ export default function SellBooksForCashPage() {
         },
         areaServed: "US",
         description:
-          "Sell used books for cash with instant ISBN quotes, free prepaid shipping, and PayPal or Venmo payment.",
+         "Sell used books for cash with instant ISBN quotes, free prepaid shipping, and PayPal, Venmo, or check by mail payment.",
         url: PAGE_URL,
       },
       {
@@ -306,7 +306,7 @@ export default function SellBooksForCashPage() {
             </h1>
 
             <p className="text-base sm:text-2xl text-blue-100 mb-5 sm:mb-8 leading-relaxed max-w-2xl mx-auto">
-              Scan or enter your book&apos;s ISBN and see our cash offer instantly. Get free prepaid shipping and choose PayPal or Venmo for payment.
+            Scan or enter your book&apos;s ISBN and see our cash offer instantly. Get free prepaid shipping and choose PayPal, Venmo, or check by mail for payment.
             </p>
 
             <LandingCtaLink
@@ -336,7 +336,7 @@ export default function SellBooksForCashPage() {
 
               <div className="min-h-[78px] sm:min-h-0 rounded-xl sm:rounded-2xl border border-white/15 bg-white/10 px-2 sm:px-5 py-3 sm:py-5 backdrop-blur-sm flex flex-col justify-center">
                 <div className="text-sm sm:text-3xl font-bold text-white leading-tight">
-                  PayPal + Venmo
+                PayPal + Venmo + Check
                 </div>
                 <div className="text-[11px] sm:text-base leading-tight text-blue-200 mt-1">
                   Payment Choice
@@ -371,7 +371,7 @@ export default function SellBooksForCashPage() {
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 text-gray-700">
               <span className="text-blue-600"><PaymentIcon /></span>
-              <span className="font-medium">PayPal or Venmo</span>
+              <span className="font-medium">PayPal, Venmo or Check</span>
             </div>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 text-gray-700">
@@ -474,8 +474,8 @@ export default function SellBooksForCashPage() {
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-3">Get Paid</h3>
               <p className="text-gray-600 leading-relaxed">
-                After your shipment arrives and the books pass inspection, payment
-                is processed using the PayPal or Venmo account you selected.
+              After your shipment arrives and the books pass inspection, payment
+              is sent by PayPal, Venmo, or check by mail based on the method you selected.
               </p>
             </div>
           </div>
@@ -679,9 +679,9 @@ export default function SellBooksForCashPage() {
             </div>
 
             <div className="bg-white border border-gray-200 rounded-2xl p-7 shadow-sm">
-              <h3 className="text-xl font-bold text-gray-900">PayPal or Venmo</h3>
+            <h3 className="text-xl font-bold text-gray-900">Flexible Payment Options</h3>
               <p className="mt-2 text-gray-600 leading-relaxed">
-                Choose the payment method that works better for you when you complete checkout.
+              Choose PayPal, Venmo, or check by mail when you complete checkout.
               </p>
             </div>
           </div>
@@ -903,7 +903,7 @@ export default function SellBooksForCashPage() {
           </LandingCtaLink>
 
           <p className="mt-5 text-sm text-blue-100">
-            Instant quote • Free prepaid shipping • PayPal or Venmo
+          Instant quote • Free prepaid shipping • PayPal, Venmo or Check
           </p>
         </div>
       </section>

@@ -1434,6 +1434,7 @@ export default function AdminListingsPage() {
       // Get seller info for email
       const listingDoc = await getDoc(listingRef);
       const sellerEmail = listingDoc.data()?.vendorEmail;
+      const paypalAccount = listingDoc.data()?.shippingInfo?.paypalAccount || "";
       
       if (sellerEmail) {
         // Send payment notification email - Düzeltilmiş: emailResponse değişkeni kaldırıldı
@@ -1449,6 +1450,7 @@ export default function AdminListingsPage() {
             transactionId: paymentTransactionId,
             listingId: listingId,
             sellerName: selectedListing.vendorName,
+            paypalAccount: paypalAccount,
             notes: paymentNotes
           }),
         });

@@ -1,11 +1,10 @@
-// app/returns-policy/layout.tsx
 import { Metadata } from 'next'
 
 // ✅ RETURNS POLICY METADATA
 export const metadata: Metadata = {
   title: 'Returns Policy - What Happens If Items Are Rejected',
-  description: 'Learn about our returns policy. What happens if your items don\'t meet our condition guidelines, how we handle rejected items, and our recycling process.',
-  
+  description: 'Learn about our returns policy, what happens if items do not meet our condition guidelines, how rejected items are handled, and when accepted items are processed for payment.',
+
   keywords: [
     'returns policy',
     'rejected items',
@@ -14,19 +13,19 @@ export const metadata: Metadata = {
     'return rejected books',
     'item recycling policy',
   ],
-  
+
   openGraph: {
     title: 'Returns Policy - SellBook Media',
-    description: 'What happens if your items are rejected. Learn about our recycling process.',
+    description: 'Learn what happens after inspection, how rejected items are handled, and how accepted items move forward for payment.',
     url: 'https://www.sellbookmedia.com/returns-policy',
   },
-  
+
   alternates: {
     canonical: 'https://www.sellbookmedia.com/returns-policy',
   },
-  
+
   robots: {
-    index: true,  // ✅ Trust signal
+    index: true,
     follow: true,
   },
 }
@@ -55,7 +54,7 @@ export default function ReturnsPolicyLayout({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(policySchema) }}
       />
-      
+
       {/* Page content */}
       {children}
     </>

@@ -22,8 +22,8 @@ const DIFFERENCES = [
     body: "When you're ready to ship your order, we provide a prepaid shipping label.",
   },
   {
-    title: "PayPal or Venmo payment",
-    body: "Qualifying items are paid through PayPal or Venmo after your shipment is received and inspected.",
+    title: "PayPal, Venmo, or check by mail payment",
+    body: "Qualifying items are paid by PayPal, Venmo, or check by mail after your shipment is received and inspected.",
   },
 ];
 
@@ -32,7 +32,7 @@ const STEPS = [
   "See your offer instantly for qualifying items.",
   "Keep adding accepted items until your order reaches the checkout minimum.",
   "Use the prepaid shipping label we email you to send everything together.",
-  "After your shipment is received and inspected, qualifying items are paid through PayPal or Venmo.",
+  "After your shipment is received and inspected, qualifying items are paid by PayPal, Venmo, or check by mail.",
 ];
 
 const NOT_ACCEPTED = [
@@ -258,7 +258,7 @@ export default function WhereToSellGuide() {
                     <div>
                       <dt className="text-slate-500">Payment</dt>
                       <dd className="font-medium text-slate-700">
-                        PayPal or Venmo
+                        PayPal, Venmo, or check by mail
                       </dd>
                     </div>
                   </dl>
@@ -316,7 +316,7 @@ export default function WhereToSellGuide() {
                   </Link>
 
                   <span className="text-sm text-slate-500">
-                    Instant offer • Free shipping • PayPal or Venmo payment
+                    Instant offer • Free shipping • PayPal, Venmo, or check by mail payment
                   </span>
                 </div>
               </div>
@@ -522,7 +522,7 @@ export default function WhereToSellGuide() {
               <span aria-hidden="true">•</span>
               <span>Free shipping</span>
               <span aria-hidden="true">•</span>
-              <span>PayPal or Venmo payment</span>
+              <span>PayPal, Venmo, or check by mail payment</span>
             </div>
           </div>
 

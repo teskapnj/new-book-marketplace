@@ -25,7 +25,7 @@ const STEPS = [
     id: "paid",
     n: "04",
     title: "Ship and get paid",
-    blurb: "Send your box, receive payment via PayPal or Venmo",
+    blurb: "Send your box, get paid by PayPal, Venmo, or check by mail",
   },
 ];
 
@@ -52,7 +52,7 @@ const FAQ = [
   },
   {
     q: "What payment methods do you offer?",
-    a: "We currently offer PayPal and Venmo payments for fast and convenient transactions.",
+    a: "You can choose PayPal, Venmo, or check by mail. Check payments are mailed to the shipping address you provide at checkout.",
   },
 ];
 
@@ -143,7 +143,7 @@ export default function SellerGuidePage() {
           </h1>
 
           <p className="mt-5 text-lg sm:text-xl leading-relaxed text-blue-100">
-          Four steps from the shelf to your payment account. Here&rsquo;s exactly what happens at
+          Four steps from the shelf to your payment. Here&rsquo;s exactly what happens at
             each one, and what to check before you ship.
           </p>
 
@@ -261,7 +261,7 @@ export default function SellerGuidePage() {
           <div className="mt-6 grid gap-4 md:grid-cols-2 md:items-start">
             <div className="space-y-3">
               <Card title="About you">
-                <Bullets items={["First and last name", "Payment account information"]} />
+                <Bullets items={["First and last name", "Payment method information"]} />
               </Card>
               <Card title="Shipping address">
                 <Bullets items={["Street address", "City, state, ZIP code", "Country"]} />
@@ -393,7 +393,7 @@ export default function SellerGuidePage() {
                   items={[
                     "Items are inspected on arrival",
                     "Qualifying items are processed for payment",
-                    "Payment goes to your selected PayPal or Venmo account",
+                    "Payment is sent by your selected method — PayPal, Venmo, or check by mail",
                     "You get an email confirming the details",
                   ]}
                 />

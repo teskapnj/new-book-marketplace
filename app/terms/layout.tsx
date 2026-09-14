@@ -1,23 +1,22 @@
-// app/terms/layout.tsx
 import { Metadata } from 'next'
 
 // ✅ TERMS OF SERVICE METADATA
 export const metadata: Metadata = {
   title: 'Terms of Service - SellBook Media',
-  description: 'Read our terms of service to understand the agreement between sellers and SellBook Media. Legal terms, conditions, and policies.',
-  
+  description: 'Read our terms of service covering seller responsibilities, item condition, shipping, payment methods, rejected items, and other policies for using SellBook Media.',
+
   openGraph: {
     title: 'Terms of Service - SellBook Media',
-    description: 'Terms and conditions for using SellBook Media',
+    description: 'Terms and conditions for using SellBook Media, including shipping, inspection, payment, and seller responsibilities.',
     url: 'https://www.sellbookmedia.com/terms',
   },
-  
+
   alternates: {
     canonical: 'https://www.sellbookmedia.com/terms',
   },
-  
+
   robots: {
-    index: true,  // ✅ Legal requirement, trust signal
+    index: true,
     follow: true,
   },
 }
@@ -33,7 +32,7 @@ const termsSchema = {
     name: 'SellBook Media',
   },
   datePublished: '2025-01-01',
-  dateModified: new Date().toISOString().split('T')[0],
+  dateModified: '2026-09-14',
 }
 
 export default function TermsLayout({
@@ -48,7 +47,7 @@ export default function TermsLayout({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(termsSchema) }}
       />
-      
+
       {/* Page content */}
       {children}
     </>

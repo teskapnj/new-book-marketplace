@@ -1368,7 +1368,7 @@ useEffect(() => {
 
           <p className="text-base sm:text-lg text-blue-100 mb-5 sm:mb-7 max-w-2xl mx-auto leading-relaxed">
             Scan your barcode, see our cash offer, and skip the listings, buyer messages, and waiting.
-            Shipping is free with our prepaid label. Choose PayPal or Venmo for payment.
+            Shipping is free with our prepaid label. Get paid by PayPal, Venmo, or check by mail.
           </p>
 
           {/* ---------- QUOTE BOX ---------- */}
@@ -1438,7 +1438,7 @@ useEffect(() => {
                 {[
                   ["Free", "Prepaid shipping"],
                   ["Instant", "Cash offers"],
-                  ["PayPal + Venmo", "Payment choice"],
+                  ["PayPal, Venmo + Check", "Payment options"],
                   ["No fees", "Seller fees"],
                 ].map(([title, subtitle]) => (
                   <div
@@ -1756,7 +1756,7 @@ useEffect(() => {
               <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold text-xl">
                 3
               </div>
-              <h3 className="mt-5 text-xl font-bold text-gray-900">Choose PayPal or Venmo</h3>
+              <h3 className="mt-5 text-xl font-bold text-gray-900">Choose Your Payment Method</h3>
               <p className="mt-3 text-gray-600 leading-relaxed">
                 After your shipment arrives and your items pass inspection, payment is sent
                 through the method you selected.
@@ -1811,7 +1811,7 @@ useEffect(() => {
                 },
                 {
                   title: "Straightforward payout",
-                  body: "Choose PayPal or Venmo and receive payment after arrival and inspection.",
+                  body: "Choose PayPal, Venmo, or a check by mail and receive payment after arrival and inspection.",
                 },
               ].map((item) => (
                 <div key={item.title} className="rounded-2xl border border-gray-200 bg-slate-50 p-5 sm:p-6">
@@ -2094,7 +2094,7 @@ useEffect(() => {
             </div>
             <div className="flex items-center">
               <PackageIcon size={20} className="mr-2" />
-              <span className="text-sm sm:text-base">PayPal or Venmo</span>
+              <span className="text-sm sm:text-base">PayPal, Venmo or Check</span>
             </div>
             <div className="flex items-center">
               <TrendingUpIcon size={20} className="mr-2" />
@@ -2139,7 +2139,7 @@ useEffect(() => {
               </Link>
               <p className="text-gray-400 leading-relaxed mb-6">
                 We buy eligible books, CDs, DVDs, Blu-rays, 4K movies, and video games for cash.
-                Check your barcode first, use our free prepaid shipping label, and choose PayPal or Venmo.
+                Check your barcode first, use our free prepaid shipping label, and get paid by PayPal, Venmo, or check by mail.
               </p>
                             
              <a               
