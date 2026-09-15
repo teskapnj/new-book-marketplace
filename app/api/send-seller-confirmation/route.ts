@@ -12,7 +12,6 @@ export async function POST(request: NextRequest) {
       items = [],
     } = await request.json();
 
-    // Namecheap için transporter yapılandırması
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -63,152 +62,106 @@ export async function POST(request: NextRequest) {
       text-decoration: none !important;
     }
   </style>
-  <title>Submission Received</title>
+  <title>We've received your submission</title>
 </head>
-<body style="margin:0; padding:0; background-color:#f1f5f9; -webkit-font-smoothing:antialiased;">
-  <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;">
-    We received your submission. Your prepaid shipping label will be emailed within 24 hours.
+<body style="margin:0;padding:0;background:#eef1f5;color:#172033;font-family:Arial,Helvetica,sans-serif;">
+
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
+    We've received your SellBookMedia submission ${submissionId}.
   </div>
 
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f1f5f9; padding:24px 0;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef1f5;padding:24px 10px;">
     <tr>
       <td align="center">
 
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px; max-width:600px; background-color:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.08); font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:650px;background:#ffffff;border:1px solid #cfd7e4;">
 
-          <!-- Header -->
           <tr>
-            <td style="background-color:#10b981; padding:30px 40px; text-align:center;">
-              <div style="font-size:18px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:#d1fae5; margin-bottom:10px;">SellBook Media</div>
-              <div style="font-size:24px; font-weight:700; color:#ffffff; line-height:1.3;">We received your submission</div>
-              <div style="font-size:21px; color:#d1fae5; margin-top:7px;">Thanks for your submission.</div>
+            <td style="padding:22px 30px;background:#0b3b75;color:#ffffff;font-weight:800;font-size:20px;">
+              SellBookMedia
             </td>
           </tr>
 
-          <!-- Greeting -->
           <tr>
-            <td style="padding:26px 40px 8px 40px;">
-              <p style="margin:0 0 14px 0; font-size:22.5px; line-height:1.6; color:#334155;">
-                Hi ${sellerName},
+            <td style="padding:34px 30px 30px;">
+
+              <div style="font-size:16px;font-weight:700;color:#344054;">
+                Hi ${sellerName || "there"},
+              </div>
+
+              <h2 style="font-size:28px;margin:8px 0 8px;line-height:1.18;color:#172033;">
+                We've received your submission
+              </h2>
+
+              <div style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#0b3b75;margin-bottom:10px;">
+                Submission No: ${submissionId}
+              </div>
+
+              <p style="margin:0;color:#5f6b7a;line-height:1.7;font-size:16px;">
+                Thanks for submitting your items. We'll email your free prepaid shipping label within 24 hours.
               </p>
-              <p style="margin:0; font-size:22.5px; line-height:1.6; color:#334155;">
-                We've received your submission. We'll email your free prepaid shipping label within 24 hours.
-              </p>
+
+              <div style="margin-top:26px;border:2px solid #0b3b75;">
+                <div style="padding:16px 18px;background:#eef5fb;">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td>
+                        <div style="font-size:12px;color:#53657a;text-transform:uppercase;">Items</div>
+                        <div style="padding-top:5px;font-size:18px;font-weight:800;">
+                          ${totalItems}
+                        </div>
+                      </td>
+                      <td align="right">
+                        <div style="font-size:12px;color:#53657a;text-transform:uppercase;">Estimated Value</div>
+                        <div style="padding-top:5px;font-size:18px;font-weight:800;">
+                          $${Number(totalValue).toFixed(2)}
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+
+              <div style="margin-top:28px;padding:18px;background:#f5f7fa;border-left:4px solid #0b3b75;">
+                <div style="font-weight:800;">What happens next</div>
+                <div style="margin-top:7px;font-size:14px;line-height:1.8;color:#5f6b7a;">
+                  <strong>1.</strong> We'll email your prepaid shipping label within 24 hours.<br>
+                  <strong>2.</strong> Pack your items securely and drop off the package.<br>
+                  <strong>3.</strong> After we receive and inspect your items, we'll process payment using the method you selected at checkout.
+                </div>
+                <div style="margin-top:10px;font-size:13px;line-height:1.6;color:#667085;">
+                  Please check your inbox and spam folder for the shipping label email.
+                </div>
+              </div>
+
+              <div style="margin-top:30px;border-top:1px solid #dbe1e8;padding-top:24px;">
+                <div style="font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#344054;">
+                  Submitted Items
+                </div>
+
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;">
+                  ${itemRows}
+                  <tr>
+                    <td style="padding:10px 0 0;border-top:2px solid #344054;font-size:13px;font-weight:800;color:#172033;">
+                      Total Offer
+                    </td>
+                    <td align="right" style="padding:10px 0 0;border-top:2px solid #344054;font-size:13px;font-weight:800;color:#172033;">
+                      $${Number(totalValue).toFixed(2)}
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
             </td>
           </tr>
 
-          <!-- Submission Details -->
           <tr>
-            <td style="padding:16px 40px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc; border-radius:12px; border:1px solid #e2e8f0;">
-                <tr>
-                  <td style="padding:18px 24px 8px 24px;">
-                    <div style="font-size:18px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; color:#10b981;">Submission Details</div>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:0 24px 16px 24px;">
-                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                      <tr>
-                        <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:19.5px; color:#64748b;">Total Items</td>
-                        <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:19.5px; color:#0f172a; font-weight:600; text-align:right;">${totalItems}</td>
-                      </tr>
-                      <tr>
-                        <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:19.5px; color:#64748b;">Estimated Value</td>
-                        <td style="padding:10px 0; border-bottom:1px solid #e2e8f0; font-size:19.5px; color:#0f172a; font-weight:600; text-align:right;">$${totalValue.toFixed(2)}</td>
-                      </tr>
-                      <tr>
-                        <td style="padding:10px 0; font-size:19.5px; color:#64748b;">Submission ID</td>
-                        <td style="padding:10px 0; font-size:19.5px; color:#0f172a; font-weight:600; text-align:right; font-family:monospace;">${submissionId}</td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- What happens next -->
-          <tr>
-            <td style="padding:8px 40px 16px 40px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc; border-radius:12px; border:1px solid #e2e8f0;">
-                <tr>
-                  <td style="padding:22px 26px;">
-                    <div style="font-size:18px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; color:#10b981; margin-bottom:12px;">What Happens Next</div>
-                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:19.5px; color:#334155; line-height:1.5;">
-                      <tr><td style="padding:6px 0;"><strong>1.</strong>&nbsp;&nbsp;We'll email your prepaid shipping label within 24 hours</td></tr>
-                      <tr><td style="padding:6px 0;"><strong>2.</strong>&nbsp;&nbsp;Pack your items securely and attach the label</td></tr>
-                      <tr><td style="padding:6px 0;"><strong>3.</strong>&nbsp;&nbsp;Drop off your package</td></tr>
-                      <tr><td style="padding:6px 0;"><strong>4.</strong>&nbsp;&nbsp;Once we receive and inspect your items, we'll process payment using the method you selected at checkout — PayPal, Venmo, or check by mail</td></tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Important note -->
-          <tr>
-            <td style="padding:8px 40px 16px 40px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fffbeb; border-radius:12px; border:1px solid #fde68a;">
-                <tr>
-                  <td style="padding:16px 22px; font-size:19.5px; color:#78350f; line-height:1.5;">
-                    <strong>Important:</strong> Your shipping label will arrive in a separate email. Please check your inbox (and your spam folder, just in case) for it.
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Sign-off -->
-          <tr>
-            <td style="padding:8px 40px 26px 40px;">
-              <p style="margin:0; font-size:21px; line-height:1.6; color:#334155;">
-                If you have any questions, just reply to this email — we're happy to help.
-              </p>
-            </td>
-          </tr>
-
-          <!-- Submitted Items -->
-          <tr>
-            <td style="padding:0 40px 24px 40px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #e2e8f0;">
-                <tr>
-                  <td style="padding:18px 0 8px 0;">
-                    <div style="font-size:15px;font-weight:700;color:#0f172a;">
-                      Submitted Items
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                      ${itemRows}
-                      <tr>
-                        <td style="padding:10px 0 0;border-top:2px solid #334155;font-size:13px;font-weight:700;color:#0f172a;">
-                          Total Offer
-                        </td>
-                        <td style="padding:10px 0 0;border-top:2px solid #334155;font-size:13px;font-weight:700;color:#0f172a;text-align:right;">
-                          $${totalValue.toFixed(2)}
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="background-color:#f8fafc; padding:24px 40px; text-align:center; border-top:1px solid #e2e8f0;">
-              <div style="font-size:19.5px; font-weight:600; color:#475569;">SellBook Media</div>
-              <div style="font-size:16.5px; color:#94a3b8; margin-top:5px;">Submission ${submissionId} &nbsp;·&nbsp; ${new Date().toLocaleString("en-US", { timeZone: "America/New_York" })}</div>
+            <td style="padding:20px 30px;border-top:1px solid #dbe1e8;font-size:13px;color:#667085;">
+              Need help? <strong style="color:#344054;">support@sellbookmedia.com</strong>
             </td>
           </tr>
 
         </table>
-
       </td>
     </tr>
   </table>
@@ -219,30 +172,28 @@ export async function POST(request: NextRequest) {
       from: `"SellBook Media" <${process.env.GMAIL_USER}>`,
       replyTo: process.env.EMAIL_USER,
       to: sellerEmail,
-      subject: "We received your submission - SellBook Media",
+      subject: "We've received your submission - SellBook Media",
       html: emailHtml,
-      text: `Thank you for your submission!
+      text: `Hi ${sellerName || "there"},
 
-Hi ${sellerName},
+We've received your submission.
+Submission No: ${submissionId}
 
-We've received your submission. We'll email your free prepaid shipping label within 24 hours.
+Thanks for submitting your items. We'll email your free prepaid shipping label within 24 hours.
 
 Submission Details:
 - Total Items: ${totalItems}
-- Estimated Value: $${totalValue.toFixed(2)}
-- Submission ID: ${submissionId}
+- Estimated Value: $${Number(totalValue).toFixed(2)}
 
 What happens next?
-1. We'll email your prepaid shipping label within 24 hours
-2. Pack your items securely and attach the label
-3. Drop off your package
-4. Once we receive and inspect your items, we'll process payment using the method you selected at checkout — PayPal, Venmo, or check by mail
+1. We'll email your prepaid shipping label within 24 hours.
+2. Pack your items securely and drop off the package.
+3. After we receive and inspect your items, we'll process payment using the method you selected at checkout.
 
-Important: Please check your email (including your spam folder) for the shipping label in a separate email.
+Please check your inbox and spam folder for the shipping label email.
 
-If you have any questions, just reply to this email.
+Need help? support@sellbookmedia.com
 
-Best regards,
 SellBook Media Team`,
     };
 

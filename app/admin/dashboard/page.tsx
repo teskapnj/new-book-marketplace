@@ -1549,6 +1549,7 @@ export default function AdminListingsPage() {
             },
             body: JSON.stringify({
               email: sellerEmail,
+              sellerName: `${selectedListing.shippingInfo?.firstName || ""} ${selectedListing.shippingInfo?.lastName || ""}`.trim(),
               listingTitle: selectedListing.title,
               shippingLabelUrl: shippingLabelUrl,
               trackingNumber: trackingNumber,
