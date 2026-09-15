@@ -3,21 +3,19 @@
 // NOT: Mobilde tasma olmamasi icin tek sutunlu yapi kullaniliyor.
 //      Etiket ustte, deger altta - uzun tracking numaralari sigar.
 
-import { NextRequest, NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
+import { NextRequest, NextResponse } from "next/server";
+import nodemailer from "nodemailer";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 const MAX_LABEL_SIZE_BYTES = 10 * 1024 * 1024;
 
 const transporter = nodemailer.createTransport({
-  host: 'mail.privateemail.com',
-  port: 465,
-  secure: true,
+  service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
 });
 
 export async function POST(request: NextRequest) {
@@ -32,7 +30,6 @@ export async function POST(request: NextRequest) {
       carrier,
       listingId,
       totalItems,
-      packageDimensions
     } = data;
 
     if (
@@ -45,20 +42,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Missing required fields'
+          error: "Missing required fields",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const shortId = listingId
-      ? String(listingId).substring(0, 8)
-      : 'n/a';
+    const shortId = listingId ? String(listingId).substring(0, 8) : "n/a";
 
     const carrierUpper = String(carrier).toUpperCase();
 
-    const dateStr = new Date().toLocaleString('en-US', {
-      timeZone: 'America/New_York'
+    const dateStr = new Date().toLocaleString("en-US", {
+      timeZone: "America/New_York",
     });
 
     // ------------------------------------------------------------
@@ -66,27 +61,24 @@ export async function POST(request: NextRequest) {
     // Label Firebase Storage download URL'sinden server tarafinda indirilir.
     // Indirme basarisiz olursa email yine link ile gonderilir.
     // ------------------------------------------------------------
-    let labelAttachment:
-      | {
-          filename: string;
-          content: Buffer;
-          contentType: string;
-        }
-      | null = null;
+    let labelAttachment: {
+      filename: string;
+      content: Buffer;
+      contentType: string;
+    } | null = null;
 
     try {
       const labelResponse = await fetch(shippingLabelUrl, {
-        cache: 'no-store'
+        cache: "no-store",
       });
 
       if (!labelResponse.ok) {
         throw new Error(
-          `Shipping label download failed with status ${labelResponse.status}`
+          `Shipping label download failed with status ${labelResponse.status}`,
         );
       }
 
-      const contentLengthHeader =
-        labelResponse.headers.get('content-length');
+      const contentLengthHeader = labelResponse.headers.get("content-length");
 
       if (contentLengthHeader) {
         const contentLength = Number(contentLengthHeader);
@@ -95,51 +87,41 @@ export async function POST(request: NextRequest) {
           Number.isFinite(contentLength) &&
           contentLength > MAX_LABEL_SIZE_BYTES
         ) {
-          throw new Error('Shipping label exceeds maximum allowed size');
+          throw new Error("Shipping label exceeds maximum allowed size");
         }
       }
 
-      const labelArrayBuffer =
-        await labelResponse.arrayBuffer();
+      const labelArrayBuffer = await labelResponse.arrayBuffer();
 
-      if (
-        labelArrayBuffer.byteLength >
-        MAX_LABEL_SIZE_BYTES
-      ) {
-        throw new Error('Shipping label exceeds maximum allowed size');
+      if (labelArrayBuffer.byteLength > MAX_LABEL_SIZE_BYTES) {
+        throw new Error("Shipping label exceeds maximum allowed size");
       }
 
-      const labelBuffer = Buffer.from(
-        labelArrayBuffer
-      );
+      const labelBuffer = Buffer.from(labelArrayBuffer);
 
       if (labelBuffer.length > 0) {
         labelAttachment = {
           filename: `SellBookMedia-Shipping-Label-${shortId}.pdf`,
           content: labelBuffer,
-          contentType: 'application/pdf'
+          contentType: "application/pdf",
         };
       }
     } catch (attachmentError) {
       console.error(
-        'Shipping label attachment could not be created:',
-        attachmentError
+        "Shipping label attachment could not be created:",
+        attachmentError,
       );
     }
 
     // Tek sutunlu satir: etiket ustte kucuk, deger altta buyuk
-    const row = (
-      label: string,
-      value: string,
-      mono = false
-    ) => `
+    const row = (label: string, value: string, mono = false) => `
       <tr>
         <td style="padding:12px 0; border-bottom:1px solid #e2e8f0;">
           <div style="font-size:12px; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">${label}</div>
           <div style="font-size:16px; color:#0f172a; font-weight:600; ${
             mono
               ? "font-family:'SF Mono',Consolas,monospace; word-break:break-all;"
-              : ''
+              : ""
           }">${value}</div>
         </td>
       </tr>`;
@@ -243,7 +225,7 @@ export async function POST(request: NextRequest) {
                 We also attached a copy of your shipping label to this email.
               </div>
               `
-                  : ''
+                  : ""
               }
 
             </td>
@@ -275,11 +257,7 @@ export async function POST(request: NextRequest) {
                       cellpadding="0"
                       cellspacing="0"
                     >
-                      ${row(
-                        'Tracking Number',
-                        trackingNumber,
-                        true
-                      )}
+                      ${row("Tracking Number", trackingNumber, true)}
 
                       <tr>
                         <td style="padding:12px 0;">
@@ -302,7 +280,7 @@ export async function POST(request: NextRequest) {
           </tr>
 
           ${
-            totalItems || packageDimensions
+            totalItems
               ? `
           <!-- Your Box -->
           <tr>
@@ -333,34 +311,8 @@ export async function POST(request: NextRequest) {
 
                       ${
                         totalItems
-                          ? row(
-                              'Number of Items',
-                              String(totalItems)
-                            )
-                          : ''
-                      }
-
-                      ${
-                        packageDimensions
-                          ? `
-                        ${row(
-                          'Box Size',
-                          `${packageDimensions.length} &times; ${packageDimensions.width} &times; ${packageDimensions.height} in`
-                        )}
-
-                        <tr>
-                          <td style="padding:12px 0;">
-                            <div style="font-size:12px; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">
-                              Weight
-                            </div>
-
-                            <div style="font-size:16px; color:#0f172a; font-weight:600;">
-                              ${packageDimensions.weight} lb
-                            </div>
-                          </td>
-                        </tr>
-                        `
-                          : ''
+                          ? row("Number of Items", String(totalItems))
+                          : ""
                       }
 
                     </table>
@@ -371,7 +323,7 @@ export async function POST(request: NextRequest) {
             </td>
           </tr>
           `
-              : ''
+              : ""
           }
 
           <!-- Next Steps -->
@@ -489,28 +441,22 @@ STEP 1 - PRINT YOUR SHIPPING LABEL
 Open your shipping label here:
 ${shippingLabelUrl}
 
-${labelAttachment ? 'A PDF copy of your shipping label is also attached to this email.\n' : ''}
+${labelAttachment ? "A PDF copy of your shipping label is also attached to this email.\n" : ""}
 SHIPPING
 Tracking number: ${trackingNumber}
 Carrier: ${carrierUpper}
 
 ${
-  totalItems || packageDimensions
+  totalItems
     ? `
 YOUR BOX${
         totalItems
           ? `
 Number of items: ${totalItems}`
-          : ''
-      }${
-        packageDimensions
-          ? `
-Box size: ${packageDimensions.length} x ${packageDimensions.width} x ${packageDimensions.height} in
-Weight: ${packageDimensions.weight} lb`
-          : ''
+          : ""
       }
 `
-    : ''
+    : ""
 }
 NEXT STEPS
 1. Open and print your shipping label
@@ -525,43 +471,37 @@ Questions? Just reply to this email.
 Ref ${shortId}`;
 
     await transporter.sendMail({
-      from: `"SellBook Media" <${process.env.EMAIL_USER}>`,
+      from: `"SellBook Media" <${process.env.GMAIL_USER}>`,
       to: email,
       replyTo: process.env.EMAIL_USER,
       subject: `You're ready to ship - your prepaid label is enclosed`,
       html: emailHtml,
       text: emailText,
-      attachments: labelAttachment
-        ? [labelAttachment]
-        : []
+      attachments: labelAttachment ? [labelAttachment] : [],
     });
 
     console.log(
       `Email sent to ${email} for listing ${listingId}${
         labelAttachment
-          ? ' with shipping label attachment'
-          : ' without shipping label attachment'
-      }`
+          ? " with shipping label attachment"
+          : " without shipping label attachment"
+      }`,
     );
 
     return NextResponse.json({
-      success: true
+      success: true,
     });
-
   } catch (error: unknown) {
-    console.error('Email error:', error);
+    console.error("Email error:", error);
 
-    const message =
-      error instanceof Error
-        ? error.message
-        : 'Unknown error';
+    const message = error instanceof Error ? error.message : "Unknown error";
 
     return NextResponse.json(
       {
         success: false,
-        error: message
+        error: message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

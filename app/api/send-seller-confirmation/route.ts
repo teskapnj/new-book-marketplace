@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
+import { NextRequest, NextResponse } from "next/server";
+import nodemailer from "nodemailer";
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,37 +9,36 @@ export async function POST(request: NextRequest) {
       totalItems,
       totalValue,
       submissionId,
-      items = []
+      items = [],
     } = await request.json();
 
     // Namecheap için transporter yapılandırması
     const transporter = nodemailer.createTransport({
-      host: 'mail.privateemail.com',
-      port: 465,
-      secure: true,
+      service: "gmail",
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-      }
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD,
+      },
     });
 
     const itemRows = Array.isArray(items)
-      ? items.map((item: any) => {
-          const title =
-            item?.amazonData?.title ||
-            `${item?.category || 'Item'} ${item?.isbn || ''}`.trim();
+      ? items
+          .map((item: any) => {
+            const title =
+              item?.amazonData?.title ||
+              `${item?.category || "Item"} ${item?.isbn || ""}`.trim();
 
-          const barcode = item?.isbn || '';
-          const offer = Number(item?.price || 0);
+            const barcode = item?.isbn || "";
+            const offer = Number(item?.price || 0);
 
-          return `
+            return `
         <tr>
           <td style="padding:7px 0;border-bottom:1px solid #e2e8f0;">
             <div style="font-size:13px;font-weight:600;color:#0f172a;line-height:1.4;">
               ${title}
             </div>
             <div style="margin-top:2px;font-size:11px;color:#64748b;text-decoration:none;">
-              ${barcode ? `ISBN/UPC: ${barcode}` : ''}
+              ${barcode ? `ISBN/UPC: ${barcode}` : ""}
             </div>
           </td>
           <td style="padding:7px 0;border-bottom:1px solid #e2e8f0;font-size:12px;font-weight:700;color:#0f172a;text-align:right;white-space:nowrap;">
@@ -47,8 +46,9 @@ export async function POST(request: NextRequest) {
           </td>
         </tr>
       `;
-        }).join('')
-      : '';
+          })
+          .join("")
+      : "";
 
     const emailHtml = `<!DOCTYPE html>
 <html lang="en">
@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
           <tr>
             <td style="background-color:#f8fafc; padding:24px 40px; text-align:center; border-top:1px solid #e2e8f0;">
               <div style="font-size:19.5px; font-weight:600; color:#475569;">SellBook Media</div>
-              <div style="font-size:16.5px; color:#94a3b8; margin-top:5px;">Submission ${submissionId} &nbsp;·&nbsp; ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })}</div>
+              <div style="font-size:16.5px; color:#94a3b8; margin-top:5px;">Submission ${submissionId} &nbsp;·&nbsp; ${new Date().toLocaleString("en-US", { timeZone: "America/New_York" })}</div>
             </td>
           </tr>
 
@@ -216,9 +216,10 @@ export async function POST(request: NextRequest) {
 </html>`;
 
     const mailOptions = {
-      from: `"SellBook Media" <${process.env.EMAIL_USER}>`,
+      from: `"SellBook Media" <${process.env.GMAIL_USER}>`,
+      replyTo: process.env.EMAIL_USER,
       to: sellerEmail,
-      subject: 'We received your submission - SellBook Media',
+      subject: "We received your submission - SellBook Media",
       html: emailHtml,
       text: `Thank you for your submission!
 
@@ -242,14 +243,17 @@ Important: Please check your email (including your spam folder) for the shipping
 If you have any questions, just reply to this email.
 
 Best regards,
-SellBook Media Team`
+SellBook Media Team`,
     };
 
     await transporter.sendMail(mailOptions);
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error sending seller confirmation:', error);
-    return NextResponse.json({ success: false, error: 'Failed to send email' }, { status: 500 });
+    console.error("Error sending seller confirmation:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to send email" },
+      { status: 500 },
+    );
   }
 }
