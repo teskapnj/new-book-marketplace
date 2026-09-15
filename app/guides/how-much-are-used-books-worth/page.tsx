@@ -167,15 +167,19 @@ export default function BookValueGuide() {
           <p className="mt-5 text-lg sm:text-xl leading-relaxed text-blue-100">
             There&apos;s no single price for a used book. The exact title,
             edition, demand, and resale market can make two books that look
-            similar worth very different amounts. The quickest way to know
-            is to check the barcode.
+            similar worth very different amounts. The quickest way to know is to
+            check the barcode.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-white/15 pt-5 text-sm text-blue-200">
             <span className="font-medium text-white">SellBookMedia</span>
-            <span aria-hidden="true" className="text-white/30">/</span>
+            <span aria-hidden="true" className="text-white/30">
+              /
+            </span>
             <time dateTime="2026-08-29">Updated August 2026</time>
-            <span aria-hidden="true" className="text-white/30">/</span>
+            <span aria-hidden="true" className="text-white/30">
+              /
+            </span>
             <span>5 min read</span>
           </div>
         </div>
@@ -183,7 +187,6 @@ export default function BookValueGuide() {
 
       <div className="max-w-3xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
         <article>
-
           {/* ===================== VALUE ===================== */}
           <section className="mb-12">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
@@ -196,10 +199,10 @@ export default function BookValueGuide() {
 
             <p className="mt-6 text-[17px] leading-[1.75] text-slate-700">
               A used book&apos;s value is driven largely by{" "}
-              <strong className="text-slate-900">supply and demand</strong>.
-              A book with many used copies available may have a lower resale
-              value, while a harder-to-find title with active demand can be
-              much more interesting to buyers.
+              <strong className="text-slate-900">supply and demand</strong>. A
+              book with many used copies available may have a lower resale
+              value, while a harder-to-find title with active demand can be much
+              more interesting to buyers.
             </p>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -213,9 +216,9 @@ export default function BookValueGuide() {
                 </h3>
 
                 <p className="mt-3 text-[15px] leading-relaxed text-slate-600">
-                  Popular books can have thousands of used copies competing
-                  for the same buyers. That can push resale prices lower even
-                  when the book itself is in excellent condition.
+                  Popular books can have thousands of used copies competing for
+                  the same buyers. That can push resale prices lower even when
+                  the book itself is in excellent condition.
                 </p>
               </div>
 
@@ -239,8 +242,8 @@ export default function BookValueGuide() {
               <strong className="text-slate-900">
                 Don&apos;t judge a book by age or appearance alone.
               </strong>{" "}
-              The barcode tells us exactly which edition you have, which is
-              why scanning it gives you a much better answer.
+              The barcode tells us exactly which edition you have, which is why
+              scanning it gives you a much better answer.
             </p>
           </section>
 
@@ -257,8 +260,8 @@ export default function BookValueGuide() {
                 </h2>
 
                 <p className="mt-3 max-w-xl text-[16px] sm:text-[17px] leading-relaxed text-slate-600">
-                  Scan the barcode and get an instant offer in seconds.
-                  No app required and no account needed just to check.
+                  Scan the barcode and get an instant offer in seconds. No app
+                  required and no account needed just to check.
                 </p>
 
                 <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
@@ -267,7 +270,6 @@ export default function BookValueGuide() {
                     className="inline-flex items-center rounded-xl bg-blue-600 px-6 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-blue-700"
                   >
                     Check My Book
-
                     <svg
                       className="ml-2 h-5 w-5"
                       fill="none"
@@ -284,7 +286,8 @@ export default function BookValueGuide() {
                   </Link>
 
                   <span className="text-sm text-slate-500">
-                    Instant offer • Free shipping • PayPal, Venmo, or check by mail payment
+                    Instant offer • Free shipping • PayPal, Venmo, or check by
+                    mail payment
                   </span>
                 </div>
               </div>
@@ -303,8 +306,8 @@ export default function BookValueGuide() {
 
             <p className="mt-5 text-[17px] leading-[1.75] text-slate-700">
               You can&apos;t reliably tell what a book is worth just from its
-              category, but some types are especially worth scanning before
-              you donate, give away, or set them aside.
+              category, but some types are especially worth scanning before you
+              donate, give away, or set them aside.
             </p>
 
             <div className="mt-6 space-y-3">
@@ -314,9 +317,7 @@ export default function BookValueGuide() {
                   className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
                 >
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                    <h3 className="font-semibold text-slate-900">
-                      {cat.name}
-                    </h3>
+                    <h3 className="font-semibold text-slate-900">{cat.name}</h3>
 
                     <span
                       className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
@@ -369,8 +370,8 @@ export default function BookValueGuide() {
 
                 <li className="flex items-start gap-2">
                   <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-500" />
-                  If a title doesn&apos;t currently meet our purchasing criteria,
-                  we&apos;ll simply let you know.
+                  If a title doesn&apos;t currently meet our purchasing
+                  criteria, we&apos;ll simply let you know.
                 </li>
               </ul>
             </div>
@@ -426,9 +427,7 @@ export default function BookValueGuide() {
             </div>
 
             <div className="mt-5 rounded-xl border-l-4 border-blue-500 bg-white px-5 py-4 shadow-sm">
-              <p className="font-semibold text-slate-900">
-                Have textbooks?
-              </p>
+              <p className="font-semibold text-slate-900">Have textbooks?</p>
 
               <p className="mt-1 text-[15px] leading-relaxed text-slate-600">
                 They&apos;re definitely worth checking. Specialized and current
@@ -442,7 +441,6 @@ export default function BookValueGuide() {
               className="mt-5 inline-flex items-center text-sm font-semibold text-blue-600 hover:text-blue-700"
             >
               See the full condition guidelines
-
               <svg
                 className="ml-1.5 h-4 w-4"
                 fill="none"
@@ -471,8 +469,8 @@ export default function BookValueGuide() {
 
             <p className="mt-6 text-[17px] leading-[1.75] text-slate-700">
               You don&apos;t need to search marketplace listings or research
-              every title individually. Scan the ISBN or barcode and check
-              the specific book in seconds.
+              every title individually. Scan the ISBN or barcode and check the
+              specific book in seconds.
             </p>
 
             <ol className="mt-6 space-y-3">
@@ -519,24 +517,43 @@ export default function BookValueGuide() {
           </section>
 
           <section className="mb-14">
-  <div className="rounded-2xl border border-blue-200 bg-blue-50 px-6 py-7">
-    <h2 className="font-serif text-2xl font-bold text-slate-900">
-      Want to check a specific book by ISBN?
-    </h2>
+            <div className="rounded-2xl border border-blue-200 bg-blue-50 px-6 py-7">
+              <h2 className="font-serif text-2xl font-bold text-slate-900">
+                Want to check a specific book by ISBN?
+              </h2>
 
-    <p className="mt-3 text-[16px] leading-relaxed text-slate-700">
-      An ISBN helps identify the exact edition of a book. Learn how to find
-      the ISBN and use it to check a book&apos;s current value in our{" "}
-      <Link
-        href="/guides/how-to-find-book-value-by-isbn"
-        className="font-semibold text-blue-600 hover:text-blue-800"
-      >
-        guide to finding book value by ISBN
-      </Link>
-      .
-    </p>
-  </div>
-</section>
+              <p className="mt-3 text-[16px] leading-relaxed text-slate-700">
+                An ISBN helps identify the exact edition of a book. Learn how to
+                find the ISBN and use it to check a book&apos;s current value in
+                our{" "}
+                <Link
+                  href="/guides/how-to-find-book-value-by-isbn"
+                  className="font-semibold text-blue-600 hover:text-blue-800"
+                >
+                  guide to finding book value by ISBN
+                </Link>
+                .
+              </p>
+            </div>
+          </section>
+
+          <section className="mb-12 rounded-2xl border border-blue-100 bg-blue-50 px-6 py-7">
+            <h2 className="font-serif text-2xl font-bold text-slate-900">
+              Want to check your books now?
+            </h2>
+
+            <p className="mt-3 text-[16px] leading-relaxed text-slate-700">
+              Scan or enter the ISBN on your books to see whether SellBookMedia
+              is currently buying them and view your cash offer before you ship.
+            </p>
+
+            <Link
+              href="/sell-books-for-cash"
+              className="mt-5 inline-flex font-semibold text-blue-600 hover:text-blue-800"
+            >
+              Sell books for cash →
+            </Link>
+          </section>
 
           <RelatedGuides currentSlug="how-much-are-used-books-worth" />
 
@@ -551,8 +568,8 @@ export default function BookValueGuide() {
             </h2>
 
             <p className="mx-auto mt-3 max-w-lg text-[16px] leading-relaxed text-blue-100">
-              Scan one barcode and see your offer in seconds. No app
-              required and no commitment to sell.
+              Scan one barcode and see your offer in seconds. No app required
+              and no commitment to sell.
             </p>
 
             <Link
@@ -560,7 +577,6 @@ export default function BookValueGuide() {
               className="mt-7 inline-flex items-center rounded-xl bg-white px-7 py-3.5 text-base font-bold text-blue-700 shadow-lg transition-transform hover:scale-[1.02]"
             >
               Check My Book
-
               <svg
                 className="ml-2 h-5 w-5"
                 fill="none"
@@ -584,7 +600,6 @@ export default function BookValueGuide() {
               <span>PayPal, Venmo, or check by mail payment</span>
             </div>
           </div>
-
         </article>
       </div>
     </div>

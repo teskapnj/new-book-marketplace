@@ -82,6 +82,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     {
+      url: "https://www.sellbookmedia.com/guides/why-are-used-dvds-worth-so-little",
+      lastModified: new Date("2026-08-18"),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    {
       url: "https://www.sellbookmedia.com/guides/are-old-dvds-worth-anything",
       lastModified: new Date("2026-09-06"),
       changeFrequency: "monthly",

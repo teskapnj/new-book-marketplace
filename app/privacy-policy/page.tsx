@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import Link from "next/link";
 
@@ -20,7 +20,9 @@ const SECTIONS = [
 function SectionHeading({ n, title }: { n: string; title: string }) {
   return (
     <div className="flex items-baseline gap-3 border-b border-slate-200 pb-3">
-      <span className="font-mono text-sm font-bold text-blue-600 tabular-nums">{n}</span>
+      <span className="font-mono text-sm font-bold text-blue-600 tabular-nums">
+        {n}
+      </span>
       <h2 className="font-serif text-2xl font-bold text-slate-900">{title}</h2>
     </div>
   );
@@ -60,8 +62,18 @@ export default function PrivacyPolicyPage() {
               onClick={() => window.history.back()}
               className="inline-flex items-center text-sm font-medium text-blue-200 transition-colors hover:text-white"
             >
-              <svg className="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              <svg
+                className="mr-1.5 h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
               </svg>
               Back
             </button>
@@ -82,8 +94,8 @@ export default function PrivacyPolicyPage() {
           </h1>
 
           <p className="mt-5 text-lg leading-relaxed text-blue-100">
-            How we collect, use, and protect your personal information when you sell items through our
-            platform.
+            How we collect, use, and protect your personal information when you
+            sell items through our platform.
           </p>
 
           <p className="mt-8 border-t border-white/15 pt-5 text-sm text-blue-200">
@@ -95,8 +107,12 @@ export default function PrivacyPolicyPage() {
       <div className="max-w-3xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
         {/* ---------- Icindekiler ---------- */}
         <nav aria-label="Contents" className="mb-14">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">Jump to</p>
-          <h2 className="mt-2 font-serif text-2xl font-bold text-slate-900">Contents</h2>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+            Jump to
+          </p>
+          <h2 className="mt-2 font-serif text-2xl font-bold text-slate-900">
+            Contents
+          </h2>
 
           <ol className="mt-5 grid gap-x-6 gap-y-1 sm:grid-cols-2">
             {SECTIONS.map((s) => (
@@ -119,8 +135,8 @@ export default function PrivacyPolicyPage() {
           <section id="collect" className="scroll-mt-8">
             <SectionHeading n="01" title="Information we collect" />
             <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-              When you use our platform to sell your books, CDs, DVDs, and games, we collect the
-              following information.
+              When you use our platform to sell your books, CDs, DVDs, and
+              games, we collect the following information.
             </p>
 
             <SubHeading>Personal information</SubHeading>
@@ -139,7 +155,7 @@ export default function PrivacyPolicyPage() {
                 "Scanned barcode data (ISBN, UPC codes)",
                 "Amazon ASIN numbers (when provided)",
                 "Item titles, authors, and descriptions",
-                "Package dimensions and weight",
+                "Shipping and package information when needed",
               ]}
             />
 
@@ -193,7 +209,8 @@ export default function PrivacyPolicyPage() {
           <section id="sharing" className="scroll-mt-8">
             <SectionHeading n="03" title="Information sharing" />
             <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-              We share your information only in the following limited circumstances.
+              We share your information only in the following limited
+              circumstances.
             </p>
 
             <SubHeading>Payment processing</SubHeading>
@@ -208,7 +225,7 @@ export default function PrivacyPolicyPage() {
             <List
               items={[
                 "Shipping carriers receive your address for label generation",
-                "Package dimensions and weight for shipping calculations",
+                "Shipping information needed to create and manage prepaid shipping labels",
               ]}
             />
 
@@ -223,8 +240,8 @@ export default function PrivacyPolicyPage() {
 
             <div className="mt-6 rounded-xl border-l-4 border-emerald-500 bg-white px-5 py-4 shadow-sm">
               <p className="text-[16px] font-semibold leading-relaxed text-slate-900">
-                We do not sell, rent, or trade your personal information to third parties for
-                marketing purposes.
+                We do not sell, rent, or trade your personal information to
+                third parties for marketing purposes.
               </p>
             </div>
           </section>
@@ -232,7 +249,8 @@ export default function PrivacyPolicyPage() {
           <section id="security" className="scroll-mt-8">
             <SectionHeading n="04" title="Data security" />
             <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-              We implement appropriate security measures to protect your personal information:
+              We implement appropriate security measures to protect your
+              personal information:
             </p>
             <List
               items={[
@@ -254,13 +272,27 @@ export default function PrivacyPolicyPage() {
             <dl className="mt-5 divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
               {[
                 ["Account information", "As long as your account is active"],
-                ["Transaction records", "7 years, for tax and legal compliance"],
-                ["Item data", "Until processing is complete and payment is made"],
+                [
+                  "Transaction records",
+                  "7 years, for tax and legal compliance",
+                ],
+                [
+                  "Item data",
+                  "Until processing is complete and payment is made",
+                ],
                 ["Support communications", "3 years, for service improvement"],
-                ["Technical logs", "90 days, for security and performance monitoring"],
+                [
+                  "Technical logs",
+                  "90 days, for security and performance monitoring",
+                ],
               ].map(([label, value]) => (
-                <div key={label} className="flex flex-col gap-1 px-5 py-4 sm:flex-row sm:gap-6">
-                  <dt className="w-52 flex-shrink-0 text-sm font-semibold text-slate-500">{label}</dt>
+                <div
+                  key={label}
+                  className="flex flex-col gap-1 px-5 py-4 sm:flex-row sm:gap-6"
+                >
+                  <dt className="w-52 flex-shrink-0 text-sm font-semibold text-slate-500">
+                    {label}
+                  </dt>
                   <dd className="text-[16px] text-slate-800">{value}</dd>
                 </div>
               ))}
@@ -309,14 +341,15 @@ export default function PrivacyPolicyPage() {
                 "Ensure security and prevent fraud",
               ]}
             />
-                        <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-              Some of these cookies are set by Google Analytics and Google Ads, which we use to
-              understand how the site is performing and to measure our advertising. Those cookies are
-              governed by Google&rsquo;s own privacy policy.
+            <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
+              Some of these cookies are set by Google Analytics and Google Ads,
+              which we use to understand how the site is performing and to
+              measure our advertising. Those cookies are governed by
+              Google&rsquo;s own privacy policy.
             </p>
             <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-              You can manage cookie preferences through your browser settings, though some
-              functionality may be limited if cookies are disabled.
+              You can manage cookie preferences through your browser settings,
+              though some functionality may be limited if cookies are disabled.
             </p>
           </section>
 
@@ -328,50 +361,55 @@ export default function PrivacyPolicyPage() {
             <List
               items={[
                 <>
-                  <strong>PayPal and Venmo</strong> — for electronic payment processing, subject to
-                  their applicable privacy policies
+                  <strong>PayPal and Venmo</strong> — for electronic payment
+                  processing, subject to their applicable privacy policies
                 </>,
                 <>
-                  <strong>Shipping carriers</strong> — for label generation and package tracking
+                  <strong>Shipping carriers</strong> — for label generation and
+                  package tracking
                 </>,
-                                <>
-                                <strong>Barcode databases</strong> — for item identification and pricing
-                              </>,
-                              <>
-                                <strong>Google Firebase</strong> — for account authentication and secure storage of
-                                your account and order data
-                              </>,
-                              <>
-                                <strong>Google Analytics and Google Ads</strong> — to understand how the site is used
-                                and to measure our advertising, subject to Google&rsquo;s own privacy policy
-                              </>,
-                            ]}
-                          />
+                <>
+                  <strong>Barcode databases</strong> — for item identification
+                  and pricing
+                </>,
+                <>
+                  <strong>Google Firebase</strong> — for account authentication
+                  and secure storage of your account and order data
+                </>,
+                <>
+                  <strong>Google Analytics and Google Ads</strong> — to
+                  understand how the site is used and to measure our
+                  advertising, subject to Google&rsquo;s own privacy policy
+                </>,
+              ]}
+            />
           </section>
 
           <section id="children" className="scroll-mt-8">
             <SectionHeading n="09" title="Children's privacy" />
             <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-              Our service is not intended for children under 18 years of age. We do not knowingly
-              collect personal information from children. If you are under 18, please do not use our
-              service or provide any personal information.
+              Our service is not intended for children under 18 years of age. We
+              do not knowingly collect personal information from children. If
+              you are under 18, please do not use our service or provide any
+              personal information.
             </p>
           </section>
 
           <section id="international" className="scroll-mt-8">
             <SectionHeading n="10" title="International users" />
             <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-              Our service is primarily designed for users in the United States. If you access our
-              service from outside the US, your information may be transferred to and processed in the
-              United States, where privacy laws may differ from your jurisdiction.
+              Our service is primarily designed for users in the United States.
+              If you access our service from outside the US, your information
+              may be transferred to and processed in the United States, where
+              privacy laws may differ from your jurisdiction.
             </p>
           </section>
 
           <section id="changes" className="scroll-mt-8">
             <SectionHeading n="11" title="Changes to this policy" />
             <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-              We may update this Privacy Policy from time to time. We will notify you of any material
-              changes by:
+              We may update this Privacy Policy from time to time. We will
+              notify you of any material changes by:
             </p>
             <List
               items={[
@@ -385,14 +423,17 @@ export default function PrivacyPolicyPage() {
           <section id="contact" className="scroll-mt-8">
             <SectionHeading n="12" title="Contact us" />
             <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-              If you have questions about this Privacy Policy or your personal information, please
-              contact us:
+              If you have questions about this Privacy Policy or your personal
+              information, please contact us:
             </p>
             <List
               items={[
                 <>
                   Through our{" "}
-                  <Link href="/contact" className="font-medium text-blue-600 hover:text-blue-700">
+                  <Link
+                    href="/contact"
+                    className="font-medium text-blue-600 hover:text-blue-700"
+                  >
                     contact form
                   </Link>
                 </>,
@@ -406,7 +447,8 @@ export default function PrivacyPolicyPage() {
                   </a>
                 </>,
                 <>
-                  Please include <strong>&ldquo;Privacy Policy Question&rdquo;</strong> in your
+                  Please include{" "}
+                  <strong>&ldquo;Privacy Policy Question&rdquo;</strong> in your
                   subject line
                 </>,
               ]}
@@ -416,12 +458,13 @@ export default function PrivacyPolicyPage() {
 
         {/* ---------- Kapanis ---------- */}
         <div className="mt-14 rounded-2xl border border-slate-200 bg-white px-6 py-6 shadow-sm">
-        <p className="text-sm font-semibold text-slate-900">
+          <p className="text-sm font-semibold text-slate-900">
             Effective <time dateTime="2026-09-14">September 14, 2026</time>
           </p>
           <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
-            By using our service, you acknowledge that you have read and understood this Privacy
-            Policy and agree to the collection and use of your information as described here.
+            By using our service, you acknowledge that you have read and
+            understood this Privacy Policy and agree to the collection and use
+            of your information as described here.
           </p>
           <Link
             href="/terms"
@@ -435,7 +478,11 @@ export default function PrivacyPolicyPage() {
               strokeWidth={2}
               viewBox="0 0 24 24"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M5 12h14M12 5l7 7-7 7"
+              />
             </svg>
           </Link>
         </div>

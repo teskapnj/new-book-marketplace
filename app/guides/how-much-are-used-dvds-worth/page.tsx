@@ -135,17 +135,21 @@ export default function DvdValueGuide() {
           </h1>
 
           <p className="mt-5 text-lg sm:text-xl leading-relaxed text-blue-100">
-            Movie values can vary much more than people expect. A common DVD,
-            a complete TV box set, a Blu-ray, and a collector&apos;s edition
-            can all have very different resale demand. The quickest way to
-            know what you have is to scan the barcode.
+            Movie values can vary much more than people expect. A common DVD, a
+            complete TV box set, a Blu-ray, and a collector&apos;s edition can
+            all have very different resale demand. The quickest way to know what
+            you have is to scan the barcode.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-white/15 pt-5 text-sm text-blue-200">
             <span className="font-medium text-white">SellBookMedia</span>
-            <span aria-hidden="true" className="text-white/30">/</span>
+            <span aria-hidden="true" className="text-white/30">
+              /
+            </span>
             <time dateTime="2026-08-29">Updated August 2026</time>
-            <span aria-hidden="true" className="text-white/30">/</span>
+            <span aria-hidden="true" className="text-white/30">
+              /
+            </span>
             <span>5 min read</span>
           </div>
         </div>
@@ -153,7 +157,6 @@ export default function DvdValueGuide() {
 
       <div className="max-w-3xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
         <article>
-
           {/* ===================== VALUE ===================== */}
           <section className="mb-12">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
@@ -169,16 +172,15 @@ export default function DvdValueGuide() {
                 Used movie value depends largely on{" "}
                 <strong className="text-slate-900">
                   supply, demand, format, and the exact edition
-                </strong>.
-                A widely available DVD may have a very different resale
-                market from a limited release, complete series, Blu-ray,
-                or 4K edition.
+                </strong>
+                . A widely available DVD may have a very different resale market
+                from a limited release, complete series, Blu-ray, or 4K edition.
               </p>
 
               <p>
-                Even two versions of the same movie can be different.
-                Special features, packaging, format, release year, and
-                availability can all affect what buyers are looking for.
+                Even two versions of the same movie can be different. Special
+                features, packaging, format, release year, and availability can
+                all affect what buyers are looking for.
               </p>
             </div>
 
@@ -206,9 +208,8 @@ export default function DvdValueGuide() {
                 </h2>
 
                 <p className="mt-3 max-w-xl text-[16px] sm:text-[17px] leading-relaxed text-slate-600">
-                  Scan one DVD, Blu-ray, or 4K barcode and see your offer
-                  in seconds. No app required and no account needed just
-                  to check.
+                  Scan one DVD, Blu-ray, or 4K barcode and see your offer in
+                  seconds. No app required and no account needed just to check.
                 </p>
 
                 <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
@@ -217,7 +218,6 @@ export default function DvdValueGuide() {
                     className="inline-flex items-center rounded-xl bg-blue-600 px-6 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-blue-700"
                   >
                     Check My Movie
-
                     <svg
                       className="ml-2 h-5 w-5"
                       fill="none"
@@ -234,7 +234,8 @@ export default function DvdValueGuide() {
                   </Link>
 
                   <span className="text-sm text-slate-500">
-                    Instant offer • Free shipping • PayPal, Venmo, or check by mail payment
+                    Instant offer • Free shipping • PayPal, Venmo, or check by
+                    mail payment
                   </span>
                 </div>
               </div>
@@ -253,8 +254,8 @@ export default function DvdValueGuide() {
 
             <p className="mt-6 text-[17px] leading-[1.75] text-slate-700">
               You can&apos;t reliably tell value from the cover alone, but
-              certain kinds of releases are particularly worth scanning
-              before you donate, discard, or sell your collection elsewhere.
+              certain kinds of releases are particularly worth scanning before
+              you donate, discard, or sell your collection elsewhere.
             </p>
 
             <div className="mt-6 space-y-3">
@@ -325,8 +326,8 @@ export default function DvdValueGuide() {
 
                 <li className="flex items-start gap-2">
                   <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-500" />
-                  Blu-rays, 4K titles, box sets, and harder-to-find editions
-                  are all worth checking.
+                  Blu-rays, 4K titles, box sets, and harder-to-find editions are
+                  all worth checking.
                 </li>
 
                 <li className="flex items-start gap-2">
@@ -349,10 +350,9 @@ export default function DvdValueGuide() {
             </h2>
 
             <p className="mt-6 text-[17px] leading-[1.75] text-slate-700">
-              Used DVDs and Blu-rays don&apos;t need to look brand new.
-              Light surface marks and normal case wear are generally fine.
-              The disc should be playable, complete, and free from serious
-              damage.
+              Used DVDs and Blu-rays don&apos;t need to look brand new. Light
+              surface marks and normal case wear are generally fine. The disc
+              should be playable, complete, and free from serious damage.
             </p>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -372,8 +372,8 @@ export default function DvdValueGuide() {
                 </p>
 
                 <p className="mt-1 text-[15px] text-slate-600">
-                  Cracked discs, deep playback-affecting scratches, or
-                  missing essential parts
+                  Cracked discs, deep playback-affecting scratches, or missing
+                  essential parts
                 </p>
               </div>
             </div>
@@ -383,7 +383,6 @@ export default function DvdValueGuide() {
               className="mt-5 inline-flex items-center text-sm font-semibold text-blue-600 hover:text-blue-700"
             >
               See the full condition guidelines
-
               <svg
                 className="ml-1.5 h-4 w-4"
                 fill="none"
@@ -411,9 +410,9 @@ export default function DvdValueGuide() {
             </h2>
 
             <p className="mt-6 text-[17px] leading-[1.75] text-slate-700">
-              You don&apos;t need to research every title individually.
-              Scan the barcode on the back of the case and check the exact
-              edition in seconds.
+              You don&apos;t need to research every title individually. Scan the
+              barcode on the back of the case and check the exact edition in
+              seconds.
             </p>
 
             <ol className="mt-6 space-y-3">
@@ -460,15 +459,33 @@ export default function DvdValueGuide() {
           </section>
 
           <p className="mt-6 text-[16px] leading-relaxed text-slate-600">
-  Have a DVD, Blu-ray, or 4K movie in front of you? Learn how to{" "}
-  <Link
-    href="/guides/media-value-by-barcode"
-    className="font-semibold text-blue-600 hover:text-blue-800"
-  >
-    check its value using the barcode
-  </Link>
-  .
-</p>
+            Have a DVD, Blu-ray, or 4K movie in front of you? Learn how to{" "}
+            <Link
+              href="/guides/media-value-by-barcode"
+              className="font-semibold text-blue-600 hover:text-blue-800"
+            >
+              check its value using the barcode
+            </Link>
+            .
+          </p>
+
+          <section className="mb-12 rounded-2xl border border-blue-100 bg-blue-50 px-6 py-7">
+            <h2 className="font-serif text-2xl font-bold text-slate-900">
+              Want to check your DVDs now?
+            </h2>
+
+            <p className="mt-3 text-[16px] leading-relaxed text-slate-700">
+              Scan or enter the UPC on your DVDs, Blu-rays, or 4K movies to see
+              whether the exact release currently qualifies for an offer.
+            </p>
+
+            <Link
+              href="/sell-dvds-for-cash"
+              className="mt-5 inline-flex font-semibold text-blue-600 hover:text-blue-800"
+            >
+              Sell DVDs for cash →
+            </Link>
+          </section>
 
           <RelatedGuides currentSlug="how-much-are-used-dvds-worth" />
 
@@ -483,8 +500,8 @@ export default function DvdValueGuide() {
             </h2>
 
             <p className="mx-auto mt-3 max-w-lg text-[16px] leading-relaxed text-blue-100">
-              Scan one DVD, Blu-ray, or 4K barcode and see your offer
-              in seconds. No app required and no commitment to sell.
+              Scan one DVD, Blu-ray, or 4K barcode and see your offer in
+              seconds. No app required and no commitment to sell.
             </p>
 
             <Link
@@ -492,7 +509,6 @@ export default function DvdValueGuide() {
               className="mt-7 inline-flex items-center rounded-xl bg-white px-7 py-3.5 text-base font-bold text-blue-700 shadow-lg transition-transform hover:scale-[1.02]"
             >
               Check My Movie
-
               <svg
                 className="ml-2 h-5 w-5"
                 fill="none"
@@ -516,7 +532,6 @@ export default function DvdValueGuide() {
               <span>PayPal, Venmo, or check by mail payment</span>
             </div>
           </div>
-
         </article>
       </div>
     </div>

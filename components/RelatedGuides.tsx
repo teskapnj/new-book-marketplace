@@ -1,18 +1,50 @@
 import Link from "next/link";
 
 const ALL_GUIDES = [
-  { slug: "how-much-are-used-books-worth", title: "How Much Are Used Books Worth?" },
-  { slug: "how-much-are-used-dvds-worth", title: "How Much Are Used DVDs Worth?" },
+  {
+    slug: "how-much-are-used-books-worth",
+    title: "How Much Are Used Books Worth?",
+  },
+  {
+    slug: "how-much-are-used-dvds-worth",
+    title: "How Much Are Used DVDs Worth?",
+  },
+  {
+    slug: "why-are-used-dvds-worth-so-little",
+    title: "Why Are Used DVDs Worth So Little?",
+  },
   { slug: "sell-video-games-for-cash", title: "Sell Video Games for Cash" },
-  { slug: "best-places-to-sell-cds-dvds-games", title: "Best Places to Sell CDs, DVDs & Games" },
-  { slug: "where-to-sell-books-and-dvds-for-cash", title: "Where to Sell Books & DVDs for Cash" },
-  { slug: "decluttr-shut-down-alternative", title: "Best Decluttr Alternative" },
-  { slug: "what-to-do-with-old-dvds-and-cds", title: "What to Do With Old DVDs and CDs" },
-  { slug: "how-much-are-used-cds-worth", title: "How Much Are Used CDs Worth?" },
-  { slug: "how-to-sell-a-cd-collection", title: "How to Sell a Large CD Collection" },
-  ];
+  {
+    slug: "best-places-to-sell-cds-dvds-games",
+    title: "Best Places to Sell CDs, DVDs & Games",
+  },
+  {
+    slug: "where-to-sell-books-and-dvds-for-cash",
+    title: "Where to Sell Books & DVDs for Cash",
+  },
+  {
+    slug: "decluttr-shut-down-alternative",
+    title: "Best Decluttr Alternative",
+  },
+  {
+    slug: "what-to-do-with-old-dvds-and-cds",
+    title: "What to Do With Old DVDs and CDs",
+  },
+  {
+    slug: "how-much-are-used-cds-worth",
+    title: "How Much Are Used CDs Worth?",
+  },
+  {
+    slug: "how-to-sell-a-cd-collection",
+    title: "How to Sell a Large CD Collection",
+  },
+];
 
-export default function RelatedGuides({ currentSlug }: { currentSlug: string }) {
+export default function RelatedGuides({
+  currentSlug,
+}: {
+  currentSlug: string;
+}) {
   const others = ALL_GUIDES.filter((g) => g.slug !== currentSlug);
 
   return (

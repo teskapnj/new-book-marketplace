@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import Link from "next/link";
 
@@ -6,7 +6,11 @@ const SECTIONS = [
   { id: "acceptance", n: "01", title: "Acceptance of terms" },
   { id: "service", n: "02", title: "Our service" },
   { id: "responsibilities", n: "03", title: "Seller responsibilities" },
-  { id: "acceptance-rejection", n: "04", title: "Submission acceptance and rejection" },
+  {
+    id: "acceptance-rejection",
+    n: "04",
+    title: "Submission acceptance and rejection",
+  },
   { id: "condition", n: "05", title: "Condition standards and inspection" },
   { id: "no-returns", n: "06", title: "No returns policy" },
   { id: "payment", n: "07", title: "Payment terms" },
@@ -24,7 +28,9 @@ const SECTIONS = [
 function SectionHeading({ n, title }: { n: string; title: string }) {
   return (
     <div className="flex items-baseline gap-3 border-b border-slate-200 pb-3">
-      <span className="font-mono text-sm font-bold text-blue-600 tabular-nums">{n}</span>
+      <span className="font-mono text-sm font-bold text-blue-600 tabular-nums">
+        {n}
+      </span>
       <h2 className="font-serif text-2xl font-bold text-slate-900">{title}</h2>
     </div>
   );
@@ -55,9 +61,13 @@ function Callout({
   const border = tone === "danger" ? "border-rose-500" : "border-amber-500";
   const text = tone === "danger" ? "text-rose-800" : "text-amber-900";
   return (
-    <div className={`mt-5 rounded-xl border-l-4 bg-white px-5 py-4 shadow-sm ${border}`}>
+    <div
+      className={`mt-5 rounded-xl border-l-4 bg-white px-5 py-4 shadow-sm ${border}`}
+    >
       <p className={`text-sm font-semibold ${text}`}>{label}</p>
-      <p className="mt-1.5 text-[15px] leading-relaxed text-slate-700">{children}</p>
+      <p className="mt-1.5 text-[15px] leading-relaxed text-slate-700">
+        {children}
+      </p>
     </div>
   );
 }
@@ -75,8 +85,18 @@ export default function TermsPage() {
               onClick={() => window.history.back()}
               className="inline-flex items-center text-sm font-medium text-blue-200 transition-colors hover:text-white"
             >
-              <svg className="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              <svg
+                className="mr-1.5 h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
               </svg>
               Back
             </button>
@@ -97,8 +117,9 @@ export default function TermsPage() {
           </h1>
 
           <p className="mt-5 text-lg leading-relaxed text-blue-100">
-            Please read these terms before selling your books, CDs, DVDs, or games through our
-            platform. By submitting items, you agree to be bound by them.
+            Please read these terms before selling your books, CDs, DVDs, or
+            games through our platform. By submitting items, you agree to be
+            bound by them.
           </p>
 
           <p className="mt-8 border-t border-white/15 pt-5 text-sm text-blue-200">
@@ -113,7 +134,9 @@ export default function TermsPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
             Jump to
           </p>
-          <h2 className="mt-2 font-serif text-2xl font-bold text-slate-900">Contents</h2>
+          <h2 className="mt-2 font-serif text-2xl font-bold text-slate-900">
+            Contents
+          </h2>
 
           <ol className="mt-5 grid gap-x-6 gap-y-1 sm:grid-cols-2">
             {SECTIONS.map((s) => (
@@ -136,17 +159,17 @@ export default function TermsPage() {
           <section id="acceptance" className="scroll-mt-8">
             <SectionHeading n="01" title="Acceptance of terms" />
             <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-              By using our platform to sell your books, CDs, DVDs, and games, you accept and agree to
-              be bound by these terms. If you do not agree to these terms, please do not use our
-              service.
+              By using our platform to sell your books, CDs, DVDs, and games,
+              you accept and agree to be bound by these terms. If you do not
+              agree to these terms, please do not use our service.
             </p>
           </section>
 
           <section id="service" className="scroll-mt-8">
             <SectionHeading n="02" title="Our service" />
             <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-              We operate a platform where you can sell your used books, CDs, DVDs, and games. Our
-              service includes:
+              We operate a platform where you can sell your used books, CDs,
+              DVDs, and games. Our service includes:
             </p>
             <List
               items={[
@@ -168,23 +191,27 @@ export default function TermsPage() {
               items={[
                 "Provide accurate personal information, payment method information, and shipping address",
                 <>
-                  Only submit items in <strong>very good condition</strong> as defined in our
-                  condition guide
+                  Only submit items in <strong>very good condition</strong> as
+                  defined in our condition guide
                 </>,
                 "Ensure items have no writing, highlighting, markings, or damage",
                 "Package items securely using appropriate materials",
                 "Ship items within 10 days of receiving prepaid shipping labels",
-                "Provide accurate package dimensions and weight information",
+                "Provide accurate shipping and order information",
               ]}
             />
           </section>
 
           <section id="acceptance-rejection" className="scroll-mt-8">
-            <SectionHeading n="04" title="Submission acceptance and rejection" />
+            <SectionHeading
+              n="04"
+              title="Submission acceptance and rejection"
+            />
             <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-              We reserve the sole and absolute discretion to accept or reject any item submission for
-              any reason or no reason at all. Our decisions regarding acceptance or rejection of
-              submissions are final and binding.
+              We reserve the sole and absolute discretion to accept or reject
+              any item submission for any reason or no reason at all. Our
+              decisions regarding acceptance or rejection of submissions are
+              final and binding.
             </p>
             <List
               items={[
@@ -196,9 +223,10 @@ export default function TermsPage() {
               ]}
             />
             <Callout tone="warn" label="Notice">
-              Even if items meet our stated condition standards, we may still reject submissions based
-              on other factors including but not limited to market saturation, inventory management,
-              or business priorities.
+              Even if items meet our stated condition standards, we may still
+              reject submissions based on other factors including but not
+              limited to market saturation, inventory management, or business
+              priorities.
             </Callout>
           </section>
 
@@ -217,9 +245,10 @@ export default function TermsPage() {
               ]}
             />
             <Callout tone="danger" label="Important">
-            Except for verified transit damage covered under our shipping policy, items that do not
-meet our condition standards will not be paid for and will be sent directly to recycling.
-We do not return rejected items under any circumstances.
+              Except for verified transit damage covered under our shipping
+              policy, items that do not meet our condition standards will not be
+              paid for and will be sent directly to recycling. We do not return
+              rejected items under any circumstances.
             </Callout>
             <Link
               href="/condition-guidelines"
@@ -233,7 +262,11 @@ We do not return rejected items under any circumstances.
                 strokeWidth={2}
                 viewBox="0 0 24 24"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5 12h14M12 5l7 7-7 7"
+                />
               </svg>
             </Link>
           </section>
@@ -241,8 +274,8 @@ We do not return rejected items under any circumstances.
           <section id="no-returns" className="scroll-mt-8">
             <SectionHeading n="06" title="No returns policy" />
             <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-              <strong>We do not accept returns of any kind.</strong> By using our service, you
-              acknowledge and agree that:
+              <strong>We do not accept returns of any kind.</strong> By using
+              our service, you acknowledge and agree that:
             </p>
             <List
               items={[
@@ -262,7 +295,7 @@ We do not return rejected items under any circumstances.
             <List
               items={[
                 "Only items meeting our condition standards will be paid for",
-                "Payments are processed via PayPal, Venmo, or check by mail",
+                "Payments are processed using PayPal, Venmo, or check by mail",
                 "You must provide accurate payment information and a valid mailing address for your selected payment method",
                 "Payment processing is typically initiated within 2 business days after inspection; mailed checks require additional postal delivery time",
                 "No fees are charged to sellers for our service",
@@ -286,18 +319,21 @@ We do not return rejected items under any circumstances.
               ]}
             />
             <Callout tone="warn" label="Shipping loss or damage">
-  Once USPS tracking confirms that USPS has accepted and taken possession of your package,
-  you will not be held responsible for loss or verified transit damage caused during normal
-  shipping. If USPS confirms that a shipment has been lost, we may honor the quoted payout
-  after reviewing the tracking and shipment details. Items damaged during transit may also
-  qualify for the quoted payout when the package was reasonably and securely packed. Damage
-  caused by inadequate packaging may not be covered. If tracking does not show USPS acceptance,
-  we may request a drop-off receipt or other proof of shipment.
-</Callout>
+              Once USPS tracking confirms that USPS has accepted and taken
+              possession of your package, you will not be held responsible for
+              loss or verified transit damage caused during normal shipping. If
+              USPS confirms that a shipment has been lost, we may honor the
+              quoted payout after reviewing the tracking and shipment details.
+              Items damaged during transit may also qualify for the quoted
+              payout when the package was reasonably and securely packed. Damage
+              caused by inadequate packaging may not be covered. If tracking
+              does not show USPS acceptance, we may request a drop-off receipt
+              or other proof of shipment.
+            </Callout>
           </section>
 
           <section id="prohibited" className="scroll-mt-8">
-          <SectionHeading n="09" title="What we don&rsquo;t buy" />
+            <SectionHeading n="09" title="What we don&rsquo;t buy" />
             <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
               The following items are not accepted on our platform:
             </p>
@@ -313,9 +349,9 @@ We do not return rejected items under any circumstances.
               ]}
             />
             <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-              This is a summary. The complete list — including format exclusions such as VHS,
-              cassettes, vinyl, and audiobook CDs, plus ex-library and ex-rental copies — is kept on
-              our condition guidelines page.
+              This is a summary. The complete list — including format exclusions
+              such as VHS, cassettes, vinyl, and audiobook CDs, plus ex-library
+              and ex-rental copies — is kept on our condition guidelines page.
             </p>
             <Link
               href="/condition-guidelines"
@@ -329,7 +365,11 @@ We do not return rejected items under any circumstances.
                 strokeWidth={2}
                 viewBox="0 0 24 24"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5 12h14M12 5l7 7-7 7"
+                />
               </svg>
             </Link>
           </section>
@@ -337,39 +377,42 @@ We do not return rejected items under any circumstances.
           <section id="security" className="scroll-mt-8">
             <SectionHeading n="10" title="Account security" />
             <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-              You are responsible for maintaining the security of your account and the accuracy of
-              your information. This includes keeping your payment information current and
-              secure.
+              You are responsible for maintaining the security of your account
+              and the accuracy of your information. This includes keeping your
+              payment information current and secure.
             </p>
           </section>
 
           <section id="liability" className="scroll-mt-8">
             <SectionHeading n="11" title="Limitation of liability" />
             <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-  Our liability is limited to the quoted value of eligible items. For shipments where USPS
-  tracking confirms carrier acceptance, we may provide payment for items that are confirmed
-  lost in transit or damaged during normal transportation, subject to review of the shipment
-  and tracking details. We are not responsible for loss occurring before carrier acceptance,
-  damage caused by inadequate packaging, or any indirect or consequential damages. Our
-  maximum liability will not exceed the quoted payout for the affected items.
-</p>
+              Our liability is limited to the quoted value of eligible items.
+              For shipments where USPS tracking confirms carrier acceptance, we
+              may provide payment for items that are confirmed lost in transit
+              or damaged during normal transportation, subject to review of the
+              shipment and tracking details. We are not responsible for loss
+              occurring before carrier acceptance, damage caused by inadequate
+              packaging, or any indirect or consequential damages. Our maximum
+              liability will not exceed the quoted payout for the affected
+              items.
+            </p>
           </section>
 
           <section id="ip" className="scroll-mt-8">
             <SectionHeading n="12" title="Intellectual property" />
             <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-              You represent that you own or have the right to sell all items submitted to our
-              platform. You are responsible for ensuring that items do not infringe on any
-              intellectual property rights.
+              You represent that you own or have the right to sell all items
+              submitted to our platform. You are responsible for ensuring that
+              items do not infringe on any intellectual property rights.
             </p>
           </section>
 
           <section id="privacy" className="scroll-mt-8">
             <SectionHeading n="13" title="Privacy and data" />
             <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-              We collect and use your personal information as described in our Privacy Policy. This
-              includes your name, address, payment information, and shipping details necessary to
-              process your sales.
+              We collect and use your personal information as described in our
+              Privacy Policy. This includes your name, address, payment
+              information, and shipping details necessary to process your sales.
             </p>
             <Link
               href="/privacy-policy"
@@ -383,7 +426,11 @@ We do not return rejected items under any circumstances.
                 strokeWidth={2}
                 viewBox="0 0 24 24"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5 12h14M12 5l7 7-7 7"
+                />
               </svg>
             </Link>
           </section>
@@ -392,21 +439,26 @@ We do not return rejected items under any circumstances.
             <SectionHeading n="14" title="Modifications and changes" />
             <div className="mt-4 space-y-4 text-[16px] leading-relaxed text-slate-700">
               <p>
-                We reserve the right to modify, suspend, or discontinue the platform (or any part
-                thereof) and to modify these Terms of Service at any time, with or without notice to
-                you. We will not be liable to you or any third party for any modification, suspension,
-                or discontinuation of the platform or any changes to these terms.
+                We reserve the right to modify, suspend, or discontinue the
+                platform (or any part thereof) and to modify these Terms of
+                Service at any time, with or without notice to you. We will not
+                be liable to you or any third party for any modification,
+                suspension, or discontinuation of the platform or any changes to
+                these terms.
               </p>
               <p>
-                While we may provide notice of significant changes to these Terms of Service via email
-                or website notice when feasible, we are not obligated to provide any prior notice. All
-                changes to the platform itself, including but not limited to those listed below, may
-                be implemented without prior notice at our sole discretion.
+                While we may provide notice of significant changes to these
+                Terms of Service via email or website notice when feasible, we
+                are not obligated to provide any prior notice. All changes to
+                the platform itself, including but not limited to those listed
+                below, may be implemented without prior notice at our sole
+                discretion.
               </p>
               <p>
-                We may also impose limits on certain features and services or restrict your access to
-                parts or all of the platform without notice or liability. These changes may include,
-                but are not limited to:
+                We may also impose limits on certain features and services or
+                restrict your access to parts or all of the platform without
+                notice or liability. These changes may include, but are not
+                limited to:
               </p>
             </div>
             <List
@@ -420,18 +472,19 @@ We do not return rejected items under any circumstances.
               ]}
             />
             <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-              By continuing to use our platform after any such changes, you agree to be bound by the
-              modified terms and conditions. If you do not agree to any such changes, your sole
-              recourse is to stop using the platform.
+              By continuing to use our platform after any such changes, you
+              agree to be bound by the modified terms and conditions. If you do
+              not agree to any such changes, your sole recourse is to stop using
+              the platform.
             </p>
           </section>
 
           <section id="law" className="scroll-mt-8">
             <SectionHeading n="15" title="Governing law" />
             <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-              These terms are governed by the laws of the United States. Any disputes will be resolved
-              through binding arbitration in accordance with the rules of the American Arbitration
-              Association.
+              These terms are governed by the laws of the United States. Any
+              disputes will be resolved through binding arbitration in
+              accordance with the rules of the American Arbitration Association.
             </p>
           </section>
 
@@ -444,7 +497,10 @@ We do not return rejected items under any circumstances.
               items={[
                 <>
                   Through our{" "}
-                  <Link href="/contact" className="font-medium text-blue-600 hover:text-blue-700">
+                  <Link
+                    href="/contact"
+                    className="font-medium text-blue-600 hover:text-blue-700"
+                  >
                     contact form
                   </Link>
                 </>,
@@ -464,12 +520,12 @@ We do not return rejected items under any circumstances.
 
         {/* ---------- Kapanis ---------- */}
         <div className="mt-14 rounded-2xl border border-slate-200 bg-white px-6 py-6 shadow-sm">
-        <p className="text-sm font-semibold text-slate-900">
+          <p className="text-sm font-semibold text-slate-900">
             Effective <time dateTime="2026-09-08">September 8, 2026</time>
           </p>
           <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
-            By submitting items to our platform, you acknowledge that you have read, understood, and
-            agree to be bound by these Terms of Service.
+            By submitting items to our platform, you acknowledge that you have
+            read, understood, and agree to be bound by these Terms of Service.
           </p>
         </div>
       </div>

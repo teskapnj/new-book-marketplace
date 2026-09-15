@@ -5,7 +5,7 @@ import RelatedGuides from "@/components/RelatedGuides";
 export const metadata: Metadata = {
   title: "Used CD Value: How Much Are Your CDs Worth? (2026) | SellBookMedia",
   description:
-  "Check used CD value and learn what affects how much your CDs are worth. Scan the barcode for an instant cash offer with free shipping and PayPal, Venmo, or check by mail payment.",
+    "Check used CD value and learn what affects how much your CDs are worth. Scan the barcode for an instant cash offer with free shipping and PayPal, Venmo, or check by mail payment.",
 };
 
 const VALUABLE = [
@@ -148,17 +148,21 @@ export default function CdValueGuide() {
           </h1>
 
           <p className="mt-5 text-lg sm:text-xl leading-relaxed text-blue-100">
-            CD values can vary much more than people expect. A common album,
-            a box set, an import, and a harder-to-find pressing can all have
-            very different resale demand. The fastest way to know what you
-            have is to scan the barcode.
+            CD values can vary much more than people expect. A common album, a
+            box set, an import, and a harder-to-find pressing can all have very
+            different resale demand. The fastest way to know what you have is to
+            scan the barcode.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-white/15 pt-5 text-sm text-blue-200">
             <span className="font-medium text-white">SellBookMedia</span>
-            <span aria-hidden="true" className="text-white/30">/</span>
+            <span aria-hidden="true" className="text-white/30">
+              /
+            </span>
             <time dateTime="2026-08-29">Updated August 2026</time>
-            <span aria-hidden="true" className="text-white/30">/</span>
+            <span aria-hidden="true" className="text-white/30">
+              /
+            </span>
             <span>5 min read</span>
           </div>
         </div>
@@ -166,7 +170,6 @@ export default function CdValueGuide() {
 
       <div className="max-w-3xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
         <article>
-
           {/* ===================== VALUE ===================== */}
           <section className="mb-12">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
@@ -182,8 +185,8 @@ export default function CdValueGuide() {
                 Used CD value comes down largely to{" "}
                 <strong className="text-slate-900">
                   supply, demand, and the exact edition
-                </strong>.
-                Two copies of the same album may look similar but have very
+                </strong>
+                . Two copies of the same album may look similar but have very
                 different resale interest if one is a common release and the
                 other is an import, box-set edition, or harder-to-find pressing.
               </p>
@@ -197,12 +200,10 @@ export default function CdValueGuide() {
 
             <div className="mt-7 rounded-xl border-l-4 border-blue-500 bg-white px-5 py-4 shadow-sm">
               <p className="text-[16px] leading-relaxed text-slate-700">
-                <strong className="text-slate-900">
-                  Have a stack of CDs?
-                </strong>{" "}
+                <strong className="text-slate-900">Have a stack of CDs?</strong>{" "}
                 Don&apos;t assume the entire collection has the same value.
-                Checking the individual barcodes is the easiest way to find
-                the titles that stand out.
+                Checking the individual barcodes is the easiest way to find the
+                titles that stand out.
               </p>
             </div>
           </section>
@@ -230,7 +231,6 @@ export default function CdValueGuide() {
                     className="inline-flex items-center rounded-xl bg-blue-600 px-6 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-blue-700"
                   >
                     Check My CD
-
                     <svg
                       className="ml-2 h-5 w-5"
                       fill="none"
@@ -247,7 +247,8 @@ export default function CdValueGuide() {
                   </Link>
 
                   <span className="text-sm text-slate-500">
-                    Instant offer • Free shipping • PayPal, Venmo, or check by mail payment
+                    Instant offer • Free shipping • PayPal, Venmo, or check by
+                    mail payment
                   </span>
                 </div>
               </div>
@@ -276,9 +277,7 @@ export default function CdValueGuide() {
                   key={item.name}
                   className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
                 >
-                  <h3 className="font-semibold text-slate-900">
-                    {item.name}
-                  </h3>
+                  <h3 className="font-semibold text-slate-900">{item.name}</h3>
 
                   <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-900">
                     <svg
@@ -292,7 +291,6 @@ export default function CdValueGuide() {
                       <circle cx="11" cy="11" r="7" />
                       <path strokeLinecap="round" d="M21 21l-4.35-4.35" />
                     </svg>
-
                     Look for: {item.tell}
                   </p>
 
@@ -320,9 +318,9 @@ export default function CdValueGuide() {
               </h3>
 
               <p className="mt-3 text-[16px] leading-relaxed text-slate-600">
-                Offers vary by title. We look at the specific release,
-                current market value, demand, and sales activity before
-                showing you an offer.
+                Offers vary by title. We look at the specific release, current
+                market value, demand, and sales activity before showing you an
+                offer.
               </p>
 
               <ul className="mt-6 space-y-3 border-t border-slate-100 pt-5 text-[15px] text-slate-700">
@@ -333,13 +331,14 @@ export default function CdValueGuide() {
 
                 <li className="flex items-start gap-2">
                   <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-500" />
-                  Higher-demand and harder-to-find titles may receive stronger offers.
+                  Higher-demand and harder-to-find titles may receive stronger
+                  offers.
                 </li>
 
                 <li className="flex items-start gap-2">
                   <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-500" />
-                  If a title doesn&apos;t currently meet our purchasing criteria,
-                  we&apos;ll simply let you know.
+                  If a title doesn&apos;t currently meet our purchasing
+                  criteria, we&apos;ll simply let you know.
                 </li>
               </ul>
             </div>
@@ -378,7 +377,8 @@ export default function CdValueGuide() {
                 </p>
 
                 <p className="mt-1 text-[15px] text-slate-600">
-                  Cracked discs, deep playback-affecting scratches, or missing essential parts
+                  Cracked discs, deep playback-affecting scratches, or missing
+                  essential parts
                 </p>
               </div>
             </div>
@@ -388,7 +388,6 @@ export default function CdValueGuide() {
               className="mt-5 inline-flex items-center text-sm font-semibold text-blue-600 hover:text-blue-700"
             >
               See the full condition guidelines
-
               <svg
                 className="ml-1.5 h-4 w-4"
                 fill="none"
@@ -416,8 +415,8 @@ export default function CdValueGuide() {
             </h2>
 
             <p className="mt-6 text-[17px] leading-[1.75] text-slate-700">
-              You don&apos;t need to research each album individually.
-              Scan the barcode and check the exact title in seconds.
+              You don&apos;t need to research each album individually. Scan the
+              barcode and check the exact title in seconds.
             </p>
 
             <ol className="mt-6 space-y-3">
@@ -463,28 +462,46 @@ export default function CdValueGuide() {
             </dl>
           </section>
           <div className="mt-6 space-y-3 text-[16px] leading-relaxed text-slate-600">
-  <p>
-    Have a CD in front of you? Learn how to{" "}
-    <Link
-      href="/guides/media-value-by-barcode"
-      className="font-semibold text-blue-600 hover:text-blue-800"
-    >
-      check CD value using the barcode
-    </Link>
-    .
-  </p>
+            <p>
+              Have a CD in front of you? Learn how to{" "}
+              <Link
+                href="/guides/media-value-by-barcode"
+                className="font-semibold text-blue-600 hover:text-blue-800"
+              >
+                check CD value using the barcode
+              </Link>
+              .
+            </p>
 
-  <p>
-    Have hundreds of CDs? Read our{" "}
-    <Link
-      href="/guides/how-to-sell-a-cd-collection"
-      className="font-semibold text-blue-600 hover:text-blue-800"
-    >
-      guide to selling a large CD collection
-    </Link>
-    .
-  </p>
-</div>
+            <p>
+              Have hundreds of CDs? Read our{" "}
+              <Link
+                href="/guides/how-to-sell-a-cd-collection"
+                className="font-semibold text-blue-600 hover:text-blue-800"
+              >
+                guide to selling a large CD collection
+              </Link>
+              .
+            </p>
+          </div>
+
+          <section className="mb-12 rounded-2xl border border-blue-100 bg-blue-50 px-6 py-7">
+            <h2 className="font-serif text-2xl font-bold text-slate-900">
+              Want to check your CDs now?
+            </h2>
+
+            <p className="mt-3 text-[16px] leading-relaxed text-slate-700">
+              Scan or enter the UPC on your CDs to see which releases currently
+              qualify and view your cash offer before you ship.
+            </p>
+
+            <Link
+              href="/sell-cds-for-cash"
+              className="mt-5 inline-flex font-semibold text-blue-600 hover:text-blue-800"
+            >
+              Sell CDs for cash →
+            </Link>
+          </section>
 
           <RelatedGuides currentSlug="how-much-are-used-cds-worth" />
 
@@ -499,8 +516,8 @@ export default function CdValueGuide() {
             </h2>
 
             <p className="mx-auto mt-3 max-w-lg text-[16px] leading-relaxed text-blue-100">
-              Scan one barcode and see your offer in seconds. No app
-              required and no commitment to sell.
+              Scan one barcode and see your offer in seconds. No app required
+              and no commitment to sell.
             </p>
 
             <Link
@@ -508,7 +525,6 @@ export default function CdValueGuide() {
               className="mt-7 inline-flex items-center rounded-xl bg-white px-7 py-3.5 text-base font-bold text-blue-700 shadow-lg transition-transform hover:scale-[1.02]"
             >
               Check My CD
-
               <svg
                 className="ml-2 h-5 w-5"
                 fill="none"
@@ -532,7 +548,6 @@ export default function CdValueGuide() {
               <span>PayPal, Venmo, or check by mail payment</span>
             </div>
           </div>
-
         </article>
       </div>
     </div>

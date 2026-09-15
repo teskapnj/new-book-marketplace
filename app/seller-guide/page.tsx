@@ -13,7 +13,7 @@ const STEPS = [
     id: "details",
     n: "02",
     title: "Enter your details",
-    blurb: "Contact, payment, and package information",
+    blurb: "Contact, payment, and shipping information",
   },
   {
     id: "label",
@@ -269,15 +269,15 @@ export default function SellerGuidePage() {
             </div>
 
             <div className="space-y-3">
-              <Card title="Your box">
+              <Card title="Packing limits">
                 <p className="mb-3">
-                  Measure the box you&rsquo;ll actually ship in — the label depends on it.
+                  You don&rsquo;t need to enter your box dimensions or weight at checkout.
                 </p>
                 <Bullets
                   items={[
-                    "Weight, up to 50 lbs",
-                    "Length, width, height — up to 18 × 16 × 16 in",
                     "One box per order",
+                    "Maximum box size: 18 × 16 × 16 in",
+                    "Maximum weight: 50 lbs",
                   ]}
                 />
               </Card>
@@ -286,8 +286,8 @@ export default function SellerGuidePage() {
                   items={[
                     "Double-check your payment information — that's where your payment will be sent",
                     "Double-check your email address — your shipping label and important updates will be sent there",
-                    "Make sure your package dimensions are accurate so we can create the correct shipping label",
-                    "All fields are required to continue",
+                    "Make sure your shipping address is accurate",
+                    "All required fields must be completed to continue",
                   ]}
                 />
               </Card>
