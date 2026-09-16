@@ -104,6 +104,7 @@ interface ShippingInfo {
     weight: number;
   };
   paypalAccount?: string;
+  shippingLabelPreference?: "pdf" | "qr";
 }
 
 interface Listing {
@@ -1572,7 +1573,10 @@ const idToken = await currentUser.getIdToken();
               carrier: carrier,
               listingId: listingId,
               totalItems: selectedListing.totalItems,
-              packageDimensions: selectedListing.shippingInfo?.packageDimensions || null
+              shippingLabelPreference:
+                selectedListing.shippingInfo?.shippingLabelPreference || "pdf",
+              packageDimensions:
+                selectedListing.shippingInfo?.packageDimensions || null
             }),
           });
           
@@ -2937,6 +2941,21 @@ const idToken = await currentUser.getIdToken();
                               Weight: {selectedListing.shippingInfo.packageDimensions.weight} lb
                             </p>
                           </div>
+                          <div>
+  <h5 className="text-sm font-medium text-purple-800 mb-1">
+    Shipping Label Preference
+  </h5>
+
+  {selectedListing.shippingInfo.shippingLabelPreference === "qr" ? (
+    <div className="inline-flex items-center rounded-md bg-amber-100 px-3 py-2 text-sm font-bold text-amber-900 border border-amber-300">
+      USPS QR CODE — NO PRINTER NEEDED
+    </div>
+  ) : (
+    <div className="inline-flex items-center rounded-md bg-blue-100 px-3 py-2 text-sm font-bold text-blue-900 border border-blue-300">
+      PRINTABLE PDF LABEL
+    </div>
+  )}
+</div>
                           {/* PayPal Account bilgisi eklendi */}
                           {selectedListing.shippingInfo.paypalAccount && (
                             <div>
@@ -3160,7 +3179,22 @@ const idToken = await currentUser.getIdToken();
                         
                         {/* Shipping Label Upload */}
                         <div className="mb-4">
-                          <h5 className="text-sm font-medium text-gray-700 mb-2">Shipping Label</h5>
+                        <h5 className="text-sm font-medium text-gray-700 mb-2">
+  {selectedListing.shippingInfo?.shippingLabelPreference === "qr"
+    ? "USPS QR Code"
+    : "Printable Shipping Label"}
+</h5>
+{selectedListing.shippingInfo?.shippingLabelPreference === "qr" && (
+  <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2">
+    <p className="text-sm font-semibold text-amber-900">
+      QR REQUESTED
+    </p>
+    <p className="mt-1 text-xs leading-5 text-amber-800">
+      Enable the QR Code option in Pirate Ship, take a screenshot of the QR
+      code, and upload the image below.
+    </p>
+  </div>
+)}
                           <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
                             {shippingLabelPreview ? (
                               <div className="space-y-3">
@@ -3212,7 +3246,11 @@ const idToken = await currentUser.getIdToken();
                                 </svg>
                                 <div className="flex text-sm text-gray-600 justify-center">
                                   <label className={`relative cursor-pointer ${selectedListing.status === "pending" ? "pointer-events-none" : "bg-white rounded-md font-medium text-blue-600 hover:text-blue-500"}`}>
-                                    <span>Upload a shipping label</span>
+                                  <span>
+  {selectedListing.shippingInfo?.shippingLabelPreference === "qr"
+    ? "Upload USPS QR code"
+    : "Upload shipping label"}
+</span>
                                     <input
                                       type="file"
                                       className="sr-only"
@@ -3423,7 +3461,22 @@ const idToken = await currentUser.getIdToken();
                         
                         {/* Shipping Label Upload */}
                         <div className="mb-4">
-                          <h5 className="text-sm font-medium text-gray-700 mb-2">Shipping Label</h5>
+                        <h5 className="text-sm font-medium text-gray-700 mb-2">
+  {selectedListing.shippingInfo?.shippingLabelPreference === "qr"
+    ? "USPS QR Code"
+    : "Printable Shipping Label"}
+</h5>
+{selectedListing.shippingInfo?.shippingLabelPreference === "qr" && (
+  <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2">
+    <p className="text-sm font-semibold text-amber-900">
+      QR REQUESTED
+    </p>
+    <p className="mt-1 text-xs leading-5 text-amber-800">
+      Enable the QR Code option in Pirate Ship, take a screenshot of the QR
+      code, and upload the image below.
+    </p>
+  </div>
+)}
                           <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
                             {shippingLabelPreview ? (
                               <div className="space-y-3">
@@ -3475,7 +3528,11 @@ const idToken = await currentUser.getIdToken();
                                 </svg>
                                 <div className="flex text-sm text-gray-600 justify-center">
                                   <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500">
-                                    <span>Upload a shipping label</span>
+                                  <span>
+  {selectedListing.shippingInfo?.shippingLabelPreference === "qr"
+    ? "Upload USPS QR code"
+    : "Upload shipping label"}
+</span>
                                     <input
                                       type="file"
                                       className="sr-only"

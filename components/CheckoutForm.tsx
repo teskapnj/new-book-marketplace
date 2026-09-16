@@ -64,6 +64,7 @@ interface ShippingInfo {
   packageDimensions: PackageDimensions;
   paymentMethod: "" | "paypal" | "venmo" | "check";
   paypalAccount: string;
+  shippingLabelPreference: "pdf" | "qr";
 }
 
 interface CheckoutFormProps {
@@ -79,6 +80,7 @@ const EMPTY_SHIPPING: ShippingInfo = {
   lastName: "",
   paymentMethod: "",
   paypalAccount: "",
+  shippingLabelPreference: "pdf",
   address: { street: "", city: "", state: "", zip: "", country: "US" },
   packageDimensions: { length: 0, width: 0, height: 0, weight: 0 },
 };
@@ -169,9 +171,11 @@ export default function CheckoutForm({
               s.paymentMethod === "check"
                 ? s.paymentMethod
                 : "",
-            paypalAccount:
-              typeof s.paypalAccount === "string" ? s.paypalAccount : "",
-            address: {
+                paypalAccount:
+                typeof s.paypalAccount === "string" ? s.paypalAccount : "",
+              shippingLabelPreference:
+                s.shippingLabelPreference === "qr" ? "qr" : "pdf",
+              address: {
               street: s.address?.street || "",
               city: s.address?.city || "",
               state: s.address?.state || "",
@@ -462,6 +466,7 @@ export default function CheckoutForm({
           ),
           lastName: DOMPurify.sanitize(shippingInfo.lastName).substring(0, 50),
           paymentMethod: shippingInfo.paymentMethod,
+          shippingLabelPreference: shippingInfo.shippingLabelPreference,
           paypalAccount: DOMPurify.sanitize(
             shippingInfo.paymentMethod === "venmo"
               ? `VENMO: ${shippingInfo.paypalAccount}`
@@ -726,6 +731,73 @@ export default function CheckoutForm({
           </div>
         </div>
       </div>
+
+      {/* Shipping label preference */}
+<div className="border-t border-gray-100 pt-5">
+  <h3 className="text-lg font-semibold text-gray-900 mb-1">
+    How would you like to receive your prepaid shipping label?
+  </h3>
+
+  <p className="text-sm text-gray-500 mb-4">
+    Choose the option that works best for you.
+  </p>
+
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <button
+      type="button"
+      onClick={() =>
+        setShippingInfo((prev) => ({
+          ...prev,
+          shippingLabelPreference: "pdf",
+        }))
+      }
+      className={`rounded-xl border p-4 text-left transition-all ${
+        shippingInfo.shippingLabelPreference === "pdf"
+          ? "border-blue-600 bg-blue-50"
+          : "border-gray-300 bg-white hover:border-gray-400"
+      }`}
+    >
+      <div className="font-semibold text-gray-900">
+        Printable Shipping Label (PDF)
+      </div>
+      <div className="mt-1 text-sm leading-5 text-gray-600">
+        We&apos;ll email you a prepaid shipping label. Print it and attach it
+        to your package.
+      </div>
+    </button>
+
+    <button
+      type="button"
+      onClick={() =>
+        setShippingInfo((prev) => ({
+          ...prev,
+          shippingLabelPreference: "qr",
+        }))
+      }
+      className={`rounded-xl border p-4 text-left transition-all ${
+        shippingInfo.shippingLabelPreference === "qr"
+          ? "border-blue-600 bg-blue-50"
+          : "border-gray-300 bg-white hover:border-gray-400"
+      }`}
+    >
+      <div className="font-semibold text-gray-900">
+        USPS QR Code — No Printer Needed
+      </div>
+      <div className="mt-1 text-sm leading-5 text-gray-600">
+        We&apos;ll email you a QR code. Show it on your phone at a participating
+        USPS location and they can print the shipping label for you.
+      </div>
+    </button>
+  </div>
+
+  {shippingInfo.shippingLabelPreference === "qr" && (
+    <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+      <p className="text-sm text-blue-800">
+        Pack and seal your box before going to USPS.
+      </p>
+    </div>
+  )}
+</div>
 
       {/* Payment */}
       <div className="border-t border-gray-100 pt-5">

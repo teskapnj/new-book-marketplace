@@ -64,7 +64,10 @@ export async function POST(request: NextRequest) {
       carrier,
       listingId,
       totalItems,
+      shippingLabelPreference = "pdf",
     } = data;
+
+    const isQrCode = shippingLabelPreference === "qr";
 
     if (
       !email ||
@@ -137,10 +140,22 @@ export async function POST(request: NextRequest) {
       const labelBuffer = Buffer.from(labelArrayBuffer);
 
       if (labelBuffer.length > 0) {
+        const attachmentContentType = isQrCode
+          ? labelResponse.headers.get("content-type") || "image/png"
+          : "application/pdf";
+
+        const attachmentExtension = isQrCode
+          ? attachmentContentType.includes("jpeg")
+            ? "jpg"
+            : "png"
+          : "pdf";
+
         labelAttachment = {
-          filename: `SellBookMedia-Shipping-Label-${shortId}.pdf`,
+          filename: isQrCode
+            ? `SellBookMedia-USPS-QR-${shortId}.${attachmentExtension}`
+            : `SellBookMedia-Shipping-Label-${shortId}.pdf`,
           content: labelBuffer,
-          contentType: "application/pdf",
+          contentType: attachmentContentType,
         };
       }
     } catch (attachmentError) {
@@ -163,6 +178,22 @@ export async function POST(request: NextRequest) {
         </td>
       </tr>`;
 
+      const emailHeading = isQrCode
+  ? "Your USPS QR code is ready"
+  : "Your shipping label is ready";
+
+const emailInstruction = isQrCode
+  ? "Pack and seal your box before going to USPS. Show this QR code on your phone at a participating USPS location and they can print the shipping label for you."
+  : `Your label has been created. Print it, attach it to the package, and hand the sealed box to ${carrierUpper}.`;
+
+const emailActionText = isQrCode
+  ? "VIEW USPS QR CODE"
+  : "OPEN & PRINT SHIPPING LABEL";
+
+const attachmentNote = isQrCode
+  ? "The QR code image is also attached."
+  : "The PDF label is also attached.";
+
     const emailHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -181,7 +212,9 @@ export async function POST(request: NextRequest) {
 <body style="margin:0;padding:0;background:#eef1f5;color:#172033;font-family:Arial,Helvetica,sans-serif;">
 
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
-    Your prepaid ${carrierUpper} shipping label for order ${shortId} is ready.
+    ${isQrCode
+  ? `Your USPS QR code for order ${shortId} is ready.`
+  : `Your prepaid ${carrierUpper} shipping label for order ${shortId} is ready.`}
   </div>
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef1f5;padding:24px 10px;">
@@ -216,7 +249,7 @@ export async function POST(request: NextRequest) {
               </div>
 
               <h2 style="font-size:28px;margin:8px 0 8px;line-height:1.18;color:#172033;">
-                Your shipping label is ready
+              ${emailHeading}
               </h2>
 
               <div style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#0b3b75;margin-bottom:10px;">
@@ -224,7 +257,7 @@ export async function POST(request: NextRequest) {
               </div>
 
               <p style="margin:0;color:#5f6b7a;line-height:1.7;font-size:16px;">
-                Your label has been created. Print it, attach it to the package, and hand the sealed box to ${carrierUpper}.
+              ${emailInstruction}
               </p>
 
               <!-- Postal / Utility shipment block -->
@@ -261,12 +294,12 @@ export async function POST(request: NextRequest) {
                 target="_blank"
                 style="display:block;margin-top:22px;text-align:center;background:#0b3b75;color:#ffffff;padding:15px 18px;font-weight:800;font-size:15px;text-decoration:none;"
               >
-                OPEN &amp; PRINT SHIPPING LABEL
+              ${emailActionText}
               </a>
 
               ${
                 labelAttachment
-                  ? `<div style="text-align:center;margin-top:9px;font-size:13px;color:#667085;">The PDF label is also attached.</div>`
+                  ? `<div style="text-align:center;margin-top:9px;font-size:13px;color:#667085;">${attachmentNote}</div>`
                   : ""
               }
 
@@ -295,21 +328,23 @@ export async function POST(request: NextRequest) {
 </body>
 </html>`;
 
-    const emailText = `READY TO SHIP
+const emailText = `READY TO SHIP
 
 Hi ${sellerName || "there"},
 
-Your shipping label is ready.
+${emailHeading}
 Order No: ${shortId}
+
+${emailInstruction}
 
 SHIPPING
 Carrier: ${carrierUpper}
 Tracking number: ${trackingNumber}
 ${totalItems ? `Items: ${totalItems}\n` : ""}
-OPEN & PRINT SHIPPING LABEL
+${isQrCode ? "VIEW USPS QR CODE" : "OPEN & PRINT SHIPPING LABEL"}
 ${shippingLabelUrl}
 
-${labelAttachment ? "A PDF copy of your shipping label is also attached to this email.\n" : ""}
+${labelAttachment ? `${attachmentNote}\n` : ""}
 AFTER DROP-OFF
 Once ${carrierUpper} scans your package, tracking will begin. We'll email you again after your shipment arrives and is checked in.
 
@@ -322,7 +357,9 @@ Ref ${shortId}`;
       from: `"SellBook Media" <${process.env.GMAIL_USER}>`,
       to: email,
       replyTo: process.env.EMAIL_USER,
-      subject: `You're ready to ship - your prepaid label is enclosed`,
+      subject: isQrCode
+  ? "Your USPS QR code is ready"
+  : "You're ready to ship - your prepaid label is enclosed",
       html: emailHtml,
       text: emailText,
       attachments: labelAttachment ? [labelAttachment] : [],
