@@ -215,6 +215,13 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
+
+    if (!/^[a-zA-Z0-9-_]{10,50}$/.test(id)) {
+      return NextResponse.json(
+        { error: 'Invalid order ID' },
+        { status: 400 }
+      );
+    }
     
     console.log(`Processing email confirmation request for order: ${id}`);
     
@@ -289,8 +296,7 @@ export async function POST(
     return NextResponse.json({ 
       success: true,
       message: 'Email sent successfully',
-      orderNumber,
-      customerEmail
+      orderNumber
     });
     
   } catch (error) {
