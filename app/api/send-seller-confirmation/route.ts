@@ -1,16 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import { auth } from "@/lib/firebaseAdmin";
 
 export async function POST(request: NextRequest) {
   try {
-    const {
-      sellerName,
-      sellerEmail,
-      totalItems,
-      totalValue,
-      submissionId,
-      items = [],
-    } = await request.json();
+    const authHeader = request.headers.get("authorization");
+
+    if (!authHeader?.startsWith("Bearer ")) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
+    const token = authHeader.substring(7).trim();
+
+    let verifiedEmail = "";
+
+try {
+  const decodedToken = await auth.verifyIdToken(token);
+  verifiedEmail = decodedToken.email || "";
+} catch {
+  return NextResponse.json(
+    { success: false, error: "Unauthorized" },
+    { status: 401 },
+  );
+}
+const {
+  sellerName,
+  totalItems,
+  totalValue,
+  submissionId,
+  items = [],
+} = await request.json();
+
+if (!verifiedEmail) {
+  return NextResponse.json(
+    { success: false, error: "Authenticated user has no email" },
+    { status: 400 },
+  );
+}
+
+const sellerEmail = verifiedEmail;
 
     const transporter = nodemailer.createTransport({
       service: "gmail",

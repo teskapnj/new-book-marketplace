@@ -5,6 +5,7 @@
 //      icin kaldirildi.
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import { auth } from '@/lib/firebaseAdmin';
 
 const transporter = nodemailer.createTransport({
   host: 'mail.privateemail.com',
@@ -18,17 +19,47 @@ const transporter = nodemailer.createTransport({
 
 export async function POST(request: NextRequest) {
   try {
+    const authHeader = request.headers.get('authorization');
+
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const token = authHeader.substring(7).trim();
+
+    let verifiedEmail = '';
+
+    try {
+      const decodedToken = await auth.verifyIdToken(token);
+      verifiedEmail = decodedToken.email || '';
+    } catch {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    if (!verifiedEmail) {
+      return NextResponse.json(
+        { success: false, error: 'Authenticated user has no email' },
+        { status: 400 }
+      );
+    }
+
     const data = await request.json();
 
     // Guvenli degerler - eksik alan gelirse mail patlamasin
     const sellerName = data.sellerName || 'Unknown seller';
-    const sellerEmail = data.sellerEmail || '';
+    const sellerEmail = verifiedEmail;
     const paypalEmail = data.paypalEmail || '';
     const totalItems = Number(data.totalItems) || 0;
     const totalValue = Number(data.totalValue) || 0;
     const avgPerItem = totalItems > 0 ? totalValue / totalItems : 0;
     const shortId = data.submissionId ? String(data.submissionId).substring(0, 8) : 'n/a';
-    const dashboardUrl = data.dashboardUrl || 'https://www.sellbookmedia.com/admin/listings';
+    const dashboardUrl = 'https://www.sellbookmedia.com/admin/listings';
     const submittedAt = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
 
     const ship = data.shippingInfo;

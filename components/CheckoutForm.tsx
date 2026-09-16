@@ -547,10 +547,12 @@ export default function CheckoutForm({
         `${shippingInfo.firstName} ${shippingInfo.lastName}`.trim();
       fetch("/api/send-seller-notification", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
         body: JSON.stringify({
           sellerName,
-          sellerEmail: user.email || "",
           paypalEmail:
             shippingInfo.paymentMethod === "venmo"
               ? `VENMO: ${shippingInfo.paypalAccount}`
@@ -568,10 +570,12 @@ export default function CheckoutForm({
 
       fetch("/api/send-seller-confirmation", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
         body: JSON.stringify({
           sellerName,
-          sellerEmail: user.email || "",
           totalItems,
           totalValue,
           submissionId: docRef.id,
