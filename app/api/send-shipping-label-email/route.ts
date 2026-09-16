@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import { auth } from "@/lib/firebaseAdmin";
 
 export const runtime = "nodejs";
 
@@ -20,6 +21,38 @@ const transporter = nodemailer.createTransport({
 
 export async function POST(request: NextRequest) {
   try {
+    const authHeader = request.headers.get("authorization");
+
+    if (!authHeader?.startsWith("Bearer ")) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
+    const token = authHeader.substring(7).trim();
+
+    let decodedToken;
+
+    try {
+      decodedToken = await auth.verifyIdToken(token, true);
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
+    const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase();
+    const tokenEmail = decodedToken.email?.toLowerCase();
+
+    if (!adminEmail || tokenEmail !== adminEmail) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden" },
+        { status: 403 },
+      );
+    }
+
     const data = await request.json();
 
     const {

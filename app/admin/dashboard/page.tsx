@@ -1542,10 +1542,18 @@ export default function AdminListingsPage() {
         
         if (sellerEmail) {
           // Send email with shipping label and tracking info - Düzeltilmiş: emailResponse değişkeni kaldırıldı
+          const currentUser = auth.currentUser;
+
+if (!currentUser) {
+  throw new Error('Admin authentication required');
+}
+
+const idToken = await currentUser.getIdToken();
           await fetch('/api/send-shipping-label-email', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'Authorization': `Bearer ${idToken}`,
             },
             body: JSON.stringify({
               email: sellerEmail,
