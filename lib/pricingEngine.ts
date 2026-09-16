@@ -306,7 +306,7 @@ function calculateCDPrice(price: number, salesRank: number): PricingResult {
   // CD / DVD / : rank 200k-300k — AYNI
   if (salesRank <= 300000) {
     if (price >= 75) {
-      return { accepted: true, ourPrice: 1.65, category: 'cds', priceRange: "$75+", rankRange: "200k-300k" };
+      return { accepted: true, ourPrice: 0.95, category: 'cds', priceRange: "$75+", rankRange: "200k-300k" };
     }
 
     return {
