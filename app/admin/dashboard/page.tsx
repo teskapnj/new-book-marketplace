@@ -1401,13 +1401,21 @@ export default function AdminListingsPage() {
       const listingDoc = await getDoc(listingRef);
       const sellerEmail = listingDoc.data()?.vendorEmail;
       const paypalAccount = listingDoc.data()?.shippingInfo?.paypalAccount || "";
-      
+      const currentUser = auth.currentUser;
+
+if (!currentUser) {
+  throw new Error('Admin authentication required');
+}
+
+const idToken = await currentUser.getIdToken();
+
       if (sellerEmail) {
         // Send payment notification email - Düzeltilmiş: emailResponse değişkeni kaldırıldı
         await fetch('/api/send-payment-notification', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`,
           },
           body: JSON.stringify({
             email: sellerEmail,
