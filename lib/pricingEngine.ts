@@ -288,11 +288,8 @@ function calculateCDPrice(price: number, salesRank: number): PricingResult {
     if (price >= 48 && price < 60) {
       return { accepted: true, ourPrice: 1.5, category: 'cds', priceRange: "$48-59.99", rankRange: "100k-200k" };
     }
-    if (price >= 60 && price < 72) {
-      return { accepted: true, ourPrice: 2.15, category: 'cds', priceRange: "$60-71.99", rankRange: "100k-200k" };
-    }
-    if (price >= 72) {
-      return { accepted: true, ourPrice: 2.95, category: 'cds', priceRange: "$72+", rankRange: "100k-200k" };
+    if (price >= 60) {
+      return { accepted: true, ourPrice: 1.95, category: 'cds', priceRange: "$60+", rankRange: "100k-200k" };
     }
 
     return {
