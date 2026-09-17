@@ -65,9 +65,9 @@ export default function ReturnsPolicyPage() {
           </h1>
 
           <p className="mt-5 text-lg sm:text-xl leading-relaxed text-blue-100">
-            We don&rsquo;t send items back. Anything that doesn&rsquo;t meet our condition standard is
-            recycled rather than returned, so it&rsquo;s worth checking your items before you ship
-            them.
+          Items that don&rsquo;t meet our condition standard are not eligible for payment.
+Rejected items can be returned if you provide a prepaid return shipping label
+within 2 business days after payment is issued. Otherwise, they will be recycled.
           </p>
         </div>
       </header>
@@ -91,12 +91,13 @@ export default function ReturnsPolicyPage() {
               </svg>
               <div>
                 <h2 className="font-serif text-xl font-bold text-slate-900">
-                  Once you ship, you can&rsquo;t get items back
+                Rejected items can be returned
                 </h2>
                 <p className="mt-2 text-[16px] leading-relaxed text-slate-700">
-                  We don&rsquo;t accept returns of any kind. Items that meet our standard are paid
-                  for; items that don&rsquo;t are sent to recycling, with no compensation. By sending
-                  us your items, you accept this policy — so please check them carefully first.
+                Rejected items are not eligible for payment. If you would like them returned,
+you must provide a prepaid return shipping label within 2 business days after
+payment is issued. If we do not receive a return label within that time, the
+rejected items will be recycled.
                 </p>
               </div>
             </div>
@@ -152,11 +153,12 @@ export default function ReturnsPolicyPage() {
                 Doesn&rsquo;t meet the standard
               </p>
               <div className="px-5 py-5">
-                <p className="font-serif text-xl font-bold text-slate-900">Recycled, not returned</p>
-                <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
-                  The item isn&rsquo;t paid for and isn&rsquo;t shipped back to you under any
-                  circumstances.
-                </p>
+              <p className="font-serif text-xl font-bold text-slate-900">Rejected item</p>
+<p className="mt-2 text-[15px] leading-relaxed text-slate-600">
+  The item is not paid for. You may have it returned by providing a prepaid
+  return shipping label within 2 business days after payment is issued.
+  Otherwise, it will be recycled.
+</p>
               </div>
             </div>
           </div>
@@ -201,7 +203,7 @@ export default function ReturnsPolicyPage() {
 
             <div className="overflow-hidden rounded-2xl border border-rose-200 bg-white shadow-sm">
               <p className="border-b border-rose-100 bg-rose-50 px-5 py-3 text-sm font-semibold text-rose-800">
-                Will be recycled
+              Not acceptable
               </p>
               <ul className="space-y-3 px-5 py-5 text-[15px] leading-relaxed text-slate-700">
                 {UNACCEPTABLE.map((item) => (
@@ -242,7 +244,7 @@ export default function ReturnsPolicyPage() {
           <h2 className="font-serif text-2xl font-bold text-white">Not sure about an item?</h2>
           <p className="mx-auto mt-3 max-w-md text-blue-100">
             Ask us before you ship it. It&rsquo;s much easier to answer a question now than to explain
-            a recycled item later.
+            a rejected item later.
           </p>
           <Link
             href="/contact"

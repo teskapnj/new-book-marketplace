@@ -987,8 +987,10 @@ export default function CheckoutForm({
           <a href="/privacy-policy" className="text-blue-600 underline">
             Privacy Policy
           </a>
-          . Items that don&apos;t meet our condition standard are recycled and
-          not returned.
+          . Items that don&apos;t meet our condition standard are not eligible
+for payment. Rejected items can be returned if you provide a prepaid
+return shipping label within 2 business days after payment is issued.
+Otherwise, they will be recycled.
         </p>
 
         <button

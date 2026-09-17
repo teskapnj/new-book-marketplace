@@ -402,7 +402,7 @@ export default function SellerGuidePage() {
                 <Bullets
                   items={[
                     "Only items meeting the condition guide are paid for",
-                    "Non-qualifying items are recycled, not returned",
+                    "Non-qualifying items can be returned if you provide a prepaid return shipping label within 2 business days after payment; otherwise, they are recycled",
                     "Review the condition guide one last time",
                   ]}
                 />

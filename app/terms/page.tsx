@@ -12,7 +12,7 @@ const SECTIONS = [
     title: "Submission acceptance and rejection",
   },
   { id: "condition", n: "05", title: "Condition standards and inspection" },
-  { id: "no-returns", n: "06", title: "No returns policy" },
+  { id: "no-returns", n: "06", title: "Rejected items return policy" },
   { id: "payment", n: "07", title: "Payment terms" },
   { id: "shipping", n: "08", title: "Shipping and labels" },
   { id: "prohibited", n: "09", title: "What we don't buy" },
@@ -244,12 +244,21 @@ export default function TermsPage() {
                 "Items must function properly without defects",
               ]}
             />
-            <Callout tone="danger" label="Important">
-              Except for verified transit damage covered under our shipping
-              policy, items that do not meet our condition standards will not be
-              paid for and will be sent directly to recycling. We do not return
-              rejected items under any circumstances.
-            </Callout>
+            <section id="no-returns" className="scroll-mt-8">
+  <SectionHeading n="06" title="Rejected items return policy" />
+  <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
+    If any items are rejected after inspection, you may request to have
+    them returned by providing a prepaid return shipping label.
+  </p>
+  <List
+    items={[
+      "Rejected items are not eligible for payment",
+      "You must provide a prepaid return shipping label within 2 business days after payment is issued",
+      "If we do not receive a return label within that time, the rejected items will be recycled",
+      "Return shipping costs are the seller's responsibility",
+    ]}
+  />
+</section>
             <Link
               href="/condition-guidelines"
               className="mt-5 inline-flex items-center text-sm font-semibold text-blue-600 hover:text-blue-700"
@@ -272,20 +281,20 @@ export default function TermsPage() {
           </section>
 
           <section id="no-returns" className="scroll-mt-8">
-            <SectionHeading n="06" title="No returns policy" />
-            <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-              <strong>We do not accept returns of any kind.</strong> By using
-              our service, you acknowledge and agree that:
-            </p>
-            <List
-              items={[
-                "Once items are shipped to us, they cannot be returned to you",
-                "Items not meeting our condition standards will be recycled",
-                "No payment will be made for recycled items",
-                "All sales are final once items are processed",
-              ]}
-            />
-          </section>
+  <SectionHeading n="06" title="Rejected items return policy" />
+  <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
+    If any items are rejected after inspection, you may request to have
+    them returned by providing a prepaid return shipping label.
+  </p>
+  <List
+    items={[
+      "Rejected items are not eligible for payment",
+      "You must provide a prepaid return shipping label within 2 business days after payment is issued",
+      "If we do not receive a return label within that time, the rejected items will be recycled",
+      "Return shipping costs are the seller's responsibility",
+    ]}
+  />
+</section>
 
           <section id="payment" className="scroll-mt-8">
             <SectionHeading n="07" title="Payment terms" />

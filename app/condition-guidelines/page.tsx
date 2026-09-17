@@ -325,10 +325,12 @@ export default function ConditionGuidelines() {
                 </h2>
 
                 <p className="mt-2 text-[16px] leading-relaxed text-slate-700">
-                  Please review your items before sending them. Items that
-                  don&apos;t meet our condition requirements may not qualify
-                  for payment and cannot be returned.
-                </p>
+  Please review your items before sending them. Items that
+  don&apos;t meet our condition requirements are not eligible
+  for payment. Rejected items can be returned if you provide
+  a prepaid return shipping label within 2 business days after
+  payment is issued. Otherwise, they will be recycled.
+</p>
               </div>
             </div>
           </div>
