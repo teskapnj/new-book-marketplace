@@ -581,7 +581,16 @@ function handleUsedOnlyScenario(
  * Ana fiyatlandırma fonksiyonu
  */
 export function calculateOurPrice(product: AmazonProduct): PricingResult {
-  const category = detectCategory(product.category);
+  let category = detectCategory(product.category);
+
+// Amazon ana kategorisi bazen alakasiz olabilir.
+// Fiziksel film oldugu belli ise DVD/Blu-ray/4K motoruna yonlendir.
+if (
+  category === 'unknown' &&
+  (product.type || '').toUpperCase() === 'PHYSICAL_MOVIE'
+) {
+  category = 'dvds';
+}
 
   // ADIM 0: Kabul edilmeyen format kontrolü (vinyl, VHS, kaset, indirilebilir audiobook)
   // Fiyat/rank bakılmadan EN BAŞTA reddedilir.
