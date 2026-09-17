@@ -17,31 +17,47 @@ export async function POST(request: NextRequest) {
 
     let verifiedEmail = "";
 
-try {
-  const decodedToken = await auth.verifyIdToken(token);
-  verifiedEmail = decodedToken.email || "";
-} catch {
-  return NextResponse.json(
-    { success: false, error: "Unauthorized" },
-    { status: 401 },
-  );
-}
-const {
-  sellerName,
-  totalItems,
-  totalValue,
-  submissionId,
-  items = [],
-} = await request.json();
+    try {
+      const decodedToken = await auth.verifyIdToken(token);
+      verifiedEmail = decodedToken.email || "";
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
 
-if (!verifiedEmail) {
-  return NextResponse.json(
-    { success: false, error: "Authenticated user has no email" },
-    { status: 400 },
-  );
-}
+    const {
+      sellerName,
+      totalItems,
+      totalValue,
+      submissionId,
+      items = [],
+      shippingLabelPreference = "pdf",
+    } = await request.json();
 
-const sellerEmail = verifiedEmail;
+    const isQrCode = shippingLabelPreference === "qr";
+
+    const shippingOptionLabel = isQrCode
+      ? "USPS QR Code — No Printer Needed"
+      : "Printable Shipping Label (PDF)";
+
+    const shippingDeliveryText = isQrCode
+      ? "We'll email your USPS QR code within 24 hours."
+      : "We'll email your free prepaid shipping label within 24 hours.";
+
+    const shippingNextStep = isQrCode
+      ? "After you receive the QR code, pack and seal your box. Show the QR code on your phone at a participating USPS location and they can print the shipping label for you."
+      : "After you receive the label, print it, attach it to your package, and drop off the sealed box.";
+
+    if (!verifiedEmail) {
+      return NextResponse.json(
+        { success: false, error: "Authenticated user has no email" },
+        { status: 400 },
+      );
+    }
+
+    const sellerEmail = verifiedEmail;
 
     const transporter = nodemailer.createTransport({
       service: "gmail",
@@ -129,8 +145,12 @@ const sellerEmail = verifiedEmail;
               </div>
 
               <p style="margin:0;color:#5f6b7a;line-height:1.7;font-size:16px;">
-                Thanks for submitting your items. We'll email your free prepaid shipping label within 24 hours.
+                Thanks for submitting your items. ${shippingDeliveryText}
               </p>
+
+              <div style="margin-top:14px;font-size:14px;color:#344054;">
+                <strong>Shipping option:</strong> ${shippingOptionLabel}
+              </div>
 
               <div style="margin-top:26px;border:2px solid #0b3b75;">
                 <div style="padding:16px 18px;background:#eef5fb;">
@@ -155,13 +175,15 @@ const sellerEmail = verifiedEmail;
 
               <div style="margin-top:28px;padding:18px;background:#f5f7fa;border-left:4px solid #0b3b75;">
                 <div style="font-weight:800;">What happens next</div>
+
                 <div style="margin-top:7px;font-size:14px;line-height:1.8;color:#5f6b7a;">
-                  <strong>1.</strong> We'll email your prepaid shipping label within 24 hours.<br>
-                  <strong>2.</strong> Pack your items securely and drop off the package.<br>
+                  <strong>1.</strong> ${shippingDeliveryText}<br>
+                  <strong>2.</strong> ${shippingNextStep}<br>
                   <strong>3.</strong> After we receive and inspect your items, we'll process payment using the method you selected at checkout.
                 </div>
+
                 <div style="margin-top:10px;font-size:13px;line-height:1.6;color:#667085;">
-                  Please check your inbox and spam folder for the shipping label email.
+                  Please check your inbox and spam folder for the shipping email.
                 </div>
               </div>
 
@@ -210,18 +232,20 @@ const sellerEmail = verifiedEmail;
 We've received your submission.
 Submission No: ${submissionId}
 
-Thanks for submitting your items. We'll email your free prepaid shipping label within 24 hours.
+Thanks for submitting your items. ${shippingDeliveryText}
+
+Shipping option: ${shippingOptionLabel}
 
 Submission Details:
 - Total Items: ${totalItems}
 - Estimated Value: $${Number(totalValue).toFixed(2)}
 
 What happens next?
-1. We'll email your prepaid shipping label within 24 hours.
-2. Pack your items securely and drop off the package.
+1. ${shippingDeliveryText}
+2. ${shippingNextStep}
 3. After we receive and inspect your items, we'll process payment using the method you selected at checkout.
 
-Please check your inbox and spam folder for the shipping label email.
+Please check your inbox and spam folder for the shipping email.
 
 Need help? support@sellbookmedia.com
 
@@ -233,6 +257,7 @@ SellBook Media Team`,
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error sending seller confirmation:", error);
+
     return NextResponse.json(
       { success: false, error: "Failed to send email" },
       { status: 500 },

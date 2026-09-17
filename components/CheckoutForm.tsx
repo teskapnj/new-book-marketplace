@@ -585,6 +585,7 @@ export default function CheckoutForm({
           totalValue,
           submissionId: docRef.id,
           items,
+          shippingLabelPreference: shippingInfo.shippingLabelPreference,
         }),
       }).catch((err) => console.error("Seller email error:", err));
 
