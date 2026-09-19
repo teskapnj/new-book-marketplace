@@ -668,12 +668,21 @@ export default function SellCdsForCashPage() {
                   workflow is to pull out anything unusual, then scan the rest by barcode and
                   build one order as you go.
                 </p>
-                <Link
-                  href="/guides/how-to-sell-a-cd-collection"
-                  className="inline-flex mt-7 items-center rounded-xl bg-white px-6 py-3 font-bold text-blue-700 hover:bg-slate-100 transition-colors"
-                >
-                  How to Sell a Large CD Collection →
-                </Link>
+                <div className="mt-7 flex flex-wrap gap-3">
+                  <Link
+                    href="/guides/who-buys-cd-collections"
+                    className="inline-flex items-center rounded-xl bg-white px-6 py-3 font-bold text-blue-700 hover:bg-slate-100 transition-colors"
+                  >
+                    Who Buys CD Collections? →
+                  </Link>
+
+                  <Link
+                    href="/guides/how-to-sell-a-cd-collection"
+                    className="inline-flex items-center rounded-xl border border-white/30 px-6 py-3 font-bold text-white hover:bg-white/10 transition-colors"
+                  >
+                    How to Sell a Large CD Collection →
+                  </Link>
+                </div>
               </div>
 
               <div className="space-y-4">
@@ -884,6 +893,20 @@ export default function SellCdsForCashPage() {
             </Link>
 
             <Link
+              href="/guides/who-buys-cd-collections"
+              className="group rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:border-blue-300 hover:shadow-md transition-all"
+            >
+              <div className="text-3xl">💿</div>
+              <h3 className="mt-4 text-lg font-bold text-gray-900 group-hover:text-blue-700">
+                Who Buys CD Collections?
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-gray-600">
+                Compare online buyback services, record stores, marketplace buyers, collectors, and other options for large CD collections.
+              </p>
+              <span className="mt-4 inline-flex font-semibold text-blue-600">Read guide →</span>
+            </Link>
+
+            <Link
               href="/guides/how-to-sell-a-cd-collection"
               className="group rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:border-blue-300 hover:shadow-md transition-all"
             >
@@ -1077,6 +1100,7 @@ export default function SellCdsForCashPage() {
               <ul className="space-y-3">
                 <li><Link href="/guides/how-much-are-used-cds-worth" className="text-gray-400 hover:text-white transition-colors">How Much Are Used CDs Worth?</Link></li>
                 <li><Link href="/guides/media-value-by-barcode" className="text-gray-400 hover:text-white transition-colors">Media Value by Barcode</Link></li>
+                <li><Link href="/guides/who-buys-cd-collections" className="text-gray-400 hover:text-white transition-colors">Who Buys CD Collections?</Link></li>
                 <li><Link href="/guides/how-to-sell-a-cd-collection" className="text-gray-400 hover:text-white transition-colors">Sell a Large CD Collection</Link></li>
                 <li><Link href="/guides/best-places-to-sell-cds-dvds-games" className="text-gray-400 hover:text-white transition-colors">Best Places to Sell CDs</Link></li>
                 <li><Link href="/guides/what-to-do-with-old-dvds-and-cds" className="text-gray-400 hover:text-white transition-colors">What to Do With Old CDs</Link></li>

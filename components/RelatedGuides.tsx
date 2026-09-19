@@ -45,6 +45,10 @@ const ALL_GUIDES = [
     slug: "how-to-sell-a-cd-collection",
     title: "How to Sell a Large CD Collection",
   },
+  {
+    slug: "who-buys-cd-collections",
+    title: "Who Buys CD Collections?",
+  },
 ];
 
 export default function RelatedGuides({

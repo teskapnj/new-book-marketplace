@@ -141,6 +141,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.9,
     },
+    {
+      url: "https://www.sellbookmedia.com/guides/who-buys-cd-collections",
+      lastModified: new Date("2026-09-19"),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
 
     // ABOUT
     {
