@@ -351,6 +351,71 @@ function extractKeepaImage(product: any): string {
 
   return '';
 }
+function flattenKeepaText(value: any): string {
+  if (value == null) return '';
+
+  if (Array.isArray(value)) {
+    return value.map(flattenKeepaText).join(' ');
+  }
+
+  if (typeof value === 'object') {
+    return Object.values(value).map(flattenKeepaText).join(' ');
+  }
+
+  return String(value);
+}
+
+function detectMovieRestriction(product: any): string | null {
+  const categoryPath = Array.isArray(product?.categoryTree)
+    ? product.categoryTree
+        .map((node: any) => String(node?.name || ''))
+        .join(' ')
+        .toLowerCase()
+    : '';
+
+  const type = String(product?.type || '').toUpperCase();
+
+  const isPhysicalMovie =
+    type === 'PHYSICAL_MOVIE' ||
+    product?.rootCategory === 2625373011 ||
+    categoryPath.includes('movies & tv') ||
+    categoryPath.includes('dvd') ||
+    categoryPath.includes('blu-ray');
+
+  if (!isPhysicalMovie) {
+    return null;
+  }
+
+  const searchableText = [
+    product?.title,
+    product?.format,
+    product?.edition,
+    product?.itemHighlights,
+    product?.features,
+    product?.description,
+    product?.shortDescription,
+  ]
+    .map(flattenKeepaText)
+    .join(' ');
+
+  // Region 2 veya Region 3
+  const regionMatch = searchableText.match(
+    /\b(?:playback\s+)?region(?:\s+code)?\s*[:#-]?\s*(2|3)\b/i
+  );
+
+  if (regionMatch) {
+    return `We do not accept Region ${regionMatch[1]} DVDs/Blu-rays.`;
+  }
+
+  // PAL format
+  const formatText = flattenKeepaText(product?.format);
+
+  if (/\bpal\b/i.test(formatText)) {
+    return 'We do not accept PAL DVDs/Blu-rays.';
+  }
+
+  return null;
+}
 
 /**
  * Keepa "code" sorgusu birden fazla ürün döndürebilir
@@ -618,6 +683,7 @@ export async function POST(request: NextRequest) {
     
     const bestProduct = pickBestKeepaProduct(products, codeInfo.searchCode);
     
+
     if (!bestProduct) {
       console.warn(`PRODUCT NOT FOUND: ${cleanCode} (${codeInfo.type})`);
     
@@ -656,11 +722,23 @@ export async function POST(request: NextRequest) {
       type: bestProduct.type || ''
     };
 
-    const pricingResult = calculateOurPrice(product);
+    const mediaRestriction = detectMovieRestriction(bestProduct);
 
-    const message = pricingResult.accepted && pricingResult.ourPrice
+    const pricingResult: PricingResult = mediaRestriction
+    ? {
+        accepted: false,
+        reason: mediaRestriction,
+        category: 'dvds'
+      }
+    : calculateOurPrice(product);
+
+  const message =
+    pricingResult.accepted && pricingResult.ourPrice
       ? 'ACCEPTED'
-      : 'DOES NOT MEET OUR PURCHASING CRITERIA';
+      : pricingResult.reason &&
+          pricingResult.reason !== 'DOES NOT MEET OUR PURCHASING CRITERIA'
+        ? pricingResult.reason
+        : 'DOES NOT MEET OUR PURCHASING CRITERIA';
 
     const totalTime = Date.now() - totalStartTime;
 
