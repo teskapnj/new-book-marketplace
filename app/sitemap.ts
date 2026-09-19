@@ -39,7 +39,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // HIGH VALUE PAGES
     {
       url: "https://www.sellbookmedia.com/seller-guide",
-      lastModified: new Date("2026-08-29"),
+      lastModified: new Date("2026-09-19"),
       changeFrequency: "monthly",
       priority: 0.9,
     },
@@ -51,7 +51,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: "https://www.sellbookmedia.com/condition-guidelines",
-      lastModified: new Date("2026-08-29"),
+      lastModified: new Date("2026-09-19"),
       changeFrequency: "monthly",
       priority: 0.7,
     },
@@ -78,6 +78,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     {
       url: "https://www.sellbookmedia.com/guides/how-much-are-used-dvds-worth",
       lastModified: new Date("2026-08-18"),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    {
+      url: "https://www.sellbookmedia.com/guides/who-buys-dvd-collections",
+      lastModified: new Date("2026-09-19"),
       changeFrequency: "monthly",
       priority: 0.9,
     },
@@ -153,7 +159,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: "https://www.sellbookmedia.com/returns-policy",
-      lastModified: new Date("2026-08-29"),
+      lastModified: new Date("2026-09-19"),
       changeFrequency: "yearly",
       priority: 0.6,
     },
@@ -165,7 +171,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: "https://www.sellbookmedia.com/terms",
-      lastModified: new Date("2026-08-29"),
+      lastModified: new Date("2026-09-19"),
       changeFrequency: "yearly",
       priority: 0.3,
     },

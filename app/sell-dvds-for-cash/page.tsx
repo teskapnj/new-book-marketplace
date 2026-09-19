@@ -859,11 +859,12 @@ export default function SellDvdsForCashPage() {
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <Link
-                  href="/guides/what-to-do-with-old-dvds-and-cds"
+                  href="/guides/who-buys-dvd-collections"
                   className="inline-flex items-center rounded-xl bg-blue-600 px-6 py-3 font-bold text-white hover:bg-blue-700 transition-colors"
                 >
-                  What to Do With Old DVDs &amp; CDs →
+                  Who Buys DVD Collections? →
                 </Link>
+
                 <Link
                   href="/guides/best-places-to-sell-cds-dvds-games"
                   className="inline-flex items-center rounded-xl border border-gray-300 bg-white px-6 py-3 font-bold text-gray-800 hover:border-blue-300 hover:text-blue-700 transition-colors"

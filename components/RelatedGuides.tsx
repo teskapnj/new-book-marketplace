@@ -10,10 +10,17 @@ const ALL_GUIDES = [
     title: "How Much Are Used DVDs Worth?",
   },
   {
+    slug: "who-buys-dvd-collections",
+    title: "Who Buys DVD Collections?",
+  },
+  {
     slug: "why-are-used-dvds-worth-so-little",
     title: "Why Are Used DVDs Worth So Little?",
   },
-  { slug: "sell-video-games-for-cash", title: "Sell Video Games for Cash" },
+  {
+    slug: "sell-video-games-for-cash",
+    title: "Sell Video Games for Cash",
+  },
   {
     slug: "best-places-to-sell-cds-dvds-games",
     title: "Best Places to Sell CDs, DVDs & Games",
@@ -49,7 +56,10 @@ export default function RelatedGuides({
 
   return (
     <section className="mt-10 border-t border-gray-200 pt-8">
-      <h2 className="text-xl font-bold text-gray-900 mb-4">Related Guides</h2>
+      <h2 className="text-xl font-bold text-gray-900 mb-4">
+        Related Guides
+      </h2>
+
       <ul className="space-y-2">
         {others.map((g) => (
           <li key={g.slug}>
