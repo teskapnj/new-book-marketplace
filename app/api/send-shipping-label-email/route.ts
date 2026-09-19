@@ -305,11 +305,16 @@ const attachmentNote = isQrCode
 
               <!-- Package requirements intentionally removed -->
 
-              <div style="margin-top:28px;padding:18px;background:#f5f7fa;border-left:4px solid #0b3b75;">
+                <div style="margin-top:28px;padding:18px;background:#f5f7fa;border-left:4px solid #0b3b75;">
                 <div style="font-weight:800;">After drop-off</div>
                 <div style="margin-top:5px;font-size:14px;line-height:1.7;color:#5f6b7a;">
                   Once ${carrierUpper} scans your package, tracking will begin. We'll email you again after your shipment arrives and is checked in.
                 </div>
+              </div>
+
+              <div style="margin-top:16px;padding:14px 16px;background:#fff7ed;border:1px solid #fed7aa;font-size:13px;line-height:1.6;color:#9a3412;">
+                <strong>Shipping reminder:</strong> Please send your package within 15 days.
+                After 15 days, the prepaid shipping label may be canceled and will no longer be valid.
               </div>
 
             </td>
@@ -347,6 +352,9 @@ ${shippingLabelUrl}
 ${labelAttachment ? `${attachmentNote}\n` : ""}
 AFTER DROP-OFF
 Once ${carrierUpper} scans your package, tracking will begin. We'll email you again after your shipment arrives and is checked in.
+
+SHIPPING REMINDER
+Please send your package within 15 days. After 15 days, the prepaid shipping label may be canceled and will no longer be valid.
 
 Need help? support@sellbookmedia.com
 
