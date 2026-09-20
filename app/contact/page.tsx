@@ -328,6 +328,30 @@ export default function ContactPage() {
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h2 className="font-serif text-xl font-bold text-slate-900">Follow us on Facebook</h2>
+              <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
+                Follow SellBookMedia for updates and helpful tips.
+              </p>
+              <a
+                href="https://www.facebook.com/sellbookmedia"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 inline-flex items-center font-medium text-blue-600 hover:text-blue-700"
+              >
+                Visit our Facebook page
+                <svg
+                  className="ml-1.5 h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M7 7h10v10" />
+                </svg>
+              </a>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="font-serif text-xl font-bold text-slate-900">When we&rsquo;re around</h2>
               <dl className="mt-3 space-y-2 text-[15px]">
                 <div className="flex justify-between gap-3">
