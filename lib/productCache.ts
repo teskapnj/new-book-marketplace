@@ -37,6 +37,16 @@ export interface ProductCacheEntry {
   updatedAt: admin.firestore.Timestamp;
   expiresAt: admin.firestore.Timestamp; // For 10 days expiration
 }
+export interface NotFoundCacheEntry {
+  identifier: string;
+  identifierType: 'isbn' | 'upc' | 'asin' | 'unknown';
+  notFound: true;
+  createdAt: admin.firestore.Timestamp;
+  updatedAt: admin.firestore.Timestamp;
+  expiresAt: admin.firestore.Timestamp;
+}
+
+export type ProductCacheResult = ProductCacheEntry | NotFoundCacheEntry;
 
 export class ProductCacheService {
   private collectionName = 'amazon_product_cache';
@@ -46,45 +56,45 @@ export class ProductCacheService {
    * @param identifier - ISBN, UPC or ASIN
    * @returns Cached product info or null
    */
-  async getFromCache(identifier: string): Promise<ProductCacheEntry | null> {
+  async getFromCache(identifier: string): Promise<ProductCacheResult | null> {
     try {
       // Normalize identifier
       const normalizedId = this.normalizeIdentifier(identifier);
-      
+
       console.log(`Searching in cache: ${normalizedId}`);
-      
+
       const docRef = db.collection(this.collectionName).doc(normalizedId);
       const docSnap = await docRef.get();
-      
+
       if (docSnap.exists) {
-        const data = docSnap.data() as ProductCacheEntry;
-        
+        const data = docSnap.data() as ProductCacheResult;
+
         // Check expiration
-const now = new Date();
+        const now = new Date();
 
-// Eski cache kayıtlarında expiresAt alanı olmayabilir.
-// Böyle bir kayıt varsa sil ve canlı Keepa sorgusuna düş.
-if (!data.expiresAt || typeof (data.expiresAt as any).toDate !== 'function') {
-  console.log(`Cache record missing valid expiresAt: ${normalizedId}`);
-  await this.removeFromCache(normalizedId);
-  return null;
-}
+        // Eski cache kayıtlarında expiresAt alanı olmayabilir.
+        // Böyle bir kayıt varsa sil ve canlı Keepa sorgusuna düş.
+        if (!data.expiresAt || typeof (data.expiresAt as any).toDate !== 'function') {
+          console.log(`Cache record missing valid expiresAt: ${normalizedId}`);
+          await this.removeFromCache(normalizedId);
+          return null;
+        }
 
-const expiresAt = data.expiresAt.toDate();
+        const expiresAt = data.expiresAt.toDate();
 
-if (now > expiresAt) {
-  console.log(`Cache expired: ${normalizedId} (Expired: ${expiresAt})`);
-  await this.removeFromCache(normalizedId);
-  return null;
-}
+        if (now > expiresAt) {
+          console.log(`Cache expired: ${normalizedId} (Expired: ${expiresAt})`);
+          await this.removeFromCache(normalizedId);
+          return null;
+        }
 
-console.log(`Found in cache: ${normalizedId} (Expires: ${expiresAt})`);
-return data;
+        console.log(`Found in cache: ${normalizedId} (Expires: ${expiresAt})`);
+        return data;
       }
-      
+
       console.log(`Not found in cache: ${normalizedId}`);
       return null;
-      
+
     } catch (error) {
       console.error('Cache read error:', error);
       return null;
@@ -112,7 +122,7 @@ return data;
       const normalizedId = this.normalizeIdentifier(identifier);
       const now = new Date();
       const expiresAt = new Date(now.getTime() + (10 * 24 * 60 * 60 * 1000)); // 10 days later
-      
+
       const cacheEntry = {
         identifier: normalizedId,
         identifierType,
@@ -124,11 +134,11 @@ return data;
         updatedAt: admin.firestore.Timestamp.fromDate(now),
         expiresAt: admin.firestore.Timestamp.fromDate(expiresAt)
       };
-      
+
       const docRef = db.collection(this.collectionName).doc(normalizedId);
 
       const CACHE_WRITE_TIMEOUT_MS = 5000;
-      
+
       await Promise.race([
         docRef.set(cacheEntry),
         new Promise<never>((_, reject) =>
@@ -138,12 +148,64 @@ return data;
           )
         )
       ]);
-      
+
       console.log(`Saved to cache: ${normalizedId} (Expires: ${expiresAt})`);
-      
+
     } catch (error) {
       console.error('Cache save error:', error);
       // Cache errors don't stop API, just log them
+    }
+  }
+
+  /**
+ * Keepa'da bulunamayan barkodu 24 saat cache'te tut.
+ * Böylece aynı barkod tekrar taranırsa Keepa'ya yeniden istek gitmez.
+ */
+  async saveNotFoundToCache(
+    identifier: string,
+    identifierType: 'isbn' | 'upc' | 'asin' | 'unknown'
+  ): Promise<void> {
+    try {
+      const normalizedId = this.normalizeIdentifier(identifier);
+      const now = new Date();
+
+      const expiresAt = new Date(
+        now.getTime() + (24 * 60 * 60 * 1000)
+      );
+
+      const cacheEntry: NotFoundCacheEntry = {
+        identifier: normalizedId,
+        identifierType,
+        notFound: true,
+        createdAt: admin.firestore.Timestamp.fromDate(now),
+        updatedAt: admin.firestore.Timestamp.fromDate(now),
+        expiresAt: admin.firestore.Timestamp.fromDate(expiresAt)
+      };
+
+      const docRef = db.collection(this.collectionName).doc(normalizedId);
+
+      const CACHE_WRITE_TIMEOUT_MS = 5000;
+
+      await Promise.race([
+        docRef.set(cacheEntry),
+        new Promise<never>((_, reject) =>
+          setTimeout(
+            () =>
+              reject(
+                new Error(
+                  `Not-found cache write timed out after ${CACHE_WRITE_TIMEOUT_MS}ms`
+                )
+              ),
+            CACHE_WRITE_TIMEOUT_MS
+          )
+        )
+      ]);
+
+      console.log(
+        `Saved NOT FOUND to cache: ${normalizedId} (Expires: ${expiresAt})`
+      );
+    } catch (error) {
+      console.error('Not-found cache save error:', error);
     }
   }
 
@@ -171,25 +233,25 @@ return data;
       const now = new Date();
       const query = db.collection(this.collectionName)
         .where('expiresAt', '<', admin.firestore.Timestamp.fromDate(now));
-      
+
       const querySnapshot = await query.get();
       let deletedCount = 0;
-      
+
       // Batch delete for better performance
       const batch = db.batch();
-      
+
       querySnapshot.docs.forEach(doc => {
         batch.delete(doc.ref);
         deletedCount++;
       });
-      
+
       if (deletedCount > 0) {
         await batch.commit();
       }
-      
+
       console.log(`Cleaned cache records: ${deletedCount}`);
       return deletedCount;
-      
+
     } catch (error) {
       console.error('Cache cleanup error:', error);
       return 0;
@@ -207,28 +269,28 @@ return data;
     try {
       const allDocsQuery = db.collection(this.collectionName);
       const allSnapshot = await allDocsQuery.get();
-      
+
       const now = new Date();
       let expired = 0;
       let valid = 0;
-      
+
       allSnapshot.docs.forEach(doc => {
-        const data = doc.data() as ProductCacheEntry;
+        const data = doc.data() as ProductCacheResult;
         const expiresAt = data.expiresAt.toDate();
-        
+
         if (now > expiresAt) {
           expired++;
         } else {
           valid++;
         }
       });
-      
+
       return {
         total: allSnapshot.size,
         expired,
         valid
       };
-      
+
     } catch (error) {
       console.error('Cache stats error:', error);
       return { total: 0, expired: 0, valid: 0 };

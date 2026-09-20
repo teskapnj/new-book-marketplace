@@ -110,54 +110,54 @@ function detectCodeType(code: string): {
     return { type: 'isbn', searchCode: cleanCode };
   }
 
- // ISBN-13 (978 önekli -> ISBN-10'a çevrilebilir, 979 önekli -> code lookup gerekir)
-if (cleanCode.length === 13 && /^97[89]\d{10}$/.test(cleanCode)) {
-  if (cleanCode.startsWith('978')) {
-    const isbn10 = convertISBN13toISBN10(cleanCode);
-    if (isbn10) {
-      console.log(`ISBN-13 converted: ${cleanCode} → ${isbn10}`);
-      return { type: 'isbn', searchCode: isbn10, converted: true };
+  // ISBN-13 (978 önekli -> ISBN-10'a çevrilebilir, 979 önekli -> code lookup gerekir)
+  if (cleanCode.length === 13 && /^97[89]\d{10}$/.test(cleanCode)) {
+    if (cleanCode.startsWith('978')) {
+      const isbn10 = convertISBN13toISBN10(cleanCode);
+      if (isbn10) {
+        console.log(`ISBN-13 converted: ${cleanCode} → ${isbn10}`);
+        return { type: 'isbn', searchCode: isbn10, converted: true };
+      }
     }
+
+    // 979 önekli ISBN-13 -> Keepa'nın "code" parametresiyle arattırılır
+    console.log(`ISBN-13 needs Keepa code lookup: ${cleanCode}`);
+
+    return {
+      type: 'isbn',
+      searchCode: cleanCode,
+      needsCodeLookup: true
+    };
   }
 
-  // 979 önekli ISBN-13 -> Keepa'nın "code" parametresiyle arattırılır
-  console.log(`ISBN-13 needs Keepa code lookup: ${cleanCode}`);
+  // EAN-13 (CD/DVD/Oyun vb.) -> Keepa "code" parametresiyle arattırılır
+  if (cleanCode.length === 13 && /^\d{13}$/.test(cleanCode)) {
+    return {
+      type: 'upc',
+      searchCode: cleanCode,
+      needsCodeLookup: true
+    };
+  }
 
-  return {
-    type: 'isbn',
-    searchCode: cleanCode,
-    needsCodeLookup: true
-  };
-}
+  // UPC (CD/DVD/Oyun) -> Keepa "code" parametresiyle arattırılır
+  if (cleanCode.length === 12 && /^\d{12}$/.test(cleanCode)) {
+    return {
+      type: 'upc',
+      searchCode: cleanCode,
+      needsCodeLookup: true
+    };
+  }
 
-// EAN-13 (CD/DVD/Oyun vb.) -> Keepa "code" parametresiyle arattırılır
-if (cleanCode.length === 13 && /^\d{13}$/.test(cleanCode)) {
-  return {
-    type: 'upc',
-    searchCode: cleanCode,
-    needsCodeLookup: true
-  };
-}
+  // EAN-8
+  if (cleanCode.length === 8 && /^\d{8}$/.test(cleanCode)) {
+    return {
+      type: 'upc',
+      searchCode: cleanCode,
+      needsCodeLookup: true
+    };
+  }
 
-// UPC (CD/DVD/Oyun) -> Keepa "code" parametresiyle arattırılır
-if (cleanCode.length === 12 && /^\d{12}$/.test(cleanCode)) {
-  return {
-    type: 'upc',
-    searchCode: cleanCode,
-    needsCodeLookup: true
-  };
-}
-
-// EAN-8
-if (cleanCode.length === 8 && /^\d{8}$/.test(cleanCode)) {
-  return {
-    type: 'upc',
-    searchCode: cleanCode,
-    needsCodeLookup: true
-  };
-}
-
-return { type: 'unknown', searchCode: cleanCode };
+  return { type: 'unknown', searchCode: cleanCode };
 }
 
 // ==================== KEEPA API ÇAĞRILARI ====================
@@ -232,14 +232,14 @@ function extractKeepaPricing(product: any): {
   const newPriceCents = current[1];
   const usedPriceCents = current[2];
   const gameNewPrice =
-  typeof newPriceCents === 'number' && newPriceCents > 0
-    ? newPriceCents / 100
-    : 0;
+    typeof newPriceCents === 'number' && newPriceCents > 0
+      ? newPriceCents / 100
+      : 0;
 
-const gameUsedPrice =
-  typeof usedPriceCents === 'number' && usedPriceCents > 0
-    ? usedPriceCents / 100
-    : 0;
+  const gameUsedPrice =
+    typeof usedPriceCents === 'number' && usedPriceCents > 0
+      ? usedPriceCents / 100
+      : 0;
 
   // BOOKS da ayni Keepa current[2] lowest USED degerini kullanir.
   // NEW fiyat mevcut olsa bile bu alan ayrica pricingEngine'e gonderilir.
@@ -368,9 +368,9 @@ function flattenKeepaText(value: any): string {
 function detectMovieRestriction(product: any): string | null {
   const categoryPath = Array.isArray(product?.categoryTree)
     ? product.categoryTree
-        .map((node: any) => String(node?.name || ''))
-        .join(' ')
-        .toLowerCase()
+      .map((node: any) => String(node?.name || ''))
+      .join(' ')
+      .toLowerCase()
     : '';
 
   const type = String(product?.type || '').toUpperCase();
@@ -502,17 +502,17 @@ function pickBestKeepaProduct(products: any[], searchCode: string): any | null {
 
   let cheapest: any | null = null;
   let cheapestPrice = Infinity;
-  
+
   for (const p of products) {
     const pricing = extractKeepaPricing(p);
     const rank = extractKeepaSalesRank(p);
-  
+
     if (rank > 0 && pricing.price > 0 && pricing.price < cheapestPrice) {
       cheapestPrice = pricing.price;
       cheapest = p;
     }
   }
-  
+
   if (cheapest) return cheapest;
 
   // Hicbirinde fiyat yoksa en iyi gecerli ana rank'i sec.
@@ -542,7 +542,7 @@ export async function POST(request: NextRequest) {
 
     if (!isbn_upc || typeof isbn_upc !== 'string') {
       console.warn('INVALID PRODUCT CODE: missing or non-string isbn_upc');
-    
+
       return NextResponse.json(
         { success: false, error: 'only valid ISBN or UPC code or ASIN' } as ApiResponse,
         { status: 400 }
@@ -554,7 +554,7 @@ export async function POST(request: NextRequest) {
 
     if (codeInfo.type === 'unknown') {
       console.warn(`INVALID PRODUCT CODE FORMAT: ${cleanCode}`);
-    
+
       return NextResponse.json(
         { success: false, error: 'invalid ISBN/UPC format' } as ApiResponse,
         { status: 400 }
@@ -563,11 +563,26 @@ export async function POST(request: NextRequest) {
 
     console.log(`\nKEEPA LOOKUP: ${cleanCode} (${codeInfo.type})`);
 
-    // ---- Cache kontrolü (değişmedi) ----
+    // ---- Cache kontrolü ----
     const cacheReadStart = Date.now();
     const cachedResult = await productCache.getFromCache(cleanCode);
     console.log(`⏱️ cacheRead=${Date.now() - cacheReadStart}ms`);
+
     if (cachedResult) {
+      // Keepa daha once bu barkod icin urun bulamadiysa 24 saat boyunca
+      // yeniden Keepa'ya gitmeden ayni 404 cevabini dondur.
+      if ('notFound' in cachedResult) {
+        console.log(`⚡ NOT FOUND CACHE HIT: ${cleanCode}`);
+
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Product not found. Please check the barcode and try again later.'
+          } as ApiResponse,
+          { status: 404 }
+        );
+      }
+
       const cachedProduct: any = { ...cachedResult.product };
 
       // Eski cache kayitlarinda bookUsedPrice olmayabilir.
@@ -599,6 +614,7 @@ export async function POST(request: NextRequest) {
         const cachedPricing: any = isCachedBook
           ? calculateOurPrice(cachedProduct)
           : cachedResult.pricing;
+
         const cachedMessage = isCachedBook
           ? cachedPricing.accepted && cachedPricing.ourPrice
             ? 'ACCEPTED'
@@ -680,15 +696,25 @@ export async function POST(request: NextRequest) {
         : [],
       error: keepaResponse?.error || null
     });
-    
+
     const bestProduct = pickBestKeepaProduct(products, codeInfo.searchCode);
-    
+
 
     if (!bestProduct) {
       console.warn(`PRODUCT NOT FOUND: ${cleanCode} (${codeInfo.type})`);
-    
+
+      // Negatif cache: ayni bulunamayan barkod 24 saat boyunca
+      // tekrar Keepa tokeni tuketmesin.
+      await productCache.saveNotFoundToCache(
+        cleanCode,
+        codeInfo.type
+      );
+
       return NextResponse.json(
-        { success: false, error: 'Product not found. Please check the barcode and try again later.' } as ApiResponse,
+        {
+          success: false,
+          error: 'Product not found. Please check the barcode and try again later.'
+        } as ApiResponse,
         { status: 404 }
       );
     }
@@ -725,20 +751,20 @@ export async function POST(request: NextRequest) {
     const mediaRestriction = detectMovieRestriction(bestProduct);
 
     const pricingResult: PricingResult = mediaRestriction
-    ? {
+      ? {
         accepted: false,
         reason: mediaRestriction,
         category: 'dvds'
       }
-    : calculateOurPrice(product);
+      : calculateOurPrice(product);
 
-  const message =
-    pricingResult.accepted && pricingResult.ourPrice
-      ? 'ACCEPTED'
-      : pricingResult.reason &&
+    const message =
+      pricingResult.accepted && pricingResult.ourPrice
+        ? 'ACCEPTED'
+        : pricingResult.reason &&
           pricingResult.reason !== 'DOES NOT MEET OUR PURCHASING CRITERIA'
-        ? pricingResult.reason
-        : 'DOES NOT MEET OUR PURCHASING CRITERIA';
+          ? pricingResult.reason
+          : 'DOES NOT MEET OUR PURCHASING CRITERIA';
 
     const totalTime = Date.now() - totalStartTime;
 
@@ -751,43 +777,43 @@ export async function POST(request: NextRequest) {
     };
 
     // Cache yazmasi kullaniciyi bekletmez.
-// Next.js after() response dondükten sonra islemin tamamlanmasina izin verir.
-const cacheWriteStart = Date.now();
+    // Next.js after() response dondükten sonra islemin tamamlanmasina izin verir.
+    const cacheWriteStart = Date.now();
 
-after(async () => {
-  try {
-    await productCache.saveToCache(
-      cleanCode,
-      codeInfo.type,
-      product,
-      pricingResult,
-      message,
-      debugInfo
-    );
+    after(async () => {
+      try {
+        await productCache.saveToCache(
+          cleanCode,
+          codeInfo.type,
+          product,
+          pricingResult,
+          message,
+          debugInfo
+        );
 
-    console.log(
-      `💾 CACHE WRITE: ${cleanCode} | ` +
-      `Price: $${product.price ?? 0} (${product.priceType || 'unknown'}) | ` +
-      `${pricingResult.category === 'books'
-        ? `BookUSED: $${product.bookUsedPrice ?? 0} | Rule: ${pricingResult.priceRange || 'N/A'} | `
-        : ''}` +
-      `${pricingResult.category === 'games'
-        ? `Platform: ${product.gamePlatform || 'N/A'} | GameNEW: $${product.gameNewPrice ?? 0} | GameUSED: $${product.gameUsedPrice ?? 0} | Rule: ${pricingResult.priceRange || 'N/A'} | `
-        : ''}` +
-      `Rank: ${product.sales_rank ?? 0} | ` +
-      `Category: ${product.category || 'Unknown'} | ` +
-      `Status: ${pricingResult.accepted ? 'ACCEPTED' : 'REJECTED'} | ` +
-      `Offer: ${pricingResult.accepted && pricingResult.ourPrice != null ? `$${pricingResult.ourPrice}` : 'N/A'} | ` +
-      `${Date.now() - cacheWriteStart}ms`
-    );
-  } catch (err) {
-    console.error('Cache save error:', err);
-  }
-});
+        console.log(
+          `💾 CACHE WRITE: ${cleanCode} | ` +
+          `Price: $${product.price ?? 0} (${product.priceType || 'unknown'}) | ` +
+          `${pricingResult.category === 'books'
+            ? `BookUSED: $${product.bookUsedPrice ?? 0} | Rule: ${pricingResult.priceRange || 'N/A'} | `
+            : ''}` +
+          `${pricingResult.category === 'games'
+            ? `Platform: ${product.gamePlatform || 'N/A'} | GameNEW: $${product.gameNewPrice ?? 0} | GameUSED: $${product.gameUsedPrice ?? 0} | Rule: ${pricingResult.priceRange || 'N/A'} | `
+            : ''}` +
+          `Rank: ${product.sales_rank ?? 0} | ` +
+          `Category: ${product.category || 'Unknown'} | ` +
+          `Status: ${pricingResult.accepted ? 'ACCEPTED' : 'REJECTED'} | ` +
+          `Offer: ${pricingResult.accepted && pricingResult.ourPrice != null ? `$${pricingResult.ourPrice}` : 'N/A'} | ` +
+          `${Date.now() - cacheWriteStart}ms`
+        );
+      } catch (err) {
+        console.error('Cache save error:', err);
+      }
+    });
 
     const speedLabel = totalTime < 1000 ? 'ULTRA FAST' : totalTime < 2000 ? 'FAST' : 'NORMAL';
     console.log(`[${speedLabel}] ${totalTime}ms - Keepa lookup (${debugInfo.lookupType})`);
-    
+
     console.log(
       `💰 KEEPA: ${cleanCode} | ` +
       `Price: $${priceAnalysis.price} (${priceAnalysis.bestCondition}) | ` +
