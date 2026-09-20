@@ -66,7 +66,7 @@ const GROUPS: Group[] = [
       },
       {
         q: "How big can my box be?",
-        a: "One box per order, up to 18 × 16 × 16 inches and 50 lbs. If your items won't fit in a single box, submit them as separate orders.",
+        a: "One box per order, up to 20 × 18 × 18 inches and 50 lbs. If your items won't fit in a single box, submit them as separate orders.",
       },
       {
         q: "How should I pack the items?",

@@ -470,14 +470,23 @@ export function useBarcodeScanner(options: BarcodeScannerOptions): BarcodeScanne
 
       console.log('Barcode scanning started (4-direction mode)');
 
-      if (timeout > 0) {
-        timeoutRef.current = setTimeout(() => {
-          if (mountedRef.current) {
-            stopScanning();
-            onError('Scanning timed out');
-          }
-        }, timeout);
-      }
+      const resetScanTimeout = () => {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+
+        if (timeout > 0) {
+          timeoutRef.current = setTimeout(() => {
+            if (mountedRef.current) {
+              stopScanning();
+              onError('Scanning timed out');
+            }
+          }, timeout);
+        }
+      };
+
+      resetScanTimeout();
 
       const scanFromVideo = () => {
         if (isDecodingRef.current) return;
@@ -531,8 +540,8 @@ export function useBarcodeScanner(options: BarcodeScannerOptions): BarcodeScanne
             pendingCountRef.current = 0;
 
             const now = Date.now();
-            const isSameCodeTooSoon = 
-              lastScanCodeRef.current === scannedCode && 
+            const isSameCodeTooSoon =
+              lastScanCodeRef.current === scannedCode &&
               (now - lastScanTimeRef.current) < 2500; // aynı barkod 2.5 sn içinde tekrar sayılmaz
 
             if (!isSameCodeTooSoon && mountedRef.current) {
@@ -541,8 +550,13 @@ export function useBarcodeScanner(options: BarcodeScannerOptions): BarcodeScanne
               lastScanCodeRef.current = scannedCode;
 
               setState(prev => ({ ...prev, lastScannedCode: scannedCode }));
+
+              if (continuous) {
+                resetScanTimeout();
+              }
+
               onScanRef.current(scannedCode);
-              
+
               if (!continuous) {
                 stopScanning();
                 return;

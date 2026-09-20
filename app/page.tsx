@@ -1627,7 +1627,7 @@ useEffect(() => {
                     <PackageIcon size={16} className="text-gray-500 flex-shrink-0 mt-0.5" />
                     <p className="text-xs text-gray-600 leading-relaxed">
                       <span className="font-semibold text-gray-800">One box per order.</span>{" "}
-                      Maximum box size 18 × 16 × 16 in, maximum weight 50 lbs. If your items
+                      Maximum box size 20 × 18 × 18 in, maximum weight 50 lbs. If your items
                       won&apos;t fit in a single box, please submit them as separate orders.
                     </p>
                   </div>

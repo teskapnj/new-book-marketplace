@@ -493,15 +493,15 @@ export default function CheckoutForm({
           packageDimensions: {
             length: Math.max(
               0,
-              Math.min(18, shippingInfo.packageDimensions.length),
+              Math.min(20, shippingInfo.packageDimensions.length),
             ),
             width: Math.max(
               0,
-              Math.min(16, shippingInfo.packageDimensions.width),
+              Math.min(18, shippingInfo.packageDimensions.width),
             ),
             height: Math.max(
               0,
-              Math.min(16, shippingInfo.packageDimensions.height),
+              Math.min(18, shippingInfo.packageDimensions.height),
             ),
             weight: Math.max(
               0,
@@ -923,7 +923,7 @@ export default function CheckoutForm({
             <span className="font-semibold text-gray-800">
               One box per order.
             </span>{" "}
-            Maximum box size 18 × 16 × 16 in, maximum weight 50 lbs. If your
+            Maximum box size 20 × 18 × 18 in, maximum weight 50 lbs. If your
             items won&apos;t fit in a single box, please submit them as separate
             orders.
           </p>

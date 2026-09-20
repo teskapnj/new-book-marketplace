@@ -276,7 +276,7 @@ export default function SellerGuidePage() {
                 <Bullets
                   items={[
                     "One box per order",
-                    "Maximum box size: 18 × 16 × 16 in",
+                    "Maximum box size: 20 × 18 × 18 in",
                     "Maximum weight: 50 lbs",
                   ]}
                 />
