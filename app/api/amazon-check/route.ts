@@ -76,6 +76,10 @@ const KEEPA_DOMAIN = 1;
 // Dusurmek = daha taze veri + daha yavas + daha cok token.
 const KEEPA_UPDATE_HOURS = 24;
 
+// Bu surumu film kabul/red kurallari degistiginde artir.
+// Eski DVD/Blu-ray cache kayitlari boylece bir kez Keepa'dan tazelenir.
+const MOVIE_RULES_VERSION = 2;
+
 // ==================== KOD TİPİ ALGILAMA (aynı, değişmedi) ====================
 
 function convertISBN13toISBN10(isbn13: string): string | null {
@@ -365,24 +369,66 @@ function flattenKeepaText(value: any): string {
   return String(value);
 }
 
-function detectMovieRestriction(product: any): string | null {
+function isPhysicalMovieProduct(product: any): boolean {
   const categoryPath = Array.isArray(product?.categoryTree)
     ? product.categoryTree
-      .map((node: any) => String(node?.name || ''))
-      .join(' ')
-      .toLowerCase()
+        .map((node: any) => String(node?.name || ''))
+        .join(' ')
+        .toLowerCase()
     : '';
 
   const type = String(product?.type || '').toUpperCase();
 
-  const isPhysicalMovie =
+  return (
     type === 'PHYSICAL_MOVIE' ||
+    type === 'VIDEO_DVD' ||
     product?.rootCategory === 2625373011 ||
     categoryPath.includes('movies & tv') ||
     categoryPath.includes('dvd') ||
-    categoryPath.includes('blu-ray');
+    categoryPath.includes('blu-ray')
+  );
+}
 
-  if (!isPhysicalMovie) {
+function isRentalMovie(product: any): boolean {
+  if (!isPhysicalMovieProduct(product)) {
+    return false;
+  }
+
+  const titleText = flattenKeepaText(product?.title);
+
+  // Edition/format alanlarinda tek basina "Rental" bilgisi anlamlidir.
+  const structuredRentalText = [
+    product?.format,
+    product?.edition,
+  ]
+    .map(flattenKeepaText)
+    .join(' ');
+
+  // Aciklama alanlarinda yalnizca daha acik rental ifadelerini kabul et.
+  // Boylece film hikayesinde gecen "rental car" / "vacation rental" gibi
+  // ifadeler normal bir DVD'yi yanlislikla reddetmez.
+  const descriptiveText = [
+    product?.itemHighlights,
+    product?.features,
+    product?.description,
+    product?.shortDescription,
+  ]
+    .map(flattenKeepaText)
+    .join(' ');
+
+  const explicitRentalPattern =
+    /\b(?:rental version|rental edition|rental copy|rental exclusive|rental only|former rental|ex[-\s]?rental)\b/i;
+
+  return (
+    /\brental\b/i.test(structuredRentalText) ||
+    /\(\s*rental\s*\)|\[\s*rental\s*\]/i.test(titleText) ||
+    explicitRentalPattern.test(titleText) ||
+    explicitRentalPattern.test(descriptiveText)
+  );
+}
+
+function detectMovieRestriction(product: any): string | null {
+  if (!isPhysicalMovieProduct(product)) {
     return null;
   }
 
@@ -397,6 +443,10 @@ function detectMovieRestriction(product: any): string | null {
   ]
     .map(flattenKeepaText)
     .join(' ');
+
+  if (isRentalMovie(product)) {
+    return 'We do not accept rental-version DVDs/Blu-rays.';
+  }
 
   // Region 2 veya Region 3
   const regionMatch = searchableText.match(
@@ -592,6 +642,21 @@ export async function POST(request: NextRequest) {
       const isCachedBook =
         cachedCategory.includes('book') || cachedCategory.includes('kindle');
 
+      const cachedType = String(cachedProduct?.type || '').toUpperCase();
+      const isCachedMovie =
+        cachedResult.pricing?.category === 'dvds' ||
+        cachedType === 'PHYSICAL_MOVIE' ||
+        cachedType === 'VIDEO_DVD' ||
+        cachedCategory.includes('movie') ||
+        cachedCategory.includes('dvd') ||
+        cachedCategory.includes('blu-ray');
+
+      const cachedMovieRulesVersion =
+        Number((cachedResult.debug as any)?.movieRulesVersion || 0);
+
+      const needsMovieRulesRefresh =
+        isCachedMovie && cachedMovieRulesVersion !== MOVIE_RULES_VERSION;
+
       const isLegacyBookCacheMissingUsedSnapshot =
         isCachedBook &&
         cachedProduct.bookUsedPrice == null &&
@@ -599,11 +664,18 @@ export async function POST(request: NextRequest) {
         cachedProduct.priceType !== 'used' &&
         cachedProduct.priceType !== 'none';
 
-      // Cok eski bir BOOK cache kaydinda NEW fiyat olabilir ama USED snapshot'i hic
-      // saklanmamis olabilir. Bu durumda "USED yok" diye varsaymak yanlis teklif
-      // uretebilir; cache'i kullanmayip Keepa'dan taze veri aliriz.
-      if (isLegacyBookCacheMissingUsedSnapshot) {
-        console.log(`♻️ LEGACY BOOK CACHE REFRESH: ${cleanCode}`);
+      // Eski BOOK cache kaydinda USED snapshot'i yoksa veya DVD/Blu-ray kaydi
+      // eski film kurallariyla olusturulduysa cache'i kullanma; Keepa'dan tazele.
+      if (isLegacyBookCacheMissingUsedSnapshot || needsMovieRulesRefresh) {
+        if (isLegacyBookCacheMissingUsedSnapshot) {
+          console.log(`♻️ LEGACY BOOK CACHE REFRESH: ${cleanCode}`);
+        }
+        if (needsMovieRulesRefresh) {
+          console.log(
+            `♻️ MOVIE RULES CACHE REFRESH: ${cleanCode} | ` +
+            `cachedVersion=${cachedMovieRulesVersion} -> ${MOVIE_RULES_VERSION}`
+          );
+        }
       } else {
         if (isCachedBook && cachedProduct.bookUsedPrice == null) {
           cachedProduct.bookUsedPrice = cachedProduct.gameUsedPrice || 0;
@@ -699,7 +771,6 @@ export async function POST(request: NextRequest) {
 
     const bestProduct = pickBestKeepaProduct(products, codeInfo.searchCode);
 
-
     if (!bestProduct) {
       console.warn(`PRODUCT NOT FOUND: ${cleanCode} (${codeInfo.type})`);
 
@@ -718,6 +789,14 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
+
+    // Ayni barkod birden fazla listing dondurebilir. Secilen urun filmse ve
+    // ayni barkod adaylarindan herhangi biri acikca rental olarak isaretliyse
+    // barkodun tamamini reddet. Bu, rental ghost listing vakalarini yakalar.
+    const hasRentalCandidate =
+      isPhysicalMovieProduct(bestProduct) &&
+      Array.isArray(products) &&
+      products.some((p: any) => isRentalMovie(p));
 
     // ---- Veri çıkarımı ----
     const priceAnalysis = extractKeepaPricing(bestProduct);
@@ -748,7 +827,9 @@ export async function POST(request: NextRequest) {
       type: bestProduct.type || ''
     };
 
-    const mediaRestriction = detectMovieRestriction(bestProduct);
+    const mediaRestriction = hasRentalCandidate
+      ? 'We do not accept rental-version DVDs/Blu-rays.'
+      : detectMovieRestriction(bestProduct);
 
     const pricingResult: PricingResult = mediaRestriction
       ? {
@@ -772,6 +853,7 @@ export async function POST(request: NextRequest) {
       searchMethod: 'keepa-single-product',
       lookupType: codeInfo.needsCodeLookup ? 'code' : 'asin',
       cacheHit: false,
+      movieRulesVersion: MOVIE_RULES_VERSION,
       priceAnalysis,
       timings: { totalTime }
     };
