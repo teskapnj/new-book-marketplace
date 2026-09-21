@@ -1,18 +1,32 @@
-import { Metadata } from 'next'
+import type { Metadata } from 'next'
 
-// ✅ PRIVACY POLICY METADATA
+const SITE_URL = 'https://www.sellbookmedia.com'
+const PAGE_URL = `${SITE_URL}/privacy-policy`
+
 export const metadata: Metadata = {
-  title: 'Privacy Policy - How We Protect Your Data',
-  description: 'Read our privacy policy to learn how SellBook Media collects, uses, protects, and manages personal information related to accounts, shipping, payments, and site usage.',
+  title: 'Privacy Policy | SellBookMedia',
 
-  openGraph: {
-    title: 'Privacy Policy - SellBook Media',
-    description: 'Learn how SellBook Media collects, uses, protects, and manages personal information.',
-    url: 'https://www.sellbookmedia.com/privacy-policy',
-  },
+  description:
+    'Read the SellBookMedia Privacy Policy to learn how personal information related to site usage, orders, shipping, payments, and customer support is collected and handled.',
 
   alternates: {
-    canonical: 'https://www.sellbookmedia.com/privacy-policy',
+    canonical: PAGE_URL,
+  },
+
+  openGraph: {
+    type: 'website',
+    url: PAGE_URL,
+    siteName: 'SellBookMedia',
+    title: 'Privacy Policy | SellBookMedia',
+    description:
+      'Learn how SellBookMedia collects, uses, and handles personal information related to site usage and seller transactions.',
+  },
+
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Privacy Policy | SellBookMedia',
+    description:
+      'Learn how SellBookMedia handles personal information related to site usage and seller transactions.',
   },
 
   robots: {
@@ -21,18 +35,19 @@ export const metadata: Metadata = {
   },
 }
 
-// ✅ WEBPAGE SCHEMA
-const privacySchema = {
+const structuredData = {
   '@context': 'https://schema.org',
   '@type': 'WebPage',
+  '@id': `${PAGE_URL}#webpage`,
+  url: PAGE_URL,
   name: 'Privacy Policy',
-  description: 'Privacy policy for SellBook Media',
-  publisher: {
-    '@type': 'Organization',
-    name: 'SellBook Media',
+  description: 'Privacy Policy for SellBookMedia.',
+  isPartOf: {
+    '@id': `${SITE_URL}/#website`,
   },
-  datePublished: '2025-01-01',
-  dateModified: '2026-09-14',
+  about: {
+    '@id': `${SITE_URL}/#organization`,
+  },
 }
 
 export default function PrivacyPolicyLayout({
@@ -42,13 +57,13 @@ export default function PrivacyPolicyLayout({
 }) {
   return (
     <>
-      {/* Privacy Schema */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(privacySchema) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(structuredData),
+        }}
       />
 
-      {/* Page content */}
       {children}
     </>
   )

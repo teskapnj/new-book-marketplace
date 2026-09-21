@@ -242,17 +242,6 @@ export default function SellCdsForCashPage() {
           },
         ],
       },
-      {
-        "@type": "FAQPage",
-        mainEntity: cdFaqs.map((faq) => ({
-          "@type": "Question",
-          name: faq.q,
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: faq.a,
-          },
-        })),
-      },
     ],
   };
 

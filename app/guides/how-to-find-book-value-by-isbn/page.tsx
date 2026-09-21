@@ -116,16 +116,22 @@ export default function BookValueByIsbnGuide() {
         headline: "How to Find the Value of a Book by ISBN",
         description:
           "Learn how to use an ISBN to identify a book edition and check its current resale or buyback value.",
+        url: PAGE_URL,
         datePublished: "2026-09-03",
         dateModified: "2026-09-03",
-        mainEntityOfPage: PAGE_URL,
+        mainEntityOfPage: {
+          "@type": "WebPage",
+          "@id": PAGE_URL,
+        },
         author: {
           "@type": "Organization",
+          "@id": `${SITE_URL}/#organization`,
           name: "SellBookMedia",
           url: SITE_URL,
         },
         publisher: {
           "@type": "Organization",
+          "@id": `${SITE_URL}/#organization`,
           name: "SellBookMedia",
           url: SITE_URL,
         },
@@ -152,17 +158,6 @@ export default function BookValueByIsbnGuide() {
             item: PAGE_URL,
           },
         ],
-      },
-      {
-        "@type": "FAQPage",
-        mainEntity: FAQ.map((item) => ({
-          "@type": "Question",
-          name: item.q,
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: item.a,
-          },
-        })),
       },
     ],
   };

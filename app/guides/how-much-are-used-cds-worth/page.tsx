@@ -149,19 +149,26 @@ export default function CdValueGuide() {
     "@graph": [
       {
         "@type": "Article",
+        "@id": `${PAGE_URL}#article`,
         headline: "Are Old CDs Worth Anything in 2026?",
         description:
           "A practical guide to used CD value, collectible pressings, exact-release identification, sales history, condition, and selling options.",
+        url: PAGE_URL,
         datePublished: "2026-08-18",
         dateModified: "2026-09-16",
-        mainEntityOfPage: PAGE_URL,
+        mainEntityOfPage: {
+          "@type": "WebPage",
+          "@id": PAGE_URL,
+        },
         author: {
           "@type": "Organization",
+          "@id": `${SITE_URL}/#organization`,
           name: "SellBookMedia",
           url: SITE_URL,
         },
         publisher: {
           "@type": "Organization",
+          "@id": `${SITE_URL}/#organization`,
           name: "SellBookMedia",
           url: SITE_URL,
         },
@@ -178,21 +185,16 @@ export default function CdValueGuide() {
           {
             "@type": "ListItem",
             position: 2,
+            name: "Guides",
+            item: `${SITE_URL}/guides`,
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
             name: "Are Old CDs Worth Anything in 2026?",
             item: PAGE_URL,
           },
         ],
-      },
-      {
-        "@type": "FAQPage",
-        mainEntity: FAQ.map((item) => ({
-          "@type": "Question",
-          name: item.q,
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: item.a,
-          },
-        })),
       },
     ],
   };

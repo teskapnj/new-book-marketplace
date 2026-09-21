@@ -3,16 +3,15 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
 
-  // Build hatalarını geçici olarak atla
   eslint: {
     ignoreDuringBuilds: true,
   },
+
   typescript: {
     ignoreBuildErrors: true,
   },
 
   images: {
-    // domains kullanımı yerine sadece remotePatterns kullanın
     remotePatterns: [
       {
         protocol: "https",
@@ -36,9 +35,7 @@ const nextConfig: NextConfig = {
         hostname: "g-ecx.images-amazon.com",
       },
     ],
-    // OPTİMİZASYON KAPALI: ürün görselleri Amazon'dan geliyor, zaten küçük ve
-    // optimize. Vercel'in her ekran boyutu için ayrı sürüm üretmesi ücretsiz
-    // kotayı (5.000 dönüşüm/ay) boşuna yakıyordu.
+
     unoptimized: true,
   },
 
@@ -61,8 +58,6 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Permissions-Policy",
-            // camera=() tum kaynaklara kamerayi kapatiyordu, barkod tarayici
-            // Chrome'da calismayabilir. self eklendi.
             value: "camera=(self), microphone=(), geolocation=()",
           },
           {
@@ -90,7 +85,9 @@ const nextConfig: NextConfig = {
                 https://*.gstatic.com
                 https://bat.bing.com
                 https://bat.bing.net;
-              frame-src https://*.firebaseapp.com https://*.google.com
+              frame-src
+                https://*.firebaseapp.com
+                https://*.google.com
                 https://googleads.g.doubleclick.net
                 https://td.doubleclick.net;
             `
@@ -105,24 +102,28 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
-        source: '/sell-books-and-dvds-for-cash',
-        destination: '/sell-books-for-cash',
+        source: "/sell-books-and-dvds-for-cash",
+        destination: "/sell-books-for-cash",
         permanent: true,
       },
+
       {
-        source: '/browse',
-        destination: '/',
+        source: "/browse",
+        destination: "/",
         permanent: true,
       },
-    ];
-  },
-  
-  async rewrites() {
-    return [
+
       {
-        source: '/sell',
-        destination: '/',
-      }
+        source: "/sell",
+        destination: "/",
+        permanent: true,
+      },
+
+      {
+        source: "/guides/sell-video-games-for-cash",
+        destination: "/guides/what-makes-used-video-games-valuable",
+        permanent: true,
+      },
     ];
   },
 

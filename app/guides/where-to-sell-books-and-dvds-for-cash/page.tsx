@@ -74,28 +74,54 @@ export default function WhereToSellGuide() {
     "@graph": [
       {
         "@type": "Article",
+        "@id":
+          "https://www.sellbookmedia.com/guides/where-to-sell-books-and-dvds-for-cash#article",
         headline: "Where to Sell Used Books and DVDs for Cash",
+        url:
+          "https://www.sellbookmedia.com/guides/where-to-sell-books-and-dvds-for-cash",
         datePublished: "2026-08-18",
         dateModified: "2026-08-29",
+        mainEntityOfPage: {
+          "@type": "WebPage",
+          "@id":
+            "https://www.sellbookmedia.com/guides/where-to-sell-books-and-dvds-for-cash",
+        },
         author: {
           "@type": "Organization",
+          "@id": "https://www.sellbookmedia.com/#organization",
           name: "SellBookMedia",
+          url: "https://www.sellbookmedia.com",
         },
         publisher: {
           "@type": "Organization",
+          "@id": "https://www.sellbookmedia.com/#organization",
           name: "SellBookMedia",
+          url: "https://www.sellbookmedia.com",
         },
       },
       {
-        "@type": "FAQPage",
-        mainEntity: FAQ.map((item) => ({
-          "@type": "Question",
-          name: item.q,
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: item.a,
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: "https://www.sellbookmedia.com",
           },
-        })),
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "Guides",
+            item: "https://www.sellbookmedia.com/guides",
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: "Where to Sell Books and DVDs for Cash",
+            item:
+              "https://www.sellbookmedia.com/guides/where-to-sell-books-and-dvds-for-cash",
+          },
+        ],
       },
     ],
   };

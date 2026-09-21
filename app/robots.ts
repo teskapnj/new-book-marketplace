@@ -1,131 +1,21 @@
-import { MetadataRoute } from 'next'
+import type { MetadataRoute } from 'next'
+
+const SITE_URL = 'https://www.sellbookmedia.com'
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: [
-      {
-        userAgent: '*',
-        allow: '/',
-        disallow: [
-          '/admin/',
-          '/api/',
-          '/dashboard/',
-          '/login',
-          '/register',
-          '/create-listing',
-          '/checkout/',
-          '/cart/',
-          '/account/',
-          '/orders/',
-          '/listings/',
-        ],
-      },
-      {
-        userAgent: 'Googlebot',
-        allow: '/',
-        disallow: [
-          '/admin/',
-          '/api/',
-          '/dashboard/',
-          '/login',
-          '/register',
-          '/create-listing',
-          '/checkout/',
-          '/cart/',
-          '/account/',
-          '/orders/',
-          '/listings/',
-        ],
-      },
-      // AI crawlers - explicitly allowed for AI search visibility
-      // (ChatGPT, Claude, Perplexity, Gemini). Same private-area
-      // restrictions as everyone else.
-      {
-        userAgent: 'GPTBot',
-        allow: '/',
-        disallow: [
-          '/admin/',
-          '/api/',
-          '/dashboard/',
-          '/login',
-          '/register',
-          '/create-listing',
-          '/checkout/',
-          '/cart/',
-          '/account/',
-          '/orders/',
-          '/listings/',
-        ],
-      },
-      {
-        userAgent: 'OAI-SearchBot',
-        allow: '/',
-        disallow: [
-          '/admin/',
-          '/api/',
-          '/dashboard/',
-          '/login',
-          '/register',
-          '/create-listing',
-          '/checkout/',
-          '/cart/',
-          '/account/',
-          '/orders/',
-          '/listings/',
-        ],
-      },
-      {
-        userAgent: 'ClaudeBot',
-        allow: '/',
-        disallow: [
-          '/admin/',
-          '/api/',
-          '/dashboard/',
-          '/login',
-          '/register',
-          '/create-listing',
-          '/checkout/',
-          '/cart/',
-          '/account/',
-          '/orders/',
-          '/listings/',
-        ],
-      },
-      {
-        userAgent: 'PerplexityBot',
-        allow: '/',
-        disallow: [
-          '/admin/',
-          '/api/',
-          '/dashboard/',
-          '/login',
-          '/register',
-          '/create-listing',
-          '/checkout/',
-          '/cart/',
-          '/account/',
-          '/orders/',
-          '/listings/',
-        ],
-      },
-      {
-        userAgent: 'Google-Extended',
-        allow: '/',
-        disallow: [
-          '/admin/',
-          '/api/',
-          '/dashboard/',
-          '/login',
-          '/register',
-          '/create-listing',
-          '/checkout/',
-          '/cart/',
-          '/account/',
-          '/orders/',
-          '/listings/',
-        ],
-      },
-    ],
-    sitemap: 'https://www.sellbookmedia.com/sitemap.xml',
+    rules: {
+      userAgent: '*',
+      allow: '/',
+      disallow: [
+        '/admin',
+        '/admin/',
+        '/api',
+        '/api/',
+      ],
+    },
+
+    sitemap: `${SITE_URL}/sitemap.xml`,
+    host: SITE_URL,
   }
 }

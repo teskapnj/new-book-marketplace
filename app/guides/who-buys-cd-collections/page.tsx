@@ -181,19 +181,26 @@ export default function WhoBuysCdCollectionsGuide() {
     "@graph": [
       {
         "@type": "Article",
+        "@id": `${PAGE_URL}#article`,
         headline: "Who Buys CD Collections?",
         description:
           "A practical guide to finding buyers for CD collections and deciding which releases deserve extra research.",
+        url: PAGE_URL,
         datePublished: "2026-09-19",
         dateModified: "2026-09-19",
-        mainEntityOfPage: PAGE_URL,
+        mainEntityOfPage: {
+          "@type": "WebPage",
+          "@id": PAGE_URL,
+        },
         author: {
           "@type": "Organization",
+          "@id": `${SITE_URL}/#organization`,
           name: "SellBookMedia",
           url: SITE_URL,
         },
         publisher: {
           "@type": "Organization",
+          "@id": `${SITE_URL}/#organization`,
           name: "SellBookMedia",
           url: SITE_URL,
         },
@@ -210,21 +217,16 @@ export default function WhoBuysCdCollectionsGuide() {
           {
             "@type": "ListItem",
             position: 2,
+            name: "Guides",
+            item: `${SITE_URL}/guides`,
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
             name: "Who Buys CD Collections?",
             item: PAGE_URL,
           },
         ],
-      },
-      {
-        "@type": "FAQPage",
-        mainEntity: FAQ.map((item) => ({
-          "@type": "Question",
-          name: item.q,
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: item.a,
-          },
-        })),
       },
     ],
   };

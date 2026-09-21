@@ -68,28 +68,52 @@ export default function DvdValueGuide() {
     "@graph": [
       {
         "@type": "Article",
+        "@id":
+          "https://www.sellbookmedia.com/guides/how-much-are-used-dvds-worth#article",
         headline: "How Much Are Used DVDs Worth?",
+        url:
+          "https://www.sellbookmedia.com/guides/how-much-are-used-dvds-worth",
         datePublished: "2026-08-18",
         dateModified: "2026-08-29",
         author: {
           "@type": "Organization",
+          "@id": "https://www.sellbookmedia.com/#organization",
           name: "SellBookMedia",
         },
         publisher: {
           "@type": "Organization",
+          "@id": "https://www.sellbookmedia.com/#organization",
           name: "SellBookMedia",
+        },
+        mainEntityOfPage: {
+          "@type": "WebPage",
+          "@id":
+            "https://www.sellbookmedia.com/guides/how-much-are-used-dvds-worth",
         },
       },
       {
-        "@type": "FAQPage",
-        mainEntity: FAQ.map((item) => ({
-          "@type": "Question",
-          name: item.q,
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: item.a,
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: "https://www.sellbookmedia.com",
           },
-        })),
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "Guides",
+            item: "https://www.sellbookmedia.com/guides",
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: "How Much Are Used DVDs Worth?",
+            item:
+              "https://www.sellbookmedia.com/guides/how-much-are-used-dvds-worth",
+          },
+        ],
       },
     ],
   };

@@ -1,27 +1,32 @@
-import { Metadata } from 'next'
+import type { Metadata } from 'next'
 
-// ✅ RETURNS POLICY METADATA
+const SITE_URL = 'https://www.sellbookmedia.com'
+const PAGE_URL = `${SITE_URL}/returns-policy`
+
 export const metadata: Metadata = {
-  title: 'Returns Policy - What Happens If Items Are Rejected',
-  description: 'Learn about our returns policy, what happens if items do not meet our condition guidelines, how rejected items are handled, and when accepted items are processed for payment.',
+  title: 'Returns & Rejected Items Policy | SellBookMedia',
 
-  keywords: [
-    'returns policy',
-    'rejected items',
-    'sellbookmedia returns',
-    'what if items rejected',
-    'return rejected books',
-    'item recycling policy',
-  ],
-
-  openGraph: {
-    title: 'Returns Policy - SellBook Media',
-    description: 'Learn what happens after inspection, how rejected items are handled, and how accepted items move forward for payment.',
-    url: 'https://www.sellbookmedia.com/returns-policy',
-  },
+  description:
+    'Learn what happens when submitted items do not meet SellBookMedia condition standards, how rejected items can be returned, and how accepted items are paid.',
 
   alternates: {
-    canonical: 'https://www.sellbookmedia.com/returns-policy',
+    canonical: PAGE_URL,
+  },
+
+  openGraph: {
+    type: 'website',
+    url: PAGE_URL,
+    siteName: 'SellBookMedia',
+    title: 'Returns & Rejected Items Policy | SellBookMedia',
+    description:
+      'Learn how SellBookMedia handles rejected items, return shipping, inspections, and payment for accepted items.',
+  },
+
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Returns & Rejected Items Policy | SellBookMedia',
+    description:
+      'See what happens after inspection and how rejected items can be returned.',
   },
 
   robots: {
@@ -30,16 +35,41 @@ export const metadata: Metadata = {
   },
 }
 
-// ✅ POLICY SCHEMA
-const policySchema = {
+const structuredData = {
   '@context': 'https://schema.org',
-  '@type': 'WebPage',
-  name: 'Returns Policy',
-  description: 'Returns and rejected items policy for SellBook Media',
-  publisher: {
-    '@type': 'Organization',
-    name: 'SellBook Media',
-  },
+  '@graph': [
+    {
+      '@type': 'WebPage',
+      '@id': `${PAGE_URL}#webpage`,
+      url: PAGE_URL,
+      name: 'Returns & Rejected Items Policy',
+      description:
+        'SellBookMedia policy covering inspections, rejected items, return shipping, and payment for accepted items.',
+      isPartOf: {
+        '@id': `${SITE_URL}/#website`,
+      },
+      about: {
+        '@id': `${SITE_URL}/#organization`,
+      },
+    },
+    {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Home',
+          item: SITE_URL,
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Returns Policy',
+          item: PAGE_URL,
+        },
+      ],
+    },
+  ],
 }
 
 export default function ReturnsPolicyLayout({
@@ -49,13 +79,13 @@ export default function ReturnsPolicyLayout({
 }) {
   return (
     <>
-      {/* Policy Schema */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(policySchema) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(structuredData),
+        }}
       />
 
-      {/* Page content */}
       {children}
     </>
   )

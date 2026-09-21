@@ -91,29 +91,53 @@ export default function BestPlacesGuide() {
     "@graph": [
       {
         "@type": "Article",
+        "@id":
+          "https://www.sellbookmedia.com/guides/best-places-to-sell-cds-dvds-games#article",
         headline:
           "Best Places to Sell Used CDs, DVDs, and Video Games for Cash",
+        url:
+          "https://www.sellbookmedia.com/guides/best-places-to-sell-cds-dvds-games",
         datePublished: "2026-08-18",
         dateModified: "2026-08-29",
         author: {
           "@type": "Organization",
+          "@id": "https://www.sellbookmedia.com/#organization",
           name: "SellBookMedia",
         },
         publisher: {
           "@type": "Organization",
+          "@id": "https://www.sellbookmedia.com/#organization",
           name: "SellBookMedia",
+        },
+        mainEntityOfPage: {
+          "@type": "WebPage",
+          "@id":
+            "https://www.sellbookmedia.com/guides/best-places-to-sell-cds-dvds-games",
         },
       },
       {
-        "@type": "FAQPage",
-        mainEntity: FAQ.map((item) => ({
-          "@type": "Question",
-          name: item.q,
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: item.a,
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: "https://www.sellbookmedia.com",
           },
-        })),
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "Guides",
+            item: "https://www.sellbookmedia.com/guides",
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: "Best Places to Sell CDs, DVDs & Games",
+            item:
+              "https://www.sellbookmedia.com/guides/best-places-to-sell-cds-dvds-games",
+          },
+        ],
       },
     ],
   };

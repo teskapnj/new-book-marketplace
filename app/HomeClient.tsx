@@ -1,0 +1,2260 @@
+// app/page.tsx - HOMEPAGE WITH INTEGRATED SCANNING + SINGLE PAGE CHECKOUT
+"use client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import axios from "axios";
+import DOMPurify from "isomorphic-dompurify";
+
+import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
+import { AmazonProduct, PricingResult } from "@/lib/pricingEngine";
+import { trackEvent } from "@/lib/analytics";
+import CheckoutForm from "@/components/CheckoutForm";
+
+// Security hooks
+import { useRateLimit } from "@/hooks/useRateLimit";
+import { RateLimitWarning } from "@/components/RateLimitWarning";
+import {
+  verifyUserRoleSecurely,
+  UserRole,
+  getCachedRole,
+  setCachedRole,
+  secureLogout,
+  logSecurityAttempt
+} from "@/lib/auth-utils";
+declare global {
+  interface Window {
+    uetq?: any[];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Tipler - create-listing ile ayni yapida olmali (ayni localStorage anahtari)
+// ---------------------------------------------------------------------------
+interface BundleItem {
+  id: string;
+  isbn: string;
+  condition: "very-good";
+  quantity: number;
+  price: number;
+  image: string | null;
+  imageBlob: Blob | null;
+  category: "book" | "cd" | "dvd" | "game" | "mix";
+  amazonData?: AmazonProduct;
+  ourPrice?: number;
+  originalPrice?: number;
+  imageUrl?: string | null;
+}
+
+const CATEGORY_EMOJI: Record<string, string> = {
+  book: "📚",
+  cd: "💿",
+  dvd: "📀",
+  game: "🎮",
+  mix: "📦"
+};
+
+// SVG Icons
+function UserIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+      <circle cx="12" cy="7" r="4"></circle>
+    </svg>
+  );
+}
+
+function MenuIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <line x1="4" y1="12" x2="20" y2="12"></line>
+      <line x1="4" y1="6" x2="20" y2="6"></line>
+      <line x1="4" y1="18" x2="20" y2="18"></line>
+    </svg>
+  );
+}
+
+function XIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="m18 6-12 12"></path>
+      <path d="m6 6 12 12"></path>
+    </svg>
+  );
+}
+
+function ShoppingCartIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="9" cy="21" r="1"></circle>
+      <circle cx="20" cy="21" r="1"></circle>
+      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+    </svg>
+  );
+}
+
+function AdminIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"></path>
+      <path d="M12 22v-6"></path>
+      <path d="M12 12h-2"></path>
+      <path d="M12 12h2"></path>
+    </svg>
+  );
+}
+
+function ArrowRightIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M5 12h14"></path>
+      <path d="m12 5 7 7-7 7"></path>
+    </svg>
+  );
+}
+
+function SparklesIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.582a.5.5 0 0 1 0 .962L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path>
+    </svg>
+  );
+}
+
+function TrendingUpIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+      <polyline points="16 7 22 7 22 13"></polyline>
+    </svg>
+  );
+}
+
+function ShieldCheckIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+      <path d="m9 12 2 2 4-4"></path>
+    </svg>
+  );
+}
+
+function PackageIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line>
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+      <line x1="12" y1="22.08" x2="12" y2="12"></line>
+    </svg>
+  );
+}
+
+function CameraIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+      <circle cx="12" cy="13" r="4"></circle>
+    </svg>
+  );
+}
+
+function SearchIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="11" cy="11" r="8"></circle>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+    </svg>
+  );
+}
+
+function HelpCircleIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="10"></circle>
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+      <line x1="12" y1="17" x2="12.01" y2="17"></line>
+    </svg>
+  );
+}
+
+function TrashIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polyline points="3 6 5 6 21 6"></polyline>
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+    </svg>
+  );
+}
+
+function AlertCircleIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="8" x2="12" y2="12"></line>
+      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+  );
+}
+
+function CheckIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polyline points="20 6 9 17 4 12"></polyline>
+    </svg>
+  );
+}
+
+function CheckCircleIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+      <polyline points="22 4 12 14.01 9 11.01"></polyline>
+    </svg>
+  );
+}
+
+function FacebookIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+    </svg>
+  );
+}
+
+function MailIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+      <polyline points="22,6 12,13 2,6"></polyline>
+    </svg>
+  );
+}
+
+function ClockIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="10"></circle>
+      <polyline points="12 6 12 12 16 14"></polyline>
+    </svg>
+  );
+}
+
+function LogInIcon({ size = 24, className = "" }) {
+  return (
+    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+      <polyline points="10 17 15 12 10 7"></polyline>
+      <line x1="15" y1="12" x2="3" y2="12"></line>
+    </svg>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// MAIN COMPONENT
+// ---------------------------------------------------------------------------
+export default function HomePage() {
+  const { user, loading, logout } = useAuth();
+  const router = useRouter();
+
+  // Auth / menu state
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+
+  // --- Tarama state'leri (create-listing'den tasindi) ---
+  const [bundleItems, setBundleItems] = useState<BundleItem[]>([]);
+  const [isbnInput, setIsbnInput] = useState("");
+  const [isCheckingAmazon, setIsCheckingAmazon] = useState(false);
+  const [amazonResult, setAmazonResult] = useState<{
+    product: AmazonProduct;
+    pricing: PricingResult;
+    message: string;
+  } | null>(null);
+  const [duplicateConfirm, setDuplicateConfirm] = useState<{
+    code: string;
+    count: number;
+    existingItem: BundleItem;
+  } | null>(null);
+  const [scanError, setScanError] = useState("");
+  const [scannerError, setScannerError] = useState("");
+  const [showScanner, setShowScanner] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [showAuthOptions, setShowAuthOptions] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+
+    // --- Tek sayfa checkout ---
+    const [showCheckout, setShowCheckout] = useState(false);
+    const checkoutFormRef = useRef<HTMLDivElement | null>(null);
+const barcodeSectionRef = useRef<HTMLDivElement | null>(null);
+const barcodeInputRef = useRef<HTMLInputElement | null>(null);
+const barcodeSectionViewedFiredRef = useRef(false);
+useEffect(() => {
+  const isDesktop = window.matchMedia('(min-width: 768px)').matches;
+
+  if (isDesktop && !isCheckingAmazon && !showScanner && !showCheckout) {
+    barcodeInputRef.current?.focus();
+  }
+}, [isCheckingAmazon, showScanner, showCheckout]);
+
+  // Storage state
+  const [isPrivateMode, setIsPrivateMode] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [prevUser, setPrevUser] = useState(user);
+
+  const resultTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const minimumReachedFiredRef = useRef(false);
+  
+  // Bir urun API'de kontrol edilirken yeni barkodlar isleme alinmaz.
+  // Kamera acik kalmaya devam eder.
+  const scanInProgressRef = useRef(false);
+
+// Kamera ayni rejected barkodu arka arkaya okumaya devam ederse
+// ikinci kez API / GA4 eventi olusturma.
+const lastRejectedCameraCodeRef = useRef<string | null>(null);
+
+  const totalOurPrice = bundleItems.reduce((total, item) => {
+    return total + (item.price * item.quantity);
+  }, 0);
+
+  // Rate limiting
+  const rateLimitConfig = {
+    maxAttempts: 5,
+    windowMs: 5 * 60 * 1000,
+    storageKey: 'auth-rate-limit'
+  };
+
+  const { isBlocked, remainingTime, attempts, recordAttempt } = useRateLimit(rateLimitConfig);
+
+  // -------------------------------------------------------------------------
+  // localStorage - create-listing ile AYNI anahtarlar kullanilmali
+  // -------------------------------------------------------------------------
+  const getStorageKey = useCallback(() => {
+    return user ? `bundleListingDraft_${user.uid}` : 'bundleListingDraft_guest';
+  }, [user]);
+
+  const getGuestStorageKey = useCallback(() => {
+    return 'bundleListingDraft_guest';
+  }, []);
+
+  const validateAndSanitizeData = (parsed: unknown) => {
+    if (!parsed || typeof parsed !== 'object') return null;
+    const parsedData = parsed as Record<string, unknown>;
+
+    let sanitizedBundleItems: BundleItem[] = [];
+    if (Array.isArray(parsedData.bundleItems)) {
+      sanitizedBundleItems = (parsedData.bundleItems as unknown[]).map((item: unknown) => {
+        const safeItem = item as Record<string, unknown>;
+        const safeAmazonData = safeItem.amazonData as Record<string, unknown> | undefined;
+
+        return {
+          ...safeItem,
+          id: safeItem.id ? DOMPurify.sanitize(safeItem.id.toString()).substring(0, 50) : '',
+          isbn: safeItem.isbn ? DOMPurify.sanitize(safeItem.isbn.toString()).substring(0, 50) : '',
+          condition: "very-good" as const,
+          quantity: typeof safeItem.quantity === 'number' ? Math.max(1, safeItem.quantity) : 1,
+          price: typeof safeItem.price === 'number' ? Math.max(0, safeItem.price) : 0,
+          category: ['book', 'cd', 'dvd', 'game', 'mix'].includes(safeItem.category as string)
+            ? (safeItem.category as "book" | "cd" | "dvd" | "game" | "mix")
+            : 'book' as const,
+          imageUrl: safeItem.imageUrl && typeof safeItem.imageUrl === 'string' ? safeItem.imageUrl : null,
+          amazonData: safeAmazonData ? {
+            title: safeAmazonData.title ? DOMPurify.sanitize(safeAmazonData.title.toString()).substring(0, 200) : '',
+            asin: safeAmazonData.asin ? DOMPurify.sanitize(safeAmazonData.asin.toString()).substring(0, 50) : '',
+            price: typeof safeAmazonData.price === 'number' ? safeAmazonData.price : 0,
+            sales_rank: typeof safeAmazonData.sales_rank === 'number' ? safeAmazonData.sales_rank : 0,
+            category: safeAmazonData.category ? DOMPurify.sanitize(safeAmazonData.category.toString()).substring(0, 50) : '',
+            image: safeAmazonData.image && typeof safeAmazonData.image === 'string' ? safeAmazonData.image : null
+          } : undefined,
+          image: null,
+          imageBlob: null
+        } as BundleItem;
+      });
+    }
+
+    return { bundleItems: sanitizedBundleItems, raw: parsedData };
+  };
+
+  const loadFromStorage = useCallback(() => {
+    if (!isMounted || isPrivateMode || isInitializing) return;
+
+    const userKey = getStorageKey();
+    const guestKey = getGuestStorageKey();
+
+    if (user) {
+      try {
+        let userItems: BundleItem[] = [];
+        let guestItems: BundleItem[] = [];
+
+        const userData = localStorage.getItem(userKey);
+        if (userData) {
+          const data = validateAndSanitizeData(JSON.parse(userData));
+          if (data) userItems = data.bundleItems;
+          else localStorage.removeItem(userKey);
+        }
+
+        // Misafirken (veya cikis yaptiktan sonra) taranan urunler kaybolmamali
+        const guestData = localStorage.getItem(guestKey);
+        if (guestData) {
+          const data = validateAndSanitizeData(JSON.parse(guestData));
+          if (data) guestItems = data.bundleItems;
+          localStorage.removeItem(guestKey);
+        }
+
+        if (guestItems.length === 0) {
+          setBundleItems(userItems);
+          return;
+        }
+
+        // Iki liste birlestirilir. Ayni ISBN'den en fazla 5 adet kurali korunur,
+        // id cakismasi olursa yeni id uretilir (React key hatasi olmasin).
+        const merged: BundleItem[] = [...userItems];
+        const isbnCount = new Map<string, number>();
+        merged.forEach(i => isbnCount.set(i.isbn, (isbnCount.get(i.isbn) || 0) + 1));
+        const usedIds = new Set(merged.map(i => i.id));
+
+        guestItems.forEach(item => {
+          const count = isbnCount.get(item.isbn) || 0;
+          if (count >= 5) return;
+          let id = item.id;
+          while (usedIds.has(id)) id = `${id}-${Math.random().toString(36).slice(2, 7)}`;
+          usedIds.add(id);
+          isbnCount.set(item.isbn, count + 1);
+          merged.push({ ...item, id });
+        });
+
+        setBundleItems(merged);
+      } catch (e) {
+        console.error("Error loading user data", e);
+        localStorage.removeItem(userKey);
+        localStorage.removeItem(guestKey);
+      }
+    } else {
+      try {
+        const guestData = localStorage.getItem(guestKey);
+        if (guestData) {
+          const data = validateAndSanitizeData(JSON.parse(guestData));
+          if (data) {
+            setBundleItems(data.bundleItems);
+          } else {
+            localStorage.removeItem(guestKey);
+          }
+        }
+      } catch (e) {
+        console.error("Error loading guest data", e);
+        localStorage.removeItem(guestKey);
+      }
+    }
+  }, [isMounted, isPrivateMode, isInitializing, getStorageKey, getGuestStorageKey, user]);
+
+  const saveToStorage = useCallback(() => {
+    if (!isMounted || isPrivateMode || isInitializing) return;
+
+    try {
+      const storageKey = getStorageKey();
+      const existing = localStorage.getItem(storageKey);
+      let base: Record<string, unknown> = {};
+      if (existing) {
+        try { base = JSON.parse(existing); } catch { base = {}; }
+      }
+
+      // shippingInfo / description gibi alanlar korunur, sadece urunler guncellenir
+      const dataToSave = {
+        ...base,
+        bundleItems: bundleItems.map(item => ({
+          ...item,
+          image: null,
+          imageBlob: null,
+          imageStats: null
+        })),
+        timestamp: Date.now()
+      };
+
+      localStorage.setItem(storageKey, JSON.stringify(dataToSave));
+    } catch (e) {
+      console.error("Failed to save to localStorage", e);
+    }
+  }, [bundleItems, isMounted, isPrivateMode, isInitializing, getStorageKey]);
+
+  // -------------------------------------------------------------------------
+  // Tarama mantigi
+  // -------------------------------------------------------------------------
+  const clearAmazonResults = useCallback(() => {
+    setAmazonResult(null);
+    setScanError("");
+    setScannerError("");
+  }, []);
+
+  const getCategoryFromPricing = (pricingCategory: string): "book" | "cd" | "dvd" | "game" | "mix" => {
+    switch (pricingCategory) {
+      case 'books': return 'book';
+      case 'cds': return 'cd';
+      case 'dvds': return 'dvd';
+      case 'games': return 'game';
+      default: return 'book';
+    }
+  };
+
+  const autoAddAcceptedItem = (isbn: string, product: AmazonProduct, pricing: PricingResult) => {
+    if (!pricing.accepted || !pricing.ourPrice) return;
+
+    const newItem: BundleItem = {
+      id: Date.now().toString(),
+      isbn: isbn,
+      condition: "very-good",
+      quantity: 1,
+      price: pricing.ourPrice,
+      image: product.image || null,
+      imageUrl: product.image || null,
+      imageBlob: null,
+      category: getCategoryFromPricing(pricing.category),
+      amazonData: product,
+      ourPrice: pricing.ourPrice,
+      originalPrice: product.price
+    };
+
+    trackEvent('item_accepted', {
+      category: newItem.category,
+      price: newItem.price
+    });
+
+    setBundleItems(prev => [...prev, newItem]);
+    setIsbnInput("");
+  };
+
+
+
+  const handleBarcodeScanned = useCallback(async (
+    code: string,
+    source: 'camera' | 'manual' = 'manual'
+  ) => {
+    if (!code || !code.trim()) return;
+
+    // Bir urunun API sorgusu devam ediyorsa yeni taramayi isleme alma.
+    // Kamera kapanmaz; sadece callback sessizce yok sayilir.
+    if (scanInProgressRef.current) return;
+
+    // Kamera ayni rejected barkodu tekrar tekrar goruyorsa yok say.
+    if (source === 'camera') {
+      if (lastRejectedCameraCodeRef.current === code) return;
+
+      // Farkli bir barkod gorulduyse onceki rejected kilidi kalkar.
+      lastRejectedCameraCodeRef.current = null;
+    }
+
+    trackEvent('barcode_scanned');
+
+if (typeof window !== 'undefined') {
+  window.uetq = window.uetq || [];
+  window.uetq.push('event', 'other', {});
+}
+
+    // Kisa bip sesi
+    try {
+      const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      oscillator.frequency.value = 800;
+      gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.15);
+    } catch {
+      // bip desteklenmiyor, sessizce gec
+    }
+
+    const existingMatches = bundleItems.filter(item => item.isbn === code);
+    if (existingMatches.length > 0) {
+      setAmazonResult(null);
+      setDuplicateConfirm({
+        code,
+        count: existingMatches.length,
+        existingItem: existingMatches[0]
+      });
+      if (existingMatches.length >= 5) {
+        setTimeout(() => setDuplicateConfirm(null), 4000);
+      }
+      return;
+    }
+
+    scanInProgressRef.current = true;
+
+    try {
+      // Farkli bir barkod okundu: bekleyen duplicate uyarisi otomatik "No" sayilir
+      setDuplicateConfirm(null);
+      setIsCheckingAmazon(true);
+      clearAmazonResults();
+
+      const response = await axios.post('/api/amazon-check', { isbn_upc: code });
+
+      if (response.data.success) {
+        const { product, pricing, message } = response.data.data;
+        const sanitizedProduct = {
+          title: product?.title ? DOMPurify.sanitize(product.title).substring(0, 200) : '',
+          asin: product?.asin ? DOMPurify.sanitize(product.asin).substring(0, 50) : '',
+          price: typeof product?.price === 'number' ? product.price : 0,
+          sales_rank: typeof product?.sales_rank === 'number' ? product.sales_rank : 0,
+          category: product?.category ? DOMPurify.sanitize(product.category).substring(0, 50) : '',
+          image: product?.image && typeof product.image === 'string' ? product.image : null
+        };
+        const sanitizedPricing = {
+          ...pricing,
+          category: pricing?.category ? DOMPurify.sanitize(pricing.category).substring(0, 50) : '',
+          ourPrice: typeof pricing?.ourPrice === 'number' ? pricing.ourPrice : 0
+        };
+        const sanitizedMessage = message ? DOMPurify.sanitize(message).substring(0, 500) : '';
+
+        setAmazonResult({
+          product: sanitizedProduct,
+          pricing: sanitizedPricing,
+          message: sanitizedMessage
+        });
+
+        if (pricing.accepted && pricing.ourPrice) {
+          autoAddAcceptedItem(code, sanitizedProduct, sanitizedPricing);
+        } else {
+          // Kamera ayni rejected barkodu tekrar gorurse tekrar isleme alma.
+          if (source === 'camera') {
+            lastRejectedCameraCodeRef.current = code;
+          }
+
+          // Reddedilen urunler hunide gorunmuyordu - neyin neden reddedildigini
+          // gormek icin kategori, rank ve amazon fiyati da gonderiliyor
+          trackEvent('item_rejected', {
+            product_code: code,
+            asin: sanitizedProduct.asin || 'unknown',
+            category: sanitizedPricing.category || 'unknown',
+            sales_rank: sanitizedProduct.sales_rank || 0,
+            amazon_price: sanitizedProduct.price || 0,
+            reason: sanitizedMessage ? sanitizedMessage.substring(0, 100) : 'not_accepted'
+          });
+          
+          setIsbnInput("");
+        }
+
+        if (resultTimerRef.current) clearTimeout(resultTimerRef.current);
+        resultTimerRef.current = setTimeout(() => {
+          setAmazonResult(null);
+          setScanError("");
+        }, 6000);
+      } else {
+        const errorMessage = response.data.error || 'Amazon check failed';
+      
+        if (
+          errorMessage === 'only valid ISBN or UPC code or ASIN' ||
+          errorMessage === 'invalid ISBN/UPC format'
+        ) {
+          trackEvent('invalid_barcode', {
+            reason: errorMessage
+          });
+        } else {
+          trackEvent('item_lookup_error', {
+            reason: errorMessage.substring(0, 100)
+          });
+        }
+      
+        setScanError(errorMessage);
+setIsbnInput("");
+setTimeout(() => {
+          setScanError("");
+          setAmazonResult(null);
+        }, 5000);
+      }
+    } catch (err: unknown) {
+      console.error('Amazon API error:', err);
+      let errorMessage = 'Unable to check product. Please try again later.';
+
+      if (axios.isAxiosError(err) && err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      }
+
+      // Kamera ayni bulunamayan barkodu kadrajda tutuyorsa
+      // 404 sonrasi tekrar tekrar API / Keepa sorgusu yapma.
+      if (
+        source === 'camera' &&
+        axios.isAxiosError(err) &&
+        err.response?.status === 404
+      ) {
+        lastRejectedCameraCodeRef.current = code;
+      }
+
+      trackEvent('item_lookup_error', {
+        reason: errorMessage.substring(0, 100)
+      });
+      
+      setScanError(errorMessage);
+      setIsbnInput("");
+      setTimeout(() => {
+        setScanError("");
+        setAmazonResult(null);
+      }, 8000);
+    } finally {
+      scanInProgressRef.current = false;
+      setIsCheckingAmazon(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bundleItems, clearAmazonResults]);
+
+  const handleConfirmAddDuplicate = () => {
+    if (!duplicateConfirm) return;
+    const existing = duplicateConfirm.existingItem;
+    const newItem: BundleItem = {
+      id: Date.now().toString(),
+      isbn: duplicateConfirm.code,
+      condition: "very-good",
+      quantity: 1,
+      price: existing.price,
+      image: existing.image,
+      imageUrl: existing.imageUrl,
+      imageBlob: null,
+      category: existing.category,
+      amazonData: existing.amazonData,
+      ourPrice: existing.ourPrice,
+      originalPrice: existing.originalPrice
+    };
+
+    trackEvent('item_accepted', {
+      category: newItem.category,
+      price: newItem.price
+    });
+  
+
+    setBundleItems(prev => [...prev, newItem]);
+    setDuplicateConfirm(null);
+    setIsbnInput("");
+  };
+
+  const handleDeclineAddDuplicate = () => {
+    setDuplicateConfirm(null);
+    setIsbnInput("");
+  };
+
+  const removeItem = (id: string) => {
+    setBundleItems(prev => prev.filter(item => item.id !== id));
+  };
+
+  const {
+    isCameraReady,
+    error: cameraError,
+    startScanning,
+    stopScanning,
+    videoRef,
+    isMobile
+  } = useBarcodeScanner({
+    onScan: (code) => handleBarcodeScanned(code, 'camera'),
+    onError: (error) => setScannerError(error),
+    continuous: true,
+    timeout: 300000
+  });
+
+  const handleScanBarcode = () => {
+    if (!isMobile) return;
+    setShowScanner(true);
+    clearAmazonResults();
+    startScanning();
+  };
+
+  const closeBarcodeScanner = () => {
+    stopScanning();
+    setShowScanner(false);
+    setScannerError("");
+  };
+
+  // -------------------------------------------------------------------------
+  // Checkout - artik yonlendirme yok, form ayni sayfada acilir
+  // -------------------------------------------------------------------------
+  const handleCheckout = () => {
+    if (totalOurPrice < 7.5) return;
+    if (!user) {
+      setShowAuthOptions(true);
+      return;
+    }
+    trackEvent('shipping_started', {
+      item_count: bundleItems.length,
+      total_value: totalOurPrice
+    });
+   
+    saveToStorage();
+    setShowCheckout(true);
+  };
+
+  const handleCheckoutSuccess = () => {
+   
+    setBundleItems([]);
+    setShowCheckout(false);
+    minimumReachedFiredRef.current = false;
+  
+    try {
+      localStorage.removeItem('minimumReachedFired');
+    } catch {
+      // Private mode / storage unavailable
+    }
+  
+    setShowSuccessPopup(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Form acilinca kaydir - kullanici "bir sey olmadi" sanmasin
+  useEffect(() => {
+    if (!showCheckout) return;
+    const t = setTimeout(() => {
+      checkoutFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+    return () => clearTimeout(t);
+  }, [showCheckout]);
+
+ // Giris sonrasi ana sayfaya donunce checkout'u kaldigi yerden ac
+useEffect(() => {
+  if (!isMounted || isInitializing) return;
+  if (!user || showCheckout) return;
+if (totalOurPrice < 7.5) return;
+
+  let flag: string | null = null;
+  try { flag = sessionStorage.getItem('resumeCheckout'); } catch { return; }
+  if (flag !== 'true') return;
+  try { sessionStorage.removeItem('resumeCheckout'); } catch {}
+
+  trackEvent('shipping_started', {
+    item_count: bundleItems.length,
+    total_value: totalOurPrice
+  });
+
+  setShowAuthOptions(false);
+  setShowCheckout(true);
+
+  setTimeout(() => {
+    checkoutFormRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  }, 300);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [user, isMounted, isInitializing, bundleItems.length, showCheckout]);
+
+  // -------------------------------------------------------------------------
+  // Effects
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem('test', 'test');
+      localStorage.removeItem('test');
+      setIsPrivateMode(false);
+    } catch {
+      setIsPrivateMode(true);
+    } finally {
+      setIsMounted(true);
+      setIsInitializing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const showPopup = localStorage.getItem('showSuccessPopup');
+      if (showPopup === 'true') {
+        setShowSuccessPopup(true);
+        localStorage.removeItem('showSuccessPopup');
+      }
+    } catch (error) {
+      console.error("Error checking success popup flag:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (prevUser && !user) saveToStorage();
+    if (!prevUser && user) loadFromStorage();
+    setPrevUser(user);
+  }, [user, prevUser, saveToStorage, loadFromStorage]);
+
+  useEffect(() => {
+    if (isMounted && !isPrivateMode && !isInitializing) {
+      loadFromStorage();
+    }
+  }, [isMounted, isPrivateMode, isInitializing, loadFromStorage]);
+
+  useEffect(() => {
+    if (!isMounted || isInitializing) return;
+    const timeoutId = setTimeout(() => saveToStorage(), 1000);
+    return () => clearTimeout(timeoutId);
+  }, [bundleItems, saveToStorage, isMounted, isInitializing]);
+
+    // barcode_section_viewed: barkod alani viewport'a girdiginde bir kez tetiklenir
+    useEffect(() => {
+      const element = barcodeSectionRef.current;
+      if (!element) return;
+  
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (!entry.isIntersecting) return;
+          if (barcodeSectionViewedFiredRef.current) return;
+  
+          barcodeSectionViewedFiredRef.current = true;
+          trackEvent('barcode_section_viewed');
+          observer.disconnect();
+        },
+        { threshold: 0.5 }
+      );
+  
+      observer.observe(element);
+  
+      return () => observer.disconnect();
+    }, []);
+  
+   // minimum_reached: toplam teklif $7.50'a ulasinca bir kez tetiklenir
+useEffect(() => {
+  if (!isMounted || isInitializing) return;
+  if (totalOurPrice < 7.5) return;
+  if (minimumReachedFiredRef.current) return;
+
+    const FLAG_KEY = 'minimumReachedFired';
+    try {
+      if (localStorage.getItem(FLAG_KEY) === 'true') {
+        minimumReachedFiredRef.current = true;
+        return;
+      }
+    } catch {
+      // gizli mod
+    }
+
+    minimumReachedFiredRef.current = true;
+    trackEvent('minimum_reached', {
+      item_count: bundleItems.length,
+      total_value: totalOurPrice
+    });
+
+    try {
+      localStorage.setItem(FLAG_KEY, 'true');
+    } catch {
+      // gizli mod
+    }
+  }, [bundleItems.length, totalOurPrice, isMounted, isInitializing]);
+
+  // Auth role check (background)
+  useEffect(() => {
+    const checkUserRoleInBackground = async () => {
+      if (!user || isBlocked) {
+        setUserRole(null);
+        return;
+      }
+      const cachedRole = getCachedRole(user.uid);
+      if (cachedRole) {
+        setUserRole(cachedRole);
+        return;
+      }
+      try {
+        const role = await verifyUserRoleSecurely(user);
+        setUserRole(role);
+        setCachedRole(user.uid, role);
+        logSecurityAttempt('role_check', true, user.uid);
+      } catch {
+        recordAttempt();
+        setUserRole(UserRole.SELLER);
+        logSecurityAttempt('role_check', false, user.uid);
+      }
+    };
+    checkUserRoleInBackground();
+  }, [user, isBlocked, recordAttempt]);
+
+  const handleSecureLogout = async () => {
+    if (user) {
+      try {
+        await secureLogout(user);
+        logSecurityAttempt('logout', true, user.uid);
+      } catch {
+        console.error('Logout error');
+      }
+    }
+    await logout();
+  };
+
+  if (isBlocked) {
+    return (
+      <RateLimitWarning
+        isBlocked={isBlocked}
+        remainingTime={remainingTime}
+        attempts={attempts}
+        maxAttempts={rateLimitConfig.maxAttempts}
+      />
+    );
+  }
+
+  const amountRemaining = Math.max(0, 7.5 - totalOurPrice);
+
+  // -------------------------------------------------------------------------
+  // RENDER
+  // -------------------------------------------------------------------------
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+
+      {/* ===================== CAMERA OVERLAY (mobile) ===================== */}
+      {showScanner && (
+        <div className="fixed inset-0 bg-black z-[60] flex flex-col">
+          <div className="flex justify-between items-center px-4 py-3 bg-black bg-opacity-80">
+            <h3 className="text-lg font-semibold text-white">Barcode Scanner</h3>
+            <button onClick={closeBarcodeScanner} className="p-2 text-white hover:bg-white hover:bg-opacity-20 rounded-full">
+              <XIcon size={24} />
+            </button>
+          </div>
+
+          {cameraError && (
+            <div className="mx-4 mt-2 bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-red-700 text-sm">{cameraError}</p>
+            </div>
+          )}
+          {scannerError && (
+            <div className="mx-4 mt-2 bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-red-700 text-sm">{scannerError}</p>
+            </div>
+          )}
+
+          <div className="relative flex-1">
+            {isCheckingAmazon && (
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-black bg-opacity-80 text-white text-base font-bold px-6 py-3 rounded-full flex items-center gap-3 shadow-lg">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                Checking product...
+              </div>
+            )}
+            {!isCameraReady && !cameraError && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+                <p className="text-white">Preparing camera...</p>
+              </div>
+            )}
+            <video
+              ref={videoRef}
+              className="absolute left-0 right-0 w-full object-cover"
+              style={{ top: '56px', height: 'calc(100% - 112px)' }}
+              playsInline
+              muted
+            />
+            {isCameraReady && (
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute left-6 right-6 top-1/2 -translate-y-1/2">
+                  <div className="h-0.5 bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.9)]"></div>
+                </div>
+                <div className="absolute left-6 top-1/2 -translate-y-1/2 w-0.5 h-10 bg-red-500"></div>
+                <div className="absolute right-6 top-1/2 -translate-y-1/2 w-0.5 h-10 bg-red-500"></div>
+              </div>
+            )}
+
+            {duplicateConfirm && (
+              <div className="absolute bottom-0 left-0 right-0 z-20">
+                <div className="mx-3 mb-4 rounded-2xl shadow-2xl p-6 bg-yellow-50 border-2 border-yellow-400">
+                  <div className="flex items-center gap-5">
+                    <div className="w-20 h-20 rounded-lg overflow-hidden bg-white flex-shrink-0 border border-gray-200">
+                      {duplicateConfirm.existingItem.imageUrl ? (
+                        <Image src={duplicateConfirm.existingItem.imageUrl} alt="Product" width={80} height={80} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <PackageIcon size={32} className="text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-base font-medium text-gray-900 line-clamp-2">
+                        {duplicateConfirm.existingItem.amazonData?.title || "This item"}
+                      </p>
+                      {duplicateConfirm.count >= 5 ? (
+                        <p className="text-sm font-bold text-red-700 mt-2">Maximum 5 of this item reached</p>
+                      ) : (
+                        <p className="text-sm text-gray-700 mt-2">
+                          You already have {duplicateConfirm.count} of this item. Add another?
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  {duplicateConfirm.count < 5 && (
+                    <div className="flex gap-3 mt-4">
+                      <button type="button" onClick={handleDeclineAddDuplicate} className="flex-1 py-2 px-4 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium">No</button>
+                      <button type="button" onClick={handleConfirmAddDuplicate} className="flex-1 py-2 px-4 rounded-lg bg-green-600 text-white font-medium">Yes, Add</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {scanError && !amazonResult && !duplicateConfirm && (
+              <div className="absolute bottom-0 left-0 right-0 z-20">
+                <div className="mx-3 mb-4 rounded-2xl shadow-2xl p-6 bg-red-50 border-2 border-red-400">
+                  <div className="flex items-center gap-4">
+                    <AlertCircleIcon size={40} className="text-red-500 flex-shrink-0" />
+                    <div>
+                      <p className="text-base font-semibold text-red-800">Barcode not recognized</p>
+                      <p className="text-sm text-red-700 mt-1">{scanError}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {amazonResult && !duplicateConfirm && (
+              <div className="absolute bottom-0 left-0 right-0 z-20">
+                <div className={`mx-3 mb-4 rounded-2xl shadow-2xl p-6 ${amazonResult.pricing.accepted ? 'bg-green-50 border-2 border-green-400' : 'bg-red-50 border-2 border-red-400'}`}>
+                  <div className="flex items-center gap-5">
+                    <div className="w-28 h-28 rounded-lg overflow-hidden bg-white flex-shrink-0 border border-gray-200">
+                      {amazonResult.product.image ? (
+                        <Image src={amazonResult.product.image} alt={amazonResult.product.title || "Product"} width={112} height={112} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <PackageIcon size={40} className="text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-lg font-semibold text-gray-900 line-clamp-2">
+                        {amazonResult.product.title || "Product"}
+                      </p>
+                      <div className={`inline-flex items-center gap-1.5 mt-3 px-4 py-1.5 rounded-full text-base font-bold ${amazonResult.pricing.accepted ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
+                        {amazonResult.pricing.accepted ? (
+                          <><CheckIcon size={14} /> Accepted - ${amazonResult.pricing.ourPrice?.toFixed(2)}</>
+                        ) : (
+                          <><XIcon size={14} /> Not Accepted</>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="absolute bottom-8 left-0 right-0 text-center px-4">
+              <p className="text-white text-sm bg-black bg-opacity-60 rounded-full py-2 px-4 inline-block">
+                Align the barcode with the red line
+              </p>
+            </div>
+          </div>
+
+          {/* Alt kapatma butonu - telefonda tek elle uste uzanmak zor */}
+          <div className="bg-black px-4 pt-3" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}>
+            <button
+              type="button"
+              onClick={closeBarcodeScanner}
+             className="w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-white/15 border border-white/30 text-white text-base font-semibold active:scale-95 transition-transform"
+            >
+              <XIcon size={20} />
+              Close Camera
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ===================== SUCCESS POPUP ===================== */}
+{showSuccessPopup && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70] p-4">
+    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4">
+      <div className="p-6">
+        <div className="flex justify-between items-start mb-4">
+          <div className="flex justify-center flex-1">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+              <CheckCircleIcon size={32} className="text-green-600" />
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowSuccessPopup(false)}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <XIcon size={24} />
+          </button>
+        </div>
+
+        <h3 className="text-xl font-bold text-center text-gray-900 mb-2">
+          Order Submitted Successfully!
+        </h3>
+
+        <p className="text-gray-600 text-center mb-6">
+          Your prepaid shipping label will be sent automatically by email the same day.
+        </p>
+
+        <div className="bg-blue-50 rounded-lg p-4">
+          <div className="flex items-start">
+            <MailIcon
+              size={20}
+              className="text-blue-600 mt-0.5 mr-3 flex-shrink-0"
+            />
+
+            <div>
+              <h4 className="text-sm font-medium text-blue-800 mb-2">
+                What happens next?
+              </h4>
+
+              <ul className="text-sm text-blue-700 space-y-2">
+                <li className="flex items-start">
+                  <CheckIcon
+                    size={16}
+                    className="text-blue-600 mr-2 mt-0.5 flex-shrink-0"
+                  />
+                  <span>
+                    Check your inbox and spam/junk folder for the shipping label
+                  </span>
+                </li>
+
+                <li className="flex items-start">
+                  <CheckIcon
+                    size={16}
+                    className="text-blue-600 mr-2 mt-0.5 flex-shrink-0"
+                  />
+                  <span>
+                    Pack your items securely and attach the label
+                  </span>
+                </li>
+
+                <li className="flex items-start">
+                  <CheckIcon
+                    size={16}
+                    className="text-blue-600 mr-2 mt-0.5 flex-shrink-0"
+                  />
+                  <span>
+                    Drop off your package at an authorized location
+                  </span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <p className="mt-4 text-center text-sm text-gray-500">
+  If you don&apos;t receive your shipping label the same day, please check your spam/junk folder first. If it&apos;s still not there, email us at support@sellbookmedia.com.
+</p>
+      </div>
+    </div>
+  </div>
+)}
+
+      {/* ===================== HEADER ===================== */}
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Mobile Header */}
+          <div className="flex md:hidden items-center justify-between py-4">
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"
+            >
+              {mobileMenuOpen ? <XIcon size={24} /> : <MenuIcon size={24} />}
+            </button>
+            <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              SellBookMedia
+            </Link>
+            <div className="flex items-center space-x-2">
+              {userRole === UserRole.BUYER && (
+                <Link href="/cart" className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors relative">
+                  <ShoppingCartIcon size={20} />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></span>
+                </Link>
+              )}
+             {user && (
+  <button
+    onClick={() => {
+      switch (userRole) {
+        case UserRole.ADMIN:
+          router.push('/admin/dashboard');
+          break;
+        case UserRole.BUYER:
+          router.push('/listings');
+          break;
+        default:
+          router.push('/');
+      }
+    }}
+    className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"
+  >
+    <UserIcon size={20} />
+  </button>
+)}
+            </div>
+          </div>
+
+          {/* Desktop Header */}
+          <div className="hidden md:flex items-center justify-between py-4">
+            <div className="flex items-center space-x-8">
+              <Link href="/" className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                SellBookMedia
+              </Link>
+            </div>
+
+            <div className="flex items-center space-x-4">
+              {loading ? (
+                <div className="h-10 w-32 bg-gray-200 rounded-lg animate-pulse"></div>
+              ) : user ? (
+                <>
+                  {userRole === UserRole.ADMIN ? (
+                    <Link href="/admin/dashboard" className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-2 rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-200 shadow-lg hover:shadow-xl font-medium flex items-center">
+                      <AdminIcon size={20} className="mr-2" />
+                      Admin Dashboard
+                    </Link>
+                  ) : userRole === UserRole.BUYER ? (
+                    <Link href="/listings" className="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-2 rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-xl font-medium flex items-center">
+                      <ShoppingCartIcon size={20} className="mr-2" />
+                      Start Shopping
+                    </Link>
+                  ) : null}
+
+                  {userRole === UserRole.BUYER && (
+                    <Link href="/cart" className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors relative">
+                      <ShoppingCartIcon size={20} />
+                      <span className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></span>
+                    </Link>
+                  )}
+
+                  <button onClick={handleSecureLogout} className="font-medium text-gray-700 hover:text-gray-900 transition-colors">
+                    Logout
+                  </button>
+                </>
+             ) : null}
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-white border-t border-gray-200 shadow-lg">
+            <div className="px-6 py-4 space-y-4">
+              <Link href="/condition-guidelines" className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors">
+                Condition Guidelines
+              </Link>
+              <Link href="/seller-guide" className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors">
+                Seller Guide
+              </Link>
+              <Link href="/contact" className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors">
+                Contact Us
+              </Link>
+              {user ? (
+                <>
+                  {userRole === UserRole.ADMIN && (
+                    <Link href="/admin/dashboard" className="font-medium text-gray-900 py-2 hover:text-purple-600 transition-colors flex items-center">
+                      <AdminIcon size={20} className="mr-2" />
+                      Admin Dashboard
+                    </Link>
+                  )}
+                  {userRole === UserRole.BUYER && (
+                    <>
+                      <Link href="/listings" className="font-medium text-gray-900 py-2 hover:text-green-600 transition-colors flex items-center">
+                        <ShoppingCartIcon size={20} className="mr-2" />
+                        Start Shopping
+                      </Link>
+                      <Link href="/cart" className="font-medium text-gray-900 py-2 hover:text-green-600 transition-colors flex items-center">
+                        <ShoppingCartIcon size={20} className="mr-2" />
+                        My Cart
+                      </Link>
+                    </>
+                  )}
+                  <button onClick={handleSecureLogout} className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors text-left w-full">
+                    Logout
+                  </button>
+                </>
+              ) : null}
+            </div>
+          </div>
+        )}
+      </header>
+
+   {/* ===================== HERO + SCAN ===================== */}
+   <section id="quote" className="relative py-8 sm:py-14 overflow-hidden scroll-mt-24">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700"></div>
+        <div className="absolute inset-0 bg-black/20"></div>
+
+        <div className="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <p className="text-xs sm:text-sm font-semibold tracking-[0.16em] text-blue-100 mb-2 sm:mb-3">
+            SELL BOOKS, CDs, DVDs &amp; GAMES ONLINE
+          </p>
+
+          <h1 className="text-3xl sm:text-5xl font-bold text-white mb-3 sm:mb-4 leading-tight">
+            Turn Your Books, CDs, DVDs &amp; Games Into Cash
+          </h1>
+
+          <p className="text-base sm:text-lg text-blue-100 mb-5 sm:mb-7 max-w-2xl mx-auto leading-relaxed">
+            Scan your barcode, see our cash offer, and skip the listings, buyer messages, and waiting.
+            Shipping is free with our prepaid label. Get paid by PayPal, Venmo, or check by mail.
+          </p>
+
+          {/* ---------- QUOTE BOX ---------- */}
+          <div
+            ref={barcodeSectionRef}
+            className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6 max-w-2xl mx-auto"
+          >
+            {/* Mobile camera button */}
+            <div className="md:hidden">
+              <button
+                type="button"
+                onClick={handleScanBarcode}
+                disabled={isCheckingAmazon}
+                className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl py-5 shadow-md active:scale-[0.99] transition-transform disabled:opacity-60"
+              >
+                <CameraIcon size={36} className="text-white mx-auto mb-1.5" />
+                <span className="block text-xl font-extrabold text-white">Scan Barcode</span>
+                <span className="block text-sm font-medium text-white/90 mt-0.5">
+                  Opens your camera
+                </span>
+              </button>
+
+              <div className="text-xs font-medium uppercase tracking-[0.14em] text-gray-400 my-3">
+                or enter barcode manually
+              </div>
+            </div>
+
+            {/* Manual entry */}
+            <div className="flex rounded-xl overflow-hidden border-2 border-gray-300 focus-within:border-blue-500 transition-colors bg-white">
+              <input
+                ref={barcodeInputRef}
+                type="text"
+                value={isbnInput}
+                onChange={(e) => setIsbnInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && isbnInput.trim()) {
+                    e.preventDefault();
+                    handleBarcodeScanned(isbnInput.trim());
+                  }
+                }}
+                placeholder="Enter ISBN, UPC or barcode"
+                disabled={isCheckingAmazon}
+                className="flex-1 min-w-0 px-4 sm:px-5 py-3 sm:py-4 text-base border-0 focus:ring-0 outline-none text-gray-900 bg-white"
+              />
+              <button
+                type="button"
+                onClick={() => handleBarcodeScanned(isbnInput.trim())}
+                disabled={isCheckingAmazon || !isbnInput.trim()}
+                className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold px-5 sm:px-8 text-base whitespace-nowrap disabled:opacity-60 flex items-center justify-center"
+              >
+                {isCheckingAmazon ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                ) : isMounted && isMobile ? (
+                  <SearchIcon size={20} />
+                ) : (
+                  "Get Quote"
+                )}
+              </button>
+            </div>
+
+            <p className="mt-2 text-sm text-gray-500 hidden md:block">
+              Tip: Camera barcode scanning is available on mobile phones.
+            </p>
+
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  ["Free", "Prepaid shipping"],
+                  ["Instant", "Cash offers"],
+                  ["PayPal, Venmo + Check", "Payment options"],
+                  ["No fees", "Seller fees"],
+                ].map(([title, subtitle]) => (
+                  <div
+                    key={title}
+                    className="min-h-[68px] rounded-xl bg-slate-50 border border-gray-100 px-2 py-2.5 flex flex-col items-center justify-center"
+                  >
+                    <div className="text-sm sm:text-base font-extrabold text-gray-900 leading-tight">
+                      {title}
+                    </div>
+                    <div className="mt-1 text-xs sm:text-sm text-gray-500 leading-tight">
+                      {subtitle}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===================== RESULT + CART + CHECKOUT (acik zemin) ===================== */}
+      {(scanError || duplicateConfirm || amazonResult || bundleItems.length > 0) && (
+        <section className="bg-gradient-to-br from-slate-50 to-blue-50 py-6">
+          <div className={`${showCheckout ? 'max-w-6xl' : 'max-w-3xl'} mx-auto px-4 sm:px-6 lg:px-8 transition-all`}>
+
+            {/* ---------- ERROR ---------- */}
+            {scanError && !showScanner && (
+              <div className="mb-4 bg-white rounded-xl border-2 border-red-400 p-4 flex items-center gap-3 shadow-sm">
+                <AlertCircleIcon size={24} className="text-red-500 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-red-800">Barcode not recognized</p>
+                  <p className="text-sm text-red-700">{scanError}</p>
+                </div>
+              </div>
+            )}
+
+            {/* ---------- DUPLICATE (manual entry) ---------- */}
+            {duplicateConfirm && !showScanner && (
+              <div className="mb-4 bg-yellow-50 rounded-xl border-2 border-yellow-400 p-4 shadow-sm">
+                <p className="text-sm font-medium text-gray-900 line-clamp-2">
+                  {duplicateConfirm.existingItem.amazonData?.title || "This item"}
+                </p>
+                {duplicateConfirm.count >= 5 ? (
+                  <p className="text-sm font-bold text-red-700 mt-2">Maximum 5 of this item reached</p>
+                ) : (
+                  <>
+                    <p className="text-sm text-gray-700 mt-1">
+                      You already have {duplicateConfirm.count}. Add another?
+                    </p>
+                    <div className="flex gap-3 mt-3">
+                      <button type="button" onClick={handleDeclineAddDuplicate} className="flex-1 py-2 px-4 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm font-medium">No</button>
+                      <button type="button" onClick={handleConfirmAddDuplicate} className="flex-1 py-2 px-4 rounded-lg bg-green-600 text-white text-sm font-medium">Yes, Add</button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* ---------- RESULT CARD ---------- */}
+            {amazonResult && !duplicateConfirm && !showScanner && (
+              <div className={`mb-4 bg-white rounded-xl border-2 p-4 flex items-center gap-4 shadow-sm ${amazonResult.pricing.accepted ? 'border-green-400' : 'border-red-400'}`}>
+                <div className="w-12 h-16 rounded overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-200">
+                  {amazonResult.product.image ? (
+                    <Image src={amazonResult.product.image} alt={amazonResult.product.title || "Product"} width={48} height={64} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <PackageIcon size={20} className="text-gray-400" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-900 line-clamp-2">{amazonResult.product.title || "Product"}</p>
+                  <span className={`inline-flex items-center gap-1 mt-1 px-3 py-1 rounded-full text-sm font-bold ${amazonResult.pricing.accepted ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
+                    {amazonResult.pricing.accepted
+                      ? `Accepted — $${amazonResult.pricing.ourPrice?.toFixed(2)}`
+                      : 'Not accepted'}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* ---------- CART + FORM GRID ----------
+                showCheckout false: tek sutun, sepet tam genislik
+                showCheckout true (md+): sol sepet (col-span-2, sticky) / sag form (col-span-3)
+                Mobilde her zaman alt alta */}
+            <div className={showCheckout ? 'grid grid-cols-1 md:grid-cols-5 gap-6 items-start' : ''}>
+
+              {/* ===== SOL SUTUN: sepet + kutu uyarisi + (checkout kapaliyken) buton ===== */}
+              <div className={showCheckout ? 'md:col-span-2 md:sticky md:top-6' : ''}>
+
+                {/* ---------- CART ---------- */}
+                {bundleItems.length > 0 && (
+                  <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-5">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-sm text-gray-500">Your items</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-green-50 text-green-700">
+                          {bundleItems.length} added
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setEditMode(prev => !prev)}
+                          className="text-xs font-medium px-2.5 py-1 rounded-full border border-gray-300 text-gray-600"
+                        >
+                          {editMode ? "Done" : "Edit"}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="max-h-80 overflow-y-auto">
+                      {bundleItems.map((item, index) => (
+                        <div
+                          key={item.id}
+                          className={`flex items-center justify-between py-2.5 ${index < bundleItems.length - 1 ? 'border-b border-dashed border-gray-200' : ''}`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-base flex-shrink-0">{CATEGORY_EMOJI[item.category]}</span>
+                            <span className="text-sm text-gray-900 truncate">
+                              {item.amazonData?.title || `ISBN: ${item.isbn}`}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                            <span className="font-mono text-sm font-medium text-green-700">
+                              ${item.price.toFixed(2)}
+                            </span>
+                            {editMode && (
+                              <button type="button" onClick={() => removeItem(item.id)} className="text-red-500 p-1" aria-label="Remove item">
+                                <TrashIcon size={16} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="border-t border-gray-300 mt-1 pt-3 flex justify-between items-baseline">
+                      <span className="text-sm font-medium text-gray-900">Cash offer total</span>
+                      <span className="font-mono text-xl sm:text-2xl font-semibold text-green-700">
+                        ${totalOurPrice.toFixed(2)}
+                      </span>
+                    </div>
+
+                    <div className="mt-4">
+  {amountRemaining > 0 ? (
+    <>
+      <div className="flex justify-between items-center mb-2 text-sm">
+        <span className="font-medium text-gray-700">
+          ${totalOurPrice.toFixed(2)} of $7.50 minimum
+        </span>
+
+        <span className="text-amber-700">
+          ${amountRemaining.toFixed(2)} more needed
+        </span>
+      </div>
+
+      <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+        <div
+          className="h-2.5 rounded-full transition-all duration-300 bg-blue-500"
+          style={{
+            width: `${Math.min(100, (totalOurPrice / 7.5) * 100)}%`
+          }}
+        />
+      </div>
+
+      <p className="mt-2 text-xs text-center text-gray-500">
+        Add more accepted items until your cash offer reaches $7.50.
+      </p>
+    </>
+  ) : (
+    <div className="rounded-lg bg-green-100 border border-green-300 px-4 py-3 text-center">
+      <p className="text-base font-bold text-green-900">
+        ✓ Minimum reached
+      </p>
+      <p className="mt-1 text-sm font-semibold text-green-800">
+        You can continue adding more items.
+      </p>
+    </div>
+  )}
+</div>
+                  </div>
+                )}
+
+                {/* ---------- ONE BOX NOTICE ---------- */}
+                {bundleItems.length > 0 && (
+                  <div className="mt-3 flex items-start gap-2 rounded-xl border border-gray-200 bg-white p-3">
+                    <PackageIcon size={16} className="text-gray-500 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-gray-600 leading-relaxed">
+                      <span className="font-semibold text-gray-800">One box per order.</span>{" "}
+                      Maximum box size 20 × 18 × 18 in, maximum weight 50 lbs. If your items
+                      won&apos;t fit in a single box, please submit them as separate orders.
+                    </p>
+                  </div>
+                )}
+
+                {/* ---------- CHECKOUT BUTONU (sadece form kapaliyken) ---------- */}
+                {bundleItems.length > 0 && !showCheckout && (
+                  <div className="mt-4">
+                    {showAuthOptions && !user ? (
+                      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 text-center">
+                        <p className="text-sm text-gray-700 mb-4">
+                          Sign up to send your items, or sign in if you already have an account
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <Link
+  href="/register"
+  onClick={() => { try { sessionStorage.setItem('resumeCheckout', 'true'); } catch {} }}
+  className="flex-1 flex items-center justify-center py-3 px-6 rounded-xl text-white bg-blue-600 hover:bg-blue-700 text-base font-medium"
+>
+  <UserIcon size={20} className="mr-2" /> Sign up
+</Link>
+<Link
+  href="/login"
+  onClick={() => { try { sessionStorage.setItem('resumeCheckout', 'true'); } catch {} }}
+  className="flex-1 flex items-center justify-center py-3 px-6 rounded-xl border border-blue-300 text-blue-700 bg-white hover:bg-blue-50 text-base font-medium"
+>
+  <LogInIcon size={20} className="mr-2" /> Sign in
+</Link>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleCheckout}
+                        disabled={totalOurPrice < 7.5}
+                        className="w-full flex justify-center items-center py-4 px-6 rounded-xl text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-base font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      >
+                        Sell My Items — ${totalOurPrice.toFixed(2)}
+                        <ArrowRightIcon size={20} className="ml-2" />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* ===== SAG SUTUN: checkout formu ===== */}
+              {showCheckout && (
+                <div ref={checkoutFormRef} className="md:col-span-3 scroll-mt-24 mt-6 md:mt-0">
+                  <CheckoutForm
+                    bundleItems={bundleItems}
+                    user={user}
+                    storageKey={getStorageKey()}
+                    isPrivateMode={isPrivateMode}
+                    onSuccess={handleCheckoutSuccess}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ===================== TRUST STRIP ===================== */}
+      <section className="bg-white border-b border-gray-100">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="py-5 sm:py-6 grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-4 text-center">
+            <div>
+              <div className="text-sm sm:text-base font-bold text-gray-900">Happy Customers</div>
+              <div className="text-xs sm:text-sm text-gray-500 mt-1">A simple, direct buyback experience</div>
+            </div>
+            <div>
+              <div className="text-sm sm:text-base font-bold text-gray-900">Know Your Offer First</div>
+              <div className="text-xs sm:text-sm text-gray-500 mt-1">Before you ship</div>
+            </div>
+            <div>
+              <div className="text-sm sm:text-base font-bold text-gray-900">No Marketplace Listings</div>
+              <div className="text-xs sm:text-sm text-gray-500 mt-1">No photos or buyer messages</div>
+            </div>
+            <div>
+              <div className="text-sm sm:text-base font-bold text-gray-900">No App Required</div>
+              <div className="text-xs sm:text-sm text-gray-500 mt-1">Scan in your browser</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===================== HOW IT WORKS ===================== */}
+      <section className="py-14 sm:py-20 bg-slate-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10 sm:mb-14">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">
+              Simple from quote to payout
+            </p>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-gray-900">
+              How SellBookMedia Works
+            </h2>
+            <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+              Check your items, ship qualifying media together, and get paid after inspection.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-5 sm:gap-7">
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-7 shadow-sm">
+              <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-xl">
+                1
+              </div>
+              <h3 className="mt-5 text-xl font-bold text-gray-900">Scan &amp; See Your Offer</h3>
+              <p className="mt-3 text-gray-600 leading-relaxed">
+                Scan or enter an ISBN, UPC, or barcode and see whether we&apos;re currently
+                buying the exact item in your hand.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-7 shadow-sm">
+              <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xl">
+                2
+              </div>
+              <h3 className="mt-5 text-xl font-bold text-gray-900">Ship for Free</h3>
+              <p className="mt-3 text-gray-600 leading-relaxed">
+                Build an order of accepted items, submit once your offer reaches $7.50,
+                and use the prepaid shipping label we email you.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-7 shadow-sm">
+              <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold text-xl">
+                3
+              </div>
+              <h3 className="mt-5 text-xl font-bold text-gray-900">Choose Your Payment Method</h3>
+              <p className="mt-3 text-gray-600 leading-relaxed">
+                After your shipment arrives and your items pass inspection, payment is sent
+                through the method you selected.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===================== WHY SELLBOOKMEDIA ===================== */}
+      <section className="py-14 sm:py-20 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-[0.9fr_1.1fr] gap-8 lg:gap-12 items-center">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">
+                A simpler alternative to listing everything yourself
+              </p>
+              <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-gray-900 leading-tight">
+                Sell Your Media Without Turning It Into a Second Job
+              </h2>
+              <p className="mt-5 text-lg text-gray-600 leading-relaxed">
+                SellBookMedia is a direct buyback service. You see our offer before shipping,
+                so there&apos;s no need to create individual marketplace listings, take product
+                photos, negotiate with buyers, or wait for each item to sell.
+              </p>
+              <p className="mt-4 text-gray-600 leading-relaxed">
+                Books, CDs, DVDs, Blu-rays, 4K movies, and eligible video games can be combined
+                in the same order, making it easier to clear a mixed collection in one workflow.
+              </p>
+              <Link
+                href="/seller-guide"
+                className="inline-flex items-center mt-6 font-semibold text-blue-600 hover:text-blue-800"
+              >
+                See the complete seller guide
+                <ArrowRightIcon size={18} className="ml-2" />
+              </Link>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              {[
+                {
+                  title: "Know the price first",
+                  body: "See our cash offer before you decide whether to add an item to your order.",
+                },
+                {
+                  title: "No seller fees",
+                  body: "SellBookMedia does not charge you a marketplace-style seller fee.",
+                },
+                {
+                  title: "Mixed media in one order",
+                  body: "Combine eligible books, CDs, movies, and games until you reach the minimum.",
+                },
+                {
+                  title: "Straightforward payout",
+                  body: "Choose PayPal, Venmo, or a check by mail and receive payment after arrival and inspection.",
+                },
+              ].map((item) => (
+                <div key={item.title} className="rounded-2xl border border-gray-200 bg-slate-50 p-5 sm:p-6">
+                  <div className="w-9 h-9 rounded-full bg-green-100 text-green-700 flex items-center justify-center">
+                    <CheckIcon size={18} />
+                  </div>
+                  <h3 className="mt-4 text-lg font-bold text-gray-900">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-gray-600">{item.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===================== COLLECTION + ONE ORDER + CONDITION ===================== */}
+      <section className="py-14 sm:py-20 bg-slate-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">
+              Built for real clean-outs
+            </p>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-gray-900">
+              From One Shelf to a Whole Collection
+            </h2>
+            <p className="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">
+              Start with a few items or work through a larger collection at your own pace.
+              Scan each barcode, keep the offers you want, and build one straightforward order.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-5">
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="text-3xl">📦</div>
+              <h3 className="mt-4 text-xl font-bold text-gray-900">
+                Clearing Out a Shelf, Closet or Collection?
+              </h3>
+              <p className="mt-3 text-gray-600 leading-relaxed">
+                There&apos;s no need to photograph and list every item one by one. Scan what you have,
+                see which items qualify, and keep building your order as you go.
+              </p>
+              <Link
+                href="/seller-guide"
+                className="inline-flex items-center mt-5 text-sm font-semibold text-blue-600 hover:text-blue-800"
+              >
+                See the seller guide
+                <ArrowRightIcon size={16} className="ml-1.5" />
+              </Link>
+            </div>
+
+            <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
+              <div className="text-3xl">📚💿📀🎮</div>
+              <h3 className="mt-4 text-xl font-bold text-gray-900">
+                One Order. Different Media.
+              </h3>
+              <p className="mt-3 text-gray-600 leading-relaxed">
+                Combine eligible books, CDs, DVDs, Blu-rays, 4K movies, and video games in the same order.
+                Once your accepted total reaches $7.50, submit the order and use your prepaid label.
+              </p>
+              <a
+                href="#quote"
+                className="inline-flex items-center mt-5 text-sm font-semibold text-blue-600 hover:text-blue-800"
+              >
+                Start scanning
+                <ArrowRightIcon size={16} className="ml-1.5" />
+              </a>
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="text-3xl">✅</div>
+              <h3 className="mt-4 text-xl font-bold text-gray-900">
+                What Condition Should My Items Be In?
+              </h3>
+              <p className="mt-3 text-gray-600 leading-relaxed">
+                Condition matters when your shipment is inspected. Before shipping, review our guidelines
+                for books, discs, cases, artwork, inserts, and complete sets.
+              </p>
+              <Link
+                href="/condition-guidelines"
+                className="inline-flex items-center mt-5 text-sm font-semibold text-blue-600 hover:text-blue-800"
+              >
+                View condition guidelines
+                <ArrowRightIcon size={16} className="ml-1.5" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===================== DIRECT BUYBACK VS MARKETPLACE ===================== */}
+      <section className="py-14 sm:py-20 bg-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">
+              Skip the marketplace hassle
+            </p>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-gray-900">
+              SellBookMedia vs. Listing Items Yourself
+            </h2>
+            <p className="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">
+              Marketplaces can make sense for truly collectible items. SellBookMedia is built for sellers
+              who would rather see an offer now and avoid turning every item into a separate sale.
+            </p>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-gray-200 shadow-sm">
+            <div className="grid grid-cols-3 bg-slate-900 text-white text-xs sm:text-base font-semibold">
+              <div className="p-3 sm:p-5">What changes?</div>
+              <div className="p-3 sm:p-5 border-l border-white/10">SellBookMedia</div>
+              <div className="p-3 sm:p-5 border-l border-white/10">Marketplace</div>
+            </div>
+
+            {[
+              ["Knowing your price", "See our cash offer first", "Set a price and wait for a buyer"],
+              ["Creating listings", "No individual listing to create", "Create listings item by item"],
+              ["Photos & messages", "No product photos or buyer messages", "Often part of the selling process"],
+              ["Shipping", "Use the prepaid label for your submitted order", "Usually ship each sale separately"],
+              ["Seller fees", "No SellBookMedia seller fees", "Marketplace fees may apply"],
+            ].map((row, index) => (
+              <div
+                key={row[0]}
+                className={`grid grid-cols-3 text-[11px] sm:text-sm ${index % 2 === 0 ? "bg-white" : "bg-slate-50"}`}
+              >
+                <div className="p-3 sm:p-5 font-semibold text-gray-900 leading-relaxed">{row[0]}</div>
+                <div className="p-3 sm:p-5 border-l border-gray-200 text-gray-700 leading-relaxed">{row[1]}</div>
+                <div className="p-3 sm:p-5 border-l border-gray-200 text-gray-600 leading-relaxed">{row[2]}</div>
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-5 text-sm text-gray-500 text-center">
+            Have something rare or collectible? Comparing recent sold listings can still be worthwhile.
+            For everyday media, direct buyback is designed to keep the process simple.
+          </p>
+        </div>
+      </section>
+
+      {/* ===================== CATEGORY LANDING PAGES ===================== */}
+      <section className="py-14 sm:py-20 bg-slate-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">
+              What we buy
+            </p>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-gray-900">
+              Sell Your Media for Cash
+            </h2>
+            <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+              Choose a category to learn what affects value, what we accept, and how to get an instant quote.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {[
+              {
+                href: "/sell-books-for-cash",
+                icon: "📚",
+                title: "Sell Books for Cash",
+                body: "Check books and textbooks by ISBN and see your current cash offer.",
+              },
+              {
+                href: "/sell-dvds-for-cash",
+                icon: "📀",
+                title: "Sell DVDs, Blu-rays & 4K",
+                body: "Check movies, box sets, Blu-rays, and 4K UHD releases by barcode.",
+              },
+              {
+                href: "/sell-cds-for-cash",
+                icon: "💿",
+                title: "Sell CDs for Cash",
+                body: "Check CDs, box sets, imports, and music collections by UPC.",
+              },
+              {
+                href: "/sell-video-games-for-cash",
+                icon: "🎮",
+                title: "Sell Video Games for Cash",
+                body: "Check eligible PlayStation, Xbox, Nintendo, GameCube, and retro games.",
+              },
+            ].map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="group block rounded-2xl border border-gray-200 bg-white p-6 hover:border-blue-300 hover:shadow-md transition-all"
+              >
+                <div className="text-3xl">{item.icon}</div>
+                <h3 className="mt-4 text-xl font-bold text-gray-900 group-hover:text-blue-700">
+                  {item.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-gray-600">{item.body}</p>
+                <span className="inline-flex items-center mt-5 font-semibold text-blue-600">
+                  Learn More
+                  <ArrowRightIcon size={18} className="ml-2" />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===================== GUIDES ===================== */}
+      <section className="py-14 sm:py-20 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">
+              Helpful resources
+            </p>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-gray-900">
+              Selling &amp; Value Guides
+            </h2>
+            <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+              Learn how to identify the exact item you own, understand what can affect value,
+              and choose the easiest way to sell a collection.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[
+              {
+                href: "/guides/how-to-find-book-value-by-isbn",
+                title: "Find Book Value by ISBN",
+                body: "Use the ISBN to identify the exact book edition before checking its value.",
+              },
+              {
+                href: "/guides/media-value-by-barcode",
+                title: "Find Media Value by Barcode",
+                body: "See why the exact UPC matters for CDs, DVDs, Blu-rays, 4K movies, and games.",
+              },
+              {
+                href: "/guides/how-much-are-used-books-worth",
+                title: "How Much Are Used Books Worth?",
+                body: "Learn what can affect the value of used books and textbooks.",
+              },
+              {
+                href: "/guides/how-much-are-used-dvds-worth",
+                title: "How Much Are Used DVDs Worth?",
+                body: "See how format, edition, condition, and demand can affect DVD value.",
+              },
+              {
+                href: "/guides/how-much-are-used-cds-worth",
+                title: "How Much Are Used CDs Worth?",
+                body: "Learn which CD releases may be more worth checking and why.",
+              },
+              {
+                href: "/guides/best-places-to-sell-cds-dvds-games",
+                title: "Best Places to Sell Used Media",
+                body: "Compare direct buyback, marketplaces, and other ways to sell physical media.",
+              },
+            ].map((guide) => (
+              <Link
+                key={guide.href}
+                href={guide.href}
+                className="group rounded-2xl border border-gray-200 bg-white p-6 hover:border-blue-300 hover:shadow-md transition-all"
+              >
+                <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-700">
+                  {guide.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-gray-600">{guide.body}</p>
+                <span className="inline-flex items-center mt-4 text-sm font-semibold text-blue-600">
+                  Read guide
+                  <ArrowRightIcon size={16} className="ml-1.5" />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===================== CTA ===================== */}
+      <section className="py-16 sm:py-20 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 relative overflow-hidden">
+        <div className="absolute inset-0 bg-black/20"></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-5">Ready to See What Your Media Is Worth?</h2>
+          <p className="text-xl sm:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto leading-relaxed">
+            Scan your first barcode for an instant cash offer. No app, no marketplace listing, and no seller fees.
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-3 text-blue-100">
+            <div className="flex items-center">
+              <ShieldCheckIcon size={20} className="mr-2" />
+              <span className="text-sm sm:text-base">Free prepaid shipping</span>
+            </div>
+            <div className="flex items-center">
+              <PackageIcon size={20} className="mr-2" />
+              <span className="text-sm sm:text-base">PayPal, Venmo or Check</span>
+            </div>
+            <div className="flex items-center">
+              <TrendingUpIcon size={20} className="mr-2" />
+              <span className="text-sm sm:text-base">$7.50 minimum order</span>
+            </div>
+          </div>
+
+          <div className="mt-8 flex justify-center">
+            {userRole === UserRole.ADMIN ? (
+              <Link href="/admin/dashboard" className="inline-flex items-center px-8 py-4 bg-white text-purple-600 font-bold text-lg rounded-2xl hover:bg-gray-100 transition-all duration-300 shadow-lg">
+                <AdminIcon size={24} className="mr-3" />
+                Admin Dashboard
+                <ArrowRightIcon size={24} className="ml-3" />
+              </Link>
+            ) : userRole === UserRole.BUYER ? (
+              <Link href="/listings" className="inline-flex items-center px-8 py-4 bg-white text-green-600 font-bold text-lg rounded-2xl hover:bg-gray-100 transition-all duration-300 shadow-lg">
+                <ShoppingCartIcon size={24} className="mr-3" />
+                Start Shopping
+                <ArrowRightIcon size={24} className="ml-3" />
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                className="inline-flex items-center px-8 py-4 bg-white text-blue-600 font-bold text-lg rounded-2xl hover:bg-gray-100 transition-all duration-300 shadow-lg"
+              >
+                Get a Quote Now
+                <ArrowRightIcon size={24} className="ml-3" />
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ===================== FOOTER ===================== */}
+      <footer className="bg-gray-900 text-white py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="lg:col-span-1">
+              <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-4 block">
+                SellBookMedia
+              </Link>
+              <p className="text-gray-400 leading-relaxed mb-6">
+                We buy eligible books, CDs, DVDs, Blu-rays, 4K movies, and video games for cash.
+                Check your barcode first, use our free prepaid shipping label, and get paid by PayPal, Venmo, or check by mail.
+              </p>
+                            
+             <a               
+                href="https://www.facebook.com/sellbookmedia"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="SellBookMedia on Facebook"
+                className="inline-flex items-center gap-2.5 text-gray-300 hover:text-white transition-colors"
+              >
+                <FacebookIcon size={28} className="text-[#1877F2]" />
+                <span className="text-base">Follow us on Facebook</span>
+              </a>
+            </div>
+            <div>
+  <h4 className="font-bold text-lg mb-6 text-white">For Sellers</h4>
+  <ul className="space-y-3">
+  <li>
+  <Link
+    href="/sell-books-for-cash"
+    className="text-gray-400 hover:text-white transition-colors"
+  >
+    Sell Books for Cash
+  </Link>
+</li>
+
+  <li>
+    <Link
+      href="/sell-dvds-for-cash"
+      className="text-gray-400 hover:text-white transition-colors"
+    >
+      Sell DVDs, Blu-rays &amp; 4K
+    </Link>
+  </li>
+
+  <li>
+    <Link
+      href="/sell-cds-for-cash"
+      className="text-gray-400 hover:text-white transition-colors"
+    >
+      Sell CDs for Cash
+    </Link>
+  </li>
+  <li>
+  <Link
+    href="/sell-video-games-for-cash"
+    className="text-gray-400 hover:text-white transition-colors"
+  >
+    Sell Video Games for Cash
+  </Link>
+</li>
+
+  <li>
+    <Link
+      href="/condition-guidelines"
+      className="text-gray-400 hover:text-white transition-colors"
+    >
+      Condition Guidelines
+    </Link>
+  </li>
+
+  <li>
+    <Link
+      href="/returns-policy"
+      className="text-gray-400 hover:text-white transition-colors"
+    >
+      Returns Policy
+    </Link>
+  </li>
+
+  <li>
+    <Link
+      href="/seller-guide"
+      className="text-gray-400 hover:text-white transition-colors"
+    >
+      Seller Guide
+    </Link>
+  </li>
+</ul>
+</div>
+
+            <div>
+              <h4 className="font-bold text-lg mb-6 text-white">Guides</h4>
+              <ul className="space-y-3">
+                <li><Link href="/guides/how-to-find-book-value-by-isbn" className="text-gray-400 hover:text-white transition-colors">Book Value by ISBN</Link></li>
+                <li><Link href="/guides/media-value-by-barcode" className="text-gray-400 hover:text-white transition-colors">Media Value by Barcode</Link></li>
+                <li><Link href="/guides/how-much-are-used-books-worth" className="text-gray-400 hover:text-white transition-colors">What Are Books Worth?</Link></li>
+                <li><Link href="/guides/how-much-are-used-dvds-worth" className="text-gray-400 hover:text-white transition-colors">What Are DVDs Worth?</Link></li>
+                <li><Link href="/guides/how-much-are-used-cds-worth" className="text-gray-400 hover:text-white transition-colors">What Are CDs Worth?</Link></li>
+                <li><Link href="/guides/best-places-to-sell-cds-dvds-games" className="text-gray-400 hover:text-white transition-colors">Best Places to Sell</Link></li>
+                <li><Link href="/guides/decluttr-shut-down-alternative" className="text-gray-400 hover:text-white transition-colors">Decluttr Alternative</Link></li>
+                <li><Link href="/guides/what-to-do-with-old-dvds-and-cds" className="text-gray-400 hover:text-white transition-colors">What to Do With Old Media</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-lg mb-6 text-white">Support</h4>
+              <ul className="space-y-3">
+                <li><Link href="/help" className="text-gray-400 hover:text-white transition-colors">Help Center</Link></li>
+                <li><Link href="/contact" className="text-gray-400 hover:text-white transition-colors">Contact Us</Link></li>
+                <li><Link href="/about" className="text-gray-400 hover:text-white transition-colors">About Us</Link></li>
+                <li><Link href="/terms" className="text-gray-400 hover:text-white transition-colors">Terms of Service</Link></li>
+                <li><Link href="/privacy-policy" className="text-gray-400 hover:text-white transition-colors">Privacy Policy</Link></li>
+              </ul>
+            </div>
+          </div>
+          <div className="mt-12 pt-8 border-t border-gray-800">
+            <div className="flex flex-col sm:flex-row justify-between items-center">
+              <p className="text-gray-400 text-sm">© 2026 SellBookMedia. All rights reserved.</p>
+              <div className="flex items-center space-x-6 mt-4 sm:mt-0">
+                <span className="text-gray-400 text-sm">Less waste. More second chances.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}

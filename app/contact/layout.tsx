@@ -1,39 +1,82 @@
-// app/contact/layout.tsx
-import { Metadata } from 'next'
+import type { Metadata } from 'next'
 
-// ✅ CONTACT PAGE METADATA
+const SITE_URL = 'https://www.sellbookmedia.com'
+const PAGE_URL = `${SITE_URL}/contact`
+
 export const metadata: Metadata = {
-  title: 'Contact Us - Customer Support',
-  description: 'Get in touch with SellBook Media. Questions about selling, shipping, or payment? Contact our customer support team for help.',
-  
-  openGraph: {
-    title: 'Contact SellBook Media - Customer Support',
-    description: 'Have questions? Get in touch with our support team.',
-    url: 'https://www.sellbookmedia.com/contact',
-  },
-  
+  title: 'Contact SellBookMedia | Customer Support',
+
+  description:
+    'Contact SellBookMedia for help with orders, shipping, payments, barcode offers, or questions about selling books, CDs, DVDs, Blu-rays, 4K movies, and video games.',
+
   alternates: {
-    canonical: 'https://www.sellbookmedia.com/contact',
+    canonical: PAGE_URL,
   },
-  
+
+  openGraph: {
+    type: 'website',
+    url: PAGE_URL,
+    siteName: 'SellBookMedia',
+    title: 'Contact SellBookMedia | Customer Support',
+    description:
+      'Get help with SellBookMedia orders, shipping, payments, barcode offers, and selling questions.',
+  },
+
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Contact SellBookMedia | Customer Support',
+    description:
+      'Get help with orders, shipping, payments, barcode offers, and selling questions.',
+  },
+
   robots: {
-    index: true,  // ✅ Google indexlesin
+    index: true,
     follow: true,
   },
 }
 
-// ✅ CONTACT PAGE SCHEMA (Optional but recommended)
-const contactSchema = {
+const structuredData = {
   '@context': 'https://schema.org',
-  '@type': 'ContactPage',
-  mainEntity: {
-    '@type': 'Organization',
-    name: 'SellBook Media',
-    url: 'https://www.sellbookmedia.com',
-    // İletişim bilgileriniz varsa ekleyin:
-    email: 'support@sellbookmedia.com',
-    
-  }
+  '@graph': [
+    {
+      '@type': 'ContactPage',
+      '@id': `${PAGE_URL}#contactpage`,
+      url: PAGE_URL,
+      name: 'Contact SellBookMedia',
+      description:
+        'Customer support for SellBookMedia sellers and users.',
+      isPartOf: {
+        '@id': `${SITE_URL}/#website`,
+      },
+      about: {
+        '@id': `${SITE_URL}/#organization`,
+      },
+      mainEntity: {
+        '@type': 'Organization',
+        '@id': `${SITE_URL}/#organization`,
+        name: 'SellBookMedia',
+        url: SITE_URL,
+        email: 'support@sellbookmedia.com',
+      },
+    },
+    {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Home',
+          item: SITE_URL,
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Contact',
+          item: PAGE_URL,
+        },
+      ],
+    },
+  ],
 }
 
 export default function ContactLayout({
@@ -43,13 +86,13 @@ export default function ContactLayout({
 }) {
   return (
     <>
-      {/* Schema markup */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(contactSchema) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(structuredData),
+        }}
       />
-      
-      {/* Page content */}
+
       {children}
     </>
   )

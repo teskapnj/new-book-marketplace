@@ -56,30 +56,49 @@ export default function AreOldDVDsWorthAnythingPage() {
     "@graph": [
       {
         "@type": "Article",
+        "@id": `${PAGE_URL}#article`,
         headline:
           "Are Old DVDs Worth Anything? 10 Types of DVDs That Can Still Be Valuable",
+        url: PAGE_URL,
         datePublished: "2026-09-06",
         dateModified: "2026-09-06",
         author: {
           "@type": "Organization",
+          "@id": `${SITE_URL}/#organization`,
           name: "SellBookMedia",
         },
         publisher: {
           "@type": "Organization",
+          "@id": `${SITE_URL}/#organization`,
           name: "SellBookMedia",
         },
-        mainEntityOfPage: PAGE_URL,
+        mainEntityOfPage: {
+          "@type": "WebPage",
+          "@id": PAGE_URL,
+        },
       },
       {
-        "@type": "FAQPage",
-        mainEntity: FAQ.map((item) => ({
-          "@type": "Question",
-          name: item.q,
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: item.a,
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: SITE_URL,
           },
-        })),
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "Guides",
+            item: `${SITE_URL}/guides`,
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: "Are Old DVDs Worth Anything?",
+            item: PAGE_URL,
+          },
+        ],
       },
     ],
   };

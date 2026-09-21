@@ -1,18 +1,32 @@
-import { Metadata } from 'next'
+import type { Metadata } from 'next'
 
-// ✅ TERMS OF SERVICE METADATA
+const SITE_URL = 'https://www.sellbookmedia.com'
+const PAGE_URL = `${SITE_URL}/terms`
+
 export const metadata: Metadata = {
-  title: 'Terms of Service - SellBook Media',
-  description: 'Read our terms of service covering seller responsibilities, item condition, shipping, payment methods, rejected items, and other policies for using SellBook Media.',
+  title: 'Terms of Service | SellBookMedia',
 
-  openGraph: {
-    title: 'Terms of Service - SellBook Media',
-    description: 'Terms and conditions for using SellBook Media, including shipping, inspection, payment, and seller responsibilities.',
-    url: 'https://www.sellbookmedia.com/terms',
-  },
+  description:
+    'Read the SellBookMedia Terms of Service covering seller responsibilities, item condition, shipping, inspections, payments, rejected items, and use of the website.',
 
   alternates: {
-    canonical: 'https://www.sellbookmedia.com/terms',
+    canonical: PAGE_URL,
+  },
+
+  openGraph: {
+    type: 'website',
+    url: PAGE_URL,
+    siteName: 'SellBookMedia',
+    title: 'Terms of Service | SellBookMedia',
+    description:
+      'Terms governing the use of SellBookMedia, including shipping, inspections, payments, rejected items, and seller responsibilities.',
+  },
+
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Terms of Service | SellBookMedia',
+    description:
+      'Read the terms governing selling, shipping, inspections, payments, and use of SellBookMedia.',
   },
 
   robots: {
@@ -21,18 +35,19 @@ export const metadata: Metadata = {
   },
 }
 
-// ✅ WEBPAGE SCHEMA
-const termsSchema = {
+const structuredData = {
   '@context': 'https://schema.org',
   '@type': 'WebPage',
+  '@id': `${PAGE_URL}#webpage`,
+  url: PAGE_URL,
   name: 'Terms of Service',
-  description: 'Terms of service for SellBook Media',
-  publisher: {
-    '@type': 'Organization',
-    name: 'SellBook Media',
+  description: 'Terms of Service for SellBookMedia.',
+  isPartOf: {
+    '@id': `${SITE_URL}/#website`,
   },
-  datePublished: '2025-01-01',
-  dateModified: '2026-09-14',
+  about: {
+    '@id': `${SITE_URL}/#organization`,
+  },
 }
 
 export default function TermsLayout({
@@ -42,13 +57,13 @@ export default function TermsLayout({
 }) {
   return (
     <>
-      {/* Terms Schema */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(termsSchema) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(structuredData),
+        }}
       />
 
-      {/* Page content */}
       {children}
     </>
   )

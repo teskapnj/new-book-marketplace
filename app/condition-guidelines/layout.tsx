@@ -1,57 +1,75 @@
-// app/condition-guidelines/layout.tsx
-import { Metadata } from 'next'
+import type { Metadata } from 'next'
 
-// ✅ CONDITION GUIDELINES METADATA
+const SITE_URL = 'https://www.sellbookmedia.com'
+const PAGE_URL = `${SITE_URL}/condition-guidelines`
+
 export const metadata: Metadata = {
-  title: 'Condition Guidelines - What We Accept',
-  description: 'Learn what condition we accept for books, CDs, DVDs, and video games. Detailed guidelines for acceptable items, damages we reject, and quality standards for selling your media.',
-  
-  keywords: [
-    'book condition guidelines',
-    'acceptable book condition',
-    'DVD condition requirements',
-    'CD condition standards',
-    'game condition accepted',
-    'what condition books sellbookmedia',
-    'media condition guide',
-  ],
-  
-  openGraph: {
-    title: 'Item Condition Guidelines - What We Accept',
-    description: 'Detailed condition requirements for books, CDs, DVDs, and games. Learn what we accept and reject.',
-    url: 'https://www.sellbookmedia.com/condition-guidelines',
-  },
-  
+  title: 'Condition Guidelines for Books, CDs, DVDs & Games | SellBookMedia',
+
+  description:
+    'Review SellBookMedia condition requirements for books, CDs, DVDs, Blu-rays, 4K movies, and video games before shipping your order.',
+
   alternates: {
-    canonical: 'https://www.sellbookmedia.com/condition-guidelines',
+    canonical: PAGE_URL,
   },
-  
+
+  openGraph: {
+    type: 'website',
+    url: PAGE_URL,
+    siteName: 'SellBookMedia',
+    title: 'Condition Guidelines | SellBookMedia',
+    description:
+      'See which condition issues can affect whether books, CDs, DVDs, Blu-rays, 4K movies, and video games are accepted.',
+  },
+
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Condition Guidelines | SellBookMedia',
+    description:
+      'Review condition requirements before shipping books and physical media to SellBookMedia.',
+  },
+
   robots: {
-    index: true,  // ✅ Google indexlesin (SEO değeri yüksek!)
+    index: true,
     follow: true,
   },
 }
 
-// ✅ ARTICLE SCHEMA - Guide/Tutorial tipi içerik
-const guideSchema = {
+const structuredData = {
   '@context': 'https://schema.org',
-  '@type': 'Article',
-  headline: 'Condition Guidelines for Books, CDs, DVDs, and Games',
-  description: 'Comprehensive guide on what condition we accept for media items. Learn about acceptable and unacceptable item conditions.',
-  author: {
-    '@type': 'Organization',
-    name: 'SellBook Media',
-  },
-  publisher: {
-    '@type': 'Organization',
-    name: 'SellBook Media',
-    logo: {
-      '@type': 'ImageObject',
-      url: 'https://www.sellbookmedia.com/logo.png',
+  '@graph': [
+    {
+      '@type': 'WebPage',
+      '@id': `${PAGE_URL}#webpage`,
+      url: PAGE_URL,
+      name: 'Condition Guidelines for Books, CDs, DVDs & Games',
+      description:
+        'Condition requirements for books, CDs, DVDs, Blu-rays, 4K movies, and video games submitted to SellBookMedia.',
+      isPartOf: {
+        '@id': `${SITE_URL}/#website`,
+      },
+      about: {
+        '@id': `${SITE_URL}/#organization`,
+      },
     },
-  },
-  datePublished: '2025-01-01',
-  dateModified: new Date().toISOString().split('T')[0],
+    {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Home',
+          item: SITE_URL,
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Condition Guidelines',
+          item: PAGE_URL,
+        },
+      ],
+    },
+  ],
 }
 
 export default function ConditionGuidelinesLayout({
@@ -61,13 +79,13 @@ export default function ConditionGuidelinesLayout({
 }) {
   return (
     <>
-      {/* Article/Guide Schema */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(guideSchema) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(structuredData),
+        }}
       />
-      
-      {/* Page content */}
+
       {children}
     </>
   )

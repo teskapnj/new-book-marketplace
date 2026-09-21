@@ -84,29 +84,55 @@ export default function DecluttrAlternativeGuide() {
     "@graph": [
       {
         "@type": "Article",
+        "@id":
+          "https://www.sellbookmedia.com/guides/decluttr-shut-down-alternative#article",
         headline:
           "Decluttr Shut Down — Where to Sell Your Books, CDs, DVDs, and Games Now",
+        url:
+          "https://www.sellbookmedia.com/guides/decluttr-shut-down-alternative",
         datePublished: "2026-08-18",
         dateModified: "2026-08-29",
+        mainEntityOfPage: {
+          "@type": "WebPage",
+          "@id":
+            "https://www.sellbookmedia.com/guides/decluttr-shut-down-alternative",
+        },
         author: {
           "@type": "Organization",
+          "@id": "https://www.sellbookmedia.com/#organization",
           name: "SellBookMedia",
+          url: "https://www.sellbookmedia.com",
         },
         publisher: {
           "@type": "Organization",
+          "@id": "https://www.sellbookmedia.com/#organization",
           name: "SellBookMedia",
+          url: "https://www.sellbookmedia.com",
         },
       },
       {
-        "@type": "FAQPage",
-        mainEntity: FAQ.map((item) => ({
-          "@type": "Question",
-          name: item.q,
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: item.a,
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: "https://www.sellbookmedia.com",
           },
-        })),
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "Guides",
+            item: "https://www.sellbookmedia.com/guides",
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: "Decluttr Alternative",
+            item:
+              "https://www.sellbookmedia.com/guides/decluttr-shut-down-alternative",
+          },
+        ],
       },
     ],
   };

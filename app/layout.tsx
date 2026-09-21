@@ -7,22 +7,22 @@ import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Analytics } from '@vercel/analytics/react'
 import type { Metadata } from 'next'
 
-// SEO Metadata
+const SITE_URL = 'https://www.sellbookmedia.com'
+const BRAND = 'SellBookMedia'
+
 export const metadata: Metadata = {
-  metadataBase: new URL('https://www.sellbookmedia.com'),
-  title: {
-    default: 'Sell Books, CDs, DVDs & Games for Cash | SellBook Media',
-    template: '%s | SellBook Media',
-  },
+  metadataBase: new URL(SITE_URL),
+
+  title: 'Sell Books, CDs, DVDs & Games for Cash | SellBookMedia',
+
   description:
-    'Sell your books, CDs, DVDs, Blu-rays, 4K movies, and video games for cash. Get instant barcode offers, free prepaid shipping, and fast PayPal, Venmo, or check by mail payments.',
+    'Sell books, CDs, DVDs, Blu-rays, 4K movies, and video games for cash. Get instant barcode offers, free prepaid shipping, and choose PayPal, Venmo, or check by mail.',
 
-  // ❌ KEYWORDS KALDIRILDI - Google kullanmıyor (deprecated since 2009)
-  // keywords: [...],
+  applicationName: BRAND,
 
-  authors: [{ name: 'SellBook Media' }],
-  creator: 'SellBook Media',
-  publisher: 'SellBook Media',
+  authors: [{ name: BRAND }],
+  creator: BRAND,
+  publisher: BRAND,
 
   robots: {
     index: true,
@@ -39,81 +39,58 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://www.sellbookmedia.com',
-    title: 'SellBook Media - Sell Books, CDs, DVDs & Games for Cash',
+    siteName: BRAND,
+    title: 'Sell Books, CDs, DVDs & Games for Cash | SellBookMedia',
     description:
-      'Turn your books, CDs, DVDs & games into cash. Free shipping, instant quotes, secure payments.',
-    siteName: 'SellBook Media',
+      'Turn books, CDs, DVDs, Blu-rays, 4K movies, and video games into cash with instant barcode offers and free prepaid shipping.',
     images: [
       {
         url: '/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: 'SellBook Media - Sell Your Media for Cash',
+        alt: 'SellBookMedia - Sell Books and Physical Media for Cash',
       },
     ],
   },
 
   twitter: {
     card: 'summary_large_image',
-    title: 'SellBook Media - Sell Your Books for Cash',
+    title: 'Sell Books, CDs, DVDs & Games for Cash | SellBookMedia',
     description:
-      'Turn your books into cash with instant quotes, free prepaid shipping, and fast PayPal, Venmo, or check by mail payments.',
+      'Get instant offers for eligible books and physical media with free prepaid shipping.',
     images: ['/twitter-image.jpg'],
   },
 
-  alternates: {
-    canonical: 'https://www.sellbookmedia.com',
+  icons: {
+    icon: '/favicon.ico',
   },
 }
 
-// ✅ JSON-LD Structured Data
 const structuredData = {
   '@context': 'https://schema.org',
   '@graph': [
     {
       '@type': 'Organization',
-      '@id': 'https://www.sellbookmedia.com/#organization',
-      name: 'SellBook Media',
-      url: 'https://www.sellbookmedia.com',
+      '@id': `${SITE_URL}/#organization`,
+      name: BRAND,
+      url: SITE_URL,
       logo: {
         '@type': 'ImageObject',
-        url: 'https://www.sellbookmedia.com/logo.png',
+        url: `${SITE_URL}/logo.png`,
         width: 512,
         height: 512,
       },
       description:
-        'Buy books, CDs, DVDs, Blu-rays, 4K movies, and video games from customers nationwide',
+        'SellBookMedia is an online buyback service for books, CDs, DVDs, Blu-rays, 4K movies, and video games.',
       sameAs: ['https://www.facebook.com/sellbookmedia'],
     },
-
     {
       '@type': 'WebSite',
-      '@id': 'https://www.sellbookmedia.com/#website',
-      url: 'https://www.sellbookmedia.com',
-      name: 'SellBook Media',
+      '@id': `${SITE_URL}/#website`,
+      url: SITE_URL,
+      name: BRAND,
       publisher: {
-        '@id': 'https://www.sellbookmedia.com/#organization',
-      },
-    },
-
-    {
-      '@type': 'Service',
-      name: 'Media Buyback Service',
-      description:
-        'We buy books, CDs, DVDs, Blu-rays, 4K movies, and video games for cash with free shipping',
-      provider: {
-        '@id': 'https://www.sellbookmedia.com/#organization',
-      },
-      serviceType: 'Media Buyback',
-      areaServed: {
-        '@type': 'Country',
-        name: 'United States',
-      },
-      offers: {
-        '@type': 'Offer',
-        description: 'Cash for eligible media with free shipping',
-        availability: 'https://schema.org/InStock',
+        '@id': `${SITE_URL}/#organization`,
       },
     },
   ],
@@ -127,7 +104,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* JSON-LD Structured Data */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -168,7 +144,6 @@ export default function RootLayout({
           }}
         />
 
-        {/* Preconnect for Performance */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"

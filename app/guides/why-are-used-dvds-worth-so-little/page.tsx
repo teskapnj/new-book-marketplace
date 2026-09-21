@@ -130,13 +130,25 @@ export default function WhyAreUsedDvdsWorthSoLittlePage() {
     "@graph": [
       {
         "@type": "Article",
+        "@id": `${PAGE_URL}#article`,
         headline:
           "Why Are Used DVDs Worth So Little? What Actually Makes Some DVDs Valuable?",
         description:
           "A practical guide to realistic DVD, Blu-ray, and 4K buyback expectations and the factors that make certain physical-media releases more valuable.",
-        mainEntityOfPage: PAGE_URL,
+        url: PAGE_URL,
+        mainEntityOfPage: {
+          "@type": "WebPage",
+          "@id": PAGE_URL,
+        },
+        author: {
+          "@type": "Organization",
+          "@id": `${SITE_URL}/#organization`,
+          name: "SellBookMedia",
+          url: SITE_URL,
+        },
         publisher: {
           "@type": "Organization",
+          "@id": `${SITE_URL}/#organization`,
           name: "SellBookMedia",
           url: SITE_URL,
         },
@@ -153,8 +165,8 @@ export default function WhyAreUsedDvdsWorthSoLittlePage() {
           {
             "@type": "ListItem",
             position: 2,
-            name: "Sell DVDs for Cash",
-            item: `${SITE_URL}/sell-dvds-for-cash`,
+            name: "Guides",
+            item: `${SITE_URL}/guides`,
           },
           {
             "@type": "ListItem",
@@ -163,17 +175,6 @@ export default function WhyAreUsedDvdsWorthSoLittlePage() {
             item: PAGE_URL,
           },
         ],
-      },
-      {
-        "@type": "FAQPage",
-        mainEntity: FAQ.map((faq) => ({
-          "@type": "Question",
-          name: faq.q,
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: faq.a,
-          },
-        })),
       },
     ],
   };

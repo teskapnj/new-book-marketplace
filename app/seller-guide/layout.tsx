@@ -1,30 +1,31 @@
-import { Metadata } from 'next'
+import type { Metadata } from 'next'
 
-// ✅ SELLER GUIDE METADATA
+const PAGE_URL = 'https://www.sellbookmedia.com/seller-guide'
+
 export const metadata: Metadata = {
-  title: 'Seller Guide - How to Sell Books, CDs, DVDs & Games for Maximum Value',
-  description: 'Complete guide to selling your used media. Tips for preparing items, maximizing value, packaging properly, and getting paid by PayPal, Venmo, or check by mail. Learn the best practices for selling books, CDs, DVDs, and games.',
+  title: 'How Selling Works | Seller Guide | SellBookMedia',
 
-  keywords: [
-    'how to sell books online',
-    'selling books tips',
-    'maximize book value',
-    'prepare items for selling',
-    'book selling guide',
-    'DVD selling tips',
-    'CD selling advice',
-    'game selling guide',
-  ],
-
-  openGraph: {
-    title: 'Complete Seller Guide - Maximize Your Earnings',
-    description: 'Learn how to sell your books, CDs, DVDs, and games for maximum value, with free prepaid shipping and flexible payment options.',
-    url: 'https://www.sellbookmedia.com/seller-guide',
-    type: 'article',
-  },
+  description:
+    'Learn how to sell books, CDs, DVDs, Blu-rays, 4K movies, and video games to SellBookMedia, from barcode scanning to free shipping and payment.',
 
   alternates: {
-    canonical: 'https://www.sellbookmedia.com/seller-guide',
+    canonical: PAGE_URL,
+  },
+
+  openGraph: {
+    title: 'How Selling Works | Seller Guide | SellBookMedia',
+    description:
+      'Learn how barcode offers, prepaid shipping, inspection, and payment work when selling books and physical media to SellBookMedia.',
+    url: PAGE_URL,
+    type: 'article',
+    siteName: 'SellBookMedia',
+  },
+
+  twitter: {
+    card: 'summary_large_image',
+    title: 'How Selling Works | Seller Guide | SellBookMedia',
+    description:
+      'Learn how barcode offers, free prepaid shipping, inspection, and payment work.',
   },
 
   robots: {
@@ -33,51 +34,56 @@ export const metadata: Metadata = {
   },
 }
 
-// ✅ HOWTO SCHEMA - Step-by-step guide
 const guideSchema = {
   '@context': 'https://schema.org',
   '@type': 'HowTo',
-  name: 'How to Sell Books, CDs, DVDs, and Games for Cash',
-  description: 'Complete guide to selling your used media items for maximum value',
+  name: 'How to Sell Books, CDs, DVDs, Blu-rays, 4K Movies, and Video Games for Cash',
+  description:
+    'A step-by-step guide to checking eligible items, preparing them for shipment, and getting paid by SellBookMedia.',
+  url: PAGE_URL,
+  provider: {
+    '@type': 'Organization',
+    name: 'SellBookMedia',
+    url: 'https://www.sellbookmedia.com',
+  },
   step: [
     {
       '@type': 'HowToStep',
-      name: 'Check Item Condition',
-      text: 'Inspect your items carefully. Only items in very good condition with no writing, highlighting, or damage will be accepted.',
+      name: 'Check item condition',
+      text: 'Review your books and physical media to make sure they meet SellBookMedia condition guidelines.',
       position: 1,
     },
     {
       '@type': 'HowToStep',
-      name: 'Clean Your Items',
-      text: 'Wipe down cases and discs with a soft cloth. Make sure items are free of dust, fingerprints, and odors.',
+      name: 'Scan or enter the barcode',
+      text: 'Scan the ISBN or UPC with your phone camera, or enter the barcode manually, to check whether the exact item qualifies for an offer.',
       position: 2,
     },
     {
       '@type': 'HowToStep',
-      name: 'Scan Barcodes',
-      text: 'Use your phone camera or type the ISBN/UPC barcode to get instant quotes. Focus on items with higher values first.',
+      name: 'Add accepted items to your order',
+      text: 'Add qualifying books, CDs, DVDs, Blu-rays, 4K movies, and video games to the same order until the minimum order value is reached.',
       position: 3,
     },
     {
       '@type': 'HowToStep',
-      name: 'Package Properly',
-      text: 'Use bubble wrap or padding for protection. Pack items snugly to prevent movement during shipping.',
+      name: 'Enter shipping and payment details',
+      text: 'Submit your contact, shipping, and selected payment information during checkout.',
       position: 4,
     },
     {
       '@type': 'HowToStep',
-      name: 'Ship with Provided Label',
-      text: 'Use the prepaid shipping label sent within 24 hours. Drop off at any USPS location.',
+      name: 'Use the prepaid shipping label',
+      text: 'Pack your accepted items securely and ship them using the prepaid shipping label provided for your order.',
       position: 5,
     },
     {
       '@type': 'HowToStep',
-      name: 'Get Paid',
-      text: 'After your shipment arrives and accepted items pass inspection, payment is processed using your selected method: PayPal, Venmo, or check by mail.',
+      name: 'Inspection and payment',
+      text: 'After your shipment arrives, accepted items are inspected and payment is processed using your selected method: PayPal, Venmo, or check by mail.',
       position: 6,
     },
   ],
-  totalTime: 'PT30M',
   estimatedCost: {
     '@type': 'MonetaryAmount',
     currency: 'USD',
@@ -92,13 +98,13 @@ export default function SellerGuideLayout({
 }) {
   return (
     <>
-      {/* HowTo Schema */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(guideSchema) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(guideSchema),
+        }}
       />
 
-      {/* Page content */}
       {children}
     </>
   )

@@ -114,9 +114,9 @@ const gamePlatforms = [
 
 const helpfulGuides = [
   {
-    href: "/guides/sell-video-games-for-cash",
+    href: "/guides/what-makes-used-video-games-valuable",
     icon: "🎮",
-    title: "Video Game Selling Guide",
+    title: "What Makes Used Video Games Valuable?",
     body: "Learn what can affect game value, including PS1, PS2, GameCube, Xbox, Nintendo, retro, and modern titles.",
   },
   {
@@ -230,17 +230,6 @@ export default function SellVideoGamesForCashPage() {
             item: PAGE_URL,
           },
         ],
-      },
-      {
-        "@type": "FAQPage",
-        mainEntity: gameFaqs.map((faq) => ({
-          "@type": "Question",
-          name: faq.q,
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: faq.a,
-          },
-        })),
       },
     ],
   };
@@ -378,8 +367,8 @@ export default function SellVideoGamesForCashPage() {
             </p>
             <p>
               If you are deciding what older games may be worth, read our{" "}
-              <Link href="/guides/sell-video-games-for-cash" className="text-blue-600 font-semibold hover:text-blue-800">
-                complete guide to selling video games for cash
+              <Link href="/guides/what-makes-used-video-games-valuable" className="text-blue-600 font-semibold hover:text-blue-800">
+                guide to what makes used video games valuable
               </Link>
               . If you have a game in front of you, our{" "}
               <Link href="/guides/media-value-by-barcode" className="text-blue-600 font-semibold hover:text-blue-800">
@@ -476,8 +465,8 @@ export default function SellVideoGamesForCashPage() {
 
           <p className="mt-8 text-center text-gray-600">
             Want the bigger picture? Read our{" "}
-            <Link href="/guides/sell-video-games-for-cash" className="font-semibold text-blue-600 hover:text-blue-800">
-              video game value and selling guide
+            <Link href="/guides/what-makes-used-video-games-valuable" className="font-semibold text-blue-600 hover:text-blue-800">
+              used video game value guide
             </Link>
             .
           </p>
@@ -828,7 +817,7 @@ export default function SellVideoGamesForCashPage() {
             <div>
               <h4 className="font-bold text-lg mb-6 text-white">Guides</h4>
               <ul className="space-y-3">
-                <li><Link href="/guides/sell-video-games-for-cash" className="text-gray-400 hover:text-white transition-colors">Video Game Selling Guide</Link></li>
+                <li><Link href="/guides/what-makes-used-video-games-valuable" className="text-gray-400 hover:text-white transition-colors">Used Video Game Value Guide</Link></li>
                 <li><Link href="/guides/media-value-by-barcode" className="text-gray-400 hover:text-white transition-colors">Media Value by Barcode</Link></li>
                 <li><Link href="/guides/best-places-to-sell-cds-dvds-games" className="text-gray-400 hover:text-white transition-colors">Best Places to Sell</Link></li>
                 <li><Link href="/guides/decluttr-shut-down-alternative" className="text-gray-400 hover:text-white transition-colors">Decluttr Alternative</Link></li>

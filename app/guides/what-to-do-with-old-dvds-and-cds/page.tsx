@@ -83,28 +83,52 @@ export default function WhatToDoWithOldDvdsAndCds() {
     "@graph": [
       {
         "@type": "Article",
+        "@id":
+          "https://www.sellbookmedia.com/guides/what-to-do-with-old-dvds-and-cds#article",
         headline: "What to Do With Old DVDs and CDs You No Longer Want",
+        url:
+          "https://www.sellbookmedia.com/guides/what-to-do-with-old-dvds-and-cds",
         datePublished: "2026-08-18",
         dateModified: "2026-08-29",
         author: {
           "@type": "Organization",
+          "@id": "https://www.sellbookmedia.com/#organization",
           name: "SellBookMedia",
         },
         publisher: {
           "@type": "Organization",
+          "@id": "https://www.sellbookmedia.com/#organization",
           name: "SellBookMedia",
+        },
+        mainEntityOfPage: {
+          "@type": "WebPage",
+          "@id":
+            "https://www.sellbookmedia.com/guides/what-to-do-with-old-dvds-and-cds",
         },
       },
       {
-        "@type": "FAQPage",
-        mainEntity: FAQ.map((item) => ({
-          "@type": "Question",
-          name: item.q,
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: item.a,
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: "https://www.sellbookmedia.com",
           },
-        })),
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "Guides",
+            item: "https://www.sellbookmedia.com/guides",
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: "What to Do With Old DVDs and CDs",
+            item:
+              "https://www.sellbookmedia.com/guides/what-to-do-with-old-dvds-and-cds",
+          },
+        ],
       },
     ],
   };
