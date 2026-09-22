@@ -196,6 +196,7 @@ async function fetchKeepaByCode(code: string, apiKey: string) {
       domain: KEEPA_DOMAIN,
       code: code,
       stats: 1,
+      history: 0,
       update: KEEPA_UPDATE_HOURS
     },
     timeout: 4000
