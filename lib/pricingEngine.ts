@@ -148,12 +148,12 @@ function calculateBookPrice(usedPrice: number, salesRank: number): PricingResult
     };
   }
 
-  if (!usedPrice || usedPrice < 20) {
+  if (!usedPrice || usedPrice < 15) {
     return {
       accepted: false,
       reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
       category: 'books',
-      priceRange: usedPrice > 0 ? `Lowest used $${usedPrice} (< $20)` : "No used price"
+      priceRange: usedPrice > 0 ? `Lowest used $${usedPrice} (< $15)` : "No used price"
     };
   }
 
