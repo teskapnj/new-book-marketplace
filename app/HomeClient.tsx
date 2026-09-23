@@ -1084,8 +1084,8 @@ useEffect(() => {
                   <div className="flex items-center gap-4">
                     <AlertCircleIcon size={40} className="text-red-500 flex-shrink-0" />
                     <div>
-                      <p className="text-base font-semibold text-red-800">Barcode not recognized</p>
-                      <p className="text-sm text-red-700 mt-1">{scanError}</p>
+                      <p className="text-base font-semibold text-red-800">We Couldn't Verify This Item</p>
+                      <p className="text-sm text-red-700 mt-1">Please check the barcode and try again.</p>
                     </div>
                   </div>
                 </div>
@@ -1113,7 +1113,7 @@ useEffect(() => {
                         {amazonResult.pricing.accepted ? (
                           <><CheckIcon size={14} /> Accepted - ${amazonResult.pricing.ourPrice?.toFixed(2)}</>
                         ) : (
-                          <><XIcon size={14} /> Not Accepted</>
+                          <><XIcon size={14} /> Not Currently Accepted</>
                         )}
                       </div>
                     </div>
@@ -1469,8 +1469,8 @@ useEffect(() => {
               <div className="mb-4 bg-white rounded-xl border-2 border-red-400 p-4 flex items-center gap-3 shadow-sm">
                 <AlertCircleIcon size={24} className="text-red-500 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold text-red-800">Barcode not recognized</p>
-                  <p className="text-sm text-red-700">{scanError}</p>
+                  <p className="text-sm font-semibold text-red-800">We Couldn't Verify This Item</p>
+                  <p className="text-sm text-red-700">Please check the barcode and try again.</p>
                 </div>
               </div>
             )}
@@ -1514,7 +1514,7 @@ useEffect(() => {
                   <span className={`inline-flex items-center gap-1 mt-1 px-3 py-1 rounded-full text-sm font-bold ${amazonResult.pricing.accepted ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
                     {amazonResult.pricing.accepted
                       ? `Accepted — $${amazonResult.pricing.ourPrice?.toFixed(2)}`
-                      : 'Not accepted'}
+                      : 'Not Currently Accepted'}
                   </span>
                 </div>
               </div>
