@@ -164,6 +164,215 @@ function detectCodeType(code: string): {
   return { type: 'unknown', searchCode: cleanCode };
 }
 
+
+// ==================== MEDIA BARCODE ZONE TEST (LOG ONLY) ====================
+// SADECE DVD / BLU-RAY log gozlemi icindir.
+// Kabul/red/pricing kararini DEGISTIRMEZ.
+//
+// IMPORTANT:
+// GS1 prefix = barkodu tahsis eden GS1 Member Organisation sinyali.
+// Urunun kesin uretim/satis ulkesini kanitlamaz.
+function getMediaBarcodeZoneTag(
+  code: string,
+  isDvdOrBluRay: boolean
+): string {
+  if (!isDvdOrBluRay) return '';
+
+  const digits = String(code).replace(/\D/g, '');
+
+  // Bu testte 12 haneli UPC'leri ayri tutuyoruz.
+  if (digits.length === 12) {
+    return '🇺🇸/🇨🇦 UPC-12 / NORTH AMERICA SIGNAL | ';
+  }
+
+  if (digits.length !== 13) {
+    return '❓ MEDIA CODE / UNKNOWN ZONE | ';
+  }
+
+  const prefix = Number(digits.slice(0, 3));
+  const prefixText = digits.slice(0, 3);
+  const between = (min: number, max: number) =>
+    prefix >= min && prefix <= max;
+
+  // ----------------------------------------------------------
+  // NORTH AMERICA
+  // ----------------------------------------------------------
+  if (
+    between(1, 19) ||
+    between(30, 39) ||
+    between(50, 59) ||
+    between(60, 139)
+  ) {
+    return `🇺🇸 NORTH AMERICA [GS1 US ${prefixText}] | `;
+  }
+
+  if (between(754, 755)) {
+    return `🇨🇦 NORTH AMERICA [GS1 Canada ${prefixText}] | `;
+  }
+
+  // ----------------------------------------------------------
+  // JAPAN - ASIA'dan AYRI tutuluyor
+  // ----------------------------------------------------------
+  if (
+    between(450, 459) ||
+    between(490, 499)
+  ) {
+    return `🗾 JAPAN [EAN ${prefixText}] | `;
+  }
+
+  // ----------------------------------------------------------
+  // EUROPE
+  // ----------------------------------------------------------
+  if (
+    between(300, 379) || // France
+    prefix === 380 ||    // Bulgaria
+    prefix === 383 ||    // Slovenia
+    prefix === 385 ||    // Croatia
+    prefix === 387 ||    // Bosnia-Herzegovina
+    prefix === 389 ||    // Montenegro
+    between(400, 440) || // Germany
+    prefix === 474 ||    // Estonia
+    prefix === 475 ||    // Latvia
+    prefix === 477 ||    // Lithuania
+    prefix === 481 ||    // Belarus
+    prefix === 482 ||    // Ukraine
+    prefix === 484 ||    // Moldova
+    between(500, 509) || // UK
+    between(520, 521) || // Greece
+    prefix === 529 ||    // Cyprus
+    prefix === 530 ||    // Albania
+    prefix === 531 ||    // North Macedonia
+    prefix === 535 ||    // Malta
+    prefix === 539 ||    // Ireland
+    between(540, 549) || // Belgium/Luxembourg
+    prefix === 560 ||    // Portugal
+    prefix === 569 ||    // Iceland
+    between(570, 579) || // Denmark
+    prefix === 590 ||    // Poland
+    prefix === 594 ||    // Romania
+    prefix === 599 ||    // Hungary
+    between(640, 649) || // Finland
+    between(700, 709) || // Norway
+    between(730, 739) || // Sweden
+    between(760, 769) || // Switzerland
+    between(800, 839) || // Italy
+    between(840, 849) || // Spain
+    prefix === 858 ||    // Slovakia
+    prefix === 859 ||    // Czech Republic
+    prefix === 860 ||    // Serbia
+    between(870, 879) || // Netherlands
+    between(900, 919)    // Austria
+  ) {
+    return `🌍 EUROPE [EAN ${prefixText}] | `;
+  }
+
+  // ----------------------------------------------------------
+  // EURASIA / CAUCASUS / CENTRAL ASIA
+  // Ayrica gosteriyoruz ki sonra kendimiz karar verebilelim.
+  // ----------------------------------------------------------
+  if (
+    between(460, 469) || // Russia
+    prefix === 470 ||    // Kyrgyzstan
+    prefix === 476 ||    // Azerbaijan
+    prefix === 478 ||    // Uzbekistan
+    prefix === 483 ||    // Turkmenistan
+    prefix === 485 ||    // Armenia
+    prefix === 486 ||    // Georgia
+    prefix === 487 ||    // Kazakhstan
+    prefix === 488 ||    // Tajikistan
+    between(868, 869)    // Türkiye
+  ) {
+    return `🌍 EURASIA [EAN ${prefixText}] | `;
+  }
+
+  // ----------------------------------------------------------
+  // ASIA
+  // ----------------------------------------------------------
+  if (
+    prefix === 471 ||        // Chinese Taipei
+    prefix === 479 ||        // Sri Lanka
+    prefix === 480 ||        // Philippines
+    prefix === 489 ||        // Hong Kong
+    between(680, 681) ||     // China
+    between(690, 699) ||     // China
+    prefix === 865 ||        // Mongolia
+    prefix === 867 ||        // North Korea
+    between(880, 881) ||     // South Korea
+    prefix === 883 ||        // Myanmar
+    prefix === 884 ||        // Cambodia
+    prefix === 885 ||        // Thailand
+    prefix === 888 ||        // Singapore
+    prefix === 890 ||        // India
+    prefix === 893 ||        // Vietnam
+    prefix === 896 ||        // Pakistan
+    prefix === 899 ||        // Indonesia
+    prefix === 955 ||        // Malaysia
+    prefix === 958           // Macau
+  ) {
+    return `🌏 ASIA [EAN ${prefixText}] | `;
+  }
+
+  // ----------------------------------------------------------
+  // MIDDLE EAST / AFRICA
+  // ----------------------------------------------------------
+  if (
+    prefix === 528 ||        // Lebanon
+    between(600, 601) ||     // South Africa
+    between(603, 609) ||
+    prefix === 611 ||
+    prefix === 613 ||
+    between(615, 622) ||
+    between(624, 632) ||
+    prefix === 729           // Israel
+  ) {
+    return `🌍 MENA/AFRICA [EAN ${prefixText}] | `;
+  }
+
+  // ----------------------------------------------------------
+  // LATIN AMERICA / CARIBBEAN
+  // ----------------------------------------------------------
+  if (
+    between(740, 746) ||
+    prefix === 750 ||        // Mexico
+    prefix === 759 ||        // Venezuela
+    between(770, 771) ||     // Colombia
+    prefix === 773 ||        // Uruguay
+    prefix === 775 ||        // Peru
+    prefix === 777 ||        // Bolivia
+    between(778, 779) ||     // Argentina
+    prefix === 780 ||        // Chile
+    prefix === 784 ||        // Paraguay
+    prefix === 786 ||        // Ecuador
+    between(789, 790) ||     // Brazil
+    prefix === 850           // Cuba
+  ) {
+    return `🌎 LATAM [EAN ${prefixText}] | `;
+  }
+
+  // ----------------------------------------------------------
+  // OCEANIA
+  // ----------------------------------------------------------
+  if (
+    between(930, 939) ||     // Australia
+    between(940, 949)        // New Zealand
+  ) {
+    return `🌏 OCEANIA [EAN ${prefixText}] | `;
+  }
+
+  // ----------------------------------------------------------
+  // GS1 GLOBAL / SPECIAL
+  // ----------------------------------------------------------
+  if (
+    between(950, 952) ||
+    between(960, 969) ||
+    between(977, 983)
+  ) {
+    return `🌐 GS1 GLOBAL/SPECIAL [EAN ${prefixText}] | `;
+  }
+
+  return `❓ OTHER [EAN ${prefixText}] | `;
+}
+
 // ==================== KEEPA API ÇAĞRILARI ====================
 
 /**
@@ -695,8 +904,13 @@ export async function POST(request: NextRequest) {
             : 'DOES NOT MEET OUR PURCHASING CRITERIA'
           : cachedResult.message;
 
+        const cachedMediaZoneTag = getMediaBarcodeZoneTag(
+          cleanCode,
+          cachedPricing?.category === 'dvds'
+        );
+
         console.log(
-          `⚡ CACHE HIT: ${cleanCode} | ` +
+          `${cachedMediaZoneTag}⚡ CACHE HIT: ${cleanCode} | ` +
           `Price: $${cachedProduct?.price ?? 0} (${cachedProduct?.priceType || 'unknown'}) | ` +
           `${cachedPricing?.category === 'books'
             ? `BookUSED: $${cachedProduct?.bookUsedPrice ?? 0} | Rule: ${cachedPricing?.priceRange || 'N/A'} | `
@@ -841,6 +1055,11 @@ export async function POST(request: NextRequest) {
       }
       : calculateOurPrice(product);
 
+    const mediaZoneTag = getMediaBarcodeZoneTag(
+      cleanCode,
+      pricingResult.category === 'dvds'
+    );
+
     const message =
       pricingResult.accepted && pricingResult.ourPrice
         ? 'ACCEPTED'
@@ -876,7 +1095,7 @@ export async function POST(request: NextRequest) {
         );
 
         console.log(
-          `💾 CACHE WRITE: ${cleanCode} | ` +
+          `${mediaZoneTag}💾 CACHE WRITE: ${cleanCode} | ` +
           `Price: $${product.price ?? 0} (${product.priceType || 'unknown'}) | ` +
           `${pricingResult.category === 'books'
             ? `BookUSED: $${product.bookUsedPrice ?? 0} | Rule: ${pricingResult.priceRange || 'N/A'} | `
@@ -899,7 +1118,7 @@ export async function POST(request: NextRequest) {
     console.log(`[${speedLabel}] ${totalTime}ms - Keepa lookup (${debugInfo.lookupType})`);
 
     console.log(
-      `💰 KEEPA: ${cleanCode} | ` +
+      `${mediaZoneTag}💰 KEEPA: ${cleanCode} | ` +
       `Price: $${priceAnalysis.price} (${priceAnalysis.bestCondition}) | ` +
       `${pricingResult.category === 'books'
         ? `BookUSED: $${product.bookUsedPrice ?? 0} | Rule: ${pricingResult.priceRange || 'N/A'} | `
