@@ -47,3 +47,6 @@ certificates
 # Firebase Service Account Keys
 lib/firebase/*firebase-adminsdk*.json
 lib/firebase/serviceAccountKey.json
+# Local SSL certificates
+*.key
+*.crt
