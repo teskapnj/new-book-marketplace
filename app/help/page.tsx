@@ -41,7 +41,7 @@ const GROUPS: Group[] = [
       },
       {
         q: "What condition do items need to be in?",
-        a: "Very good condition: clean, complete with original case and artwork, no writing or stickers, and no deep scratches. Ex-library and ex-rental copies aren't accepted.",
+        a: "Very good condition: clean, complete with original case and artwork when applicable, no writing, highlighting, or stickers, and no deep scratches. Essential components must be included. Ex-library and ex-rental copies aren't accepted.",
         href: "/condition-guidelines",
         hrefLabel: "Full condition guidelines",
       },
@@ -70,7 +70,7 @@ const GROUPS: Group[] = [
       },
       {
         q: "How should I pack the items?",
-        a: "Use a sturdy box or padded envelope, include every item from your submission, and attach the prepaid label securely. No extra packing material is needed inside.",
+        a: "Use a sturdy box or padded envelope, include every item from your submission, and attach the prepaid label securely. Fill empty space with suitable packing material so items cannot shift during transit.",
       },
       {
         q: "Can I track my package?",

@@ -36,7 +36,7 @@ const FAQ = [
   },
   {
     q: "What if some of my items aren't accepted?",
-    a: "Only qualifying items receive payment. Non-qualifying items are responsibly recycled rather than returned.",
+    a: "Only qualifying items receive payment. Rejected items can be returned if you provide a prepaid return shipping label within 2 business days after payment is issued. Otherwise, they are recycled.",
   },
   {
     q: "Can I track my package?",

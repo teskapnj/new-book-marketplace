@@ -240,7 +240,7 @@ export default function TermsPage() {
                 "Items must be in very good condition with minimal wear",
                 "No writing, highlighting, underlining, or markings of any kind",
                 "No water damage, stains, odors, or structural damage",
-                "All original components must be included (cases, covers, manuals, inserts)",
+                "Original cases, covers, artwork, and essential components must be included when applicable",
                 "Items must function properly without defects",
               ]}
             />
