@@ -123,7 +123,7 @@ export default function TermsPage() {
           </p>
 
           <p className="mt-8 border-t border-white/15 pt-5 text-sm text-blue-200">
-            Effective <time dateTime="2026-09-08">September 8, 2026</time>
+            Effective <time dateTime="2026-09-24">September 24, 2026</time>
           </p>
         </div>
       </header>
@@ -196,7 +196,7 @@ export default function TermsPage() {
                 </>,
                 "Ensure items have no writing, highlighting, markings, or damage",
                 "Package items securely using appropriate materials",
-                "Ship items within 10 days of receiving prepaid shipping labels",
+                "Ship items within 15 days of receiving prepaid shipping labels",
                 "Provide accurate shipping and order information",
               ]}
             />
@@ -338,7 +338,7 @@ export default function TermsPage() {
                 "Water-damaged or moldy items",
                 "Ex-library books or items with library markings",
                 "Promotional, bootleg, or counterfeit items",
-                "Items missing original components (cases, covers, manuals)",
+                "Items missing essential components or required original cases, covers, or artwork when applicable",
                 "Items with strong odors (smoke, mildew, and similar)",
               ]}
             />
@@ -515,7 +515,7 @@ export default function TermsPage() {
         {/* ---------- Kapanis ---------- */}
         <div className="mt-14 rounded-2xl border border-slate-200 bg-white px-6 py-6 shadow-sm">
           <p className="text-sm font-semibold text-slate-900">
-            Effective <time dateTime="2026-09-08">September 8, 2026</time>
+            Effective <time dateTime="2026-09-24">September 24, 2026</time>
           </p>
           <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
             By submitting items to our platform, you acknowledge that you have

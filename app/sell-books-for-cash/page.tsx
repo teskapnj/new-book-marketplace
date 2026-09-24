@@ -55,7 +55,7 @@ const faqs = [
   },
   {
     q: "What condition do my books need to be in?",
-    a: "Books should be in very good condition with only minor wear. They should not have excessive writing, highlighting, missing pages, strong odors, mold, or water damage. Review our condition guidelines before shipping.",
+    a: "Books should be in very good condition with only minor wear. They should not have writing, highlighting, missing pages, strong odors, mold, or water damage. Review our condition guidelines before shipping.",
   },
   {
     q: "Do you buy every book?",

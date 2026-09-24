@@ -1,5 +1,5 @@
 // components/CheckoutForm.tsx
-// Tek sayfa checkout: ana sayfada 5 urune ulasilinca acilan shipping formu.
+// Tek sayfa checkout: ana sayfada $7.50 minimum teklif degerine ulasilinca acilan shipping formu.
 // bundleItems prop olarak gelir, form onu sadece OKUR - sepet yonetimi ana sayfada kalir.
 "use client";
 

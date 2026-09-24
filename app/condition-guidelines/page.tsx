@@ -243,8 +243,8 @@ export default function ConditionGuidelines() {
               <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
                 Covers and pages should be intact and readable. Normal
                 shelf wear is okay, but please avoid sending books with
-                major water damage, mold, missing pages, or excessive
-                writing and highlighting.
+                major water damage, mold, missing pages, or any
+                writing or highlighting.
               </p>
             </div>
 

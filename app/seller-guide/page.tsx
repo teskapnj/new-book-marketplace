@@ -227,6 +227,7 @@ export default function SellerGuidePage() {
                   items={[
                     "Items only appear in your list if we accept them",
                     "If an item doesn't appear, we don't currently buy that title",
+                    "Your order must reach a minimum cash offer of $7.50 before submission",
                     "Check the condition guide before adding items",
                   ]}
                 />

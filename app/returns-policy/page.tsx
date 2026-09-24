@@ -5,7 +5,7 @@ import Link from "next/link";
 const ACCEPTABLE = [
   "In good working condition, fully functional",
   "Minor wear from normal use",
-  "Complete with original components (cases, covers, manuals)",
+  "Complete with essential components and original cases or cover artwork when applicable",
   "Clean and odor-free",
 ];
 

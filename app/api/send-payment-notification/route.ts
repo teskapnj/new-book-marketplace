@@ -86,6 +86,12 @@ export async function POST(request: NextRequest) {
                       <tr><td style="padding:5px 0;">&bull;&nbsp;&nbsp;Check your ${paymentMethodLabel} account for the incoming payment</td></tr>
                       <tr><td style="padding:5px 0;">&bull;&nbsp;&nbsp;Keep this email for your records</td></tr>`;
 
+    const rejectedItemReturnNoticeHtml = `
+                      <tr><td style="padding:5px 0;">&bull;&nbsp;&nbsp;If any items were rejected and you want them returned, provide a prepaid return shipping label within 2 business days after payment is issued. Otherwise, rejected items will be recycled.</td></tr>`;
+
+    const rejectedItemReturnNoticeText =
+      "- If any items were rejected and you want them returned, provide a prepaid return shipping label within 2 business days after payment is issued. Otherwise, rejected items will be recycled.";
+
     const paymentNextStepsText = isCheckPayment
       ? `- Your paper check will be mailed on the next business day to the shipping address on your order
 - Delivery time will depend on USPS mail service
@@ -205,6 +211,7 @@ export async function POST(request: NextRequest) {
                     <div style="font-size:14px; font-weight:700; color:#92400e; margin-bottom:12px;">What's Next</div>
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px; color:#78350f; line-height:1.5;">
 ${paymentNextStepsHtml}
+${rejectedItemReturnNoticeHtml}
                     </table>
                   </td>
                 </tr>
@@ -282,6 +289,7 @@ ${notes ? `- Note: ${notes}` : ''}
 
 What's Next?
 ${paymentNextStepsText}
+${rejectedItemReturnNoticeText}
 
 Thank you for selling with SellBook Media!
 
