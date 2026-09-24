@@ -11,7 +11,7 @@ const ACCEPT = [
 ];
 
 const REJECT = [
-  "Heavy writing, highlighting, or excessive markings",
+  "Any writing, highlighting, underlining, or markings of any kind",
   "Deep scratches or damage that affects playback",
   "Water damage, mold, heavy stains, or strong odors",
   "Missing pages, discs, or essential parts",

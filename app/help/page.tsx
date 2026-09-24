@@ -37,7 +37,7 @@ const GROUPS: Group[] = [
       },
       {
         q: "Why didn't my item appear in the list?",
-        a: "Items only appear if we make an offer on them. If nothing appeared, that title may not currently meet our purchasing criteria, or it may be a format we don.t buy. It isn't a problem with the scan.",
+        a: "Items only appear if we make an offer on them. If nothing appeared, that title may not currently meet our purchasing criteria, or it may be a format we don't buy. It isn't a problem with the scan.",
       },
       {
         q: "What condition do items need to be in?",
@@ -46,8 +46,8 @@ const GROUPS: Group[] = [
         hrefLabel: "Full condition guidelines",
       },
       {
-        q: "Is there a minimum number of items?",
-        a: "Yes, five accepted items per box. Books, CDs, DVDs, and games can be mixed in any combination to reach it.",
+        q: "Is there a minimum order?",
+        a: "Yes. Your order must reach a minimum cash offer of $7.50. Eligible books, CDs, DVDs, Blu-rays, 4K movies, and video games can be mixed in the same order.",
       },
     ],
   },
@@ -85,7 +85,7 @@ const GROUPS: Group[] = [
     items: [
       {
         q: "What happens when you receive my box?",
-        a: "Every item is inspected against our condition standards, then sorted. Items that meet the standard are processed for payment; items that don't are recycled.",
+        a: "Every item is inspected against our condition standards, then sorted. Items that meet the standard are processed for payment. Rejected items are not paid for; if you want them returned, you must provide a prepaid return shipping label within 2 business days after payment is issued. Otherwise, they are recycled.",
       },
       {
         q: "How do I get paid?",
@@ -93,7 +93,7 @@ const GROUPS: Group[] = [
       },
       {
         q: "Do you return items you don't accept?",
-        a: "No. Items that don't meet our condition standard are recycled rather than returned, and aren't paid for. That's why it's worth checking condition carefully before you ship.",
+        a: "Rejected items are not paid for, but you can request to have them returned by providing a prepaid return shipping label within 2 business days after payment is issued. If we do not receive a return label within that time, the rejected items are recycled.",
         href: "/returns-policy",
         hrefLabel: "Returns policy",
       },
@@ -134,7 +134,7 @@ const GROUPS: Group[] = [
 
 const LINKS = [
   { href: "/condition-guidelines", title: "Condition guidelines", blurb: "What we accept and reject" },
-  { href: "/returns-policy", title: "Returns policy", blurb: "Why items aren't sent back" },
+  { href: "/returns-policy", title: "Returns policy", blurb: "How rejected-item returns work" },
   { href: "/seller-guide", title: "Seller guide", blurb: "The whole process, step by step" },
   { href: "/", title: "Start scanning", blurb: "Get an instant cash offer" },
 ];

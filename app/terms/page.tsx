@@ -244,21 +244,6 @@ export default function TermsPage() {
                 "Items must function properly without defects",
               ]}
             />
-            <section id="no-returns" className="scroll-mt-8">
-  <SectionHeading n="06" title="Rejected items return policy" />
-  <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-    If any items are rejected after inspection, you may request to have
-    them returned by providing a prepaid return shipping label.
-  </p>
-  <List
-    items={[
-      "Rejected items are not eligible for payment",
-      "You must provide a prepaid return shipping label within 2 business days after payment is issued",
-      "If we do not receive a return label within that time, the rejected items will be recycled",
-      "Return shipping costs are the seller's responsibility",
-    ]}
-  />
-</section>
             <Link
               href="/condition-guidelines"
               className="mt-5 inline-flex items-center text-sm font-semibold text-blue-600 hover:text-blue-700"
