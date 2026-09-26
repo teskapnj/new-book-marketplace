@@ -113,6 +113,63 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
 
+      // Legacy marketplace / buyer URLs
+      {
+        source: "/cart",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/checkout/:path*",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/listings",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/products/:path*",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/how-to-buy",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/subscription",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/my-listings",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/dashboard",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/dashboard/my-orders",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/dashboard/my-sales",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/dashboard/listings/:path*",
+        destination: "/",
+        permanent: true,
+      },
+
       {
         source: "/sell",
         destination: "/",

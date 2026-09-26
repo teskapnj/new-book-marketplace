@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     const totalValue = Number(data.totalValue) || 0;
     const avgPerItem = totalItems > 0 ? totalValue / totalItems : 0;
     const shortId = data.submissionId ? String(data.submissionId).substring(0, 8) : 'n/a';
-    const dashboardUrl = 'https://www.sellbookmedia.com/admin/listings';
+    const dashboardUrl = 'https://www.sellbookmedia.com/admin/dashboard';
     const submittedAt = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
 
     const ship = data.shippingInfo;

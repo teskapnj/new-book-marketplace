@@ -568,7 +568,7 @@ export default function CheckoutForm({
           totalValue,
           totalAmazonValue,
           submissionId: docRef.id,
-          dashboardUrl: `${window.location.origin}/admin/listings`,
+          dashboardUrl: `${window.location.origin}/admin/dashboard`,
           shippingInfo,
         }),
       }).catch((err) => console.error("Admin email error:", err));

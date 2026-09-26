@@ -348,13 +348,11 @@ router.push("/");
       
       // Check if user exists in Firestore
       const userDoc = await getDoc(doc(db, "users", socialUser.uid));
-      let userRole = "seller"; // Default role for social login
       let userName = socialUser.displayName || "User";
       let userStatus = "active"; // Default status
       
       if (userDoc.exists()) {
         const userData = userDoc.data() as DocumentData;
-        userRole = userData.role || "seller";
         userName = userData.name || userData.displayName || socialUser.displayName || "User";
         userStatus = userData.status || "active";
         
@@ -397,13 +395,10 @@ router.push("/");
       
       // ÇİFT KONTROLLÜ ADMIN REDIRECT - GÜVENLİ
       if (await isAdminUser(socialUser.email || "", socialUser.uid)) {
-        console.log("Social admin access granted - both Firestore role and environment email verified");
+        console.log("Social admin access granted");
         router.push("/admin/dashboard");
-      } else if (userRole === "buyer") {
-        console.log("Redirecting to listing page");
-        router.push("/listings");
       } else {
-        console.log("Redirecting to create listing page");
+        console.log("Redirecting to home page");
         router.push("/");
       }
     } catch (error) {

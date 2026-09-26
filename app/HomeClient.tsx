@@ -85,16 +85,6 @@ function XIcon({ size = 24, className = "" }) {
   );
 }
 
-function ShoppingCartIcon({ size = 24, className = "" }) {
-  return (
-    <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="9" cy="21" r="1"></circle>
-      <circle cx="20" cy="21" r="1"></circle>
-      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-    </svg>
-  );
-}
-
 function AdminIcon({ size = 24, className = "" }) {
   return (
     <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1240,25 +1230,10 @@ useEffect(() => {
               SellBookMedia
             </Link>
             <div className="flex items-center space-x-2">
-              {userRole === UserRole.BUYER && (
-                <Link href="/cart" className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors relative">
-                  <ShoppingCartIcon size={20} />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></span>
-                </Link>
-              )}
              {user && (
   <button
     onClick={() => {
-      switch (userRole) {
-        case UserRole.ADMIN:
-          router.push('/admin/dashboard');
-          break;
-        case UserRole.BUYER:
-          router.push('/listings');
-          break;
-        default:
-          router.push('/');
-      }
+      router.push(userRole === UserRole.ADMIN ? '/admin/dashboard' : '/');
     }}
     className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"
   >
@@ -1281,22 +1256,10 @@ useEffect(() => {
                 <div className="h-10 w-32 bg-gray-200 rounded-lg animate-pulse"></div>
               ) : user ? (
                 <>
-                  {userRole === UserRole.ADMIN ? (
+                  {userRole === UserRole.ADMIN && (
                     <Link href="/admin/dashboard" className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-2 rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-200 shadow-lg hover:shadow-xl font-medium flex items-center">
                       <AdminIcon size={20} className="mr-2" />
                       Admin Dashboard
-                    </Link>
-                  ) : userRole === UserRole.BUYER ? (
-                    <Link href="/listings" className="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-2 rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-xl font-medium flex items-center">
-                      <ShoppingCartIcon size={20} className="mr-2" />
-                      Start Shopping
-                    </Link>
-                  ) : null}
-
-                  {userRole === UserRole.BUYER && (
-                    <Link href="/cart" className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors relative">
-                      <ShoppingCartIcon size={20} />
-                      <span className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></span>
                     </Link>
                   )}
 
@@ -1329,18 +1292,6 @@ useEffect(() => {
                       <AdminIcon size={20} className="mr-2" />
                       Admin Dashboard
                     </Link>
-                  )}
-                  {userRole === UserRole.BUYER && (
-                    <>
-                      <Link href="/listings" className="font-medium text-gray-900 py-2 hover:text-green-600 transition-colors flex items-center">
-                        <ShoppingCartIcon size={20} className="mr-2" />
-                        Start Shopping
-                      </Link>
-                      <Link href="/cart" className="font-medium text-gray-900 py-2 hover:text-green-600 transition-colors flex items-center">
-                        <ShoppingCartIcon size={20} className="mr-2" />
-                        My Cart
-                      </Link>
-                    </>
                   )}
                   <button onClick={handleSecureLogout} className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors text-left w-full">
                     Logout
@@ -2107,12 +2058,6 @@ useEffect(() => {
               <Link href="/admin/dashboard" className="inline-flex items-center px-8 py-4 bg-white text-purple-600 font-bold text-lg rounded-2xl hover:bg-gray-100 transition-all duration-300 shadow-lg">
                 <AdminIcon size={24} className="mr-3" />
                 Admin Dashboard
-                <ArrowRightIcon size={24} className="ml-3" />
-              </Link>
-            ) : userRole === UserRole.BUYER ? (
-              <Link href="/listings" className="inline-flex items-center px-8 py-4 bg-white text-green-600 font-bold text-lg rounded-2xl hover:bg-gray-100 transition-all duration-300 shadow-lg">
-                <ShoppingCartIcon size={24} className="mr-3" />
-                Start Shopping
                 <ArrowRightIcon size={24} className="ml-3" />
               </Link>
             ) : (

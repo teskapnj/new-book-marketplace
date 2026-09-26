@@ -4,9 +4,8 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export enum UserRole {
-  SELLER = 'seller',  // Satıcılar (eski USER yerine)
-  BUYER = 'buyer',    // Alıcılar
-  ADMIN = 'admin'     // Yöneticiler
+  SELLER = 'seller',
+  ADMIN = 'admin'
 }
 
 interface RoleVerificationResponse {
@@ -103,8 +102,8 @@ export const verifyUserRoleSecurely = async (user: User): Promise<UserRole> => {
       switch (firestoreRole) {
         case 'admin':
           return UserRole.ADMIN;
-        case 'buyer':
-          return UserRole.BUYER;
+        case 'buyer': // Legacy marketplace account
+          return UserRole.SELLER;
         case 'seller':
           return UserRole.SELLER;
         case 'user': // Eski "user" rolü varsa seller'a çevir

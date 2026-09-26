@@ -1,8 +1,5 @@
 import './globals.css'
-import { CartProvider } from '../contexts/CartContext'
-import { WishlistProvider } from '../contexts/WishlistContext'
 import { AuthProvider } from '../contexts/AuthContext'
-import { StoreProvider } from '@/lib/store'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Analytics } from '@vercel/analytics/react'
 import type { Metadata } from 'next'
@@ -154,16 +151,10 @@ export default function RootLayout({
 
       <body>
         <AuthProvider>
-          <WishlistProvider>
-            <CartProvider>
-              <StoreProvider>
-                {children}
+          {children}
 
-                <SpeedInsights />
-                <Analytics />
-              </StoreProvider>
-            </CartProvider>
-          </WishlistProvider>
+          <SpeedInsights />
+          <Analytics />
         </AuthProvider>
       </body>
     </html>

@@ -220,13 +220,9 @@ export default function LoginPage() {
         
         // ÇİFT KONTROLLÜ ADMIN REDIRECT - GÜVENLİ
         if (await isAdminUser(userData.email || firebaseUser.email || "", userId)) {
-          console.log("Admin access granted - both Firestore role and environment email verified");
+          console.log("Admin access granted");
           router.push("/admin/dashboard");
-        } else if (userRole === "buyer") {
-          console.log("Redirecting to listing page");
-          router.push("/listings");
         } else {
-          // Satici ana sayfaya doner - tarama ve sepet orada
           console.log("Redirecting to home page");
           router.push("/");
         }
@@ -430,13 +426,9 @@ export default function LoginPage() {
         
         // Çift kontrollü admin redirect - GÜVENLİ
         if (await isAdminUser(formData.email, userCredential.user.uid)) {
-          console.log("Admin access granted - both Firestore role and environment email verified");
+          console.log("Admin access granted");
           router.push("/admin/dashboard");
-        } else if (userData.role === "buyer") {
-          console.log("Redirecting to listing page");
-          router.push("/listings");
         } else {
-          // Satici ana sayfaya doner - misafirken taranan sepet orada devam eder
           console.log("Redirecting to home page");
           router.push("/");
         }
@@ -513,13 +505,11 @@ export default function LoginPage() {
     try {
       // Check if user exists in Firestore for social login - FRESH DATA
       const userDoc = await getDoc(doc(db, "users", socialUser.uid));
-      let userRole = "seller"; // Default role for social login
       let userName = socialUser.displayName || "User";
       let userStatus = "active"; // Default status
       
       if (userDoc.exists()) {
         const userData = userDoc.data() as DocumentData;
-        userRole = userData.role || "seller";
         userName = userData.name || userData.displayName || socialUser.displayName || "User";
         userStatus = userData.status || "active";
         
@@ -564,13 +554,9 @@ export default function LoginPage() {
       
       // ÇİFT KONTROLLÜ ADMIN REDIRECT - GÜVENLİ
       if (await isAdminUser(socialUser.email || "", socialUser.uid)) {
-        console.log("Social admin access granted - both Firestore role and environment email verified");
+        console.log("Social admin access granted");
         router.push("/admin/dashboard");
-      } else if (userRole === "buyer") {
-        console.log("Redirecting to listing page");
-        router.push("/listings");
       } else {
-        // Satici ana sayfaya doner
         console.log("Redirecting to home page");
         router.push("/");
       }
