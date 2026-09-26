@@ -85,6 +85,7 @@ interface BundleItem {
   condition: string;
   price: number;
   quantity: number;
+  originalPrice?: number | null;
 }
 
 interface ShippingInfo {
@@ -143,6 +144,7 @@ interface Listing {
   rejectedItemCount?: number;
   acceptedValue?: number;
   rejectedValue?: number;
+  acceptedAmazonValue?: number;
   actualShippingCost?: number;
   excludeFromReports?: boolean;
 
@@ -818,7 +820,10 @@ export default function AdminListingsPage() {
                 title: data.title || "Untitled Bundle",
                 totalItems: data.totalItems || 0,
                 totalValue: data.totalValue || 0,
-                totalAmazonValue: data.totalAmazonValue || 0, // Amazon toplam fiyatı
+                totalAmazonValue:
+                  typeof data.totalAmazonValue === "number"
+                    ? data.totalAmazonValue
+                    : undefined, // Amazon toplam fiyatı
                 shippingInfo: data.shippingInfo || null,
                 status: data.status || "pending",
                 vendorId: data.vendorId,
@@ -847,6 +852,7 @@ export default function AdminListingsPage() {
                 rejectedItemCount: data.rejectedItemCount ?? 0,
                 acceptedValue: data.acceptedValue ?? 0,
                 rejectedValue: data.rejectedValue ?? 0,
+                acceptedAmazonValue: data.acceptedAmazonValue,
                 actualShippingCost: data.actualShippingCost ?? 0,
                 excludeFromReports: data.excludeFromReports ?? false
               });
@@ -873,7 +879,10 @@ export default function AdminListingsPage() {
                     title: data.title || "Untitled Bundle",
                     totalItems: data.totalItems || 0,
                     totalValue: data.totalValue || 0,
-                    totalAmazonValue: data.totalAmazonValue || 0, // Amazon toplam fiyatı
+                    totalAmazonValue:
+                      typeof data.totalAmazonValue === "number"
+                        ? data.totalAmazonValue
+                        : undefined, // Amazon toplam fiyatı
                     shippingInfo: data.shippingInfo || null,
                     status: data.status || "pending",
                     vendorId: data.vendorId,
@@ -902,6 +911,7 @@ export default function AdminListingsPage() {
                     rejectedItemCount: data.rejectedItemCount ?? 0,
                     acceptedValue: data.acceptedValue ?? 0,
                     rejectedValue: data.rejectedValue ?? 0,
+                    acceptedAmazonValue: data.acceptedAmazonValue,
                     actualShippingCost: data.actualShippingCost ?? 0,
                     excludeFromReports: data.excludeFromReports ?? false
                   });
@@ -1142,26 +1152,27 @@ export default function AdminListingsPage() {
     );
   });
 
-  const reportOrdersSubmitted = monthlyListings.length;
-
-  const reportPackagesArrived = monthlyListings.filter(
+  const arrivedMonthlyListings = monthlyListings.filter(
     (listing) =>
       listing.paymentSent ||
       listing.status === "payment_sent" ||
       listing.status === "sold"
-  ).length;
+  );
+
+  const reportOrdersSubmitted = monthlyListings.length;
+  const reportPackagesArrived = arrivedMonthlyListings.length;
 
   const reportTotalItems = monthlyListings.reduce(
     (sum, listing) => sum + (listing.totalItems || 0),
     0
   );
 
-  const reportAcceptedItems = monthlyListings.reduce(
+  const reportAcceptedItems = arrivedMonthlyListings.reduce(
     (sum, listing) => sum + (listing.acceptedItemCount || 0),
     0
   );
 
-  const reportRejectedItems = monthlyListings.reduce(
+  const reportRejectedItems = arrivedMonthlyListings.reduce(
     (sum, listing) => sum + (listing.rejectedItemCount || 0),
     0
   );
@@ -1176,13 +1187,58 @@ export default function AdminListingsPage() {
     0
   );
 
-  const reportTotalPaid = monthlyListings.reduce(
+  const reportTotalPaid = arrivedMonthlyListings.reduce(
     (sum, listing) => sum + (listing.paymentAmount || 0),
     0
   );
 
-  const reportShippingCost = monthlyListings.reduce(
+  const reportShippingCost = arrivedMonthlyListings.reduce(
     (sum, listing) => sum + (listing.actualShippingCost || 0),
+    0
+  );
+
+  const reportArrivedAmazonValue = arrivedMonthlyListings.reduce(
+    (sum, listing) => sum + (listing.totalAmazonValue || 0),
+    0
+  );
+
+  const getExactAcceptedAmazonValue = (listing: Listing): number | null => {
+    if (typeof listing.acceptedAmazonValue === "number") {
+      return listing.acceptedAmazonValue;
+    }
+
+    const acceptedCount = listing.acceptedItemCount || 0;
+    const rejectedCount = listing.rejectedItemCount || 0;
+
+    // Old order: if every reviewed item was rejected,
+    // accepted Amazon value is exactly zero.
+    if (acceptedCount === 0 && rejectedCount > 0) {
+      return 0;
+    }
+
+    // Old order: if nothing was rejected, the full Amazon value
+    // is also the exact accepted Amazon value.
+    if (
+      acceptedCount > 0 &&
+      rejectedCount === 0 &&
+      typeof listing.totalAmazonValue === "number"
+    ) {
+      return listing.totalAmazonValue;
+    }
+
+    // Old mixed or unreviewed order: do not guess.
+    return null;
+  };
+
+  const reportAcceptedAmazonMissing = arrivedMonthlyListings.filter(
+    (listing) => getExactAcceptedAmazonValue(listing) === null
+  ).length;
+
+  const reportAcceptedArrivedAmazonValue = arrivedMonthlyListings.reduce(
+    (sum, listing) => {
+      const value = getExactAcceptedAmazonValue(listing);
+      return sum + (value ?? 0);
+    },
     0
   );
 
@@ -2672,65 +2728,116 @@ const idToken = await currentUser.getIdToken();
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-blue-500">
-                <p className="text-sm text-gray-500">Orders Submitted</p>
-                <p className="text-2xl font-bold text-gray-900">{reportOrdersSubmitted}</p>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-green-500">
-                <p className="text-sm text-gray-500">Packages Arrived</p>
-                <p className="text-2xl font-bold text-gray-900">{reportPackagesArrived}</p>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-indigo-500">
-                <p className="text-sm text-gray-500">Total Items</p>
-                <p className="text-2xl font-bold text-gray-900">{reportTotalItems}</p>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-emerald-500">
-                <p className="text-sm text-gray-500">Accepted Items</p>
-                <p className="text-2xl font-bold text-gray-900">{reportAcceptedItems}</p>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-red-500">
-                <p className="text-sm text-gray-500">Rejected Items</p>
-                <p className="text-2xl font-bold text-gray-900">{reportRejectedItems}</p>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-yellow-500">
-                <p className="text-sm text-gray-500">Total Offer</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  ${reportTotalOffer.toFixed(2)}
+            {/* Arrived packages */}
+            <div className="space-y-3">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Arrived Packages
+                </h3>
+                <p className="text-sm text-gray-500">
+                  Only packages marked Arrived in the list below
                 </p>
               </div>
 
-              <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-orange-500">
-                <p className="text-sm text-gray-500">Amazon Value</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  ${reportAmazonValue.toFixed(2)}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-green-500">
+                  <p className="text-sm text-gray-500">Packages Arrived</p>
+                  <p className="text-2xl font-bold text-gray-900">{reportPackagesArrived}</p>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-emerald-500">
+                  <p className="text-sm text-gray-500">Accepted Items</p>
+                  <p className="text-2xl font-bold text-gray-900">{reportAcceptedItems}</p>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-red-500">
+                  <p className="text-sm text-gray-500">Rejected Items</p>
+                  <p className="text-2xl font-bold text-gray-900">{reportRejectedItems}</p>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-orange-500">
+                  <p className="text-sm text-gray-500">Arrived Amazon Value</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    ${reportArrivedAmazonValue.toFixed(2)}
+                  </p>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-amber-500">
+                  <p className="text-sm text-gray-500">Accepted Amazon Value</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {reportAcceptedAmazonMissing === 0
+                      ? `$${reportAcceptedArrivedAmazonValue.toFixed(2)}`
+                      : "—"}
+                  </p>
+                  {reportAcceptedAmazonMissing > 0 && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      {reportAcceptedAmazonMissing} older package(s) missing exact accepted Amazon data
+                    </p>
+                  )}
+                </div>
+
+                <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-purple-500">
+                  <p className="text-sm text-gray-500">Total Paid</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    ${reportTotalPaid.toFixed(2)}
+                  </p>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-cyan-500">
+                  <p className="text-sm text-gray-500">Shipping Cost</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    ${reportShippingCost.toFixed(2)}
+                  </p>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-gray-500">
+                  <p className="text-sm text-gray-500">Paid + Shipping</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    ${(reportTotalPaid + reportShippingCost).toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* All orders submitted during selected month */}
+            <div className="space-y-3">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Monthly Submitted
+                </h3>
+                <p className="text-sm text-gray-500">
+                  All orders submitted during the selected month
                 </p>
               </div>
 
-              <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-purple-500">
-                <p className="text-sm text-gray-500">Total Paid</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  ${reportTotalPaid.toFixed(2)}
-                </p>
-              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-blue-500">
+                  <p className="text-sm text-gray-500">Total Boxes</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {reportOrdersSubmitted}
+                  </p>
+                </div>
 
-              <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-cyan-500">
-                <p className="text-sm text-gray-500">Shipping Cost</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  ${reportShippingCost.toFixed(2)}
-                </p>
-              </div>
+                <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-indigo-500">
+                  <p className="text-sm text-gray-500">Total Items</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {reportTotalItems}
+                  </p>
+                </div>
 
-              <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-gray-500">
-                <p className="text-sm text-gray-500">Paid + Shipping</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  ${(reportTotalPaid + reportShippingCost).toFixed(2)}
-                </p>
+                <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-yellow-500">
+                  <p className="text-sm text-gray-500">Total Offer</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    ${reportTotalOffer.toFixed(2)}
+                  </p>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-orange-500">
+                  <p className="text-sm text-gray-500">Total Amazon Value</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    ${reportAmazonValue.toFixed(2)}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -3098,6 +3205,21 @@ const idToken = await currentUser.getIdToken();
                           0
                         );
 
+                        const acceptedAmazonValueAvailable = items.every(
+                          (it, i) =>
+                            !acceptedItems.has(i) ||
+                            typeof it.originalPrice === "number"
+                        );
+
+                        const acceptedAmazonTotal = items.reduce(
+                          (sum, it, i) =>
+                            acceptedItems.has(i) &&
+                            typeof it.originalPrice === "number"
+                              ? sum + it.originalPrice * (it.quantity || 1)
+                              : sum,
+                          0
+                        );
+
                         const applyToPayment = async () => {
                           setPaymentAmount(acceptedTotal.toFixed(2));
 
@@ -3119,7 +3241,10 @@ const idToken = await currentUser.getIdToken();
                               acceptedItemCount,
                               rejectedItemCount,
                               acceptedValue: acceptedTotal,
-                              rejectedValue: rejectedTotal
+                              rejectedValue: rejectedTotal,
+                              ...(acceptedAmazonValueAvailable
+                                ? { acceptedAmazonValue: acceptedAmazonTotal }
+                                : {})
                             });
                           } catch (error) {
                             console.error("Error saving item verification report:", error);
