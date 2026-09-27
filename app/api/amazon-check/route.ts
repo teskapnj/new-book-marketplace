@@ -151,6 +151,21 @@ function isValidUPC12(code: string): boolean {
   return digits[11] === expectedCheckDigit;
 }
 
+function addUPCCheckDigit(code: string): string {
+  if (!/^\d{11}$/.test(code)) return code;
+
+  const digits = code.split('').map(Number);
+
+  const weightedSum = digits.reduce(
+    (sum, digit, index) => sum + digit * (index % 2 === 0 ? 3 : 1),
+    0
+  );
+
+  const checkDigit = (10 - (weightedSum % 10)) % 10;
+
+  return `${code}${checkDigit}`;
+}
+
 function detectCodeType(code: string): {
   type: 'isbn' | 'upc' | 'asin' | 'unknown';
   searchCode: string;
@@ -189,24 +204,39 @@ function detectCodeType(code: string): {
     }
   }
 
-  // 11 haneli UPC-A:
-  // Bazi barkod okuyucular UPC-A'nin bastaki 0 hanesini dusurebilir.
-  // Basina 0 ekle, checksum gecerliyse UPC olarak kullan.
+  // 11 haneli UPC-A iki sekilde gelebilir:
+  // 1) Bastaki 0 dusmus olabilir.
+  // 2) Sondaki UPC check digit eksik olabilir.
   if (cleanCode.length === 11 && /^\d{11}$/.test(cleanCode)) {
-    const expandedUpc = `0${cleanCode}`;
+    const zeroPrefixedUpc = `0${cleanCode}`;
 
-    if (isValidUPC12(expandedUpc)) {
+    // Once bastaki 0'in dusmus olma ihtimalini kontrol et.
+    if (isValidUPC12(zeroPrefixedUpc)) {
       console.log(
-        `11-digit UPC expanded: ${cleanCode} -> ${expandedUpc}`
+        `11-digit UPC restored leading zero: ${cleanCode} -> ${zeroPrefixedUpc}`
       );
 
       return {
         type: 'upc',
-        searchCode: expandedUpc,
+        searchCode: zeroPrefixedUpc,
         converted: true,
         needsCodeLookup: true
       };
     }
+
+    // Degilse 11 haneyi UPC verisi kabul edip check digit'i sona ekle.
+    const completedUpc = addUPCCheckDigit(cleanCode);
+
+    console.log(
+      `11-digit UPC completed with check digit: ${cleanCode} -> ${completedUpc}`
+    );
+
+    return {
+      type: 'upc',
+      searchCode: completedUpc,
+      converted: true,
+      needsCodeLookup: true
+    };
   }
 
   // ISBN-13 (978 önekli -> ISBN-10'a çevrilebilir, 979 önekli -> code lookup gerekir)
