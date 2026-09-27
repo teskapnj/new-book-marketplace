@@ -436,7 +436,7 @@ export default function CheckoutForm({
             }
           : null,
         ourPrice: item.ourPrice || null,
-        originalPrice: item.originalPrice || null,
+        originalPrice: item.originalPrice ?? null,
       }));
 
       const totalValue = items.reduce((s, i) => s + i.price * i.quantity, 0);

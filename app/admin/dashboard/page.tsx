@@ -31,6 +31,9 @@ interface BundleItem {
   price: number;
   quantity: number;
   originalPrice?: number | null;
+  amazonData?: {
+    price?: number | null;
+  } | null;
 }
 
 interface ShippingInfo {
@@ -81,6 +84,7 @@ interface Listing {
   paymentNotes?: string | null;
   paymentSentAt?: Timestamp | Date | null;
   paymentSentBy?: string | null;
+  arrivedAt?: Timestamp | Date | null;
   shippingLabelName?: string;
   shippingLabelType?: string;
 
@@ -332,6 +336,7 @@ export default function AdminListingsPage() {
                 paymentNotes: data.paymentNotes || null,
                 paymentSentAt: data.paymentSentAt || null,
                 paymentSentBy: data.paymentSentBy || null,
+                arrivedAt: data.arrivedAt || null,
 
                 acceptedItemCount: data.acceptedItemCount ?? 0,
                 rejectedItemCount: data.rejectedItemCount ?? 0,
@@ -517,12 +522,22 @@ export default function AdminListingsPage() {
     );
   });
 
-  const arrivedMonthlyListings = monthlyListings.filter(
-    (listing) =>
-      listing.paymentSent ||
-      listing.status === "payment_sent" ||
-      listing.status === "sold"
-  );
+  const arrivedMonthlyListings = listings.filter((listing) => {
+    if (listing.excludeFromReports) return false;
+
+    const rawArrivalDate = listing.arrivedAt || listing.paymentSentAt;
+    if (!rawArrivalDate) return false;
+
+    const arrivalDate =
+      rawArrivalDate instanceof Timestamp
+        ? rawArrivalDate.toDate()
+        : rawArrivalDate;
+
+    return (
+      arrivalDate.getFullYear() === reportYear &&
+      arrivalDate.getMonth() + 1 === reportMonthNumber
+    );
+  });
 
   const reportOrdersSubmitted = monthlyListings.length;
   const reportPackagesArrived = arrivedMonthlyListings.length;
@@ -567,43 +582,8 @@ export default function AdminListingsPage() {
     0
   );
 
-  const getExactAcceptedAmazonValue = (listing: Listing): number | null => {
-    if (typeof listing.acceptedAmazonValue === "number") {
-      return listing.acceptedAmazonValue;
-    }
-
-    const acceptedCount = listing.acceptedItemCount || 0;
-    const rejectedCount = listing.rejectedItemCount || 0;
-
-    // Old order: if every reviewed item was rejected,
-    // accepted Amazon value is exactly zero.
-    if (acceptedCount === 0 && rejectedCount > 0) {
-      return 0;
-    }
-
-    // Old order: if nothing was rejected, the full Amazon value
-    // is also the exact accepted Amazon value.
-    if (
-      acceptedCount > 0 &&
-      rejectedCount === 0 &&
-      typeof listing.totalAmazonValue === "number"
-    ) {
-      return listing.totalAmazonValue;
-    }
-
-    // Old mixed or unreviewed order: do not guess.
-    return null;
-  };
-
-  const reportAcceptedAmazonMissing = arrivedMonthlyListings.filter(
-    (listing) => getExactAcceptedAmazonValue(listing) === null
-  ).length;
-
   const reportAcceptedArrivedAmazonValue = arrivedMonthlyListings.reduce(
-    (sum, listing) => {
-      const value = getExactAcceptedAmazonValue(listing);
-      return sum + (value ?? 0);
-    },
+    (sum, listing) => sum + (listing.acceptedAmazonValue ?? 0),
     0
   );
 
@@ -1765,15 +1745,8 @@ const idToken = await currentUser.getIdToken();
                 <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-amber-500">
                   <p className="text-sm text-gray-500">Accepted Amazon Value</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {reportAcceptedAmazonMissing === 0
-                      ? `$${reportAcceptedArrivedAmazonValue.toFixed(2)}`
-                      : "—"}
+                    ${reportAcceptedArrivedAmazonValue.toFixed(2)}
                   </p>
-                  {reportAcceptedAmazonMissing > 0 && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      {reportAcceptedAmazonMissing} older package(s) missing exact accepted Amazon data
-                    </p>
-                  )}
                 </div>
 
                 <div className="bg-white rounded-lg shadow-sm p-5 border-l-4 border-purple-500">
@@ -1863,6 +1836,7 @@ const idToken = await currentUser.getIdToken();
                       <th className="px-4 py-3 text-right font-medium text-gray-600">Rejected</th>
                       <th className="px-4 py-3 text-right font-medium text-gray-600">Offer</th>
                       <th className="px-4 py-3 text-right font-medium text-gray-600">Amazon</th>
+                      <th className="px-4 py-3 text-right font-medium text-gray-600">Accepted Amazon</th>
                       <th className="px-4 py-3 text-right font-medium text-gray-600">Paid</th>
                       <th className="px-4 py-3 text-right font-medium text-gray-600">Shipping</th>
                       <th className="px-4 py-3 text-center font-medium text-gray-600">Arrived</th>
@@ -1873,7 +1847,7 @@ const idToken = await currentUser.getIdToken();
                   <tbody className="bg-white divide-y divide-gray-100">
                     {reportFilteredListings.length === 0 ? (
                       <tr>
-                        <td colSpan={12} className="px-4 py-8 text-center text-gray-500">
+                        <td colSpan={13} className="px-4 py-8 text-center text-gray-500">
                           No listings found for this month.
                         </td>
                       </tr>
@@ -1912,6 +1886,10 @@ const idToken = await currentUser.getIdToken();
 
                           <td className="px-4 py-3 text-right">
                             ${(listing.totalAmazonValue || 0).toFixed(2)}
+                          </td>
+
+                          <td className="px-4 py-3 text-right font-medium text-amber-700">
+                            ${(listing.acceptedAmazonValue ?? 0).toFixed(2)}
                           </td>
 
                           <td className="px-4 py-3 text-right">
@@ -2205,17 +2183,17 @@ const idToken = await currentUser.getIdToken();
                           0
                         );
 
-                        const acceptedAmazonValueAvailable = items.every(
-                          (it, i) =>
-                            !acceptedItems.has(i) ||
-                            typeof it.originalPrice === "number"
-                        );
+                        const getAmazonPrice = (it: BundleItem) =>
+                          typeof it.originalPrice === "number"
+                            ? it.originalPrice
+                            : typeof it.amazonData?.price === "number"
+                              ? it.amazonData.price
+                              : 0;
 
                         const acceptedAmazonTotal = items.reduce(
                           (sum, it, i) =>
-                            acceptedItems.has(i) &&
-                            typeof it.originalPrice === "number"
-                              ? sum + it.originalPrice * (it.quantity || 1)
+                            acceptedItems.has(i)
+                              ? sum + getAmazonPrice(it) * (it.quantity || 1)
                               : sum,
                           0
                         );
@@ -2237,14 +2215,17 @@ const idToken = await currentUser.getIdToken();
                           }
 
                           try {
-                            await updateDoc(doc(db, "listings", selectedListing.id), {
+                            const listingRef = doc(db, "listings", selectedListing.id);
+                            const currentListingDoc = await getDoc(listingRef);
+                            const existingArrivedAt = currentListingDoc.data()?.arrivedAt;
+
+                            await updateDoc(listingRef, {
                               acceptedItemCount,
                               rejectedItemCount,
                               acceptedValue: acceptedTotal,
                               rejectedValue: rejectedTotal,
-                              ...(acceptedAmazonValueAvailable
-                                ? { acceptedAmazonValue: acceptedAmazonTotal }
-                                : {})
+                              acceptedAmazonValue: acceptedAmazonTotal,
+                              ...(existingArrivedAt ? {} : { arrivedAt: serverTimestamp() })
                             });
                           } catch (error) {
                             console.error("Error saving item verification report:", error);
