@@ -114,6 +114,26 @@ function isValidISBN10(code: string): boolean {
   return sum % 11 === 0;
 }
 
+
+function convertISBN10toISBN13(isbn10: string): string | null {
+  if (!isValidISBN10(isbn10)) return null;
+
+  const base12 = `978${isbn10.slice(0, 9)}`;
+
+  const digits = base12.split('').map(Number);
+
+  const weightedSum = digits.reduce(
+    (sum, digit, index) =>
+      sum + digit * (index % 2 === 0 ? 1 : 3),
+    0
+  );
+
+  const checkDigit =
+    (10 - (weightedSum % 10)) % 10;
+
+  return `${base12}${checkDigit}`;
+}
+
 function expandTenDigitMediaCode(code: string): string {
   // Eski CD/DVD baskilarinda barkod bazen insan-okunur kisimda
   // ilk 0 ve son UPC check digit olmadan 10 hane olarak gorunur.
@@ -1071,12 +1091,12 @@ export async function POST(request: NextRequest) {
     // 10-digit media lookup V2:
     // Eski positive/negative cache kayitlarini bir kez bypass eder.
     //
-    // Numeric ISBN-10 collision lookup M1:
+    // Numeric ISBN-10 collision lookup M2:
     // Keepa'nin eski ghost ISBN sonucunu da bir kez bypass eder.
     const cacheIdentifier = isTenDigitMediaCandidate
       ? `M10V2${cleanCode}`
       : isNumericTenDigitIsbn
-        ? `I10M1${cleanCode}`
+        ? `I10M2${cleanCode}`
         : cleanCode;
 
     if (codeInfo.type === 'unknown') {
@@ -1239,8 +1259,14 @@ export async function POST(request: NextRequest) {
         codeInfo.type === 'isbn' &&
         isUnusableNumericIsbnResponse(keepaResponse)
       ) {
+        const isbn13Candidate =
+          convertISBN10toISBN13(cleanCode);
+
         const collisionCandidates = [
           expandTenDigitMediaCode(cleanCode),
+          ...(isbn13Candidate
+            ? [isbn13Candidate]
+            : []),
           ...getTenDigitMediaFallbackCodes(cleanCode)
         ];
 
@@ -1292,12 +1318,42 @@ export async function POST(request: NextRequest) {
         const matchedCodes =
           Array.from(matchesByCode.keys());
 
-        if (matchedCodes.length === 1) {
+        const matchedAsins =
+          Array.from(
+            new Set(
+              matchedCodes
+                .flatMap(
+                  (code) =>
+                    matchesByCode.get(code) || []
+                )
+                .map((product: any) =>
+                  String(product?.asin || '').trim()
+                )
+                .filter(Boolean)
+            )
+          );
+
+        const canResolveMatch =
+          matchedCodes.length === 1 ||
+          (
+            matchedCodes.length > 1 &&
+            matchedAsins.length === 1
+          );
+
+        if (canResolveMatch) {
+          // Candidate sirasi onemli:
+          // prefix 0 -> ISBN-13 -> 1/6/7/8/9
           effectiveSearchCode =
-            matchedCodes[0];
+            collisionCandidates.find(
+              (code) => matchesByCode.has(code)
+            ) || matchedCodes[0];
 
           effectiveLookupType = 'code';
-          effectiveIdentifierType = 'upc';
+
+          effectiveIdentifierType =
+            effectiveSearchCode === isbn13Candidate
+              ? 'isbn'
+              : 'upc';
 
           keepaResponse = {
             ...fallbackResponse,
