@@ -901,8 +901,8 @@ function pickBestKeepaProduct(products: any[], searchCode: string): any | null {
 
   if (cheapest) return cheapest;
 
-  // Hicbirinde fiyat yoksa en iyi gecerli ana rank'i sec.
-  let bestRanked = products[0];
+  // Fiyatli urun bulunamadiysa en iyi gecerli ana rank'i sec.
+  let bestRanked: any | null = null;
   let bestRank = Infinity;
 
   for (const p of products) {
@@ -914,7 +914,29 @@ function pickBestKeepaProduct(products: any[], searchCode: string): any | null {
     }
   }
 
-  return bestRanked;
+  if (bestRanked) return bestRanked;
+
+  // Hicbir adayda aktif rank yoksa:
+  // ilk $0 listing yerine fiyat verisi olan adayi goster.
+  // Rank 0 kalacagi icin pricingEngine yine urunu reddeder.
+  let cheapestUnranked: any | null = null;
+  let cheapestUnrankedPrice = Infinity;
+
+  for (const p of products) {
+    const pricing = extractKeepaPricing(p);
+
+    if (
+      pricing.price > 0 &&
+      pricing.price < cheapestUnrankedPrice
+    ) {
+      cheapestUnrankedPrice = pricing.price;
+      cheapestUnranked = p;
+    }
+  }
+
+  if (cheapestUnranked) return cheapestUnranked;
+
+  return products[0];
 }
 
 // ==================== POST /api/amazon-check ====================
