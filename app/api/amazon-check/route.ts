@@ -96,6 +96,44 @@ function convertISBN13toISBN10(isbn13: string): string | null {
   return isbn10Base + checkChar;
 }
 
+
+function isValidISBN10(code: string): boolean {
+  if (!/^\d{9}[\dX]$/.test(code)) return false;
+
+  let sum = 0;
+
+  for (let i = 0; i < 10; i++) {
+    const char = code[i];
+    const value = char === 'X' ? 10 : Number(char);
+
+    if (!Number.isInteger(value)) return false;
+
+    sum += value * (10 - i);
+  }
+
+  return sum % 11 === 0;
+}
+
+function expandTenDigitMediaCode(code: string): string {
+  // Eski CD/DVD baskilarinda barkod bazen insan-okunur kisimda
+  // ilk 0 ve son UPC check digit olmadan 10 hane olarak gorunur.
+  // Ornek:
+  // 7502132402 -> 0 75021 32402 2 -> 075021324022
+  const first11 = `0${code}`;
+
+  const digits = first11.split('').map(Number);
+
+  const weightedSum =
+    digits.reduce(
+      (sum, digit, index) => sum + digit * (index % 2 === 0 ? 3 : 1),
+      0
+    );
+
+  const checkDigit = (10 - (weightedSum % 10)) % 10;
+
+  return `${first11}${checkDigit}`;
+}
+
 function detectCodeType(code: string): {
   type: 'isbn' | 'upc' | 'asin' | 'unknown';
   searchCode: string;
@@ -109,9 +147,29 @@ function detectCodeType(code: string): {
     return { type: 'asin', searchCode: cleanCode };
   }
 
-  // ISBN-10 -> Keepa'da doğrudan ASIN gibi kullanılabilir (kitaplar için)
+  // 10 haneli kod:
+  // 1) Gercek ISBN-10 checksum'u gecerliyse kitap.
+  // 2) Gecersiz ISBN ise eski CD/DVD katalog kodu olabilir.
+  //    Basina 0 + sona UPC check digit ekleyerek UPC-A'ya cevir.
   if (cleanCode.length === 10 && /^\d{9}[\dX]$/.test(cleanCode)) {
-    return { type: 'isbn', searchCode: cleanCode };
+    if (isValidISBN10(cleanCode)) {
+      return { type: 'isbn', searchCode: cleanCode };
+    }
+
+    if (/^\d{10}$/.test(cleanCode)) {
+      const expandedUpc = expandTenDigitMediaCode(cleanCode);
+
+      console.log(
+        `10-digit media code expanded: ${cleanCode} -> ${expandedUpc}`
+      );
+
+      return {
+        type: 'upc',
+        searchCode: expandedUpc,
+        converted: true,
+        needsCodeLookup: true
+      };
+    }
   }
 
   // ISBN-13 (978 önekli -> ISBN-10'a çevrilebilir, 979 önekli -> code lookup gerekir)
