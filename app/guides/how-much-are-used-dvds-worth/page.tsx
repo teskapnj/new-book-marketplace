@@ -2,10 +2,16 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import RelatedGuides from "@/components/RelatedGuides";
 
+const PAGE_URL = "https://www.sellbookmedia.com/guides/how-much-are-used-dvds-worth";
+
 export const metadata: Metadata = {
   title: "How Much Are Used DVDs Worth? (2026 Price Guide) | SellBookMedia",
   description:
     "Find out what affects the value of used DVDs, Blu-rays and 4K movies, which editions may be worth more, and how to get an instant cash offer by scanning the barcode.",
+
+  alternates: {
+    canonical: PAGE_URL,
+  },
 };
 
 const VALUABLE = [

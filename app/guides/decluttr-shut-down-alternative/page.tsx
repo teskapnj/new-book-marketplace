@@ -2,11 +2,17 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import RelatedGuides from "@/components/RelatedGuides";
 
+const PAGE_URL = "https://www.sellbookmedia.com/guides/decluttr-shut-down-alternative";
+
 export const metadata: Metadata = {
   title:
     "Decluttr Shut Down: Where to Sell Your Books, CDs, DVDs & Games Now | SellBookMedia",
   description:
     "Decluttr shut down in 2025. See another simple way to sell used books, CDs, DVDs, Blu-rays, 4K movies, and video games online for cash.",
+
+  alternates: {
+    canonical: PAGE_URL,
+  },
 };
 
 const TIMELINE = [

@@ -2,10 +2,16 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import RelatedGuides from "@/components/RelatedGuides";
 
+const PAGE_URL = "https://www.sellbookmedia.com/guides/what-to-do-with-old-dvds-and-cds";
+
 export const metadata: Metadata = {
   title: "What to Do With Old DVDs and CDs You No Longer Want | SellBookMedia",
   description:
     "Wondering what to do with old DVDs and CDs? Compare your options and check whether your discs qualify for an instant cash offer before you donate or give them away.",
+
+  alternates: {
+    canonical: PAGE_URL,
+  },
 };
 
 const OPTIONS = [

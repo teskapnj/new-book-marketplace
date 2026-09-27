@@ -2,10 +2,16 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import RelatedGuides from "@/components/RelatedGuides";
 
+const PAGE_URL = "https://www.sellbookmedia.com/guides/how-much-are-used-books-worth";
+
 export const metadata: Metadata = {
   title: "How Much Are Used Books Worth? | SellBookMedia",
   description:
     "Find out what affects used book value, which types of books may be worth more, and how to get an instant cash offer by scanning the ISBN or barcode.",
+
+  alternates: {
+    canonical: PAGE_URL,
+  },
 };
 
 const CATEGORIES = [

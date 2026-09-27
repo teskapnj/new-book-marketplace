@@ -2,10 +2,16 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import RelatedGuides from "@/components/RelatedGuides";
 
+const PAGE_URL = "https://www.sellbookmedia.com/guides/where-to-sell-books-and-dvds-for-cash";
+
 export const metadata: Metadata = {
   title: "Where to Sell Used Books and DVDs for Cash (2026 Guide) | SellBookMedia",
   description:
     "Compare ways to sell used books, DVDs, CDs, Blu-rays, 4K movies, and video games for cash. Check an instant offer online with free shipping.",
+
+  alternates: {
+    canonical: PAGE_URL,
+  },
 };
 
 const DIFFERENCES = [
