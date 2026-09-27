@@ -1084,20 +1084,35 @@ export async function POST(request: NextRequest) {
       isNumericTenDigit &&
       isValidISBN10(cleanCode);
 
+    const isXTenDigitIsbn =
+      /^\\d{9}X$/.test(cleanCode) &&
+      isValidISBN10(cleanCode);
+
+    const isAnyTenDigitIsbn =
+      isNumericTenDigitIsbn ||
+      isXTenDigitIsbn;
+
     const isTenDigitMediaCandidate =
       isNumericTenDigit &&
       !isValidISBN10(cleanCode);
 
-    // 10-digit media lookup V2:
-    // Eski positive/negative cache kayitlarini bir kez bypass eder.
-    //
-    // Numeric ISBN-10 collision lookup M2:
-    // Keepa'nin eski ghost ISBN sonucunu da bir kez bypass eder.
+    const isElevenDigitCode =
+      /^\\d{11}$/.test(cleanCode);
+
+    // Cache namespaces:
+    // M10V2  = eski 10-digit media fallback
+    // I10M3  = numeric ISBN-10: ISBN-13 recovery + media collision fallback
+    // I10X1  = X ile biten ISBN-10: ISBN-13 recovery
+    // U11V2  = 11-digit UPC iki olasi yorumu birlikte kontrol eder
     const cacheIdentifier = isTenDigitMediaCandidate
       ? `M10V2${cleanCode}`
       : isNumericTenDigitIsbn
-        ? `I10M2${cleanCode}`
-        : cleanCode;
+        ? `I10M3${cleanCode}`
+        : isXTenDigitIsbn
+          ? `I10X1${cleanCode}`
+          : isElevenDigitCode
+            ? `U11V2${cleanCode}`
+            : cleanCode;
 
     if (codeInfo.type === 'unknown') {
       console.warn(`INVALID PRODUCT CODE FORMAT: ${cleanCode}`);
@@ -1244,62 +1259,40 @@ export async function POST(request: NextRequest) {
 
     const keepaStart = Date.now();
     try {
-      if (codeInfo.needsCodeLookup) {
-        keepaResponse = await fetchKeepaByCode(codeInfo.searchCode, apiKey);
-      } else {
-        keepaResponse = await fetchKeepaByAsin(codeInfo.searchCode, apiKey);
-      }
-
-
-      // Numeric 10-digit kod gercek ISBN-10 checksum'unu tesadufen
-      // tutturabilir. Keepa ISBN lookup sadece bos/ghost shell
-      // dondururse ayni kodu eski media UPC middle-10 olarak dene.
-      if (
-        isNumericTenDigitIsbn &&
-        codeInfo.type === 'isbn' &&
-        isUnusableNumericIsbnResponse(keepaResponse)
-      ) {
-        const isbn13Candidate =
-          convertISBN10toISBN13(cleanCode);
-
-        const collisionCandidates = [
-          expandTenDigitMediaCode(cleanCode),
-          ...(isbn13Candidate
-            ? [isbn13Candidate]
-            : []),
-          ...getTenDigitMediaFallbackCodes(cleanCode)
-        ];
-
-        console.log(
-          `🔁 ISBN-10 MEDIA COLLISION FALLBACK: ${cleanCode} | ` +
-          `trying=${collisionCandidates.join(',')}`
+      if (isElevenDigitCode) {
+        const elevenDigitCandidates = Array.from(
+          new Set([
+            ...(isValidUPC12(`0${cleanCode}`)
+              ? [`0${cleanCode}`]
+              : []),
+            addUPCCheckDigit(cleanCode)
+          ])
         );
 
-        const firstTokensConsumed =
-          Number(keepaResponse?.tokensConsumed || 0);
+        console.log(
+          `🔁 11-DIGIT UPC LOOKUP: ${cleanCode} | ` +
+          `trying=${elevenDigitCandidates.join(',')}`
+        );
 
-        const firstProcessingTime =
-          Number(keepaResponse?.processingTimeInMs || 0);
-
-        const fallbackResponse =
+        const elevenDigitResponse =
           await fetchKeepaByCode(
-            collisionCandidates.join(','),
+            elevenDigitCandidates.join(','),
             apiKey
           );
 
-        const fallbackProducts =
-          Array.isArray(fallbackResponse?.products)
-            ? fallbackResponse.products
+        const elevenDigitProducts =
+          Array.isArray(elevenDigitResponse?.products)
+            ? elevenDigitResponse.products
             : [];
 
         const matchesByCode =
           new Map<string, any[]>();
 
-        for (const product of fallbackProducts) {
+        for (const product of elevenDigitProducts) {
           const matchingCodes =
             getMatchingFallbackCodes(
               product,
-              collisionCandidates
+              elevenDigitCandidates
             );
 
           for (const matchingCode of matchingCodes) {
@@ -1307,7 +1300,6 @@ export async function POST(request: NextRequest) {
               matchesByCode.get(matchingCode) || [];
 
             existing.push(product);
-
             matchesByCode.set(
               matchingCode,
               existing
@@ -1318,63 +1310,19 @@ export async function POST(request: NextRequest) {
         const matchedCodes =
           Array.from(matchesByCode.keys());
 
-        const matchedAsins =
-          Array.from(
-            new Set(
-              matchedCodes
-                .flatMap(
-                  (code) =>
-                    matchesByCode.get(code) || []
-                )
-                .map((product: any) =>
-                  String(product?.asin || '').trim()
-                )
-                .filter(Boolean)
-            )
-          );
-
-        const canResolveMatch =
-          matchedCodes.length === 1 ||
-          (
-            matchedCodes.length > 1 &&
-            matchedAsins.length === 1
-          );
-
-        if (canResolveMatch) {
-          // Candidate sirasi onemli:
-          // prefix 0 -> ISBN-13 -> 1/6/7/8/9
-          effectiveSearchCode =
-            collisionCandidates.find(
-              (code) => matchesByCode.has(code)
-            ) || matchedCodes[0];
-
+        if (matchedCodes.length === 1) {
+          effectiveSearchCode = matchedCodes[0];
           effectiveLookupType = 'code';
-
-          effectiveIdentifierType =
-            effectiveSearchCode === isbn13Candidate
-              ? 'isbn'
-              : 'upc';
+          effectiveIdentifierType = 'upc';
 
           keepaResponse = {
-            ...fallbackResponse,
+            ...elevenDigitResponse,
             products:
-              matchesByCode.get(
-                effectiveSearchCode
-              ) || [],
-            tokensConsumed:
-              firstTokensConsumed +
-              Number(
-                fallbackResponse?.tokensConsumed || 0
-              ),
-            processingTimeInMs:
-              firstProcessingTime +
-              Number(
-                fallbackResponse?.processingTimeInMs || 0
-              )
+              matchesByCode.get(effectiveSearchCode) || []
           };
 
           console.log(
-            `✅ ISBN-10 MEDIA COLLISION MATCH: ` +
+            `✅ 11-DIGIT UPC MATCH: ` +
             `${cleanCode} -> ${effectiveSearchCode} | ` +
             `products=${keepaResponse.products.length} | ` +
             `asins=${keepaResponse.products
@@ -1383,34 +1331,331 @@ export async function POST(request: NextRequest) {
               .join(',')}`
           );
         } else {
-          // Ilk ISBN sonucu zaten kullanilamaz durumdaydi.
-          // Media tarafinda da tek ve dogrulanmis bir eslesme yoksa
-          // anlamsiz ghost urunu kullanmak yerine NOT FOUND don.
           keepaResponse = {
-            ...fallbackResponse,
-            products: [],
-            tokensConsumed:
-              firstTokensConsumed +
-              Number(
-                fallbackResponse?.tokensConsumed || 0
-              ),
-            processingTimeInMs:
-              firstProcessingTime +
-              Number(
-                fallbackResponse?.processingTimeInMs || 0
-              )
+            ...elevenDigitResponse,
+            products: []
           };
 
           if (matchedCodes.length > 1) {
             console.warn(
-              `⚠️ ISBN-10 MEDIA COLLISION AMBIGUOUS: ` +
+              `⚠️ 11-DIGIT UPC AMBIGUOUS: ` +
               `${cleanCode} | matched=${matchedCodes.join(',')}`
             );
           } else {
             console.warn(
-              `❌ ISBN-10 MEDIA COLLISION NO VERIFIED MATCH: ` +
-              `${cleanCode} | returnedProducts=${fallbackProducts.length}`
+              `❌ 11-DIGIT UPC NO VERIFIED MATCH: ` +
+              `${cleanCode} | ` +
+              `returnedProducts=${elevenDigitProducts.length}`
             );
+          }
+        }
+      } else if (codeInfo.needsCodeLookup) {
+        keepaResponse =
+          await fetchKeepaByCode(
+            codeInfo.searchCode,
+            apiKey
+          );
+      } else {
+        keepaResponse =
+          await fetchKeepaByAsin(
+            codeInfo.searchCode,
+            apiKey
+          );
+      }
+
+
+      // Gecerli ISBN-10 ilk ASIN sorgusunda bos/ghost sonuc dondururse
+      // once ISBN-13 ile Keepa code lookup yap.
+      //
+      // Bu ozellikle eski DVD/CD urunlerinde onemli:
+      // Amazon ASIN lookup ISBN-10 icin bos shell dondurebilir,
+      // fakat ayni urun ISBN-13 code lookup ile gercek media listingine
+      // resolve olabilir.
+      //
+      // Numeric ISBN ise ISBN-13 de sonuc vermezse mevcut eski-media
+      // UPC collision fallback'i devam eder.
+      //
+      // X ile biten ISBN UPC olamayacagi icin sadece ISBN-13 denenir.
+      if (
+        isAnyTenDigitIsbn &&
+        codeInfo.type === 'isbn' &&
+        isUnusableNumericIsbnResponse(keepaResponse)
+      ) {
+        const isbn13Candidate =
+          convertISBN10toISBN13(cleanCode);
+
+        const firstTokensConsumed =
+          Number(keepaResponse?.tokensConsumed || 0);
+
+        const firstProcessingTime =
+          Number(keepaResponse?.processingTimeInMs || 0);
+
+        let isbn13Response: any = null;
+
+        if (isbn13Candidate) {
+          console.log(
+            `🔁 ISBN-13 RECOVERY: ` +
+            `${cleanCode} -> ${isbn13Candidate}`
+          );
+
+          isbn13Response =
+            await fetchKeepaByCode(
+              isbn13Candidate,
+              apiKey
+            );
+        }
+
+        const isbn13Usable =
+          Boolean(isbn13Candidate) &&
+          !isUnusableNumericIsbnResponse(
+            isbn13Response
+          );
+
+        // X ile biten ISBN UPC olamaz.
+        // Bu nedenle yalnizca dogrudan ISBN-13 recovery sonucunu kullan.
+        if (isXTenDigitIsbn) {
+          if (isbn13Usable) {
+            effectiveSearchCode =
+              isbn13Candidate as string;
+
+            effectiveLookupType = 'code';
+            effectiveIdentifierType = 'isbn';
+
+            keepaResponse = {
+              ...isbn13Response,
+              tokensConsumed:
+                firstTokensConsumed +
+                Number(
+                  isbn13Response?.tokensConsumed || 0
+                ),
+              processingTimeInMs:
+                firstProcessingTime +
+                Number(
+                  isbn13Response?.processingTimeInMs || 0
+                )
+            };
+
+            console.log(
+              `✅ X-ISBN RECOVERY MATCH: ` +
+              `${cleanCode} -> ${effectiveSearchCode} | ` +
+              `products=${Array.isArray(keepaResponse?.products)
+                ? keepaResponse.products.length
+                : 0} | ` +
+              `asins=${Array.isArray(keepaResponse?.products)
+                ? keepaResponse.products
+                    .map((p: any) => p?.asin)
+                    .filter(Boolean)
+                    .join(',')
+                : ''}`
+            );
+          } else {
+            keepaResponse = {
+              ...(isbn13Response || keepaResponse),
+              products: [],
+              tokensConsumed:
+                firstTokensConsumed +
+                Number(
+                  isbn13Response?.tokensConsumed || 0
+                ),
+              processingTimeInMs:
+                firstProcessingTime +
+                Number(
+                  isbn13Response?.processingTimeInMs || 0
+                )
+            };
+
+            console.warn(
+              `❌ X-ISBN NO MATCH: ` +
+              `${cleanCode} -> ${isbn13Candidate || 'N/A'}`
+            );
+          }
+        } else {
+          // Numeric gecerli ISBN-10:
+          //
+          // ISBN-13 recovery sonucunu sakla ama eski media UPC collision
+          // ihtimalini de kontrol et. Boylece daha once calisan media
+          // kodlarini ISBN-13 sonucu yanlislikla ezmez.
+          const collisionCandidates = [
+            expandTenDigitMediaCode(cleanCode),
+            ...getTenDigitMediaFallbackCodes(
+              cleanCode
+            )
+          ];
+
+          console.log(
+            `🔁 ISBN-10 MEDIA COLLISION FALLBACK: ` +
+            `${cleanCode} | ` +
+            `trying=${collisionCandidates.join(',')}`
+          );
+
+          const tokensBeforeMedia =
+            firstTokensConsumed +
+            Number(
+              isbn13Response?.tokensConsumed || 0
+            );
+
+          const processingBeforeMedia =
+            firstProcessingTime +
+            Number(
+              isbn13Response?.processingTimeInMs || 0
+            );
+
+          const fallbackResponse =
+            await fetchKeepaByCode(
+              collisionCandidates.join(','),
+              apiKey
+            );
+
+          const fallbackProducts =
+            Array.isArray(fallbackResponse?.products)
+              ? fallbackResponse.products
+              : [];
+
+          const matchesByCode =
+            new Map<string, any[]>();
+
+          for (const product of fallbackProducts) {
+            const matchingCodes =
+              getMatchingFallbackCodes(
+                product,
+                collisionCandidates
+              );
+
+            for (const matchingCode of matchingCodes) {
+              const existing =
+                matchesByCode.get(matchingCode) || [];
+
+              existing.push(product);
+
+              matchesByCode.set(
+                matchingCode,
+                existing
+              );
+            }
+          }
+
+          const matchedCodes =
+            Array.from(matchesByCode.keys());
+
+          const matchedAsins =
+            Array.from(
+              new Set(
+                matchedCodes
+                  .flatMap(
+                    (code) =>
+                      matchesByCode.get(code) || []
+                  )
+                  .map((product: any) =>
+                    String(product?.asin || '').trim()
+                  )
+                  .filter(Boolean)
+              )
+            );
+
+          const canResolveMediaMatch =
+            matchedCodes.length === 1 ||
+            (
+              matchedCodes.length > 1 &&
+              matchedAsins.length === 1
+            );
+
+          const totalTokensConsumed =
+            tokensBeforeMedia +
+            Number(
+              fallbackResponse?.tokensConsumed || 0
+            );
+
+          const totalProcessingTime =
+            processingBeforeMedia +
+            Number(
+              fallbackResponse?.processingTimeInMs || 0
+            );
+
+          if (canResolveMediaMatch) {
+            effectiveSearchCode =
+              collisionCandidates.find(
+                (code) =>
+                  matchesByCode.has(code)
+              ) || matchedCodes[0];
+
+            effectiveLookupType = 'code';
+            effectiveIdentifierType = 'upc';
+
+            keepaResponse = {
+              ...fallbackResponse,
+              products:
+                matchesByCode.get(
+                  effectiveSearchCode
+                ) || [],
+              tokensConsumed:
+                totalTokensConsumed,
+              processingTimeInMs:
+                totalProcessingTime
+            };
+
+            console.log(
+              `✅ ISBN-10 MEDIA COLLISION MATCH: ` +
+              `${cleanCode} -> ${effectiveSearchCode} | ` +
+              `products=${keepaResponse.products.length} | ` +
+              `asins=${keepaResponse.products
+                .map((p: any) => p?.asin)
+                .filter(Boolean)
+                .join(',')}`
+            );
+          } else if (isbn13Usable) {
+            // Derived UPC adaylarinda dogrulanmis media eslesmesi yok,
+            // fakat dogrudan ISBN-13 sorgusu gercek urun dondurdu.
+            effectiveSearchCode =
+              isbn13Candidate as string;
+
+            effectiveLookupType = 'code';
+            effectiveIdentifierType = 'isbn';
+
+            keepaResponse = {
+              ...isbn13Response,
+              tokensConsumed:
+                totalTokensConsumed,
+              processingTimeInMs:
+                totalProcessingTime
+            };
+
+            console.log(
+              `✅ ISBN-13 RECOVERY MATCH: ` +
+              `${cleanCode} -> ${effectiveSearchCode} | ` +
+              `products=${Array.isArray(keepaResponse?.products)
+                ? keepaResponse.products.length
+                : 0} | ` +
+              `asins=${Array.isArray(keepaResponse?.products)
+                ? keepaResponse.products
+                    .map((p: any) => p?.asin)
+                    .filter(Boolean)
+                    .join(',')
+                : ''}`
+            );
+          } else {
+            keepaResponse = {
+              ...fallbackResponse,
+              products: [],
+              tokensConsumed:
+                totalTokensConsumed,
+              processingTimeInMs:
+                totalProcessingTime
+            };
+
+            if (matchedCodes.length > 1) {
+              console.warn(
+                `⚠️ ISBN-10 MEDIA COLLISION AMBIGUOUS: ` +
+                `${cleanCode} | ` +
+                `matched=${matchedCodes.join(',')}`
+              );
+            } else {
+              console.warn(
+                `❌ ISBN-10 NO VERIFIED MATCH: ` +
+                `${cleanCode} | ` +
+                `isbn13=${isbn13Candidate || 'N/A'} | ` +
+                `mediaProducts=${fallbackProducts.length}`
+              );
+            }
           }
         }
       }
@@ -1649,7 +1894,7 @@ export async function POST(request: NextRequest) {
 
     const debugInfo = {
       searchMethod: 'keepa-single-product',
-      lookupType: codeInfo.needsCodeLookup ? 'code' : 'asin',
+      lookupType: effectiveLookupType,
       cacheHit: false,
       movieRulesVersion: MOVIE_RULES_VERSION,
       priceAnalysis,
