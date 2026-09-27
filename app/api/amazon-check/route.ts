@@ -1085,7 +1085,7 @@ export async function POST(request: NextRequest) {
       isValidISBN10(cleanCode);
 
     const isXTenDigitIsbn =
-      /^\\d{9}X$/.test(cleanCode) &&
+      /^\d{9}X$/.test(cleanCode) &&
       isValidISBN10(cleanCode);
 
     const isAnyTenDigitIsbn =
@@ -1097,7 +1097,7 @@ export async function POST(request: NextRequest) {
       !isValidISBN10(cleanCode);
 
     const isElevenDigitCode =
-      /^\\d{11}$/.test(cleanCode);
+      /^\d{11}$/.test(cleanCode);
 
     // Cache namespaces:
     // M10V2  = eski 10-digit media fallback
