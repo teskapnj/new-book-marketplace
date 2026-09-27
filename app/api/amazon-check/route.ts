@@ -166,6 +166,49 @@ function addUPCCheckDigit(code: string): string {
   return `${code}${checkDigit}`;
 }
 
+
+function getTenDigitMediaFallbackCodes(code: string): string[] {
+  if (!/^\d{10}$/.test(code)) return [];
+
+  // Prefix 0 zaten mevcut hizli lookup'ta deneniyor.
+  // Genel UPC-A number-system adaylari icinden kalanlari fallback olarak dene.
+  const prefixes = ['1', '6', '7', '8', '9'];
+
+  return prefixes.map((prefix) => {
+    return addUPCCheckDigit(`${prefix}${code}`);
+  });
+}
+
+function normalizeGtinForComparison(value: any): string {
+  const digits = String(value || '').replace(/\D/g, '');
+
+  if (!digits || digits.length > 14) return '';
+
+  // UPC-12 / EAN-13 / GTIN-14 ayni urun kodunu temsil edebilir.
+  // Soldan 0 ile 14 haneye tamamlamak guvenli karsilastirma saglar.
+  return digits.padStart(14, '0');
+}
+
+function getMatchingFallbackCodes(
+  product: any,
+  candidateCodes: string[]
+): string[] {
+  const productCodes = [
+    ...(Array.isArray(product?.upcList) ? product.upcList : []),
+    ...(Array.isArray(product?.eanList) ? product.eanList : []),
+    ...(Array.isArray(product?.gtinList) ? product.gtinList : [])
+  ]
+    .map(normalizeGtinForComparison)
+    .filter(Boolean);
+
+  return candidateCodes.filter((candidate) => {
+    const normalizedCandidate =
+      normalizeGtinForComparison(candidate);
+
+    return productCodes.includes(normalizedCandidate);
+  });
+}
+
 function detectCodeType(code: string): {
   type: 'isbn' | 'upc' | 'asin' | 'unknown';
   searchCode: string;
@@ -960,6 +1003,16 @@ export async function POST(request: NextRequest) {
     const cleanCode = isbn_upc.replace(/[^a-zA-Z0-9X]/gi, '').trim().toUpperCase();
     const codeInfo = detectCodeType(cleanCode);
 
+    const isTenDigitMediaCandidate =
+      /^\d{10}$/.test(cleanCode) &&
+      !isValidISBN10(cleanCode);
+
+    // 10-digit media lookup V2:
+    // Eski positive/negative cache kayitlarini bir kez bypass eder.
+    const cacheIdentifier = isTenDigitMediaCandidate
+      ? `M10V2${cleanCode}`
+      : cleanCode;
+
     if (codeInfo.type === 'unknown') {
       console.warn(`INVALID PRODUCT CODE FORMAT: ${cleanCode}`);
 
@@ -973,7 +1026,7 @@ export async function POST(request: NextRequest) {
 
     // ---- Cache kontrolü ----
     const cacheReadStart = Date.now();
-    const cachedResult = await productCache.getFromCache(cleanCode);
+    const cachedResult = await productCache.getFromCache(cacheIdentifier);
     console.log(`⏱️ cacheRead=${Date.now() - cacheReadStart}ms`);
 
     if (cachedResult) {
@@ -1096,12 +1149,132 @@ export async function POST(request: NextRequest) {
 
     // ---- Keepa sorgusu ----
     let keepaResponse: any;
+    let effectiveSearchCode = codeInfo.searchCode;
     const keepaStart = Date.now();
     try {
       if (codeInfo.needsCodeLookup) {
         keepaResponse = await fetchKeepaByCode(codeInfo.searchCode, apiKey);
       } else {
         keepaResponse = await fetchKeepaByAsin(codeInfo.searchCode, apiKey);
+      }
+
+      // 10 haneli eski media kodu:
+      // Mevcut prefix-0 lookup sonuc vermezse kalan olasi
+      // UPC-A prefixlerini TEK batch Keepa isteginde dene.
+      if (
+        isTenDigitMediaCandidate &&
+        codeInfo.needsCodeLookup &&
+        (!Array.isArray(keepaResponse?.products) ||
+          keepaResponse.products.length === 0)
+      ) {
+        const fallbackCodes =
+          getTenDigitMediaFallbackCodes(cleanCode);
+
+        console.log(
+          `🔁 10-DIGIT FALLBACK: ${cleanCode} | ` +
+          `trying=${fallbackCodes.join(',')}`
+        );
+
+        const firstTokensConsumed =
+          Number(keepaResponse?.tokensConsumed || 0);
+
+        const firstProcessingTime =
+          Number(keepaResponse?.processingTimeInMs || 0);
+
+        const fallbackResponse =
+          await fetchKeepaByCode(
+            fallbackCodes.join(','),
+            apiKey
+          );
+
+        const fallbackProducts =
+          Array.isArray(fallbackResponse?.products)
+            ? fallbackResponse.products
+            : [];
+
+        const matchesByCode = new Map<string, any[]>();
+
+        for (const product of fallbackProducts) {
+          const matchingCodes =
+            getMatchingFallbackCodes(
+              product,
+              fallbackCodes
+            );
+
+          for (const matchingCode of matchingCodes) {
+            const existing =
+              matchesByCode.get(matchingCode) || [];
+
+            existing.push(product);
+            matchesByCode.set(
+              matchingCode,
+              existing
+            );
+          }
+        }
+
+        const matchedCodes =
+          Array.from(matchesByCode.keys());
+
+        if (matchedCodes.length === 1) {
+          effectiveSearchCode = matchedCodes[0];
+
+          keepaResponse = {
+            ...fallbackResponse,
+            products:
+              matchesByCode.get(effectiveSearchCode) || [],
+            tokensConsumed:
+              firstTokensConsumed +
+              Number(
+                fallbackResponse?.tokensConsumed || 0
+              ),
+            processingTimeInMs:
+              firstProcessingTime +
+              Number(
+                fallbackResponse?.processingTimeInMs || 0
+              )
+          };
+
+          console.log(
+            `✅ 10-DIGIT FALLBACK MATCH: ` +
+            `${cleanCode} -> ${effectiveSearchCode} | ` +
+            `products=${keepaResponse.products.length} | ` +
+            `asins=${keepaResponse.products
+              .map((p: any) => p?.asin)
+              .filter(Boolean)
+              .join(',')}`
+          );
+        } else {
+          // Birden fazla farkli prefix gercek urune denk gelirse
+          // veya Keepa sonucu hangi koda ait oldugunu dogrulayamiyorsak
+          // yanlis urun secmek yerine NOT FOUND birak.
+          keepaResponse = {
+            ...fallbackResponse,
+            products: [],
+            tokensConsumed:
+              firstTokensConsumed +
+              Number(
+                fallbackResponse?.tokensConsumed || 0
+              ),
+            processingTimeInMs:
+              firstProcessingTime +
+              Number(
+                fallbackResponse?.processingTimeInMs || 0
+              )
+          };
+
+          if (matchedCodes.length > 1) {
+            console.warn(
+              `⚠️ 10-DIGIT FALLBACK AMBIGUOUS: ` +
+              `${cleanCode} | matched=${matchedCodes.join(',')}`
+            );
+          } else {
+            console.warn(
+              `❌ 10-DIGIT FALLBACK NO VERIFIED MATCH: ` +
+              `${cleanCode} | returnedProducts=${fallbackProducts.length}`
+            );
+          }
+        }
       }
     } catch (err: any) {
       console.error('Keepa API error:', err?.response?.data || err.message);
@@ -1123,7 +1296,7 @@ export async function POST(request: NextRequest) {
 
     console.log('📦 KEEPA RESULT:', {
       cleanCode,
-      searchCode: codeInfo.searchCode,
+      searchCode: effectiveSearchCode,
       lookupType: codeInfo.needsCodeLookup ? 'code' : 'asin',
       productCount: Array.isArray(products) ? products.length : 0,
       asins: Array.isArray(products)
@@ -1132,7 +1305,7 @@ export async function POST(request: NextRequest) {
       error: keepaResponse?.error || null
     });
 
-    const bestProduct = pickBestKeepaProduct(products, codeInfo.searchCode);
+    const bestProduct = pickBestKeepaProduct(products, effectiveSearchCode);
 
     if (!bestProduct) {
       console.warn(`PRODUCT NOT FOUND: ${cleanCode} (${codeInfo.type})`);
@@ -1140,7 +1313,7 @@ export async function POST(request: NextRequest) {
       // Negatif cache: ayni bulunamayan barkod 24 saat boyunca
       // tekrar Keepa tokeni tuketmesin.
       await productCache.saveNotFoundToCache(
-        cleanCode,
+        cacheIdentifier,
         codeInfo.type
       );
 
@@ -1233,7 +1406,7 @@ export async function POST(request: NextRequest) {
     after(async () => {
       try {
         await productCache.saveToCache(
-          cleanCode,
+          cacheIdentifier,
           codeInfo.type,
           product,
           pricingResult,
