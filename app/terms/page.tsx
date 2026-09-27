@@ -158,11 +158,21 @@ export default function TermsPage() {
         <div className="space-y-12">
           <section id="acceptance" className="scroll-mt-8">
             <SectionHeading n="01" title="Acceptance of terms" />
-            <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-              By using our platform to sell your books, CDs, DVDs, and games,
-              you accept and agree to be bound by these terms. If you do not
-              agree to these terms, please do not use our service.
-            </p>
+            <div className="mt-4 space-y-4 text-[16px] leading-relaxed text-slate-700">
+              <p>
+                These Terms of Service form an agreement between you and
+                SellBookMedia. By using our platform to sell your books, CDs,
+                DVDs, and games, you accept and agree to be bound by these
+                terms. If you do not agree to these terms, please do not use
+                our service.
+              </p>
+              <p>
+                You must be at least 18 years old and legally capable of
+                entering into a binding agreement to use SellBookMedia as a
+                seller. By submitting an order, you represent and warrant that
+                you meet these requirements.
+              </p>
+            </div>
           </section>
 
           <section id="service" className="scroll-mt-8">
@@ -191,13 +201,14 @@ export default function TermsPage() {
               items={[
                 "Provide accurate personal information, payment method information, and shipping address",
                 <>
-                  Only submit items in <strong>very good condition</strong> as
+                  Only submit items in <strong>good, usable condition</strong> as
                   defined in our condition guide
                 </>,
                 "Ensure items have no writing, highlighting, markings, or damage",
                 "Package items securely using appropriate materials",
                 "Ship items within 15 days of receiving prepaid shipping labels",
                 "Provide accurate shipping and order information",
+                "Only submit items that you own or are legally authorized to sell and that are not stolen, counterfeit, or otherwise unlawfully obtained",
               ]}
             />
           </section>
@@ -237,7 +248,7 @@ export default function TermsPage() {
             </p>
             <List
               items={[
-                "Items must be in very good condition with minimal wear",
+                "Items must be in good, usable condition; normal wear from regular use is acceptable",
                 "No writing, highlighting, underlining, or markings of any kind",
                 "No water damage, stains, odors, or structural damage",
                 "Original cases, covers, artwork, and essential components must be included when applicable",
@@ -289,6 +300,8 @@ export default function TermsPage() {
             <List
               items={[
                 "Only items meeting our condition standards will be paid for",
+                "The offer shown when you submit an order is based on the items and information submitted and is subject to physical inspection after arrival",
+                "The final payment may be reduced for items that are missing, incorrect, incomplete, counterfeit, damaged, or otherwise fail our condition or eligibility requirements",
                 "Payments are processed using PayPal, Venmo, or check by mail",
                 "You must provide accurate payment information and a valid mailing address for your selected payment method",
                 "Payment processing is typically initiated within 2 business days after inspection; mailed checks require additional postal delivery time",
@@ -305,7 +318,7 @@ export default function TermsPage() {
             </p>
             <List
               items={[
-                "Your selected prepaid shipping option is sent automatically by email the same day you submit an order",
+                "Your selected prepaid shipping option is sent by email the same day you submit an order",
                 "Prepaid shipping labels and QR codes are valid for 15 days from issuance",
                 "You are responsible for proper packaging and following the instructions for your selected shipping option",
                 "Tracking information is provided with all shipments",
@@ -337,7 +350,7 @@ export default function TermsPage() {
                 "Damaged, broken, or non-functional items",
                 "Water-damaged or moldy items",
                 "Ex-library books or items with library markings",
-                "Promotional, bootleg, or counterfeit items",
+                "Promotional, bootleg, counterfeit, stolen, or otherwise unlawfully obtained items",
                 "Items missing essential components or required original cases, covers, or artwork when applicable",
                 "Items with strong odors (smoke, mildew, and similar)",
               ]}
@@ -395,9 +408,10 @@ export default function TermsPage() {
           <section id="ip" className="scroll-mt-8">
             <SectionHeading n="12" title="Intellectual property" />
             <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-              You represent that you own or have the right to sell all items
-              submitted to our platform. You are responsible for ensuring that
-              items do not infringe on any intellectual property rights.
+              You represent and warrant that you own or are legally authorized
+              to sell every item submitted to SellBookMedia. Submitted items
+              must not be stolen, counterfeit, unlawfully obtained, or infringe
+              the intellectual property or other rights of any third party.
             </p>
           </section>
 
@@ -433,53 +447,54 @@ export default function TermsPage() {
             <SectionHeading n="14" title="Modifications and changes" />
             <div className="mt-4 space-y-4 text-[16px] leading-relaxed text-slate-700">
               <p>
-                We reserve the right to modify, suspend, or discontinue the
-                platform (or any part thereof) and to modify these Terms of
-                Service at any time, with or without notice to you. We will not
-                be liable to you or any third party for any modification,
-                suspension, or discontinuation of the platform or any changes to
-                these terms.
+                We may update these Terms of Service or modify, suspend, or
+                discontinue parts of the SellBookMedia service from time to
+                time. Updated terms will become effective when posted on the
+                website unless a later effective date is stated.
               </p>
               <p>
-                While we may provide notice of significant changes to these
-                Terms of Service via email or website notice when feasible, we
-                are not obligated to provide any prior notice. All changes to
-                the platform itself, including but not limited to those listed
-                below, may be implemented without prior notice at our sole
-                discretion.
+                Changes to these terms will apply prospectively and will not
+                change the material terms of an order that was already
+                submitted before the new terms became effective, unless a
+                change is required by law or agreed to by both you and
+                SellBookMedia.
               </p>
               <p>
-                We may also impose limits on certain features and services or
-                restrict your access to parts or all of the platform without
-                notice or liability. These changes may include, but are not
-                limited to:
+                When reasonably practical, we may provide notice of material
+                changes through the website or by email. Your continued use of
+                the service after updated terms become effective constitutes
+                acceptance of those updated terms.
               </p>
             </div>
             <List
               items={[
                 "Changing the types of items we accept",
-                "Modifying pricing structures or payment terms",
-                "Altering the inspection process or condition standards",
+                "Modifying pricing structures or payment terms for future submissions",
+                "Altering the inspection process or condition standards for future submissions",
                 "Updating shipping methods or carriers",
                 "Modifying the user interface or functionality",
-                "Discontinuing certain features or services entirely",
+                "Discontinuing certain features or services",
               ]}
             />
-            <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-              By continuing to use our platform after any such changes, you
-              agree to be bound by the modified terms and conditions. If you do
-              not agree to any such changes, your sole recourse is to stop using
-              the platform.
-            </p>
           </section>
 
           <section id="law" className="scroll-mt-8">
             <SectionHeading n="15" title="Governing law" />
-            <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
-              These terms are governed by the laws of the United States. Any
-              disputes will be resolved through binding arbitration in
-              accordance with the rules of the American Arbitration Association.
-            </p>
+            <div className="mt-4 space-y-4 text-[16px] leading-relaxed text-slate-700">
+              <p>
+                These Terms of Service are governed by the laws of the State of
+                New Jersey, without regard to its conflict-of-law principles,
+                together with applicable federal law.
+              </p>
+              <p>
+                To the extent permitted by applicable law, any dispute arising
+                out of or relating to these terms or your use of SellBookMedia
+                will be resolved by binding arbitration administered by the
+                American Arbitration Association in accordance with its
+                applicable rules. Nothing in this section prevents either party
+                from bringing an eligible claim in small claims court.
+              </p>
+            </div>
           </section>
 
           <section id="contact" className="scroll-mt-8">

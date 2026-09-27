@@ -975,11 +975,12 @@ export default function CheckoutForm({
       {/* Terms metni + submit */}
       <div className="border-t border-gray-100 pt-5">
         <p className="text-xs text-gray-500 leading-relaxed mb-4">
-          By submitting, you confirm your items match our{" "}
+          By submitting, you confirm that you are at least 18 years old,
+          that your items match our{" "}
           <a href="/condition-guidelines" className="text-blue-600 underline">
             Condition Guidelines
           </a>
-          , that they belong to you, and you agree to our{" "}
+          , that you own or are legally authorized to sell them, and you agree to our{" "}
           <a href="/terms" className="text-blue-600 underline">
             Terms of Service
           </a>{" "}

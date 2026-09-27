@@ -1158,7 +1158,7 @@ useEffect(() => {
         </h3>
 
         <p className="text-gray-600 text-center mb-6">
-          Your selected prepaid shipping option will be sent automatically by email the same day.
+          Your selected prepaid shipping option will be sent by email the same day.
         </p>
 
         <div className="bg-blue-50 rounded-lg p-4">

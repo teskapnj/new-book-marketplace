@@ -32,7 +32,7 @@ const STEPS = [
 const FAQ = [
   {
     q: "How long does the entire process take?",
-    a: "After you submit your bundle, your selected prepaid shipping option is emailed automatically the same day. Once we receive and inspect your shipped items, payment is typically sent within 2 business days.",
+    a: "After you submit your bundle, your selected prepaid shipping option is emailed the same day. Once we receive and inspect your shipped items, payment is typically sent within 2 business days.",
   },
   {
     q: "What if some of my items aren't accepted?",
@@ -48,7 +48,7 @@ const FAQ = [
   },
   {
     q: "Are there any shipping fees?",
-    a: "No, shipping is completely free — your selected prepaid shipping option is emailed automatically the same day you submit your order.",
+    a: "No, shipping is completely free — your selected prepaid shipping option is emailed the same day you submit your order.",
   },
   {
     q: "What payment methods do you offer?",
@@ -311,8 +311,8 @@ export default function SellerGuidePage() {
                 b: "You get an immediate confirmation that we've received your submission.",
               },
               {
-                t: "Shipping option sent automatically",
-                b: "Your selected prepaid shipping option is emailed automatically the same day you submit your order.",
+                t: "Shipping option sent the same day",
+                b: "Your selected prepaid shipping option is emailed the same day you submit your order.",
               },
               {
                 t: "Follow the shipping instructions",

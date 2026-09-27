@@ -41,7 +41,7 @@ const GROUPS: Group[] = [
       },
       {
         q: "What condition do items need to be in?",
-        a: "Very good condition: clean, complete with original case and artwork when applicable, no writing, highlighting, or stickers, and no deep scratches. Essential components must be included. Ex-library and ex-rental copies aren't accepted.",
+        a: "Good, usable condition: clean, complete with original case and artwork when applicable, no writing, highlighting, or stickers, and no deep scratches. Essential components must be included. Ex-library and ex-rental copies aren't accepted.",
         href: "/condition-guidelines",
         hrefLabel: "Full condition guidelines",
       },
@@ -58,11 +58,11 @@ const GROUPS: Group[] = [
     items: [
       {
         q: "How long until I get my shipping label or QR code?",
-        a: "Your selected prepaid shipping option is sent automatically by email the same day you submit your order. If you don't see it by the end of the day, check your spam/junk folder first, then contact support.",
+        a: "Your selected prepaid shipping option is sent by email the same day you submit your order. If you don't see it by the end of the day, check your spam/junk folder first, then contact support.",
       },
       {
         q: "Are there any shipping fees?",
-        a: "No. Shipping costs you nothing — your selected prepaid shipping option is emailed automatically the same day you submit your order.",
+        a: "No. Shipping costs you nothing — your selected prepaid shipping option is emailed the same day you submit your order.",
       },
       {
         q: "How big can my box be?",

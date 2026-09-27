@@ -43,8 +43,8 @@ export async function POST(request: NextRequest) {
       : "Printable Shipping Label (PDF)";
 
     const shippingDeliveryText = isQrCode
-      ? "We'll email your USPS QR code automatically the same day."
-      : "We'll email your free prepaid shipping label automatically the same day.";
+      ? "We'll email your USPS QR code the same day."
+      : "We'll email your free prepaid shipping label the same day.";
 
     const shippingNextStep = isQrCode
       ? "After you receive the QR code, pack and seal your box. Show the QR code on your phone at a participating USPS location and they can print the shipping label for you."
