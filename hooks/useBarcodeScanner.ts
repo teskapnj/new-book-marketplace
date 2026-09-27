@@ -355,7 +355,10 @@ export function useBarcodeScanner(options: BarcodeScannerOptions): BarcodeScanne
   /**
    * Canvas'taki görüntüyü ZXing ile decode eder
    */
-  const decodeCanvas = (reader: MultiFormatReader, canvas: HTMLCanvasElement): string | null => {
+  const decodeCanvas = (
+    reader: MultiFormatReader,
+    canvas: HTMLCanvasElement
+  ): { code: string; format: string } | null => {
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return null;
 
@@ -373,7 +376,17 @@ export function useBarcodeScanner(options: BarcodeScannerOptions): BarcodeScanne
       const source = new RGBLuminanceSource(luminance, width, height);
       const bitmap = new BinaryBitmap(new HybridBinarizer(source));
       const result = reader.decodeWithState(bitmap);
-      return result ? result.getText() : null;
+
+      if (!result) return null;
+
+      const barcodeFormat = result.getBarcodeFormat();
+      const formatName =
+        BarcodeFormat[barcodeFormat] ?? String(barcodeFormat);
+
+      return {
+        code: result.getText(),
+        format: formatName
+      };
     } catch (e) {
       if (!(e instanceof NotFoundException)) {
         console.error('Decode error:', e);
@@ -390,7 +403,7 @@ export function useBarcodeScanner(options: BarcodeScannerOptions): BarcodeScanne
     video: HTMLVideoElement,
     canvas: HTMLCanvasElement,
     angle: number
-  ): string | null => {
+  ): { code: string; format: string } | null => {
     const vw = video.videoWidth;
     const vh = video.videoHeight;
     if (!vw || !vh) return null;
@@ -504,20 +517,27 @@ export function useBarcodeScanner(options: BarcodeScannerOptions): BarcodeScanne
           isDecodingRef.current = true;
 
           let scannedCode: string | null = null;
+          let scannedFormat = '';
           let successAngle = '';
 
           // TÜM 4 YÖNÜ DENE
           for (const rotation of ROTATIONS) {
-            scannedCode = tryDecodeWithRotation(
+            const decodedResult = tryDecodeWithRotation(
               readerRef.current,
               video,
               scanCanvasRef.current,
               rotation.angle
             );
 
-            if (scannedCode) {
+            if (decodedResult) {
+              scannedCode = decodedResult.code;
+              scannedFormat = decodedResult.format;
               successAngle = rotation.label;
-              console.log(`✅ Barcode found at ${successAngle}:`, scannedCode);
+
+              console.log(
+                `✅ Barcode found at ${successAngle}: ${scannedCode} | Format: ${scannedFormat}`
+              );
+
               break;
             }
           }

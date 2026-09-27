@@ -209,6 +209,60 @@ function getMatchingFallbackCodes(
   });
 }
 
+
+function isUnusableNumericIsbnResponse(response: any): boolean {
+  const products =
+    Array.isArray(response?.products)
+      ? response.products
+      : [];
+
+  if (products.length === 0) return true;
+
+  // Keepa bazen numeric ISBN-10'u ASIN gibi kabul edip
+  // asin alani olan ama gercek urun bilgisi bulunmayan
+  // bos bir shell dondurebiliyor.
+  return products.every((product: any) => {
+    const title =
+      String(product?.title || '').trim();
+
+    const hasCategoryTree =
+      Array.isArray(product?.categoryTree) &&
+      product.categoryTree.length > 0;
+
+    const rootCategory =
+      Number(product?.rootCategory || 0);
+
+    const salesRankReference =
+      Number(product?.salesRankReference || 0);
+
+    const current =
+      Array.isArray(product?.stats?.current)
+        ? product.stats.current
+        : [];
+
+    const hasMarketData =
+      Number(current?.[1] || 0) > 0 ||
+      Number(current?.[2] || 0) > 0 ||
+      Number(current?.[3] || 0) > 0;
+
+    const hasIdentity =
+      Boolean(title) ||
+      hasCategoryTree ||
+      rootCategory > 0 ||
+      salesRankReference > 0 ||
+      Boolean(product?.productGroup) ||
+      Boolean(product?.binding) ||
+      Boolean(product?.type) ||
+      Boolean(product?.imagesCSV) ||
+      (
+        Array.isArray(product?.images) &&
+        product.images.length > 0
+      );
+
+    return !hasIdentity && !hasMarketData;
+  });
+}
+
 function detectCodeType(code: string): {
   type: 'isbn' | 'upc' | 'asin' | 'unknown';
   searchCode: string;
@@ -1003,15 +1057,27 @@ export async function POST(request: NextRequest) {
     const cleanCode = isbn_upc.replace(/[^a-zA-Z0-9X]/gi, '').trim().toUpperCase();
     const codeInfo = detectCodeType(cleanCode);
 
+    const isNumericTenDigit =
+      /^\d{10}$/.test(cleanCode);
+
+    const isNumericTenDigitIsbn =
+      isNumericTenDigit &&
+      isValidISBN10(cleanCode);
+
     const isTenDigitMediaCandidate =
-      /^\d{10}$/.test(cleanCode) &&
+      isNumericTenDigit &&
       !isValidISBN10(cleanCode);
 
     // 10-digit media lookup V2:
     // Eski positive/negative cache kayitlarini bir kez bypass eder.
+    //
+    // Numeric ISBN-10 collision lookup M1:
+    // Keepa'nin eski ghost ISBN sonucunu da bir kez bypass eder.
     const cacheIdentifier = isTenDigitMediaCandidate
       ? `M10V2${cleanCode}`
-      : cleanCode;
+      : isNumericTenDigitIsbn
+        ? `I10M1${cleanCode}`
+        : cleanCode;
 
     if (codeInfo.type === 'unknown') {
       console.warn(`INVALID PRODUCT CODE FORMAT: ${cleanCode}`);
@@ -1150,12 +1216,147 @@ export async function POST(request: NextRequest) {
     // ---- Keepa sorgusu ----
     let keepaResponse: any;
     let effectiveSearchCode = codeInfo.searchCode;
+    let effectiveLookupType: 'code' | 'asin' =
+      codeInfo.needsCodeLookup ? 'code' : 'asin';
+    let effectiveIdentifierType:
+      'isbn' | 'upc' | 'asin' | 'unknown' =
+      codeInfo.type;
+
     const keepaStart = Date.now();
     try {
       if (codeInfo.needsCodeLookup) {
         keepaResponse = await fetchKeepaByCode(codeInfo.searchCode, apiKey);
       } else {
         keepaResponse = await fetchKeepaByAsin(codeInfo.searchCode, apiKey);
+      }
+
+
+      // Numeric 10-digit kod gercek ISBN-10 checksum'unu tesadufen
+      // tutturabilir. Keepa ISBN lookup sadece bos/ghost shell
+      // dondururse ayni kodu eski media UPC middle-10 olarak dene.
+      if (
+        isNumericTenDigitIsbn &&
+        codeInfo.type === 'isbn' &&
+        isUnusableNumericIsbnResponse(keepaResponse)
+      ) {
+        const collisionCandidates = [
+          expandTenDigitMediaCode(cleanCode),
+          ...getTenDigitMediaFallbackCodes(cleanCode)
+        ];
+
+        console.log(
+          `🔁 ISBN-10 MEDIA COLLISION FALLBACK: ${cleanCode} | ` +
+          `trying=${collisionCandidates.join(',')}`
+        );
+
+        const firstTokensConsumed =
+          Number(keepaResponse?.tokensConsumed || 0);
+
+        const firstProcessingTime =
+          Number(keepaResponse?.processingTimeInMs || 0);
+
+        const fallbackResponse =
+          await fetchKeepaByCode(
+            collisionCandidates.join(','),
+            apiKey
+          );
+
+        const fallbackProducts =
+          Array.isArray(fallbackResponse?.products)
+            ? fallbackResponse.products
+            : [];
+
+        const matchesByCode =
+          new Map<string, any[]>();
+
+        for (const product of fallbackProducts) {
+          const matchingCodes =
+            getMatchingFallbackCodes(
+              product,
+              collisionCandidates
+            );
+
+          for (const matchingCode of matchingCodes) {
+            const existing =
+              matchesByCode.get(matchingCode) || [];
+
+            existing.push(product);
+
+            matchesByCode.set(
+              matchingCode,
+              existing
+            );
+          }
+        }
+
+        const matchedCodes =
+          Array.from(matchesByCode.keys());
+
+        if (matchedCodes.length === 1) {
+          effectiveSearchCode =
+            matchedCodes[0];
+
+          effectiveLookupType = 'code';
+          effectiveIdentifierType = 'upc';
+
+          keepaResponse = {
+            ...fallbackResponse,
+            products:
+              matchesByCode.get(
+                effectiveSearchCode
+              ) || [],
+            tokensConsumed:
+              firstTokensConsumed +
+              Number(
+                fallbackResponse?.tokensConsumed || 0
+              ),
+            processingTimeInMs:
+              firstProcessingTime +
+              Number(
+                fallbackResponse?.processingTimeInMs || 0
+              )
+          };
+
+          console.log(
+            `✅ ISBN-10 MEDIA COLLISION MATCH: ` +
+            `${cleanCode} -> ${effectiveSearchCode} | ` +
+            `products=${keepaResponse.products.length} | ` +
+            `asins=${keepaResponse.products
+              .map((p: any) => p?.asin)
+              .filter(Boolean)
+              .join(',')}`
+          );
+        } else {
+          // Ilk ISBN sonucu zaten kullanilamaz durumdaydi.
+          // Media tarafinda da tek ve dogrulanmis bir eslesme yoksa
+          // anlamsiz ghost urunu kullanmak yerine NOT FOUND don.
+          keepaResponse = {
+            ...fallbackResponse,
+            products: [],
+            tokensConsumed:
+              firstTokensConsumed +
+              Number(
+                fallbackResponse?.tokensConsumed || 0
+              ),
+            processingTimeInMs:
+              firstProcessingTime +
+              Number(
+                fallbackResponse?.processingTimeInMs || 0
+              )
+          };
+
+          if (matchedCodes.length > 1) {
+            console.warn(
+              `⚠️ ISBN-10 MEDIA COLLISION AMBIGUOUS: ` +
+              `${cleanCode} | matched=${matchedCodes.join(',')}`
+            );
+          } else {
+            console.warn(
+              `❌ ISBN-10 MEDIA COLLISION NO VERIFIED MATCH: ` +
+              `${cleanCode} | returnedProducts=${fallbackProducts.length}`
+            );
+          }
+        }
       }
 
       // 10 haneli eski media kodu:
@@ -1297,7 +1498,7 @@ export async function POST(request: NextRequest) {
     console.log('📦 KEEPA RESULT:', {
       cleanCode,
       searchCode: effectiveSearchCode,
-      lookupType: codeInfo.needsCodeLookup ? 'code' : 'asin',
+      lookupType: effectiveLookupType,
       productCount: Array.isArray(products) ? products.length : 0,
       asins: Array.isArray(products)
         ? products.map((p: any) => p?.asin).filter(Boolean)
@@ -1314,7 +1515,7 @@ export async function POST(request: NextRequest) {
       // tekrar Keepa tokeni tuketmesin.
       await productCache.saveNotFoundToCache(
         cacheIdentifier,
-        codeInfo.type
+        effectiveIdentifierType
       );
 
       return NextResponse.json(
@@ -1407,7 +1608,7 @@ export async function POST(request: NextRequest) {
       try {
         await productCache.saveToCache(
           cacheIdentifier,
-          codeInfo.type,
+          effectiveIdentifierType,
           product,
           pricingResult,
           message,
@@ -1435,7 +1636,7 @@ export async function POST(request: NextRequest) {
     });
 
     const speedLabel = totalTime < 1000 ? 'ULTRA FAST' : totalTime < 2000 ? 'FAST' : 'NORMAL';
-    console.log(`[${speedLabel}] ${totalTime}ms - Keepa lookup (${debugInfo.lookupType})`);
+    console.log(`[${speedLabel}] ${totalTime}ms - Keepa lookup (${effectiveLookupType})`);
 
     console.log(
       `${mediaZoneTag}💰 KEEPA: ${cleanCode} | ` +
