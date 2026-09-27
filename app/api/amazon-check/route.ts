@@ -134,6 +134,23 @@ function expandTenDigitMediaCode(code: string): string {
   return `${first11}${checkDigit}`;
 }
 
+function isValidUPC12(code: string): boolean {
+  if (!/^\d{12}$/.test(code)) return false;
+
+  const digits = code.split('').map(Number);
+
+  const weightedSum = digits
+    .slice(0, 11)
+    .reduce(
+      (sum, digit, index) => sum + digit * (index % 2 === 0 ? 3 : 1),
+      0
+    );
+
+  const expectedCheckDigit = (10 - (weightedSum % 10)) % 10;
+
+  return digits[11] === expectedCheckDigit;
+}
+
 function detectCodeType(code: string): {
   type: 'isbn' | 'upc' | 'asin' | 'unknown';
   searchCode: string;
@@ -161,6 +178,26 @@ function detectCodeType(code: string): {
 
       console.log(
         `10-digit media code expanded: ${cleanCode} -> ${expandedUpc}`
+      );
+
+      return {
+        type: 'upc',
+        searchCode: expandedUpc,
+        converted: true,
+        needsCodeLookup: true
+      };
+    }
+  }
+
+  // 11 haneli UPC-A:
+  // Bazi barkod okuyucular UPC-A'nin bastaki 0 hanesini dusurebilir.
+  // Basina 0 ekle, checksum gecerliyse UPC olarak kullan.
+  if (cleanCode.length === 11 && /^\d{11}$/.test(cleanCode)) {
+    const expandedUpc = `0${cleanCode}`;
+
+    if (isValidUPC12(expandedUpc)) {
+      console.log(
+        `11-digit UPC expanded: ${cleanCode} -> ${expandedUpc}`
       );
 
       return {
