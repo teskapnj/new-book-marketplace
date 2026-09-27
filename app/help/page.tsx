@@ -57,12 +57,12 @@ const GROUPS: Group[] = [
     blurb: "Labels, packing, and box limits",
     items: [
       {
-        q: "How long until I get a shipping label?",
-        a: "We review your submission, typically within 24 hours. Once it's approved, the free prepaid label arrives by email. Check your spam folder if you don't see it.",
+        q: "How long until I get my shipping label or QR code?",
+        a: "Your selected prepaid shipping option is sent automatically by email the same day you submit your order. If you don't see it by the end of the day, check your spam/junk folder first, then contact support.",
       },
       {
         q: "Are there any shipping fees?",
-        a: "No. Shipping costs you nothing — the prepaid label is included once your bundle is approved.",
+        a: "No. Shipping costs you nothing — your selected prepaid shipping option is emailed automatically the same day you submit your order.",
       },
       {
         q: "How big can my box be?",
@@ -74,7 +74,7 @@ const GROUPS: Group[] = [
       },
       {
         q: "Can I track my package?",
-        a: "Yes. Your prepaid label includes tracking, so you can follow the box online.",
+        a: "Yes. Your prepaid shipment includes tracking, so you can follow the box online.",
       },
     ],
   },
@@ -99,7 +99,7 @@ const GROUPS: Group[] = [
       },
       {
         q: "What if I made a mistake in my submission?",
-        a: "Contact support as soon as you can. Changes may still be possible before your shipping label is generated.",
+        a: "Contact support as soon as you can. Changes may still be possible before you ship your package.",
         href: "/contact",
         hrefLabel: "Contact support",
       },

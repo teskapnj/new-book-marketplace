@@ -305,11 +305,11 @@ export default function TermsPage() {
             </p>
             <List
               items={[
-                "Free prepaid shipping labels provided within 24 hours of submission approval",
-                "Labels are valid for 15 days from issuance",
-                "You are responsible for proper packaging and label attachment",
+                "Your selected prepaid shipping option is sent automatically by email the same day you submit an order",
+                "Prepaid shipping labels and QR codes are valid for 15 days from issuance",
+                "You are responsible for proper packaging and following the instructions for your selected shipping option",
                 "Tracking information is provided with all shipments",
-                "Items must arrive at our facility within 20 days of label generation",
+                "Items must arrive at our facility within 20 days of your prepaid shipping option being issued",
               ]}
             />
             <Callout tone="warn" label="Shipping loss or damage">

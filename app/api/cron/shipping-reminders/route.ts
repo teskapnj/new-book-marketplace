@@ -113,11 +113,15 @@ type LabelAttachment = {
 
 async function getShippingLabelAttachment(
   shippingLabelUrl: string,
-  listingId: string
+  listingId: string,
+  shippingLabelPreference: "pdf" | "qr"
 ): Promise<LabelAttachment | null> {
   if (!shippingLabelUrl) {
     return null;
   }
+
+  const isQrCode =
+    shippingLabelPreference === "qr";
 
   try {
     const url = new URL(shippingLabelUrl);
@@ -132,7 +136,7 @@ async function getShippingLabelAttachment(
       !allowedHosts.includes(url.hostname)
     ) {
       console.warn(
-        `Skipping shipping label attachment for ${listingId}: invalid URL`
+        `Skipping shipping attachment for ${listingId}: invalid URL`
       );
 
       return null;
@@ -148,7 +152,7 @@ async function getShippingLabelAttachment(
 
     if (!response.ok) {
       throw new Error(
-        `Shipping label download failed with status ${response.status}`
+        `Shipping attachment download failed with status ${response.status}`
       );
     }
 
@@ -165,55 +169,139 @@ async function getShippingLabelAttachment(
           MAX_LABEL_SIZE_BYTES
       ) {
         throw new Error(
-          "Shipping label exceeds maximum allowed size"
+          "Shipping attachment exceeds maximum allowed size"
         );
       }
     }
 
-    const labelArrayBuffer =
+    const attachmentArrayBuffer =
       await response.arrayBuffer();
 
     if (
-      labelArrayBuffer.byteLength >
+      attachmentArrayBuffer.byteLength >
       MAX_LABEL_SIZE_BYTES
     ) {
       throw new Error(
-        "Shipping label exceeds maximum allowed size"
+        "Shipping attachment exceeds maximum allowed size"
       );
     }
 
-    const labelBuffer =
-      Buffer.from(labelArrayBuffer);
+    const attachmentBuffer =
+      Buffer.from(attachmentArrayBuffer);
 
-    if (labelBuffer.length === 0) {
+    if (attachmentBuffer.length === 0) {
       throw new Error(
-        "Shipping label is empty"
+        "Shipping attachment is empty"
       );
     }
 
-    // PDF signature kontrolu
+    const rawContentType =
+      response.headers
+        .get("content-type")
+        ?.toLowerCase()
+        .split(";")[0]
+        .trim() || "";
+
     const pdfSignature =
-      labelBuffer
+      attachmentBuffer
         .subarray(0, 4)
         .toString("ascii");
 
-    if (pdfSignature !== "%PDF") {
+    if (!isQrCode) {
+      if (pdfSignature !== "%PDF") {
+        throw new Error(
+          "Shipping label is not a valid PDF"
+        );
+      }
+
+      return {
+        filename:
+          `SellBookMedia-Shipping-Label-${getShortId(
+            listingId
+          )}.pdf`,
+        content: attachmentBuffer,
+        contentType: "application/pdf",
+      };
+    }
+
+    // QR code admin tarafinda image veya PDF olarak yuklenebilir.
+    if (pdfSignature === "%PDF") {
+      return {
+        filename:
+          `SellBookMedia-USPS-QR-${getShortId(
+            listingId
+          )}.pdf`,
+        content: attachmentBuffer,
+        contentType: "application/pdf",
+      };
+    }
+
+    let extension = "";
+    let contentType = "";
+
+    if (
+      attachmentBuffer.length >= 8 &&
+      attachmentBuffer
+        .subarray(0, 8)
+        .equals(
+          Buffer.from([
+            0x89, 0x50, 0x4e, 0x47,
+            0x0d, 0x0a, 0x1a, 0x0a,
+          ])
+        )
+    ) {
+      extension = "png";
+      contentType = "image/png";
+    } else if (
+      attachmentBuffer.length >= 3 &&
+      attachmentBuffer[0] === 0xff &&
+      attachmentBuffer[1] === 0xd8 &&
+      attachmentBuffer[2] === 0xff
+    ) {
+      extension = "jpg";
+      contentType = "image/jpeg";
+    } else if (
+      attachmentBuffer.length >= 12 &&
+      attachmentBuffer
+        .subarray(0, 4)
+        .toString("ascii") === "RIFF" &&
+      attachmentBuffer
+        .subarray(8, 12)
+        .toString("ascii") === "WEBP"
+    ) {
+      extension = "webp";
+      contentType = "image/webp";
+    } else if (
+      attachmentBuffer.length >= 6 &&
+      ["GIF87a", "GIF89a"].includes(
+        attachmentBuffer
+          .subarray(0, 6)
+          .toString("ascii")
+      )
+    ) {
+      extension = "gif";
+      contentType = "image/gif";
+    }
+
+    if (!extension) {
       throw new Error(
-        "Shipping label is not a valid PDF"
+        `Unsupported USPS QR attachment type: ${
+          rawContentType || "unknown"
+        }`
       );
     }
 
     return {
       filename:
-        `SellBookMedia-Shipping-Label-${getShortId(
+        `SellBookMedia-USPS-QR-${getShortId(
           listingId
-        )}.pdf`,
-      content: labelBuffer,
-      contentType: "application/pdf",
+        )}.${extension}`,
+      content: attachmentBuffer,
+      contentType,
     };
   } catch (error) {
     console.error(
-      `Shipping label attachment could not be created for ${listingId}:`,
+      `Shipping attachment could not be created for ${listingId}:`,
       error
     );
 
@@ -310,11 +398,25 @@ function shippingInfoBlock(
 }
 
 function attachmentBlock(
-  attachmentAvailable: boolean
+  attachmentAvailable: boolean,
+  isQrCode: boolean
 ) {
   if (!attachmentAvailable) {
     return "";
   }
+
+  const heading =
+    isQrCode
+      ? "USPS QR Code Attached"
+      : "Shipping Label Attached";
+
+  const message =
+    isQrCode
+      ? `A copy of your USPS QR code is attached to this email.
+         Open it on your phone and show it at a participating USPS location.
+         No printer is needed.`
+      : `A PDF copy of your prepaid shipping label is attached to this email.
+         Open the attachment and print it before shipping your package.`;
 
   return `
     <tr>
@@ -340,7 +442,7 @@ function attachmentBlock(
                 color:#047857;
                 margin-bottom:10px;
               ">
-                Shipping Label Attached
+                ${heading}
               </div>
 
               <div style="
@@ -348,8 +450,7 @@ function attachmentBlock(
                 color:#065f46;
                 line-height:1.6;
               ">
-                A PDF copy of your prepaid shipping label is attached to this email.
-                Open the attachment and print it before shipping your package.
+                ${message}
               </div>
             </td>
           </tr>
@@ -360,8 +461,88 @@ function attachmentBlock(
 }
 
 function nextStepsBlock(
-  carrierUpper: string
+  carrierUpper: string,
+  isQrCode: boolean
 ) {
+  if (isQrCode) {
+    return `
+      <tr>
+        <td style="padding:16px 24px 0 24px;">
+          <table
+            role="presentation"
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            style="
+              background-color:#fffbeb;
+              border-radius:12px;
+              border:1px solid #fde68a;
+            "
+          >
+            <tr>
+              <td style="padding:20px;">
+
+                <div style="
+                  font-size:12px;
+                  font-weight:700;
+                  letter-spacing:1px;
+                  text-transform:uppercase;
+                  color:#92400e;
+                  margin-bottom:12px;
+                ">
+                  Next Steps
+                </div>
+
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  style="
+                    font-size:16px;
+                    color:#78350f;
+                    line-height:1.5;
+                  "
+                >
+                  <tr>
+                    <td style="padding:7px 0;">
+                      <strong>1.</strong>&nbsp;&nbsp;Pack and seal your box
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="padding:7px 0;">
+                      <strong>2.</strong>&nbsp;&nbsp;Open your USPS QR code on your phone
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="padding:7px 0;">
+                      <strong>3.</strong>&nbsp;&nbsp;Show the QR code at a participating USPS location
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="padding:7px 0;">
+                      <strong>4.</strong>&nbsp;&nbsp;USPS can print the shipping label for you
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="padding:7px 0;">
+                      <strong>5.</strong>&nbsp;&nbsp;Hand over your sealed package
+                    </td>
+                  </tr>
+                </table>
+
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    `;
+  }
+
   return `
     <tr>
       <td style="padding:16px 24px 0 24px;">
@@ -560,6 +741,7 @@ async function sendFiveDayReminder({
   carrier,
   shippingLabelUrl,
   listingId,
+  shippingLabelPreference,
 }: {
   email: string;
   sellerName: string;
@@ -567,6 +749,7 @@ async function sendFiveDayReminder({
   carrier: string;
   shippingLabelUrl: string;
   listingId: string;
+  shippingLabelPreference: "pdf" | "qr";
 }) {
   const safeSellerName =
     escapeHtml(sellerName);
@@ -577,10 +760,14 @@ async function sendFiveDayReminder({
   const shortId =
     getShortId(listingId);
 
+  const isQrCode =
+    shippingLabelPreference === "qr";
+
   const labelAttachment =
     await getShippingLabelAttachment(
       shippingLabelUrl,
-      listingId
+      listingId,
+      shippingLabelPreference
     );
 
   const emailHtml = `<!DOCTYPE html>
@@ -710,13 +897,22 @@ If you haven't had a chance to ship it, no worries.
                 color:#334155;
               ">
               ${
-                labelAttachment
-                  ? `Your prepaid shipping label is attached to this email for your convenience.
-                     Whenever you're ready, simply print the attached PDF,
-                     pack your items securely, attach the label to your box,
-                     and drop it off at USPS.`
-                  : `Whenever you're ready, simply pack your items securely
-                     and drop your package off at USPS.`
+                isQrCode
+                  ? labelAttachment
+                    ? `Your USPS QR code is attached to this email for your convenience.
+                       Pack and seal your box, open the QR code on your phone,
+                       and show it at a participating USPS location.
+                       USPS can print the shipping label for you.`
+                    : `Use the USPS QR code from your original shipping email.
+                       Pack and seal your box, show the QR code on your phone
+                       at a participating USPS location, and USPS can print the label for you.`
+                  : labelAttachment
+                    ? `Your prepaid shipping label is attached to this email for your convenience.
+                       Whenever you're ready, simply print the attached PDF,
+                       pack your items securely, attach the label to your box,
+                       and drop it off at USPS.`
+                    : `Whenever you're ready, simply pack your items securely
+                       and drop your package off at USPS.`
               }
               </p>
 
@@ -729,13 +925,15 @@ If you haven't had a chance to ship it, no worries.
           )}
 
           ${attachmentBlock(
-            Boolean(labelAttachment)
+            Boolean(labelAttachment),
+            isQrCode
           )}
 
           ${
-            labelAttachment
+            isQrCode || labelAttachment
               ? nextStepsBlock(
-                  carrierUpper
+                  carrierUpper,
+                  isQrCode
                 )
               : ""
           }
@@ -788,11 +986,19 @@ Just a quick reminder about your SellBook Media shipment.
 It looks like USPS has not scanned your package yet. If you haven't had a chance to ship it, no worries.
 
 ${
-  labelAttachment
-    ? `Your prepaid shipping label is attached to this email for your convenience.
+  isQrCode
+    ? labelAttachment
+      ? `Your USPS QR code is attached to this email for your convenience.
+
+Pack and seal your box, open the QR code on your phone, and show it at a participating USPS location. USPS can print the shipping label for you.`
+      : `Use the USPS QR code from your original shipping email.
+
+Pack and seal your box, show the QR code on your phone at a participating USPS location, and USPS can print the shipping label for you.`
+    : labelAttachment
+      ? `Your prepaid shipping label is attached to this email for your convenience.
 
 Whenever you're ready, simply print the attached PDF, pack your items securely, attach the label to your box, and drop it off at USPS.`
-    : `Whenever you're ready, simply pack your items securely and drop your package off at USPS.`
+      : `Whenever you're ready, simply pack your items securely and drop your package off at USPS.`
 }
 
 SHIPPING
@@ -800,8 +1006,17 @@ Tracking number: ${trackingNumber}
 Carrier: ${carrierUpper}
 
 ${
-  labelAttachment
+  isQrCode
     ? `NEXT STEPS
+1. Pack and seal your box
+2. Open your USPS QR code on your phone
+3. Show the QR code at a participating USPS location
+4. USPS can print the shipping label for you
+5. Hand over your sealed package
+
+`
+    : labelAttachment
+      ? `NEXT STEPS
 1. Open the attached shipping label
 2. Print the label
 3. Pack your items securely
@@ -809,7 +1024,7 @@ ${
 5. Drop it off at ${carrierUpper}
 
 `
-    : ""
+      : ""
 }CHANGED YOUR MIND?
 That's okay too. Simply reply to this email and let us know.
 
@@ -846,6 +1061,7 @@ async function sendTenDayReminder({
   carrier,
   shippingLabelUrl,
   listingId,
+  shippingLabelPreference,
 }: {
   email: string;
   sellerName: string;
@@ -853,6 +1069,7 @@ async function sendTenDayReminder({
   carrier: string;
   shippingLabelUrl: string;
   listingId: string;
+  shippingLabelPreference: "pdf" | "qr";
 }) {
   const safeSellerName =
     escapeHtml(sellerName);
@@ -863,10 +1080,14 @@ async function sendTenDayReminder({
   const shortId =
     getShortId(listingId);
 
+  const isQrCode =
+    shippingLabelPreference === "qr";
+
   const labelAttachment =
     await getShippingLabelAttachment(
       shippingLabelUrl,
-      listingId
+      listingId,
+      shippingLabelPreference
     );
 
   const emailHtml = `<!DOCTYPE html>
@@ -1006,13 +1227,22 @@ async function sendTenDayReminder({
                 color:#334155;
               ">
                 ${
-                  labelAttachment
-                    ? `Your prepaid shipping label is attached to this email again for your convenience.
-                       When you're ready, simply print the attached PDF,
-                       pack your items securely, attach the label to your box,
-                       and drop it off at USPS.`
-                    : `When you're ready, simply pack your items securely
-                       and drop your package off at USPS within the next 5 days.`
+                  isQrCode
+                    ? labelAttachment
+                      ? `Your USPS QR code is attached to this email again for your convenience.
+                         Pack and seal your box, open the QR code on your phone,
+                         and show it at a participating USPS location.
+                         USPS can print the shipping label for you.`
+                      : `Use the USPS QR code from your original shipping email.
+                         Pack and seal your box and show the QR code on your phone
+                         at a participating USPS location within the next 5 days.`
+                    : labelAttachment
+                      ? `Your prepaid shipping label is attached to this email again for your convenience.
+                         When you're ready, simply print the attached PDF,
+                         pack your items securely, attach the label to your box,
+                         and drop it off at USPS.`
+                      : `When you're ready, simply pack your items securely
+                         and drop your package off at USPS within the next 5 days.`
                 }
               </p>
 
@@ -1073,13 +1303,15 @@ async function sendTenDayReminder({
           )}
 
           ${attachmentBlock(
-            Boolean(labelAttachment)
+            Boolean(labelAttachment),
+            isQrCode
           )}
 
           ${
-            labelAttachment
+            isQrCode || labelAttachment
               ? nextStepsBlock(
-                  carrierUpper
+                  carrierUpper,
+                  isQrCode
                 )
               : ""
           }
@@ -1131,11 +1363,19 @@ Just a friendly final reminder about your SellBook Media shipment.
 It looks like USPS still hasn't scanned your package. You have 5 days remaining to send it.
 
 ${
-  labelAttachment
-    ? `Your prepaid shipping label is attached to this email again for your convenience.
+  isQrCode
+    ? labelAttachment
+      ? `Your USPS QR code is attached to this email again for your convenience.
+
+Pack and seal your box, open the QR code on your phone, and show it at a participating USPS location. USPS can print the shipping label for you.`
+      : `Use the USPS QR code from your original shipping email.
+
+Pack and seal your box and show the QR code on your phone at a participating USPS location within the next 5 days.`
+    : labelAttachment
+      ? `Your prepaid shipping label is attached to this email again for your convenience.
 
 When you're ready, simply print the attached PDF, pack your items securely, attach the label to your box, and drop it off at USPS.`
-    : `When you're ready, simply pack your items securely and drop your package off at USPS within the next 5 days.`
+      : `When you're ready, simply pack your items securely and drop your package off at USPS within the next 5 days.`
 }
 
 5 DAYS REMAINING
@@ -1146,8 +1386,17 @@ Tracking number: ${trackingNumber}
 Carrier: ${carrierUpper}
 
 ${
-  labelAttachment
+  isQrCode
     ? `NEXT STEPS
+1. Pack and seal your box
+2. Open your USPS QR code on your phone
+3. Show the QR code at a participating USPS location
+4. USPS can print the shipping label for you
+5. Hand over your sealed package
+
+`
+    : labelAttachment
+      ? `NEXT STEPS
 1. Open the attached shipping label
 2. Print the label
 3. Pack your items securely
@@ -1155,7 +1404,7 @@ ${
 5. Drop it off at ${carrierUpper}
 
 `
-    : ""
+      : ""
 }CHANGED YOUR MIND?
 That's okay too. Simply reply to this email and let us know.
 
@@ -1288,6 +1537,13 @@ export async function GET(
           ? listing.shippingLabelUrl.trim()
           : "";
 
+      const shippingLabelPreference:
+        "pdf" | "qr" =
+          listing.shippingInfo
+            ?.shippingLabelPreference === "qr"
+            ? "qr"
+            : "pdf";
+
       if (!trackingNumber) {
         results.skipped++;
         continue;
@@ -1352,6 +1608,7 @@ export async function GET(
                 carrier,
                 shippingLabelUrl,
                 listingId: doc.id,
+                shippingLabelPreference,
               });
 
               console.log(
@@ -1433,6 +1690,7 @@ export async function GET(
                 carrier,
                 shippingLabelUrl,
                 listingId: doc.id,
+                shippingLabelPreference,
               });
 
               console.log(

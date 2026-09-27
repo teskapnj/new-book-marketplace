@@ -18,8 +18,8 @@ const STEPS = [
   {
     id: "label",
     n: "03",
-    title: "Get your shipping label",
-    blurb: "Free prepaid shipping label sent by email",
+    title: "Get your shipping option",
+    blurb: "Free prepaid PDF label or USPS QR code sent by email",
   },
   {
     id: "paid",
@@ -32,7 +32,7 @@ const STEPS = [
 const FAQ = [
   {
     q: "How long does the entire process take?",
-    a: "After you submit your bundle, our team reviews it within 24 hours. Once approved and we receive your shipped items, payment is typically sent within 2 business days.",
+    a: "After you submit your bundle, your selected prepaid shipping option is emailed automatically the same day. Once we receive and inspect your shipped items, payment is typically sent within 2 business days.",
   },
   {
     q: "What if some of my items aren't accepted?",
@@ -40,15 +40,15 @@ const FAQ = [
   },
   {
     q: "Can I track my package?",
-    a: "Yes. Your prepaid shipping label includes tracking information that you can monitor online.",
+    a: "Yes. Your prepaid shipment includes tracking information that you can monitor online.",
   },
   {
     q: "What if I made a mistake in my submission?",
-    a: "Contact our support team as soon as possible. Changes may be possible before your shipping label is generated.",
+    a: "Contact our support team as soon as possible. Changes may still be possible before you ship your package.",
   },
   {
     q: "Are there any shipping fees?",
-    a: "No, shipping is completely free — we email you a prepaid label once your bundle is approved.",
+    a: "No, shipping is completely free — your selected prepaid shipping option is emailed automatically the same day you submit your order.",
   },
   {
     q: "What payment methods do you offer?",
@@ -256,7 +256,7 @@ export default function SellerGuidePage() {
           <StepHeading
             n="02"
             title="Enter your details"
-            blurb="What we need to send your label and your money"
+            blurb="What we need to send your shipping option and your money"
           />
 
           <div className="mt-6 grid gap-4 md:grid-cols-2 md:items-start">
@@ -265,7 +265,7 @@ export default function SellerGuidePage() {
                 <Bullets items={["First and last name", "Payment method information"]} />
               </Card>
               <Card title="Shipping address">
-                <Bullets items={["Street address", "City, state, ZIP code", "Country"]} />
+                <Bullets items={["Street address", "City, state, ZIP code"]} />
               </Card>
             </div>
 
@@ -286,7 +286,7 @@ export default function SellerGuidePage() {
                 <Bullets
                   items={[
                     "Double-check your payment information — that's where your payment will be sent",
-                    "Double-check your email address — your shipping label and important updates will be sent there",
+                    "Double-check your email address — your shipping option and important updates will be sent there",
                     "Make sure your shipping address is accurate",
                     "All required fields must be completed to continue",
                   ]}
@@ -300,7 +300,7 @@ export default function SellerGuidePage() {
         <section id="label" className="mb-16 scroll-mt-8">
           <StepHeading
             n="03"
-            title="Get your shipping label"
+            title="Get your shipping option"
             blurb="What happens after you hit submit"
           />
 
@@ -311,12 +311,12 @@ export default function SellerGuidePage() {
                 b: "You get an immediate confirmation that we've received your submission.",
               },
               {
-                t: "We review your bundle",
-                b: "Our team checks the submitted items, typically within 24 hours.",
+                t: "Shipping option sent automatically",
+                b: "Your selected prepaid shipping option is emailed automatically the same day you submit your order.",
               },
               {
-                t: "Label sent if approved",
-                b: "Once approved, you receive an email with your free prepaid shipping label.",
+                t: "Follow the shipping instructions",
+                b: "Use the shipping option you selected at checkout and follow the instructions in the email.",
               },
             ].map((item, i) => (
               <li
@@ -338,19 +338,19 @@ export default function SellerGuidePage() {
             <Card title="What arrives in the email" tone="good">
               <Bullets
                 items={[
-                  "Prepaid shipping label (PDF)",
-                  "Packing instructions",
+                  "Your selected shipping option — printable PDF label or USPS QR code",
+                  "Instructions for using your selected option",
                   "Tracking information",
                 ]}
               />
             </Card>
-            <Card title="Printing tips">
+            <Card title="Using your shipping option">
               <Bullets
                 items={[
-                  'Print on standard 8.5" × 11" paper',
-                  "Use clear tape to secure the label",
-                  "Keep confirmation emails for your records",
-                  "Check your spam folder if the label doesn't arrive",
+                  "PDF label — print it and attach it securely to your package",
+                  "USPS QR code — show it on your phone at a participating USPS location; no printer is needed",
+                  "Keep your shipping email for your records",
+                  "Check your spam/junk folder if the shipping email doesn't arrive the same day",
                 ]}
               />
             </Card>
@@ -379,7 +379,7 @@ export default function SellerGuidePage() {
               <Card title="Shipping">
                 <Bullets
                   items={[
-                    "Attach the prepaid label securely",
+                    "Follow the instructions for the PDF label or USPS QR code you selected",
                     "Drop off at the designated shipping location",
                     "Keep the tracking number",
                     "Shipping costs you nothing",

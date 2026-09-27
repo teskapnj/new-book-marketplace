@@ -1158,7 +1158,7 @@ useEffect(() => {
         </h3>
 
         <p className="text-gray-600 text-center mb-6">
-          Your prepaid shipping label will be sent automatically by email the same day.
+          Your selected prepaid shipping option will be sent automatically by email the same day.
         </p>
 
         <div className="bg-blue-50 rounded-lg p-4">
@@ -1180,7 +1180,7 @@ useEffect(() => {
                     className="text-blue-600 mr-2 mt-0.5 flex-shrink-0"
                   />
                   <span>
-                    Check your inbox and spam/junk folder for the shipping label
+                    Check your inbox and spam/junk folder for the shipping email
                   </span>
                 </li>
 
@@ -1190,7 +1190,7 @@ useEffect(() => {
                     className="text-blue-600 mr-2 mt-0.5 flex-shrink-0"
                   />
                   <span>
-                    Pack your items securely and attach the label
+                    Pack your items securely and follow the instructions in the shipping email
                   </span>
                 </li>
 
@@ -1200,7 +1200,7 @@ useEffect(() => {
                     className="text-blue-600 mr-2 mt-0.5 flex-shrink-0"
                   />
                   <span>
-                    Drop off your package at an authorized location
+                    Send your package within 15 days
                   </span>
                 </li>
               </ul>
@@ -1208,7 +1208,7 @@ useEffect(() => {
           </div>
         </div>
         <p className="mt-4 text-center text-sm text-gray-500">
-  If you don&apos;t receive your shipping label the same day, please check your spam/junk folder first. If it&apos;s still not there, email us at support@sellbookmedia.com.
+  If you don&apos;t receive your shipping email the same day, please check your spam/junk folder first. If it&apos;s still not there, email us at support@sellbookmedia.com.
 </p>
       </div>
     </div>
@@ -1379,6 +1379,10 @@ useEffect(() => {
                 )}
               </button>
             </div>
+
+            <p className="mt-2 text-xs sm:text-sm text-gray-500 leading-relaxed">
+              Enter the full number printed under the main barcode.
+            </p>
 
             <p className="mt-2 text-sm text-gray-500 hidden md:block">
               Tip: Camera barcode scanning is available on mobile phones.
