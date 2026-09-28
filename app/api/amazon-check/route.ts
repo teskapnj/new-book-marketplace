@@ -171,6 +171,28 @@ function isValidUPC12(code: string): boolean {
   return digits[11] === expectedCheckDigit;
 }
 
+function isValidGTIN(code: string): boolean {
+  if (!/^(?:\d{8}|\d{12}|\d{13}|\d{14})$/.test(code)) {
+    return false;
+  }
+
+  const digits = code.split('').map(Number);
+  let weightedSum = 0;
+  let weight = 3;
+
+  for (let i = digits.length - 2; i >= 0; i--) {
+    weightedSum += digits[i] * weight;
+    weight = weight === 3 ? 1 : 3;
+  }
+
+  const expectedCheckDigit =
+    (10 - (weightedSum % 10)) % 10;
+
+  return digits[digits.length - 1] === expectedCheckDigit;
+}
+
+
+
 function addUPCCheckDigit(code: string): string {
   if (!/^\d{11}$/.test(code)) return code;
 
@@ -355,6 +377,57 @@ function detectCodeType(code: string): {
       needsCodeLookup: true
     };
   }
+
+  // 13/14 haneli bir kodun kendi checksum'i gecersizse,
+  // barkodun sonuna fazladan 1-2 rakam eklenmis olabilir.
+  //
+  // Ornek:
+  // 7869362305500  -> 786936230550
+  // 02454344423780 -> 024543444237
+  // 02761609163580 -> 027616091635
+  //
+  // Yalnizca ilk 12 hane GERCEK UPC checksum'ini geciyorsa fallback yap.
+  if (
+    (cleanCode.length === 13 || cleanCode.length === 14) &&
+    /^\d+$/.test(cleanCode) &&
+    !isValidGTIN(cleanCode)
+  ) {
+    const trailingUpcCandidate =
+      cleanCode.slice(0, 12);
+
+    if (isValidUPC12(trailingUpcCandidate)) {
+      console.log(
+        `TRAILING-DIGIT UPC RECOVERY: ` +
+        `${cleanCode} -> ${trailingUpcCandidate}`
+      );
+
+      return {
+        type: 'upc',
+        searchCode: trailingUpcCandidate,
+        converted: true,
+        needsCodeLookup: true
+      };
+    }
+
+    return {
+      type: 'unknown',
+      searchCode: cleanCode
+    };
+  }
+
+  // Gecerli GTIN-14 -> Keepa code lookup.
+  if (
+    cleanCode.length === 14 &&
+    /^\d{14}$/.test(cleanCode) &&
+    isValidGTIN(cleanCode)
+  ) {
+    return {
+      type: 'upc',
+      searchCode: cleanCode,
+      needsCodeLookup: true
+    };
+  }
+
 
   // ISBN-13 (978 önekli -> ISBN-10'a çevrilebilir, 979 önekli -> code lookup gerekir)
   if (cleanCode.length === 13 && /^97[89]\d{10}$/.test(cleanCode)) {
@@ -1077,6 +1150,15 @@ export async function POST(request: NextRequest) {
     const cleanCode = isbn_upc.replace(/[^a-zA-Z0-9X]/gi, '').trim().toUpperCase();
     const codeInfo = detectCodeType(cleanCode);
 
+    // 13/14 haneli media kodu tam haliyle gecerli olsa bile
+    // Keepa urun bulamazsa sonradan denenebilecek guvenli UPC-12 adayi.
+    const trailingUpcFallbackCode =
+      /^\d{13,14}$/.test(cleanCode) &&
+      codeInfo.type === 'upc' &&
+      isValidUPC12(cleanCode.slice(0, 12))
+        ? cleanCode.slice(0, 12)
+        : null;
+
     const isNumericTenDigit =
       /^\d{10}$/.test(cleanCode);
 
@@ -1100,7 +1182,8 @@ export async function POST(request: NextRequest) {
       /^\d{11}$/.test(cleanCode);
 
     const isDirect978Isbn13 =
-      /^978\d{10}$/.test(cleanCode);
+      /^978\d{10}$/.test(cleanCode) &&
+      codeInfo.type === 'isbn';
 
     // Cache namespaces:
     // M10V2  = eski 10-digit media fallback
@@ -1108,8 +1191,11 @@ export async function POST(request: NextRequest) {
     // I10X1  = X ile biten ISBN-10: ISBN-13 recovery
     // U11V2  = 11-digit UPC iki olasi yorumu birlikte kontrol eder
     // I13R1  = direkt girilen 978 ISBN-13: ISBN-10 ASIN + original code recovery
-    const cacheIdentifier = isTenDigitMediaCandidate
-      ? `M10V2${cleanCode}`
+    // TUPC1   = 13/14 digit code + guvenli trailing UPC fallback
+    const cacheIdentifier = trailingUpcFallbackCode
+      ? `TUPC1${cleanCode}`
+      : isTenDigitMediaCandidate
+        ? `M10V2${cleanCode}`
       : isNumericTenDigitIsbn
         ? `I10M3${cleanCode}`
         : isXTenDigitIsbn
@@ -1117,8 +1203,8 @@ export async function POST(request: NextRequest) {
           : isElevenDigitCode
             ? `U11V2${cleanCode}`
             : isDirect978Isbn13
-              ? `I13R1${cleanCode}`
-              : cleanCode;
+                ? `I13R1${cleanCode}`
+                : cleanCode;
 
     if (codeInfo.type === 'unknown') {
       console.warn(`INVALID PRODUCT CODE FORMAT: ${cleanCode}`);
@@ -1367,6 +1453,89 @@ export async function POST(request: NextRequest) {
             codeInfo.searchCode,
             apiKey
           );
+      }
+
+
+      // Gecerli 13/14 haneli kod once kendi haliyle aranir.
+      // Keepa hic urun dondurmezse ve ilk 12 hane gecerli bir UPC ise,
+      // son 1-2 hanenin barkod yanindaki ek rakam olma ihtimaline karsi
+      // UPC-12 ile TEK bir fallback lookup yap.
+      //
+      // Invalid 13/14 kod detectCodeType icinde zaten UPC-12'ye cevrildigi
+      // icin burada ikinci kez sorgulanmaz.
+      if (
+        trailingUpcFallbackCode &&
+        codeInfo.searchCode !== trailingUpcFallbackCode &&
+        (
+          !Array.isArray(keepaResponse?.products) ||
+          keepaResponse.products.length === 0
+        )
+      ) {
+        const firstTokensConsumed =
+          Number(keepaResponse?.tokensConsumed || 0);
+
+        const firstProcessingTime =
+          Number(keepaResponse?.processingTimeInMs || 0);
+
+        console.log(
+          `🔁 TRAILING UPC FALLBACK: ` +
+          `${cleanCode} -> ${trailingUpcFallbackCode}`
+        );
+
+        const fallbackResponse =
+          await fetchKeepaByCode(
+            trailingUpcFallbackCode,
+            apiKey
+          );
+
+        const fallbackProducts =
+          Array.isArray(fallbackResponse?.products)
+            ? fallbackResponse.products
+            : [];
+
+        // Keepa'nin dondurdugu urunde bu UPC gercekten identifier olarak
+        // bulunmuyorsa yanlis eslesmeyi kabul etme.
+        const verifiedFallbackProducts =
+          fallbackProducts.filter((product: any) => {
+            return getMatchingFallbackCodes(
+              product,
+              [trailingUpcFallbackCode]
+            ).length > 0;
+          });
+
+        keepaResponse = {
+          ...fallbackResponse,
+          products: verifiedFallbackProducts,
+          tokensConsumed:
+            firstTokensConsumed +
+            Number(fallbackResponse?.tokensConsumed || 0),
+          processingTimeInMs:
+            firstProcessingTime +
+            Number(fallbackResponse?.processingTimeInMs || 0)
+        };
+
+        if (verifiedFallbackProducts.length > 0) {
+          effectiveSearchCode =
+            trailingUpcFallbackCode;
+          effectiveLookupType = 'code';
+          effectiveIdentifierType = 'upc';
+
+          console.log(
+            `✅ TRAILING UPC MATCH: ` +
+            `${cleanCode} -> ${trailingUpcFallbackCode} | ` +
+            `products=${verifiedFallbackProducts.length} | ` +
+            `asins=${verifiedFallbackProducts
+              .map((p: any) => p?.asin)
+              .filter(Boolean)
+              .join(',')}`
+          );
+        } else {
+          console.warn(
+            `❌ TRAILING UPC NO VERIFIED MATCH: ` +
+            `${cleanCode} -> ${trailingUpcFallbackCode} | ` +
+            `returnedProducts=${fallbackProducts.length}`
+          );
+        }
       }
 
 
