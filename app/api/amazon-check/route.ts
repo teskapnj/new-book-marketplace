@@ -1099,11 +1099,15 @@ export async function POST(request: NextRequest) {
     const isElevenDigitCode =
       /^\d{11}$/.test(cleanCode);
 
+    const isDirect978Isbn13 =
+      /^978\d{10}$/.test(cleanCode);
+
     // Cache namespaces:
     // M10V2  = eski 10-digit media fallback
     // I10M3  = numeric ISBN-10: ISBN-13 recovery + media collision fallback
     // I10X1  = X ile biten ISBN-10: ISBN-13 recovery
     // U11V2  = 11-digit UPC iki olasi yorumu birlikte kontrol eder
+    // I13R1  = direkt girilen 978 ISBN-13: ISBN-10 ASIN + original code recovery
     const cacheIdentifier = isTenDigitMediaCandidate
       ? `M10V2${cleanCode}`
       : isNumericTenDigitIsbn
@@ -1112,7 +1116,9 @@ export async function POST(request: NextRequest) {
           ? `I10X1${cleanCode}`
           : isElevenDigitCode
             ? `U11V2${cleanCode}`
-            : cleanCode;
+            : isDirect978Isbn13
+              ? `I13R1${cleanCode}`
+              : cleanCode;
 
     if (codeInfo.type === 'unknown') {
       console.warn(`INVALID PRODUCT CODE FORMAT: ${cleanCode}`);
@@ -1361,6 +1367,63 @@ export async function POST(request: NextRequest) {
             codeInfo.searchCode,
             apiKey
           );
+      }
+
+
+      // Kullanici 978 ISBN-13 barkodunu dogrudan taradiysa detectCodeType
+      // bunu ISBN-10'a cevirip ilk olarak ASIN lookup yapar.
+      // Bu eski DVD/CD urunlerinde bos shell dondurebilir.
+      // Boyle bir durumda kullanicinin girdigi ORIJINAL ISBN-13 ile
+      // Keepa code lookup yaparak media listingini resolve etmeyi dene.
+      if (
+        isDirect978Isbn13 &&
+        codeInfo.type === 'isbn' &&
+        isUnusableNumericIsbnResponse(keepaResponse)
+      ) {
+        const firstTokensConsumed =
+          Number(keepaResponse?.tokensConsumed || 0);
+
+        const firstProcessingTime =
+          Number(keepaResponse?.processingTimeInMs || 0);
+
+        console.log(
+          `🔁 DIRECT ISBN-13 RECOVERY: ` +
+          `${codeInfo.searchCode} -> ${cleanCode}`
+        );
+
+        const isbn13Response =
+          await fetchKeepaByCode(
+            cleanCode,
+            apiKey
+          );
+
+        keepaResponse = {
+          ...isbn13Response,
+          tokensConsumed:
+            firstTokensConsumed +
+            Number(isbn13Response?.tokensConsumed || 0),
+          processingTimeInMs:
+            firstProcessingTime +
+            Number(isbn13Response?.processingTimeInMs || 0)
+        };
+
+        effectiveSearchCode = cleanCode;
+        effectiveLookupType = 'code';
+        effectiveIdentifierType = 'isbn';
+
+        console.log(
+          `✅ DIRECT ISBN-13 RECOVERY RESULT: ` +
+          `${cleanCode} | ` +
+          `products=${Array.isArray(keepaResponse?.products)
+            ? keepaResponse.products.length
+            : 0} | ` +
+          `asins=${Array.isArray(keepaResponse?.products)
+            ? keepaResponse.products
+                .map((p: any) => p?.asin)
+                .filter(Boolean)
+                .join(',')
+            : ''}`
+        );
       }
 
 
