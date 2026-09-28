@@ -78,7 +78,7 @@ const KEEPA_UPDATE_HOURS = 24;
 
 // Bu surumu film kabul/red kurallari degistiginde artir.
 // Eski DVD/Blu-ray cache kayitlari boylece bir kez Keepa'dan tazelenir.
-const MOVIE_RULES_VERSION = 2;
+const MOVIE_RULES_VERSION = 4;
 
 // ==================== KOD TİPİ ALGILAMA (aynı, değişmedi) ====================
 
@@ -536,6 +536,18 @@ function getMediaBarcodeZoneTag(
   }
 
   // ----------------------------------------------------------
+  // UK / GERMANY
+  // DVD/Blu-ray region filtresinde ayrica kullaniliyor.
+  // ----------------------------------------------------------
+  if (between(400, 440)) {
+    return `🇩🇪 GERMANY [EAN ${prefixText}] | `;
+  }
+
+  if (between(500, 509)) {
+    return `🇬�� UK [EAN ${prefixText}] | `;
+  }
+
+  // ----------------------------------------------------------
   // EUROPE
   // ----------------------------------------------------------
   if (
@@ -545,14 +557,12 @@ function getMediaBarcodeZoneTag(
     prefix === 385 ||    // Croatia
     prefix === 387 ||    // Bosnia-Herzegovina
     prefix === 389 ||    // Montenegro
-    between(400, 440) || // Germany
     prefix === 474 ||    // Estonia
     prefix === 475 ||    // Latvia
     prefix === 477 ||    // Lithuania
     prefix === 481 ||    // Belarus
     prefix === 482 ||    // Ukraine
     prefix === 484 ||    // Moldova
-    between(500, 509) || // UK
     between(520, 521) || // Greece
     prefix === 529 ||    // Cyprus
     prefix === 530 ||    // Albania
@@ -953,7 +963,152 @@ function isRentalMovie(product: any): boolean {
   );
 }
 
-function detectMovieRestriction(product: any): string | null {
+function getEuropeanMovieBarcodeSignal(
+  code: string,
+  isDvdOrBluRay: boolean
+): 'uk' | 'germany' | 'europe' | null {
+  if (!isDvdOrBluRay) return null;
+
+  const digits = String(code || '').replace(/\D/g, '');
+
+  // Sadece DVD/Blu-ray EAN-13 Europe sinyali.
+  // CD / GAME / BOOK icin hicbir etkisi yoktur.
+  if (digits.length !== 13) return null;
+
+  const prefix = Number(digits.slice(0, 3));
+  const between = (min: number, max: number) =>
+    prefix >= min && prefix <= max;
+
+  if (between(400, 440)) return 'germany';
+  if (between(500, 509)) return 'uk';
+
+  if (
+    between(300, 379) || // France
+    prefix === 380 ||    // Bulgaria
+    prefix === 383 ||    // Slovenia
+    prefix === 385 ||    // Croatia
+    prefix === 387 ||    // Bosnia-Herzegovina
+    prefix === 389 ||    // Montenegro
+    prefix === 474 ||    // Estonia
+    prefix === 475 ||    // Latvia
+    prefix === 477 ||    // Lithuania
+    prefix === 481 ||    // Belarus
+    prefix === 482 ||    // Ukraine
+    prefix === 484 ||    // Moldova
+    between(520, 521) || // Greece
+    prefix === 529 ||    // Cyprus
+    prefix === 530 ||    // Albania
+    prefix === 531 ||    // North Macedonia
+    prefix === 535 ||    // Malta
+    prefix === 539 ||    // Ireland
+    between(540, 549) || // Belgium/Luxembourg
+    prefix === 560 ||    // Portugal
+    prefix === 569 ||    // Iceland
+    between(570, 579) || // Denmark
+    prefix === 590 ||    // Poland
+    prefix === 594 ||    // Romania
+    prefix === 599 ||    // Hungary
+    between(640, 649) || // Finland
+    between(700, 709) || // Norway
+    between(730, 739) || // Sweden
+    between(760, 769) || // Switzerland
+    between(800, 839) || // Italy
+    between(840, 849) || // Spain
+    prefix === 858 ||    // Slovakia
+    prefix === 859 ||    // Czech Republic
+    prefix === 860 ||    // Serbia
+    between(870, 879) || // Netherlands
+    between(900, 919)    // Austria
+  ) {
+    return 'europe';
+  }
+
+  return null;
+}
+
+function isBluRayMovie(product: any): boolean {
+  if (!isPhysicalMovieProduct(product)) {
+    return false;
+  }
+
+  const text = [
+    product?.title,
+    product?.binding,
+    product?.format,
+    product?.edition,
+    product?.categoryTree
+  ]
+    .map(flattenKeepaText)
+    .join(' ');
+
+  return /\bblu[\s-]?ray\b/i.test(text);
+}
+
+function getUsCompatibleMovieRegionEvidence(
+  product: any
+): string | null {
+  if (!isPhysicalMovieProduct(product)) {
+    return null;
+  }
+
+  const searchableText = [
+    product?.title,
+    product?.binding,
+    product?.format,
+    product?.edition,
+    product?.itemHighlights,
+    product?.features,
+    product?.description,
+    product?.shortDescription,
+    product?.categoryTree
+  ]
+    .map(flattenKeepaText)
+    .join(' ');
+
+  // En guclu sinyaller once.
+  if (/\bregion[\s-]*free\b/i.test(searchableText)) {
+    return 'Region Free';
+  }
+
+  if (
+    /\ball[\s-]*regions?\b/i.test(searchableText) ||
+    /\bregion\s*all\b/i.test(searchableText)
+  ) {
+    return 'All Regions';
+  }
+
+  if (
+    /\bregion(?:\s+code)?\s*[:#-]?\s*0\b/i.test(
+      searchableText
+    )
+  ) {
+    return 'Region 0';
+  }
+
+  // Blu-ray icin US standardi Region A.
+  if (
+    isBluRayMovie(product) &&
+    /\bregion(?:\s+code)?\s*[:#-]?\s*A\b/i.test(
+      searchableText
+    )
+  ) {
+    return 'Region A';
+  }
+
+  // DVD icin US standardi Region 1.
+  if (
+    !isBluRayMovie(product) &&
+    /\bregion(?:\s+code)?\s*[:#-]?\s*1\b/i.test(
+      searchableText
+    )
+  ) {
+    return 'Region 1';
+  }
+
+  return null;
+}
+
+function detectMovieRestriction(product: any, barcode: string): string | null {
   if (!isPhysicalMovieProduct(product)) {
     return null;
   }
@@ -974,20 +1129,56 @@ function detectMovieRestriction(product: any): string | null {
     return 'We do not accept rental-version DVDs/Blu-rays.';
   }
 
-  // Region 2 veya Region 3
+  const formatText = flattenKeepaText(product?.format);
+
+  // PAL ayri bir uyumluluk problemidir.
+  // Region Free olsa bile mevcut PAL kuralini koruyoruz.
+  if (/\bpal\b/i.test(formatText)) {
+    return 'We do not accept PAL DVDs/Blu-rays.';
+  }
+
+  const compatibleRegionEvidence =
+    getUsCompatibleMovieRegionEvidence(product);
+
+  const europeanSignal =
+    getEuropeanMovieBarcodeSignal(
+      barcode,
+      true
+    );
+
+  // Europe EAN sinyalli DVD/Blu-ray:
+  // Region Free / All Regions / Region 0 /
+  // DVD Region 1 / Blu-ray Region A kaniti yoksa reddet.
+  if (europeanSignal) {
+    if (!compatibleRegionEvidence) {
+      const country =
+        europeanSignal === 'uk'
+          ? 'UK'
+          : europeanSignal === 'germany'
+            ? 'Germany'
+            : 'European';
+
+      return (
+        `We do not accept ${country} DVDs/Blu-rays ` +
+        `unless they are Region Free or US-compatible.`
+      );
+    }
+
+    console.log(
+      `✅ ${europeanSignal.toUpperCase()} MOVIE REGION OVERRIDE: ` +
+      `${barcode} | ASIN=${product?.asin || 'N/A'} | ` +
+      `evidence=${compatibleRegionEvidence}`
+    );
+  }
+
+  // Acik Region 1 / A / Region Free gibi US-compatible kanit varsa
+  // "Region 1/2" veya "A/B" gibi multi-region baskilari yanlis reject etme.
   const regionMatch = searchableText.match(
     /\b(?:playback\s+)?region(?:\s+code)?\s*[:#-]?\s*(2|3)\b/i
   );
 
-  if (regionMatch) {
+  if (regionMatch && !compatibleRegionEvidence) {
     return `We do not accept Region ${regionMatch[1]} DVDs/Blu-rays.`;
-  }
-
-  // PAL format
-  const formatText = flattenKeepaText(product?.format);
-
-  if (/\bpal\b/i.test(formatText)) {
-    return 'We do not accept PAL DVDs/Blu-rays.';
   }
 
   return null;
@@ -1316,6 +1507,7 @@ export async function POST(request: NextRequest) {
           `Binding: ${cachedProduct?.binding || 'N/A'} | ` +
           `Type: ${cachedProduct?.type || 'N/A'} | ` +
           `Status: ${cachedPricing?.accepted ? 'ACCEPTED' : 'REJECTED'} | ` +
+          `Reason: ${cachedPricing?.reason || 'N/A'} | ` +
           `Offer: ${cachedPricing?.accepted && cachedPricing?.ourPrice != null ? `$${cachedPricing.ourPrice}` : 'N/A'}`
         );
 
@@ -2099,7 +2291,7 @@ export async function POST(request: NextRequest) {
 
     const mediaRestriction = hasRentalCandidate
       ? 'We do not accept rental-version DVDs/Blu-rays.'
-      : detectMovieRestriction(bestProduct);
+      : detectMovieRestriction(bestProduct, cleanCode);
 
     const pricingResult: PricingResult = mediaRestriction
       ? {
@@ -2160,6 +2352,7 @@ export async function POST(request: NextRequest) {
           `Rank: ${product.sales_rank ?? 0} | ` +
           `Category: ${product.category || 'Unknown'} | ` +
           `Status: ${pricingResult.accepted ? 'ACCEPTED' : 'REJECTED'} | ` +
+          `Reason: ${pricingResult.reason || 'N/A'} | ` +
           `Offer: ${pricingResult.accepted && pricingResult.ourPrice != null ? `$${pricingResult.ourPrice}` : 'N/A'} | ` +
           `${Date.now() - cacheWriteStart}ms`
         );
@@ -2185,6 +2378,7 @@ export async function POST(request: NextRequest) {
       `Binding: ${product.binding || 'N/A'} | ` +
       `Type: ${product.type || 'N/A'} | ` +
       `Status: ${pricingResult.accepted ? 'ACCEPTED' : 'REJECTED'} | ` +
+      `Reason: ${pricingResult.reason || 'N/A'} | ` +
       `Offer: ${pricingResult.accepted && pricingResult.ourPrice != null ? `$${pricingResult.ourPrice}` : 'N/A'}`
     );
 
