@@ -12,7 +12,7 @@ const ACCEPT = [
 
 const REJECT = [
   {
-    text: "Ex-library books or ex-rental media",
+    text: "Ex-library items or ex-rental items",
     bold: true,
   },
   {
