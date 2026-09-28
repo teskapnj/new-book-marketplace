@@ -60,6 +60,11 @@ export async function POST(request: NextRequest) {
 
     const rawPaymentAccount = String(paypalAccount || paypalEmail || '').trim();
 
+    const numericPaymentAmount = Number(paymentAmount);
+    const isZeroPayment =
+      Number.isFinite(numericPaymentAmount) &&
+      numericPaymentAmount === 0;
+
     const isCheckPayment =
       rawPaymentAccount.toUpperCase() === 'CHECK BY MAIL';
 
@@ -67,18 +72,27 @@ export async function POST(request: NextRequest) {
       rawPaymentAccount.toUpperCase().startsWith('VENMO:') ||
       rawPaymentAccount.startsWith('@');
 
-    const paymentMethodLabel = isCheckPayment
-      ? 'Check by Mail'
-      : isVenmoPayment
-        ? 'Venmo'
-        : 'PayPal';
+    const paymentMethodLabel = isZeroPayment
+      ? 'No payment due'
+      : isCheckPayment
+        ? 'Check by Mail'
+        : isVenmoPayment
+          ? 'Venmo'
+          : 'PayPal';
 
-    const paymentStatusMessage = isCheckPayment
-      ? `Great news — we've received and checked your items, and your paper check for $${paymentAmount} will be mailed on the next business day to the shipping address on your order.`
-      : `Great news — we've received and checked your items, and your payment has been sent via ${paymentMethodLabel}.`;
+    const paymentStatusMessage = isZeroPayment
+      ? `We've received and checked your items. No payment is due for this shipment after inspection. Please review the adjustments and notes below.`
+      : isCheckPayment
+        ? `Great news — we've received and checked your items, and your paper check for $${paymentAmount} will be mailed on the next business day to the shipping address on your order.`
+        : `Great news — we've received and checked your items, and your payment has been sent via ${paymentMethodLabel}.`;
 
-    const paymentNextStepsHtml = isCheckPayment
+    const paymentNextStepsHtml = isZeroPayment
       ? `
+                      <tr><td style="padding:5px 0;">&bull;&nbsp;&nbsp;No payment was issued for this shipment</td></tr>
+                      <tr><td style="padding:5px 0;">&bull;&nbsp;&nbsp;Please review the adjustments and notes above</td></tr>
+                      <tr><td style="padding:5px 0;">&bull;&nbsp;&nbsp;Keep this email for your records</td></tr>`
+      : isCheckPayment
+        ? `
                       <tr><td style="padding:5px 0;">&bull;&nbsp;&nbsp;Your paper check will be mailed on the next business day to the shipping address on your order</td></tr>
                       <tr><td style="padding:5px 0;">&bull;&nbsp;&nbsp;Delivery time will depend on USPS mail service</td></tr>
                       <tr><td style="padding:5px 0;">&bull;&nbsp;&nbsp;Keep this email for your records</td></tr>`
@@ -87,13 +101,17 @@ export async function POST(request: NextRequest) {
                       <tr><td style="padding:5px 0;">&bull;&nbsp;&nbsp;Keep this email for your records</td></tr>`;
 
     const rejectedItemReturnNoticeHtml = `
-                      <tr><td style="padding:5px 0;">&bull;&nbsp;&nbsp;If any items were rejected and you want them returned, provide a prepaid return shipping label within 2 business days after payment is issued. Otherwise, rejected items will be recycled.</td></tr>`;
+                      <tr><td style="padding:5px 0;">&bull;&nbsp;&nbsp;If any items were rejected and you want them returned, provide a prepaid return shipping label within 2 business days ${isZeroPayment ? 'after this inspection notice' : 'after payment is issued'}. Otherwise, rejected items will be recycled.</td></tr>`;
 
     const rejectedItemReturnNoticeText =
-      "- If any items were rejected and you want them returned, provide a prepaid return shipping label within 2 business days after payment is issued. Otherwise, rejected items will be recycled.";
+      `- If any items were rejected and you want them returned, provide a prepaid return shipping label within 2 business days ${isZeroPayment ? 'after this inspection notice' : 'after payment is issued'}. Otherwise, rejected items will be recycled.`;
 
-    const paymentNextStepsText = isCheckPayment
-      ? `- Your paper check will be mailed on the next business day to the shipping address on your order
+    const paymentNextStepsText = isZeroPayment
+      ? `- No payment was issued for this shipment
+- Please review the adjustments and notes above
+- Keep this email for your records`
+      : isCheckPayment
+        ? `- Your paper check will be mailed on the next business day to the shipping address on your order
 - Delivery time will depend on USPS mail service
 - Keep this email for your records`
       : `- Check your ${paymentMethodLabel} account for the incoming payment
@@ -120,7 +138,11 @@ export async function POST(request: NextRequest) {
 </head>
 <body style="margin:0; padding:0; background-color:#f1f5f9; -webkit-font-smoothing:antialiased;">
   <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;">
-    ${isCheckPayment ? `Your paper check for $${paymentAmount} is being mailed.` : `Your payment of $${paymentAmount} has been sent via ${paymentMethodLabel}.`}
+    ${isZeroPayment
+      ? `Inspection complete. No payment is due for this shipment.`
+      : isCheckPayment
+        ? `Your paper check for $${paymentAmount} is being mailed.`
+        : `Your payment of $${paymentAmount} has been sent via ${paymentMethodLabel}.`}
   </div>
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f1f5f9; padding:24px 0;">
@@ -133,15 +155,15 @@ export async function POST(request: NextRequest) {
           <tr>
             <td style="background-color:#10b981; padding:36px 40px; text-align:center;">
               <div style="font-size:13px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:#d1fae5; margin-bottom:12px;">SellBook Media</div>
-              <div style="font-size:26px; font-weight:700; color:#ffffff; line-height:1.3;">Payment sent</div>
-              <div style="font-size:15px; color:#d1fae5; margin-top:8px;">Your items are in and your payment is on the way.</div>
+              <div style="font-size:26px; font-weight:700; color:#ffffff; line-height:1.3;">${isZeroPayment ? 'Inspection complete' : 'Payment sent'}</div>
+              <div style="font-size:15px; color:#d1fae5; margin-top:8px;">${isZeroPayment ? 'Your shipment has been inspected.' : 'Your items are in and your payment is on the way.'}</div>
             </td>
           </tr>
 
           <!-- Amount highlight -->
           <tr>
             <td style="padding:32px 40px 8px 40px; text-align:center;">
-              <div style="font-size:14px; color:#64748b; margin-bottom:6px;">Amount sent</div>
+              <div style="font-size:14px; color:#64748b; margin-bottom:6px;">${isZeroPayment ? 'Final payment' : 'Amount sent'}</div>
               <div style="font-size:40px; font-weight:800; color:#10b981; line-height:1.1;">$${paymentAmount}</div>
             </td>
           </tr>
@@ -271,9 +293,11 @@ ${rejectedItemReturnNoticeHtml}
     const mailOptions = {
       from: `"SellBook Media" <${process.env.EMAIL_USER}>`, // Görünen ad eklendi
       to: email,
-      subject: `Payment sent - $${paymentAmount} for "${listingTitle}"`,
+      subject: isZeroPayment
+        ? `Inspection complete - no payment due for "${listingTitle}"`
+        : `Payment sent - $${paymentAmount} for "${listingTitle}"`,
       html: emailHTML,
-      text: `Payment Sent!
+      text: `${isZeroPayment ? 'Inspection Complete' : 'Payment Sent!'}
 
 Hi ${sellerName},
 

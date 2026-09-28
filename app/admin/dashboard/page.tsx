@@ -725,12 +725,20 @@ export default function AdminListingsPage() {
 
   // Payment kaydetme fonksiyonu - GÜNCELLENDİ
   const recordPaymentSent = async (listingId: string) => {
-    if (!paymentAmount.trim() || parseFloat(paymentAmount) <= 0) {
+    const parsedPaymentAmount = parseFloat(paymentAmount);
+
+    if (
+      !paymentAmount.trim() ||
+      !Number.isFinite(parsedPaymentAmount) ||
+      parsedPaymentAmount < 0
+    ) {
       setPaymentError("Please enter a valid payment amount");
       return;
     }
+
+    const isZeroPayment = parsedPaymentAmount === 0;
     
-    if (!paymentTransactionId.trim()) {
+    if (!isZeroPayment && !paymentTransactionId.trim()) {
       setPaymentError("Please enter PayPal transaction ID");
       return;
     }
@@ -740,7 +748,10 @@ export default function AdminListingsPage() {
     setPaymentSuccess("");
     
     try {
-      const amount = parseFloat(paymentAmount);
+      const amount = parsedPaymentAmount;
+      const transactionId = isZeroPayment
+        ? "N/A"
+        : paymentTransactionId.trim();
       
       // Update listing with payment info and change status
       const listingRef = doc(db, "listings", listingId);
@@ -748,7 +759,7 @@ export default function AdminListingsPage() {
         status: "payment_sent", // Durumu güncelle
         paymentSent: true,
         paymentAmount: amount,
-        paymentTransactionId: sanitizeInput(paymentTransactionId),
+        paymentTransactionId: sanitizeInput(transactionId),
         paymentNotes: sanitizeInput(paymentNotes),
         paymentSentAt: serverTimestamp(),
         paymentSentBy: user?.email || "admin",
@@ -762,7 +773,7 @@ export default function AdminListingsPage() {
         status: "payment_sent", // Durumu güncelle
         paymentSent: true,
         paymentAmount: amount,
-        paymentTransactionId: paymentTransactionId,
+        paymentTransactionId: transactionId,
         paymentNotes: paymentNotes,
         paymentSentAt: new Date(), // Düzeltilmiş: Date olarak kullanılabilir
         paymentSentBy: user?.email || "admin"
@@ -792,7 +803,7 @@ const idToken = await currentUser.getIdToken();
             email: sellerEmail,
             listingTitle: selectedListing.title,
             paymentAmount: amount,
-            transactionId: paymentTransactionId,
+            transactionId: transactionId,
             listingId: listingId,
             sellerName: selectedListing.vendorName,
             paypalAccount: paypalAccount,
@@ -2252,7 +2263,6 @@ const idToken = await currentUser.getIdToken();
                             <button
                               type="button"
                               onClick={applyToPayment}
-                              disabled={acceptedItems.size === 0}
                               className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-2 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               Apply to Payment
@@ -2549,7 +2559,15 @@ const idToken = await currentUser.getIdToken();
                           
                           <button
                             onClick={() => recordPaymentSent(selectedListing.id)}
-                            disabled={paymentLoading || !paymentAmount.trim() || !paymentTransactionId.trim()}
+                            disabled={
+                              paymentLoading ||
+                              !paymentAmount.trim() ||
+                              Number(paymentAmount) < 0 ||
+                              (
+                                Number(paymentAmount) > 0 &&
+                                !paymentTransactionId.trim()
+                              )
+                            }
                             className="w-full bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium py-2 px-4 rounded transition-colors disabled:opacity-50"
                           >
                             {paymentLoading ? "Recording..." : "💳 Record Payment"}
@@ -2860,7 +2878,15 @@ const idToken = await currentUser.getIdToken();
                           
                           <button
                             onClick={() => recordPaymentSent(selectedListing.id)}
-                            disabled={paymentLoading || !paymentAmount.trim() || !paymentTransactionId.trim()}
+                            disabled={
+                              paymentLoading ||
+                              !paymentAmount.trim() ||
+                              Number(paymentAmount) < 0 ||
+                              (
+                                Number(paymentAmount) > 0 &&
+                                !paymentTransactionId.trim()
+                              )
+                            }
                             className="w-full bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium py-2 px-4 rounded transition-colors disabled:opacity-50"
                           >
                             {paymentLoading ? "Recording..." : "💳 Record Payment"}
