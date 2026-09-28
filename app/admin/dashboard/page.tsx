@@ -22,6 +22,7 @@ import {
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 
 // Type definitions
 interface BundleItem {
@@ -194,8 +195,21 @@ const MessageNotification = () => {
   );
 };
 
-// Import SellerManagement component
-import SellerManagement from '@/components/SellerManagement';
+// SellerManagement'i sadece Sellers sekmesi acilinca yukle
+const SellerManagement = dynamic(
+  () => import("@/components/SellerManagement"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center py-16">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-3"></div>
+          <p className="text-sm text-gray-600">Loading sellers...</p>
+        </div>
+      </div>
+    )
+  }
+);
 
 export default function AdminListingsPage() {
   const [user, loading] = useAuthState(auth);

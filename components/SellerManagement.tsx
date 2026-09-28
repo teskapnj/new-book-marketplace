@@ -484,62 +484,83 @@ const SellerManagement = () => {
     }
   }, [user]);
   
-  // Fetch sellers data
+  // Fetch sellers data - auth/admin rolu hazir olduktan sonra baslat
   useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    if (currentUserRole === null) {
+      return;
+    }
+
+    if (currentUserRole !== "admin") {
+      setSellers([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+
     const usersRef = collection(db, "users");
     const q = query(usersRef, where("role", "==", "seller"));
-    
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const sellersData: Seller[] = [];
-      
-      querySnapshot.forEach((docSnapshot) => {
-        const data = docSnapshot.data();
-        sellersData.push({
-          id: docSnapshot.id,
-          userId: docSnapshot.id,
-          name: data.firstName && data.lastName 
-          ? `${data.firstName} ${data.lastName}`.trim()
-          : data.name || data.displayName || null,
-          businessName: data.businessName || "",
-          email: data.email || "",
-          phone: data.phone || "",
-          address: data.address || {
-            street: "",
-            city: "",
-            state: "",
-            zip: "",
-            country: ""
-          },
-          status: data.status || "pending",
-          totalSales: data.totalSales || 0,
-          totalOrders: data.totalOrders || 0,
-          totalListings: data.totalListings || 0,
-          commissionRate: data.commissionRate || 10,
-          balance: data.balance || 0,
-          createdAt: data.createdAt,
-          lastLogin: data.lastLogin,
-          bankAccount: data.bankAccount,
-          documents: data.documents
+
+    const unsubscribe = onSnapshot(
+      q,
+      (querySnapshot) => {
+        const sellersData: Seller[] = [];
+
+        querySnapshot.forEach((docSnapshot) => {
+          const data = docSnapshot.data();
+
+          sellersData.push({
+            id: docSnapshot.id,
+            userId: docSnapshot.id,
+            name:
+              data.firstName && data.lastName
+                ? `${data.firstName} ${data.lastName}`.trim()
+                : data.name || data.displayName || null,
+            businessName: data.businessName || "",
+            email: data.email || "",
+            phone: data.phone || "",
+            address: data.address || {
+              street: "",
+              city: "",
+              state: "",
+              zip: "",
+              country: ""
+            },
+            status: data.status || "pending",
+            totalSales: data.totalSales || 0,
+            totalOrders: data.totalOrders || 0,
+            totalListings: data.totalListings || 0,
+            commissionRate: data.commissionRate || 10,
+            balance: data.balance || 0,
+            createdAt: data.createdAt,
+            lastLogin: data.lastLogin,
+            bankAccount: data.bankAccount,
+            documents: data.documents
+          });
         });
-      });
-      
-      // Verileri createdAt'e göre sırala
-      sellersData.sort((a, b) => {
-        if (a.createdAt && b.createdAt) {
-          return b.createdAt.toDate() - a.createdAt.toDate();
-        }
-        return 0;
-      });
-      
-      setSellers(sellersData);
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching sellers:", error);
-      setLoading(false);
-    });
-    
+
+        sellersData.sort((a, b) => {
+          if (a.createdAt && b.createdAt) {
+            return b.createdAt.toDate() - a.createdAt.toDate();
+          }
+          return 0;
+        });
+
+        setSellers(sellersData);
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error fetching sellers:", error);
+        setLoading(false);
+      }
+    );
+
     return () => unsubscribe();
-  }, []);
+  }, [user, currentUserRole]);
   
   // İzin kontrolü için yardımcı fonksiyon
   const hasAdminPermission = () => {
@@ -913,6 +934,17 @@ const SellerManagement = () => {
     );
   };
   
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-3"></div>
+          <p className="text-sm text-gray-600">Loading sellers...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Yetki kontrolü */}

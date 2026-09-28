@@ -11,14 +11,42 @@ const ACCEPT = [
 ];
 
 const REJECT = [
-  "Any writing, highlighting, underlining, or markings of any kind",
-  "Deep scratches or damage that affects playback",
-  "Water damage, mold, heavy stains, or strong odors",
-  "Missing pages, discs, or essential parts",
-  "Cracked, broken, or severely damaged items",
-  "Ex-library books or ex-rental media",
-  "Bootlegs, promotional copies, or items marked Not for Resale",
-  "VHS tapes, cassette tapes, vinyl records, audiobooks, or digital-only items",
+  {
+    text: "Ex-library books or ex-rental media",
+    bold: true,
+  },
+  {
+    text: "VHS tapes, cassette tapes, vinyl records, audiobooks, or digital-only items",
+    bold: true,
+  },
+  {
+    text: "We do not accept DVD Regions 2–6 or Blu-ray Regions B/C. We accept Region 1, Region 0/ALL (Region Free) DVDs, and Region A or Region Free Blu-rays.",
+    bold: true,
+  },
+  {
+    text: "Any writing, highlighting, underlining, or markings of any kind",
+    bold: false,
+  },
+  {
+    text: "Deep scratches or damage that affects playback",
+    bold: false,
+  },
+  {
+    text: "Water damage, mold, heavy stains, or strong odors",
+    bold: false,
+  },
+  {
+    text: "Missing pages, discs, or essential parts",
+    bold: false,
+  },
+  {
+    text: "Cracked, broken, or severely damaged items",
+    bold: false,
+  },
+  {
+    text: "Bootlegs, promotional copies, or items marked Not for Resale",
+    bold: false,
+  },
 ];
 
 const PROCESS = [
@@ -174,9 +202,11 @@ export default function ConditionGuidelines() {
 
               <ul className="space-y-3 px-5 py-5 text-[15px] leading-relaxed text-slate-700">
                 {REJECT.map((item) => (
-                  <li key={item} className="flex items-start gap-2.5">
+                  <li key={item.text} className="flex items-start gap-2.5">
                     <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-slate-400" />
-                    <span>{item}</span>
+                    <span className={item.bold ? "font-bold text-slate-900" : undefined}>
+                      {item.text}
+                    </span>
                   </li>
                 ))}
               </ul>
