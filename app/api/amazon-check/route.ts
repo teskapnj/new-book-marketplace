@@ -78,7 +78,7 @@ const KEEPA_UPDATE_HOURS = 24;
 
 // Bu surumu film kabul/red kurallari degistiginde artir.
 // Eski DVD/Blu-ray cache kayitlari boylece bir kez Keepa'dan tazelenir.
-const MOVIE_RULES_VERSION = 4;
+const MOVIE_RULES_VERSION = 5;
 
 // ==================== KOD TİPİ ALGILAMA (aynı, değişmedi) ====================
 
@@ -1026,6 +1026,54 @@ function getEuropeanMovieBarcodeSignal(
   return null;
 }
 
+
+function getAsianMovieBarcodeSignal(
+  code: string,
+  isDvdOrBluRay: boolean
+): 'japan' | 'asia' | null {
+  if (!isDvdOrBluRay) return null;
+
+  const digits = String(code || '').replace(/\D/g, '');
+  if (digits.length !== 13) return null;
+
+  const prefix = Number(digits.slice(0, 3));
+  const between = (min: number, max: number) =>
+    prefix >= min && prefix <= max;
+
+  if (
+    between(450, 459) ||
+    between(490, 499)
+  ) {
+    return 'japan';
+  }
+
+  if (
+    prefix === 471 ||
+    prefix === 479 ||
+    prefix === 480 ||
+    prefix === 489 ||
+    between(680, 681) ||
+    between(690, 699) ||
+    prefix === 865 ||
+    prefix === 867 ||
+    between(880, 881) ||
+    prefix === 883 ||
+    prefix === 884 ||
+    prefix === 885 ||
+    prefix === 888 ||
+    prefix === 890 ||
+    prefix === 893 ||
+    prefix === 896 ||
+    prefix === 899 ||
+    prefix === 955 ||
+    prefix === 958
+  ) {
+    return 'asia';
+  }
+
+  return null;
+}
+
 function isBluRayMovie(product: any): boolean {
   if (!isPhysicalMovieProduct(product)) {
     return false;
@@ -1135,6 +1183,18 @@ function detectMovieRestriction(product: any, barcode: string): string | null {
   // Region Free olsa bile mevcut PAL kuralini koruyoruz.
   if (/\bpal\b/i.test(formatText)) {
     return 'We do not accept PAL DVDs/Blu-rays.';
+  }
+
+  const asianSignal =
+    getAsianMovieBarcodeSignal(
+      barcode,
+      true
+    );
+
+  if (asianSignal) {
+    return asianSignal === 'japan'
+      ? 'We do not accept Japanese-market DVDs/Blu-rays.'
+      : 'We do not accept Asian-market DVDs/Blu-rays.';
   }
 
   const compatibleRegionEvidence =
