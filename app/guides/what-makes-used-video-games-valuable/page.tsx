@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import BuybackRangeTable from '@/components/BuybackRangeTable'
 
 const SITE_URL = 'https://www.sellbookmedia.com'
 const PAGE_URL =
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
   title: 'What Makes Used Video Games Valuable? | SellBookMedia',
 
   description:
-    'Learn what can make a used video game valuable, including platform, edition, rarity, demand, condition, completeness, and the exact barcode or release.',
+    'Typical online video game buyback ranges can run from about $0.50 to $35+, depending on the title, platform, edition, demand, condition, and completeness.',
 
   alternates: {
     canonical: PAGE_URL,
@@ -72,6 +73,11 @@ const valueFactors = [
 
 const faq = [
   {
+    q: 'How much are used video games worth to online buyback sites?',
+    a:
+      'Used-game values vary widely, but a broad online buyback-market range can run from about $0.50 to $35 or more. The exact title, platform, edition, condition, completeness, and current demand can move a game outside that range.',
+  },
+  {
     q: 'Are old video games always valuable?',
     a:
       'No. Age alone does not determine value. Some older games are common and inexpensive, while others may have stronger demand or lower supply.',
@@ -110,7 +116,7 @@ export default function VideoGameValueGuide() {
           'A guide to the factors that can affect used and retro video game value.',
         url: PAGE_URL,
         datePublished: '2026-09-21',
-        dateModified: '2026-09-21',
+        dateModified: '2026-09-28',
         author: {
           '@type': 'Organization',
           '@id': `${SITE_URL}/#organization`,
@@ -189,13 +195,56 @@ export default function VideoGameValueGuide() {
           <div className="mt-8 border-t border-white/15 pt-5 text-sm text-blue-200">
             <span className="font-medium text-white">SellBookMedia</span>
             <span className="mx-2 text-white/30">/</span>
-            <time dateTime="2026-09-21">Updated September 2026</time>
+            <time dateTime="2026-09-28">Updated September 2026</time>
           </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-3xl px-5 py-12 sm:px-8 sm:py-16">
         <article>
+          {/* ===================== QUICK PRICE CONTEXT ===================== */}
+          <section className="mb-12">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+              Quick price guide
+            </p>
+
+            <h2 className="mt-2 font-serif text-2xl font-bold text-slate-900 sm:text-3xl">
+              Typical online video game buyback range
+            </h2>
+
+            <p className="mt-4 mb-6 text-[17px] leading-[1.75] text-slate-700">
+              Used games have a wide price spread. Platform, edition,
+              completeness, condition, and current demand can make two games
+              with similar titles worth very different amounts.
+            </p>
+
+            <BuybackRangeTable categories={["games"]} />
+          </section>
+
+          <section className="mb-12 rounded-2xl border border-blue-100 bg-blue-50 p-6 sm:p-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+              Quick check
+            </p>
+
+            <h2 className="mt-2 font-serif text-2xl font-bold text-slate-900">
+              Check the exact barcode first
+            </h2>
+
+            <p className="mt-4 text-[17px] leading-[1.75] text-slate-700">
+              If you want to know whether SellBookMedia is currently buying your
+              exact game, scan or enter its UPC. The quote is tied to that
+              specific product rather than only the game title.
+            </p>
+
+            <Link
+              href="/#quote"
+              className="mt-6 inline-flex rounded-xl bg-blue-700 px-5 py-3 font-semibold text-white transition hover:bg-blue-800"
+            >
+              Check a video game offer →
+            </Link>
+          </section>
+
+
           <section className="mb-12">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
               The basic idea
@@ -274,29 +323,6 @@ export default function VideoGameValueGuide() {
                 barcode can matter.
               </p>
             </div>
-          </section>
-
-          <section className="mb-12 rounded-2xl border border-blue-100 bg-blue-50 p-6 sm:p-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
-              Quick check
-            </p>
-
-            <h2 className="mt-2 font-serif text-2xl font-bold text-slate-900">
-              Check the exact barcode first
-            </h2>
-
-            <p className="mt-4 text-[17px] leading-[1.75] text-slate-700">
-              If you want to know whether SellBookMedia is currently buying your
-              exact game, scan or enter its UPC. The quote is tied to that
-              specific product rather than only the game title.
-            </p>
-
-            <Link
-              href="/sell-video-games-for-cash"
-              className="mt-6 inline-flex rounded-xl bg-blue-700 px-5 py-3 font-semibold text-white transition hover:bg-blue-800"
-            >
-              Check a video game offer →
-            </Link>
           </section>
 
           <section className="mb-12">
@@ -447,7 +473,7 @@ export default function VideoGameValueGuide() {
             </p>
 
             <Link
-              href="/sell-video-games-for-cash"
+              href="/#quote"
               className="mt-6 inline-flex rounded-xl bg-white px-6 py-3 font-semibold text-slate-900 transition hover:bg-slate-100"
             >
               Sell video games for cash

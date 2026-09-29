@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import RelatedGuides from "@/components/RelatedGuides";
+import BuybackRangeTable from "@/components/BuybackRangeTable";
 
 const SITE_URL = "https://www.sellbookmedia.com";
 const PAGE_URL = `${SITE_URL}/guides/how-much-are-used-cds-worth`;
@@ -8,7 +9,7 @@ const PAGE_URL = `${SITE_URL}/guides/how-much-are-used-cds-worth`;
 export const metadata: Metadata = {
   title: "Are Old CDs Worth Anything in 2026? | SellBookMedia",
   description:
-    "Find out which old CDs may be worth money, how to identify the exact pressing, check real sales history, and decide whether to sell, keep, or donate your CDs.",
+    "Typical online buyback offers for used CDs are often around $0.10–$1.50. Learn what affects CD value, identify the exact pressing, and check whether a release deserves a closer look.",
   alternates: {
     canonical: PAGE_URL,
   },
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
     siteName: "SellBookMedia",
     type: "article",
     publishedTime: "2026-08-18",
-    modifiedTime: "2026-09-16",
+    modifiedTime: "2026-09-28",
   },
   twitter: {
     card: "summary_large_image",
@@ -86,6 +87,10 @@ const SIXTY_SECOND_CHECK = [
 ];
 
 const FAQ = [
+  {
+    q: "How much are used CDs worth to online buyback sites?",
+    a: "A broad online buyback-market range for ordinary used CDs is about $0.10–$1.50. Some releases can fall outside that range depending on the exact pressing, demand, condition, and buyer inventory.",
+  },
   {
     q: "Are old CDs worth anything in 2026?",
     a: "Some are. Common mass-market CDs may have modest resale value, while certain imports, box sets, out-of-print titles, limited editions, audiophile releases, promos, and unusual pressings can be worth researching more closely. Age alone does not determine value.",
@@ -155,7 +160,7 @@ export default function CdValueGuide() {
           "A practical guide to used CD value, collectible pressings, exact-release identification, sales history, condition, and selling options.",
         url: PAGE_URL,
         datePublished: "2026-08-18",
-        dateModified: "2026-09-16",
+        dateModified: "2026-09-28",
         mainEntityOfPage: {
           "@type": "WebPage",
           "@id": PAGE_URL,
@@ -250,7 +255,7 @@ export default function CdValueGuide() {
           <div className="mt-8 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-white/15 pt-5 text-sm text-blue-200">
             <span className="font-medium text-white">SellBookMedia</span>
             <span aria-hidden="true" className="text-white/30">/</span>
-            <time dateTime="2026-09-16">Updated September 2026</time>
+            <time dateTime="2026-09-28">Updated September 2026</time>
             <span aria-hidden="true" className="text-white/30">/</span>
             <span>10 min read</span>
           </div>
@@ -259,6 +264,59 @@ export default function CdValueGuide() {
 
       <div className="max-w-3xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
         <article>
+          {/* ===================== QUICK PRICE CONTEXT ===================== */}
+          <section className="mb-14">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+              Quick price guide
+            </p>
+
+            <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
+              Typical online CD buyback range
+            </h2>
+
+            <p className="mt-4 mb-6 text-[17px] leading-[1.8] text-slate-700">
+              Most ordinary used CDs have relatively modest buyback value.
+              The exact pressing, demand, completeness, and condition can move
+              a particular release outside the broad market range.
+            </p>
+
+            <BuybackRangeTable categories={["cds"]} />
+          </section>
+
+          {/* ===================== CTA ===================== */}
+          <section className="mb-14">
+            <div className="overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-sm">
+              <div className="px-6 py-8 sm:px-8 sm:py-9">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+                  Have a CD nearby?
+                </p>
+
+                <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
+                  Check the exact barcode before you decide what to do with it
+                </h2>
+
+                <p className="mt-3 max-w-xl text-[16px] sm:text-[17px] leading-relaxed text-slate-600">
+                  Scan or enter the UPC to see whether SellBookMedia is currently
+                  buying that release and view the cash offer before you ship.
+                </p>
+
+                <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+                  <Link
+                    href="/#quote"
+                    className="inline-flex items-center rounded-xl bg-blue-600 px-6 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-blue-700"
+                  >
+                    Check My CD
+                    <ArrowIcon />
+                  </Link>
+
+                  <span className="text-sm text-slate-500">
+                    Instant quote • Free prepaid shipping • PayPal, Venmo, or check by mail
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* ===================== SHORT ANSWER ===================== */}
           <section className="mb-14">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
@@ -779,40 +837,6 @@ export default function CdValueGuide() {
               </Link>
               .
             </p>
-          </section>
-
-          {/* ===================== CTA ===================== */}
-          <section className="mb-14">
-            <div className="overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-sm">
-              <div className="px-6 py-8 sm:px-8 sm:py-9">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
-                  Have a CD nearby?
-                </p>
-
-                <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
-                  Check the exact barcode before you decide what to do with it
-                </h2>
-
-                <p className="mt-3 max-w-xl text-[16px] sm:text-[17px] leading-relaxed text-slate-600">
-                  Scan or enter the UPC to see whether SellBookMedia is currently
-                  buying that release and view the cash offer before you ship.
-                </p>
-
-                <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-                  <Link
-                    href="/#quote"
-                    className="inline-flex items-center rounded-xl bg-blue-600 px-6 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-blue-700"
-                  >
-                    Check My CD
-                    <ArrowIcon />
-                  </Link>
-
-                  <span className="text-sm text-slate-500">
-                    Instant quote • Free prepaid shipping • PayPal, Venmo, or check by mail
-                  </span>
-                </div>
-              </div>
-            </div>
           </section>
 
           {/* ===================== CONDITION ===================== */}

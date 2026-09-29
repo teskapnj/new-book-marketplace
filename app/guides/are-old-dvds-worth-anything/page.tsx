@@ -8,7 +8,7 @@ const PAGE_URL = `${SITE_URL}/guides/are-old-dvds-worth-anything`;
 export const metadata: Metadata = {
   title: "Are Old DVDs Worth Anything? Valuable DVDs to Look For | SellBookMedia",
   description:
-    "Are old DVDs worth anything? Learn which DVDs may have value, including box sets, rare releases, collector's editions, anime, and out-of-print titles.",
+    "Are old DVDs worth anything? Standard DVD buyback offers are often modest, with broad online ranges around $0.10–$2. Learn which releases may be worth checking more closely.",
   alternates: {
     canonical: PAGE_URL,
   },
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 const FAQ = [
   {
     q: "Are old DVDs worth money?",
-    a: "Some are. DVD value depends on the exact release, current demand, availability, condition, and whether the item or set is complete.",
+    a: "Some are. Standard DVDs often have modest online buyback value, with a broad market range around $0.10–$2.00. The exact release, demand, availability, condition, and completeness still determine where a specific title falls.",
   },
   {
     q: "What types of DVDs can be worth more?",
@@ -61,7 +61,7 @@ export default function AreOldDVDsWorthAnythingPage() {
           "Are Old DVDs Worth Anything? 10 Types of DVDs That Can Still Be Valuable",
         url: PAGE_URL,
         datePublished: "2026-09-06",
-        dateModified: "2026-09-06",
+        dateModified: "2026-09-28",
         author: {
           "@type": "Organization",
           "@id": `${SITE_URL}/#organization`,
@@ -158,7 +158,7 @@ export default function AreOldDVDsWorthAnythingPage() {
               /
             </span>
 
-            <time dateTime="2026-09-06">Updated September 2026</time>
+            <time dateTime="2026-09-28">Updated September 2026</time>
 
             <span aria-hidden="true" className="text-white/30">
               /
@@ -190,6 +190,18 @@ export default function AreOldDVDsWorthAnythingPage() {
                 The title alone is not enough to determine value. The exact
                 edition matters, and the UPC barcode on the case is usually the
                 easiest way to identify it.
+              </p>
+
+              <p className="mt-4 text-[17px] leading-[1.75] text-slate-700">
+                As a broad online buyback-market reference, standard DVDs often
+                fall around <strong className="text-slate-900">$0.10–$2.00</strong>.
+                Some unusual or stronger-demand releases can fall outside that range.{" "}
+                <Link
+                  href="/guides/how-much-are-used-dvds-worth"
+                  className="font-semibold text-blue-700 hover:text-blue-900"
+                >
+                  See the full DVD price guide.
+                </Link>
               </p>
             </div>
           </section>

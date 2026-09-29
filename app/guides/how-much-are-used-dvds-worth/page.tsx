@@ -1,13 +1,14 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import RelatedGuides from "@/components/RelatedGuides";
+import BuybackRangeTable from "@/components/BuybackRangeTable";
 
 const PAGE_URL = "https://www.sellbookmedia.com/guides/how-much-are-used-dvds-worth";
 
 export const metadata: Metadata = {
   title: "How Much Are Used DVDs Worth? (2026 Price Guide) | SellBookMedia",
   description:
-    "Find out what affects the value of used DVDs, Blu-rays and 4K movies, which editions may be worth more, and how to get an instant cash offer by scanning the barcode.",
+    "Typical online buyback ranges are about $0.10–$2 for DVDs and $0.50–$6 for Blu-ray and 4K movies. Learn what affects value and how to check your exact release.",
 
   alternates: {
     canonical: PAGE_URL,
@@ -47,6 +48,10 @@ const STEPS = [
 
 const FAQ = [
   {
+    q: "How much are used DVDs worth to online buyback sites?",
+    a: "Approximate online buyback-market ranges are about $0.10–$2.00 for DVDs and $0.50–$6.00 for Blu-ray and 4K titles. Actual offers vary by the exact release, condition, demand, and buyer inventory.",
+  },
+  {
     q: "Why do some DVDs get an offer and others don't?",
     a: "Every title has different demand, resale value, and sales activity. Some editions qualify for an offer while others may not meet our current purchasing criteria.",
   },
@@ -80,7 +85,7 @@ export default function DvdValueGuide() {
         url:
           "https://www.sellbookmedia.com/guides/how-much-are-used-dvds-worth",
         datePublished: "2026-08-18",
-        dateModified: "2026-08-29",
+        dateModified: "2026-09-28",
         author: {
           "@type": "Organization",
           "@id": "https://www.sellbookmedia.com/#organization",
@@ -176,7 +181,7 @@ export default function DvdValueGuide() {
             <span aria-hidden="true" className="text-white/30">
               /
             </span>
-            <time dateTime="2026-08-29">Updated August 2026</time>
+            <time dateTime="2026-09-28">Updated September 2026</time>
             <span aria-hidden="true" className="text-white/30">
               /
             </span>
@@ -187,42 +192,23 @@ export default function DvdValueGuide() {
 
       <div className="max-w-3xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
         <article>
-          {/* ===================== VALUE ===================== */}
+          {/* ===================== QUICK MARKET RANGE ===================== */}
           <section className="mb-12">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
-              What affects value
+              Quick price guide
             </p>
 
             <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
-              Why one DVD can be worth more than another
+              Typical online buyback ranges
             </h2>
 
-            <div className="mt-6 space-y-5 text-[17px] leading-[1.75] text-slate-700">
-              <p>
-                Used movie value depends largely on{" "}
-                <strong className="text-slate-900">
-                  supply, demand, format, and the exact edition
-                </strong>
-                . A widely available DVD may have a very different resale market
-                from a limited release, complete series, Blu-ray, or 4K edition.
-              </p>
+            <p className="mt-4 mb-6 text-[17px] leading-[1.75] text-slate-700">
+              Common movie releases usually bring modest buyback offers.
+              Blu-ray and 4K titles can have a wider range, but the exact
+              edition and current demand still matter.
+            </p>
 
-              <p>
-                Even two versions of the same movie can be different. Special
-                features, packaging, format, release year, and availability can
-                all affect what buyers are looking for.
-              </p>
-            </div>
-
-            <div className="mt-7 rounded-xl border-l-4 border-blue-500 bg-white px-5 py-4 shadow-sm">
-              <p className="text-[16px] leading-relaxed text-slate-700">
-                <strong className="text-slate-900">
-                  Don&apos;t judge the whole shelf at once.
-                </strong>{" "}
-                Scan the individual barcodes. A few titles in an ordinary
-                collection can be very different from the rest.
-              </p>
-            </div>
+            <BuybackRangeTable categories={["dvds", "bluray4k"]} />
           </section>
 
           {/* ===================== EARLY CTA ===================== */}
@@ -269,6 +255,44 @@ export default function DvdValueGuide() {
                   </span>
                 </div>
               </div>
+            </div>
+          </section>
+
+          {/* ===================== VALUE ===================== */}
+          <section className="mb-12">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+              What affects value
+            </p>
+
+            <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
+              Why one DVD can be worth more than another
+            </h2>
+
+            <div className="mt-6 space-y-5 text-[17px] leading-[1.75] text-slate-700">
+              <p>
+                Used movie value depends largely on{" "}
+                <strong className="text-slate-900">
+                  supply, demand, format, and the exact edition
+                </strong>
+                . A widely available DVD may have a very different resale market
+                from a limited release, complete series, Blu-ray, or 4K edition.
+              </p>
+
+              <p>
+                Even two versions of the same movie can be different. Special
+                features, packaging, format, release year, and availability can
+                all affect what buyers are looking for.
+              </p>
+            </div>
+
+            <div className="mt-7 rounded-xl border-l-4 border-blue-500 bg-white px-5 py-4 shadow-sm">
+              <p className="text-[16px] leading-relaxed text-slate-700">
+                <strong className="text-slate-900">
+                  Don&apos;t judge the whole shelf at once.
+                </strong>{" "}
+                Scan the individual barcodes. A few titles in an ordinary
+                collection can be very different from the rest.
+              </p>
             </div>
           </section>
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import RelatedGuides from "@/components/RelatedGuides";
+import BuybackRangeTable from "@/components/BuybackRangeTable";
 
 const SITE_URL = "https://www.sellbookmedia.com";
 const PAGE_URL = `${SITE_URL}/guides/media-value-by-barcode`;
@@ -8,7 +9,7 @@ const PAGE_URL = `${SITE_URL}/guides/media-value-by-barcode`;
 export const metadata: Metadata = {
   title: "Find CD, DVD & Blu-ray Value by Barcode | SellBookMedia",
   description:
-    "Learn how to use a UPC or barcode to identify CDs, DVDs, Blu-rays, and 4K movies and check their current resale or buyback value.",
+    "Use a UPC or barcode to identify CDs, DVDs, Blu-rays, and 4K movies, compare typical online buyback ranges, and learn how to use an Amazon ASIN when a barcode is not found.",
   alternates: {
     canonical: PAGE_URL,
   },
@@ -75,6 +76,11 @@ const STEPS = [
 
 const FAQ = [
   {
+    q: "What if my barcode is not found?",
+    a:
+      "Search Amazon using the product title instead of searching the same barcode again. Open the matching edition, find its 10-character ASIN in the product information, and enter that ASIN in SellBookMedia as a fallback identifier.",
+  },
+  {
     q: "Can I find the value of a CD or DVD by barcode?",
     a:
       "A barcode can identify the exact release of a CD, DVD, Blu-ray, or 4K movie, but it does not contain the current price. Once the release is identified, current demand, condition, format, and resale activity help determine its value.",
@@ -119,7 +125,7 @@ export default function MediaValueByBarcodeGuide() {
           "Learn how UPC and product barcodes help identify exact CD and movie releases and how current resale value is determined.",
         url: PAGE_URL,
         datePublished: "2026-09-03",
-        dateModified: "2026-09-03",
+        dateModified: "2026-09-28",
         mainEntityOfPage: {
           "@type": "WebPage",
           "@id": PAGE_URL,
@@ -217,7 +223,7 @@ export default function MediaValueByBarcodeGuide() {
               /
             </span>
 
-            <time dateTime="2026-09-03">Updated September 2026</time>
+            <time dateTime="2026-09-28">Updated September 2026</time>
 
             <span aria-hidden="true" className="text-white/30">
               /
@@ -296,6 +302,85 @@ export default function MediaValueByBarcodeGuide() {
                   <span aria-hidden="true">•</span>
                   <span>PayPal, Venmo, or check by mail payment</span>
                 </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ===================== MARKET RANGES ===================== */}
+          <section className="mb-14">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+              Price context
+            </p>
+
+            <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
+              Typical online buyback ranges
+            </h2>
+
+            <p className="mt-4 mb-6 text-[17px] leading-[1.75] text-slate-700">
+              A barcode identifies the exact release; it does not contain a
+              price. Once an item is identified, broad online buyback-market
+              ranges often look roughly like this.
+            </p>
+
+            <BuybackRangeTable />
+          </section>
+
+          {/* ===================== BARCODE NOT FOUND ===================== */}
+          <section className="mb-14">
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-7 sm:px-8">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
+                Barcode not found?
+              </p>
+
+              <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
+                Search by title and use the Amazon ASIN
+              </h2>
+
+              <p className="mt-4 text-[17px] leading-[1.75] text-slate-700">
+                If a barcode returns no match, searching Amazon with that same
+                barcode usually does not add much. Instead, search for the item
+                by its title and identify the exact edition.
+              </p>
+
+              <div className="mt-6 space-y-3">
+                {[
+                  [
+                    "01",
+                    "Search the product title",
+                    "Search Amazon using the movie, album, book, or game title rather than the barcode.",
+                  ],
+                  [
+                    "02",
+                    "Open the matching edition",
+                    "Check the format, cover, release details, and edition so you do not choose a different version.",
+                  ],
+                  [
+                    "03",
+                    "Find the ASIN",
+                    "Look in the Amazon product information or product details for the 10-character ASIN.",
+                  ],
+                  [
+                    "04",
+                    "Enter the ASIN",
+                    "Use that ASIN in SellBookMedia to check the item again.",
+                  ],
+                ].map(([number, title, body]) => (
+                  <div
+                    key={number}
+                    className="flex gap-4 rounded-xl border border-amber-200/70 bg-white px-5 py-4"
+                  >
+                    <span className="font-mono text-sm font-bold text-amber-700">
+                      {number}
+                    </span>
+
+                    <div>
+                      <h3 className="font-semibold text-slate-900">{title}</h3>
+                      <p className="mt-1 text-[15px] leading-relaxed text-slate-600">
+                        {body}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </section>

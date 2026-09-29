@@ -1,13 +1,14 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import RelatedGuides from "@/components/RelatedGuides";
+import BuybackRangeTable from "@/components/BuybackRangeTable";
 
 const PAGE_URL = "https://www.sellbookmedia.com/guides/how-much-are-used-books-worth";
 
 export const metadata: Metadata = {
   title: "How Much Are Used Books Worth? | SellBookMedia",
   description:
-    "Find out what affects used book value, which types of books may be worth more, and how to get an instant cash offer by scanning the ISBN or barcode.",
+    "Typical online used-book buyback ranges can run from about $0.25 to $20+, depending on the title, edition, condition, and demand. Learn what makes some books worth more.",
 
   alternates: {
     canonical: PAGE_URL,
@@ -77,6 +78,10 @@ const STEPS = [
 
 const FAQ = [
   {
+    q: "How much are used books worth to online buyback sites?",
+    a: "Used-book buyback values vary widely, but a broad online range can run from about $0.25 to $20 or more. Current textbooks, technical books, and other stronger-demand editions can sometimes fall above the general range.",
+  },
+  {
     q: "Why are some used books worth more than others?",
     a: "Used book value depends on the specific title, edition, current demand, available supply, and resale market. Two similar-looking books can have very different values.",
   },
@@ -110,7 +115,7 @@ export default function BookValueGuide() {
         url:
           "https://www.sellbookmedia.com/guides/how-much-are-used-books-worth",
         datePublished: "2026-08-18",
-        dateModified: "2026-08-29",
+        dateModified: "2026-09-28",
         author: {
           "@type": "Organization",
           "@id": "https://www.sellbookmedia.com/#organization",
@@ -206,7 +211,7 @@ export default function BookValueGuide() {
             <span aria-hidden="true" className="text-white/30">
               /
             </span>
-            <time dateTime="2026-08-29">Updated August 2026</time>
+            <time dateTime="2026-09-28">Updated September 2026</time>
             <span aria-hidden="true" className="text-white/30">
               /
             </span>
@@ -217,6 +222,72 @@ export default function BookValueGuide() {
 
       <div className="max-w-3xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
         <article>
+          {/* ===================== QUICK MARKET RANGE ===================== */}
+          <section className="mb-12">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+              Quick price guide
+            </p>
+
+            <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
+              Typical online book buyback range
+            </h2>
+
+            <p className="mt-4 mb-6 text-[17px] leading-[1.75] text-slate-700">
+              Books have a wider value spread than most common physical media.
+              The exact edition matters heavily, and current or specialized
+              titles can sometimes exceed the broad market range.
+            </p>
+
+            <BuybackRangeTable categories={["books"]} />
+          </section>
+
+          {/* ===================== EARLY CTA ===================== */}
+          <section className="mb-14">
+            <div className="overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-sm">
+              <div className="px-6 py-8 sm:px-8 sm:py-9">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+                  Have a book nearby?
+                </p>
+
+                <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
+                  See what we&apos;ll pay for it
+                </h2>
+
+                <p className="mt-3 max-w-xl text-[16px] sm:text-[17px] leading-relaxed text-slate-600">
+                  Scan the barcode and get an instant offer in seconds. No app
+                  required and no account needed just to check.
+                </p>
+
+                <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+                  <Link
+                    href="/"
+                    className="inline-flex items-center rounded-xl bg-blue-600 px-6 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-blue-700"
+                  >
+                    Check My Book
+                    <svg
+                      className="ml-2 h-5 w-5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 12h14M12 5l7 7-7 7"
+                      />
+                    </svg>
+                  </Link>
+
+                  <span className="text-sm text-slate-500">
+                    Instant offer • Free shipping • PayPal, Venmo, or check by
+                    mail payment
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* ===================== VALUE ===================== */}
           <section className="mb-12">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
@@ -275,53 +346,6 @@ export default function BookValueGuide() {
               The barcode tells us exactly which edition you have, which is why
               scanning it gives you a much better answer.
             </p>
-          </section>
-
-          {/* ===================== EARLY CTA ===================== */}
-          <section className="mb-14">
-            <div className="overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-sm">
-              <div className="px-6 py-8 sm:px-8 sm:py-9">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
-                  Have a book nearby?
-                </p>
-
-                <h2 className="mt-2 font-serif text-2xl sm:text-3xl font-bold text-slate-900">
-                  See what we&apos;ll pay for it
-                </h2>
-
-                <p className="mt-3 max-w-xl text-[16px] sm:text-[17px] leading-relaxed text-slate-600">
-                  Scan the barcode and get an instant offer in seconds. No app
-                  required and no account needed just to check.
-                </p>
-
-                <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-                  <Link
-                    href="/"
-                    className="inline-flex items-center rounded-xl bg-blue-600 px-6 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-blue-700"
-                  >
-                    Check My Book
-                    <svg
-                      className="ml-2 h-5 w-5"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M5 12h14M12 5l7 7-7 7"
-                      />
-                    </svg>
-                  </Link>
-
-                  <span className="text-sm text-slate-500">
-                    Instant offer • Free shipping • PayPal, Venmo, or check by
-                    mail payment
-                  </span>
-                </div>
-              </div>
-            </div>
           </section>
 
           {/* ===================== CATEGORIES ===================== */}

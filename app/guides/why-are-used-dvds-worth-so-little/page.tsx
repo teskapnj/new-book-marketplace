@@ -26,24 +26,14 @@ export const metadata: Metadata = {
 
 const valueRanges = [
   {
-    label: "Common DVD / Blu-ray / 4K",
-    range: "$0–$1",
-    note: "A realistic buyback range for many ordinary mass-market releases. Some titles may receive no offer at all.",
+    label: "DVDs",
+    range: "$0.10–$2.00",
+    note: "A broad online buyback-market range for standard used DVDs. Some titles may receive no offer, while unusual releases can fall outside the range.",
   },
   {
-    label: "Better-demand titles",
-    range: "$1–$3",
-    note: "Less common releases or titles with healthier current resale demand may move above the basic range.",
-  },
-  {
-    label: "Stronger / special releases",
-    range: "$3–$5",
-    note: "Some desirable editions, harder-to-find releases, or better-demand titles can reach this area.",
-  },
-  {
-    label: "Rare / box sets / collector editions",
-    range: "Can be higher",
-    note: "Higher offers happen, but they are much less common and usually involve something unusual about the exact release.",
+    label: "Blu-ray / 4K",
+    range: "$0.50–$6.00",
+    note: "A broad online buyback-market range for many qualifying Blu-ray and 4K releases. Exact value still depends on the title and edition.",
   },
 ];
 
@@ -100,15 +90,15 @@ const worthChecking = [
 const FAQ = [
   {
     q: "How much are most used DVDs worth to a buyback website?",
-    a: "For many common mass-market DVDs, Blu-rays, and 4K releases, a realistic buyback expectation is often between $0 and $1 per item. Some titles may receive no offer, while better-demand releases can be higher.",
+    a: "For standard used DVDs, a broad online buyback-market range is about $0.10–$2.00. Some titles may receive no offer, while stronger-demand or unusual releases can fall outside that range.",
   },
   {
-    q: "Can a DVD, Blu-ray, or 4K movie be worth $3 to $5?",
-    a: "Yes. Some titles with stronger demand, lower availability, or a more desirable edition can reach roughly the $3 to $5 range. That is less common than the basic $0 to $1 range.",
+    q: "How much are used Blu-rays and 4K movies worth to a buyback website?",
+    a: "A broad online buyback-market range for Blu-ray and 4K releases is about $0.50–$6.00. The exact title, edition, condition, and current demand can move an item outside that range.",
   },
   {
-    q: "Can some movies be worth more than $5?",
-    a: "Yes, but higher buyback values are much less common. Complete box sets, collector editions, discontinued releases, rare versions, and other hard-to-find titles can sometimes be worth more.",
+    q: "Can some movies be worth more than these ranges?",
+    a: "Yes. These are broad market ranges rather than price limits. Complete box sets, collector editions, discontinued releases, rare versions, and other hard-to-find titles can sometimes be worth more.",
   },
   {
     q: "Does Blu-ray or 4K automatically mean a movie is worth more?",
@@ -193,7 +183,7 @@ export default function WhyAreUsedDvdsWorthSoLittlePage() {
         <div className="relative mx-auto max-w-6xl px-5 py-16 sm:px-6 sm:py-24 lg:px-8">
           <div className="max-w-4xl">
             <Link
-              href="/sell-dvds-for-cash"
+              href="/#quote"
               className="inline-flex items-center text-sm font-semibold text-blue-300 hover:text-white"
             >
               ← Sell DVDs, Blu-rays & 4K
@@ -235,13 +225,11 @@ export default function WhyAreUsedDvdsWorthSoLittlePage() {
               </h2>
 
               <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
-                Across the buyback market, many ordinary mass-market DVDs,
-                Blu-rays, and 4K releases fall into a roughly{" "}
-                <strong className="text-slate-900">$0–$1</strong> expectation.
-                Some better titles can move into the{" "}
-                <strong className="text-slate-900">$1–$3</strong> range, and
-                stronger or more unusual releases may reach roughly{" "}
-                <strong className="text-slate-900">$3–$5</strong>.
+                Across online buyback services, standard DVDs often fall
+                around <strong className="text-slate-900">$0.10–$2.00</strong>,
+                while Blu-ray and 4K releases commonly have a broader range
+                around <strong className="text-slate-900">$0.50–$6.00</strong>.
+                These are general market ranges, not guaranteed offers.
               </p>
 
               <p className="mt-4 text-lg leading-8 text-slate-600">
@@ -286,9 +274,9 @@ export default function WhyAreUsedDvdsWorthSoLittlePage() {
             </h2>
 
             <p className="mt-4 text-lg leading-8 text-slate-600">
-              These are broad buyback-market expectations, not guaranteed
-              SellBookMedia quotes. Exact offers can change based on the
-              release and current demand.
+              These are broad online buyback-market ranges, not guaranteed
+              prices from any individual buyer. Exact offers can change based
+              on the release, condition, demand, and buyer inventory.
             </p>
           </div>
 
@@ -317,6 +305,42 @@ export default function WhyAreUsedDvdsWorthSoLittlePage() {
             A title can fall outside these ranges. Buyback values change over
             time as demand, supply, availability, and resale conditions change.
           </p>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="bg-blue-600 py-16 sm:py-20">
+        <div className="mx-auto max-w-5xl px-5 text-center sm:px-6 lg:px-8">
+          <p className="text-sm font-bold uppercase tracking-[0.16em] text-blue-100">
+            Skip the guessing
+          </p>
+
+          <h2 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-5xl">
+            Check the exact DVD, Blu-ray, or 4K release you own.
+          </h2>
+
+          <p className="mx-auto mt-5 max-w-3xl text-lg leading-8 text-blue-100">
+            Scan or enter the UPC to see whether SellBookMedia is currently
+            buying that release and view your offer before you ship. You can
+            combine eligible movies with accepted books, CDs, and video games
+            in the same order.
+          </p>
+
+          <div className="mt-8 flex flex-wrap justify-center gap-4">
+            <Link
+              href="/#quote"
+              className="rounded-xl bg-white px-7 py-4 font-black text-blue-700 shadow-lg hover:bg-blue-50"
+            >
+              Check Your Movies
+            </Link>
+
+            <Link
+              href="/condition-guidelines"
+              className="rounded-xl border border-white/30 px-7 py-4 font-bold text-white hover:bg-white/10"
+            >
+              View Condition Guidelines
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -619,42 +643,6 @@ export default function WhyAreUsedDvdsWorthSoLittlePage() {
           >
             See what to do with a large DVD or CD collection →
           </Link>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="bg-blue-600 py-16 sm:py-20">
-        <div className="mx-auto max-w-5xl px-5 text-center sm:px-6 lg:px-8">
-          <p className="text-sm font-bold uppercase tracking-[0.16em] text-blue-100">
-            Skip the guessing
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-5xl">
-            Check the exact DVD, Blu-ray, or 4K release you own.
-          </h2>
-
-          <p className="mx-auto mt-5 max-w-3xl text-lg leading-8 text-blue-100">
-            Scan or enter the UPC to see whether SellBookMedia is currently
-            buying that release and view your offer before you ship. You can
-            combine eligible movies with accepted books, CDs, and video games
-            in the same order.
-          </p>
-
-          <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <Link
-              href="/sell-dvds-for-cash"
-              className="rounded-xl bg-white px-7 py-4 font-black text-blue-700 shadow-lg hover:bg-blue-50"
-            >
-              Check Your Movies
-            </Link>
-
-            <Link
-              href="/condition-guidelines"
-              className="rounded-xl border border-white/30 px-7 py-4 font-bold text-white hover:bg-white/10"
-            >
-              View Condition Guidelines
-            </Link>
-          </div>
         </div>
       </section>
 
