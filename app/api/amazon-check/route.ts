@@ -76,10 +76,6 @@ const KEEPA_DOMAIN = 1;
 // Dusurmek = daha taze veri + daha yavas + daha cok token.
 const KEEPA_UPDATE_HOURS = 24;
 
-// Bu surumu film kabul/red kurallari degistiginde artir.
-// Eski DVD/Blu-ray cache kayitlari boylece bir kez Keepa'dan tazelenir.
-const MOVIE_RULES_VERSION = 5;
-
 // ==================== KOD TİPİ ALGILAMA (aynı, değişmedi) ====================
 
 function convertISBN13toISBN10(isbn13: string): string | null {
@@ -1488,99 +1484,44 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // Cache version ve expiration kontrolu productCache.ts icinde yapilir.
+      // Buraya gelen kayit tum kategoriler icin gecerli current cache'tir.
       const cachedProduct: any = { ...cachedResult.product };
+      const cachedPricing: any = cachedResult.pricing;
+      const cachedMessage = cachedResult.message;
 
-      // Eski cache kayitlarinda bookUsedPrice olmayabilir.
-      // gameUsedPrice Keepa stats.current[2] degerinden geldigi icin
-      // varsa kitaplar icin lowest USED kaynagi olarak guvenle kullanabiliriz.
-      const cachedCategory = String(cachedProduct?.category || '').toLowerCase();
-      const isCachedBook =
-        cachedCategory.includes('book') || cachedCategory.includes('kindle');
+      const cachedMediaZoneTag = getMediaBarcodeZoneTag(
+        cleanCode,
+        cachedPricing?.category === 'dvds'
+      );
 
-      const cachedType = String(cachedProduct?.type || '').toUpperCase();
-      const isCachedMovie =
-        cachedResult.pricing?.category === 'dvds' ||
-        cachedType === 'PHYSICAL_MOVIE' ||
-        cachedType === 'VIDEO_DVD' ||
-        cachedCategory.includes('movie') ||
-        cachedCategory.includes('dvd') ||
-        cachedCategory.includes('blu-ray');
+      console.log(
+        `${cachedMediaZoneTag}⚡ CACHE HIT: ${cleanCode} | ` +
+        `Price: $${cachedProduct?.price ?? 0} (${cachedProduct?.priceType || 'unknown'}) | ` +
+        `${cachedPricing?.category === 'books'
+          ? `BookUSED: $${cachedProduct?.bookUsedPrice ?? 0} | Rule: ${cachedPricing?.priceRange || 'N/A'} | `
+          : ''}` +
+        `${cachedPricing?.category === 'games'
+          ? `Platform: ${cachedProduct?.gamePlatform || 'N/A'} | GameNEW: $${cachedProduct?.gameNewPrice ?? 0} | GameUSED: $${cachedProduct?.gameUsedPrice ?? 0} | Rule: ${cachedPricing?.priceRange || 'N/A'} | `
+          : ''}` +
+        `Rank: ${cachedProduct?.sales_rank ?? 0} | ` +
+        `Category: ${cachedProduct?.category || 'Unknown'} | ` +
+        `Binding: ${cachedProduct?.binding || 'N/A'} | ` +
+        `Type: ${cachedProduct?.type || 'N/A'} | ` +
+        `Status: ${cachedPricing?.accepted ? 'ACCEPTED' : 'REJECTED'} | ` +
+        `Reason: ${cachedPricing?.reason || 'N/A'} | ` +
+        `Offer: ${cachedPricing?.accepted && cachedPricing?.ourPrice != null ? `$${cachedPricing.ourPrice}` : 'N/A'}`
+      );
 
-      const cachedMovieRulesVersion =
-        Number((cachedResult.debug as any)?.movieRulesVersion || 0);
-
-      const needsMovieRulesRefresh =
-        isCachedMovie && cachedMovieRulesVersion !== MOVIE_RULES_VERSION;
-
-      const isLegacyBookCacheMissingUsedSnapshot =
-        isCachedBook &&
-        cachedProduct.bookUsedPrice == null &&
-        cachedProduct.gameUsedPrice == null &&
-        cachedProduct.priceType !== 'used' &&
-        cachedProduct.priceType !== 'none';
-
-      // Eski BOOK cache kaydinda USED snapshot'i yoksa veya DVD/Blu-ray kaydi
-      // eski film kurallariyla olusturulduysa cache'i kullanma; Keepa'dan tazele.
-      if (isLegacyBookCacheMissingUsedSnapshot || needsMovieRulesRefresh) {
-        if (isLegacyBookCacheMissingUsedSnapshot) {
-          console.log(`♻️ LEGACY BOOK CACHE REFRESH: ${cleanCode}`);
+      return NextResponse.json({
+        success: true,
+        data: {
+          product: cachedProduct,
+          pricing: cachedPricing,
+          message: cachedMessage,
+          debug: { ...cachedResult.debug, cacheHit: true }
         }
-        if (needsMovieRulesRefresh) {
-          console.log(
-            `♻️ MOVIE RULES CACHE REFRESH: ${cleanCode} | ` +
-            `cachedVersion=${cachedMovieRulesVersion} -> ${MOVIE_RULES_VERSION}`
-          );
-        }
-      } else {
-        if (isCachedBook && cachedProduct.bookUsedPrice == null) {
-          cachedProduct.bookUsedPrice = cachedProduct.gameUsedPrice || 0;
-        }
-
-        // Sadece BOOKS icin yeni kurali cache hit'te yeniden hesapla.
-        // CD/DVD/GAME mevcut cache davranisini aynen korur.
-        const cachedPricing: any = isCachedBook
-          ? calculateOurPrice(cachedProduct)
-          : cachedResult.pricing;
-
-        const cachedMessage = isCachedBook
-          ? cachedPricing.accepted && cachedPricing.ourPrice
-            ? 'ACCEPTED'
-            : 'DOES NOT MEET OUR PURCHASING CRITERIA'
-          : cachedResult.message;
-
-        const cachedMediaZoneTag = getMediaBarcodeZoneTag(
-          cleanCode,
-          cachedPricing?.category === 'dvds'
-        );
-
-        console.log(
-          `${cachedMediaZoneTag}⚡ CACHE HIT: ${cleanCode} | ` +
-          `Price: $${cachedProduct?.price ?? 0} (${cachedProduct?.priceType || 'unknown'}) | ` +
-          `${cachedPricing?.category === 'books'
-            ? `BookUSED: $${cachedProduct?.bookUsedPrice ?? 0} | Rule: ${cachedPricing?.priceRange || 'N/A'} | `
-            : ''}` +
-          `${cachedPricing?.category === 'games'
-            ? `Platform: ${cachedProduct?.gamePlatform || 'N/A'} | GameNEW: $${cachedProduct?.gameNewPrice ?? 0} | GameUSED: $${cachedProduct?.gameUsedPrice ?? 0} | Rule: ${cachedPricing?.priceRange || 'N/A'} | `
-            : ''}` +
-          `Rank: ${cachedProduct?.sales_rank ?? 0} | ` +
-          `Category: ${cachedProduct?.category || 'Unknown'} | ` +
-          `Binding: ${cachedProduct?.binding || 'N/A'} | ` +
-          `Type: ${cachedProduct?.type || 'N/A'} | ` +
-          `Status: ${cachedPricing?.accepted ? 'ACCEPTED' : 'REJECTED'} | ` +
-          `Reason: ${cachedPricing?.reason || 'N/A'} | ` +
-          `Offer: ${cachedPricing?.accepted && cachedPricing?.ourPrice != null ? `$${cachedPricing.ourPrice}` : 'N/A'}`
-        );
-
-        return NextResponse.json({
-          success: true,
-          data: {
-            product: cachedProduct,
-            pricing: cachedPricing,
-            message: cachedMessage,
-            debug: { ...cachedResult.debug, cacheHit: true }
-          }
-        } as ApiResponse);
-      }
+      } as ApiResponse);
     }
 
     const apiKey = process.env.KEEPA_API_KEY;
@@ -2380,7 +2321,6 @@ export async function POST(request: NextRequest) {
       searchMethod: 'keepa-single-product',
       lookupType: effectiveLookupType,
       cacheHit: false,
-      movieRulesVersion: MOVIE_RULES_VERSION,
       priceAnalysis,
       timings: { totalTime }
     };

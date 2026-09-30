@@ -2,6 +2,8 @@
 import { db, FieldValue } from '@/lib/firebaseAdmin';
 import admin from 'firebase-admin';
 
+export const CACHE_RULES_VERSION = 1;
+
 // Type definitions for cache
 export interface CachedAmazonProduct {
   title: string;
@@ -24,6 +26,7 @@ export interface CachedPricingResult {
 export interface ProductCacheEntry {
   identifier: string; // ISBN, UPC or ASIN
   identifierType: 'isbn' | 'upc' | 'asin' | 'unknown';
+  cacheRulesVersion: number;
   product: CachedAmazonProduct;
   pricing: CachedPricingResult;
   message: string;
@@ -35,11 +38,12 @@ export interface ProductCacheEntry {
   };
   createdAt: admin.firestore.Timestamp;
   updatedAt: admin.firestore.Timestamp;
-  expiresAt: admin.firestore.Timestamp; // For 10 days expiration
+  expiresAt: admin.firestore.Timestamp; // Positive cache: 5 days
 }
 export interface NotFoundCacheEntry {
   identifier: string;
   identifierType: 'isbn' | 'upc' | 'asin' | 'unknown';
+  cacheRulesVersion: number;
   notFound: true;
   createdAt: admin.firestore.Timestamp;
   updatedAt: admin.firestore.Timestamp;
@@ -68,6 +72,21 @@ export class ProductCacheService {
 
       if (docSnap.exists) {
         const data = docSnap.data() as ProductCacheResult;
+
+        // Tek global cache version.
+        // Eski kayitlarda version yoksa veya kurallar degistiyse
+        // cache'i kullanma; sil ve canli sorguya dus.
+        if ((data as any).cacheRulesVersion !== CACHE_RULES_VERSION) {
+          console.log(
+            'Cache rules version mismatch, refreshing:',
+            normalizedId,
+            (data as any).cacheRulesVersion ?? 'none',
+            '->',
+            CACHE_RULES_VERSION
+          );
+          await this.removeFromCache(normalizedId);
+          return null;
+        }
 
         // Check expiration
         const now = new Date();
@@ -121,11 +140,12 @@ export class ProductCacheService {
     try {
       const normalizedId = this.normalizeIdentifier(identifier);
       const now = new Date();
-      const expiresAt = new Date(now.getTime() + (10 * 24 * 60 * 60 * 1000)); // 10 days later
+      const expiresAt = new Date(now.getTime() + (5 * 24 * 60 * 60 * 1000)); // 5 days later
 
       const cacheEntry = {
         identifier: normalizedId,
         identifierType,
+        cacheRulesVersion: CACHE_RULES_VERSION,
         product,
         pricing,
         message,
@@ -176,6 +196,7 @@ export class ProductCacheService {
       const cacheEntry: NotFoundCacheEntry = {
         identifier: normalizedId,
         identifierType,
+        cacheRulesVersion: CACHE_RULES_VERSION,
         notFound: true,
         createdAt: admin.firestore.Timestamp.fromDate(now),
         updatedAt: admin.firestore.Timestamp.fromDate(now),
