@@ -145,6 +145,18 @@ export default function BarcodeNotFoundGuide() {
             </p>
           </section>
 
+          {/* QUICK TIP */}
+          <section className="mt-5 rounded-2xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+              Quick tip
+            </p>
+
+            <p className="mt-2 text-[15px] leading-relaxed text-slate-700">
+              Set not-found items aside and finish scanning the rest first.
+              You can come back to them at the end.
+            </p>
+          </section>
+
           {/* STEPS */}
           <section className="mt-8 space-y-5">
             {/* STEP 1 */}
