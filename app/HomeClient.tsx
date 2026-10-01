@@ -594,7 +594,7 @@ if (typeof window !== 'undefined') {
       setIsCheckingAmazon(true);
       clearAmazonResults();
 
-      const response = await axios.post('/api/amazon-check', { isbn_upc: code });
+      const response = await axios.post('/api/amazon-check', { isbn_upc: code, source });
 
       if (response.data.success) {
         const { product, pricing, message } = response.data.data;
@@ -619,7 +619,7 @@ if (typeof window !== 'undefined') {
           message: sanitizedMessage
         });
 
-        if (pricing.accepted && pricing.ourPrice) {
+        if (sanitizedPricing.accepted && sanitizedPricing.ourPrice) {
           autoAddAcceptedItem(code, sanitizedProduct, sanitizedPricing);
         } else {
           // Reddedilen urunler hunide gorunmuyordu - neyin neden reddedildigini

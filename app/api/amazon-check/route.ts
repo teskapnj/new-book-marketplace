@@ -76,6 +76,9 @@ const KEEPA_DOMAIN = 1;
 // Dusurmek = daha taze veri + daha yavas + daha cok token.
 const KEEPA_UPDATE_HOURS = 24;
 
+const MANUAL_ISBN_MEDIA_MESSAGE =
+  'For DVDs, Blu-rays and CDs, please scan or enter the main barcode (UPC/EAN).';
+
 // ==================== KOD TİPİ ALGILAMA (aynı, değişmedi) ====================
 
 function convertISBN13toISBN10(isbn13: string): string | null {
@@ -1383,7 +1386,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { isbn_upc } = body;
+    const { isbn_upc, source } = body;
 
     if (!isbn_upc || typeof isbn_upc !== 'string') {
       console.warn('INVALID PRODUCT CODE: missing or non-string isbn_upc');
@@ -1396,6 +1399,19 @@ export async function POST(request: NextRequest) {
 
     const cleanCode = isbn_upc.replace(/[^a-zA-Z0-9X]/gi, '').trim().toUpperCase();
     const codeInfo = detectCodeType(cleanCode);
+
+    // Yalnizca kullanici elle girdiginde devreye girer.
+    // Kamera taramalarini ve gecersiz ISBN olan eski 10-digit media
+    // fallback kodlarini etkilemez.
+    const isManualValidIsbnRequest =
+      source === 'manual' &&
+      (
+        isValidISBN10(cleanCode) ||
+        (
+          /^97[89]\\d{10}$/.test(cleanCode) &&
+          isValidGTIN(cleanCode)
+        )
+      );
 
     // 13/14 haneli media kodu tam haliyle gecerli olsa bile
     // Keepa urun bulamazsa sonradan denenebilecek guvenli UPC-12 adayi.
@@ -1489,6 +1505,35 @@ export async function POST(request: NextRequest) {
       const cachedProduct: any = { ...cachedResult.product };
       const cachedPricing: any = cachedResult.pricing;
       const cachedMessage = cachedResult.message;
+
+      // Cache source-neutral kalir. Manual ISBN isteginde Books disi
+      // urunu sadece bu response icin reddet.
+      if (
+        isManualValidIsbnRequest &&
+        cachedPricing?.category !== 'books'
+      ) {
+        const manualPricing = {
+          ...cachedPricing,
+          accepted: false,
+          ourPrice: 0,
+          reason: MANUAL_ISBN_MEDIA_MESSAGE
+        };
+
+        console.log(
+          `🚫 MANUAL ISBN NON-BOOK: ${cleanCode} | ` +
+          `Category=${cachedPricing?.category || 'unknown'} | CACHE HIT`
+        );
+
+        return NextResponse.json({
+          success: true,
+          data: {
+            product: cachedProduct,
+            pricing: manualPricing,
+            message: MANUAL_ISBN_MEDIA_MESSAGE,
+            debug: { ...cachedResult.debug, cacheHit: true }
+          }
+        } as ApiResponse);
+      }
 
       const cachedMediaZoneTag = getMediaBarcodeZoneTag(
         cleanCode,
@@ -2219,16 +2264,79 @@ export async function POST(request: NextRequest) {
     }
     console.log(`🎫 Tokens: consumed=${keepaResponse?.tokensConsumed}, left=${keepaResponse?.tokensLeft}, keepaMs=${keepaResponse?.processingTimeInMs}, roundTrip=${Date.now() - keepaStart}ms`);
 
-    const products = keepaResponse?.products;
+    let products =
+      Array.isArray(keepaResponse?.products)
+        ? keepaResponse.products
+        : [];
+
+    // Bir UPC/EAN sorgusu birden fazla ASIN dondururse,
+    // Keepa'nin gtinList bilgisini ek bir ayristirma sinyali olarak kullan.
+    //
+    // Tek urun geldiyse HICBIR SEY degismez.
+    // Birden fazla urun var ama hic GTIN yoksa HICBIR SEY degismez.
+    // Girilen kodun GTIN-14 karsiligiyla eslesen urun(ler) varsa
+    // sadece onlar mevcut urun secme/pricing motoruna gonderilir.
+    //
+    // Eslesen GTIN bulunamazsa da mevcut davranis korunur.
+    if (
+      products.length > 1 &&
+      effectiveIdentifierType === 'upc'
+    ) {
+      const requestedGtin =
+        normalizeGtinForComparison(effectiveSearchCode);
+
+      const hasAnyGtin = products.some((product: any) => {
+        return (
+          Array.isArray(product?.gtinList) &&
+          product.gtinList.some((value: any) =>
+            Boolean(normalizeGtinForComparison(value))
+          )
+        );
+      });
+
+      if (requestedGtin && hasAnyGtin) {
+        const exactGtinMatches = products.filter((product: any) => {
+          if (!Array.isArray(product?.gtinList)) {
+            return false;
+          }
+
+          return product.gtinList.some(
+            (value: any) =>
+              normalizeGtinForComparison(value) === requestedGtin
+          );
+        });
+
+        if (exactGtinMatches.length > 0) {
+          console.log(
+            `🎯 GTIN DISAMBIGUATION: ` +
+            `${effectiveSearchCode} -> ${requestedGtin} | ` +
+            `before=${products.length} | ` +
+            `after=${exactGtinMatches.length} | ` +
+            `asins=${exactGtinMatches
+              .map((p: any) => p?.asin)
+              .filter(Boolean)
+              .join(',')}`
+          );
+
+          products = exactGtinMatches;
+        } else {
+          console.log(
+            `ℹ️ GTIN DISAMBIGUATION: ` +
+            `${effectiveSearchCode} -> ${requestedGtin} | ` +
+            `no exact GTIN match; keeping all ${products.length} products`
+          );
+        }
+      }
+    }
 
     console.log('📦 KEEPA RESULT:', {
       cleanCode,
       searchCode: effectiveSearchCode,
       lookupType: effectiveLookupType,
-      productCount: Array.isArray(products) ? products.length : 0,
-      asins: Array.isArray(products)
-        ? products.map((p: any) => p?.asin).filter(Boolean)
-        : [],
+      productCount: products.length,
+      asins: products
+        .map((p: any) => p?.asin)
+        .filter(Boolean),
       error: keepaResponse?.error || null
     });
 
@@ -2302,6 +2410,23 @@ export async function POST(request: NextRequest) {
       }
       : calculateOurPrice(product);
 
+    // Base pricing cache'e source-neutral olarak yazilir.
+    // Manual gecerli ISBN Books disi bir urune resolve olduysa
+    // yalnizca kullaniciya donen sonuc reddedilir.
+    const manualIsbnMediaRejected =
+      isManualValidIsbnRequest &&
+      pricingResult.category !== 'books';
+
+    const responsePricingResult: PricingResult =
+      manualIsbnMediaRejected
+        ? {
+            ...pricingResult,
+            accepted: false,
+            ourPrice: 0,
+            reason: MANUAL_ISBN_MEDIA_MESSAGE
+          }
+        : pricingResult;
+
     const mediaZoneTag = getMediaBarcodeZoneTag(
       cleanCode,
       pricingResult.category === 'dvds'
@@ -2314,6 +2439,19 @@ export async function POST(request: NextRequest) {
           pricingResult.reason !== 'DOES NOT MEET OUR PURCHASING CRITERIA'
           ? pricingResult.reason
           : 'DOES NOT MEET OUR PURCHASING CRITERIA';
+
+    const responseMessage =
+      manualIsbnMediaRejected
+        ? MANUAL_ISBN_MEDIA_MESSAGE
+        : message;
+
+    if (manualIsbnMediaRejected) {
+      console.log(
+        `�� MANUAL ISBN NON-BOOK: ${cleanCode} | ` +
+        `ASIN=${product.asin} | ` +
+        `Category=${pricingResult.category}`
+      );
+    }
 
     const totalTime = Date.now() - totalStartTime;
 
@@ -2377,14 +2515,14 @@ export async function POST(request: NextRequest) {
       `Category: ${category} | ` +
       `Binding: ${product.binding || 'N/A'} | ` +
       `Type: ${product.type || 'N/A'} | ` +
-      `Status: ${pricingResult.accepted ? 'ACCEPTED' : 'REJECTED'} | ` +
-      `Reason: ${pricingResult.reason || 'N/A'} | ` +
-      `Offer: ${pricingResult.accepted && pricingResult.ourPrice != null ? `$${pricingResult.ourPrice}` : 'N/A'}`
+      `Status: ${responsePricingResult.accepted ? 'ACCEPTED' : 'REJECTED'} | ` +
+      `Reason: ${responsePricingResult.reason || 'N/A'} | ` +
+      `Offer: ${responsePricingResult.accepted && responsePricingResult.ourPrice != null ? `$${responsePricingResult.ourPrice}` : 'N/A'}`
     );
 
     return NextResponse.json({
       success: true,
-      data: { product, pricing: pricingResult, message, debug: debugInfo }
+      data: { product, pricing: responsePricingResult, message: responseMessage, debug: debugInfo }
     } as ApiResponse);
 
   } catch (error: any) {
