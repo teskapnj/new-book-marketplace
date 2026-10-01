@@ -43,6 +43,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: `${SITE_URL}/guides/best-places-to-sell-cds-dvds-games`,
     },
     { url: `${SITE_URL}/guides/media-value-by-barcode` },
+    { url: `${SITE_URL}/guides/how-to-read-a-barcode` },
+    { url: `${SITE_URL}/guides/barcode-not-found` },
     { url: `${SITE_URL}/guides/decluttr-shut-down-alternative` },
 
     // Help and trust pages

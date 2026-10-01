@@ -269,6 +269,33 @@ export default function HomePage() {
   } | null>(null);
   const [scanError, setScanError] = useState("");
   const [scannerError, setScannerError] = useState("");
+
+  // UI-only error messages.
+  // Backend/API behavior is unchanged.
+  const getScanErrorDisplay = (error: string) => {
+    const normalized = error.toLowerCase();
+
+    const isNotFound =
+      normalized.includes("product not found") ||
+      normalized.includes("invalid isbn/upc format") ||
+      normalized.includes("only valid isbn or upc code or asin");
+
+    if (isNotFound) {
+      return {
+        title: "Item not found",
+        message: "Try another barcode or view our guide.",
+        showGuide: true,
+      };
+    }
+
+    return {
+      title: "Couldn't check item",
+      message: "Please try again.",
+      showGuide: false,
+    };
+  };
+
+  const scanErrorDisplay = getScanErrorDisplay(scanError);
   const [showScanner, setShowScanner] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [showAuthOptions, setShowAuthOptions] = useState(false);
@@ -300,10 +327,6 @@ useEffect(() => {
   // Bir urun API'de kontrol edilirken yeni barkodlar isleme alinmaz.
   // Kamera acik kalmaya devam eder.
   const scanInProgressRef = useRef(false);
-
-// Kamera ayni rejected barkodu arka arkaya okumaya devam ederse
-// ikinci kez API / GA4 eventi olusturma.
-const lastRejectedCameraCodeRef = useRef<string | null>(null);
 
   const totalOurPrice = bundleItems.reduce((total, item) => {
     return total + (item.price * item.quantity);
@@ -526,14 +549,6 @@ const lastRejectedCameraCodeRef = useRef<string | null>(null);
     // Kamera kapanmaz; sadece callback sessizce yok sayilir.
     if (scanInProgressRef.current) return;
 
-    // Kamera ayni rejected barkodu tekrar tekrar goruyorsa yok say.
-    if (source === 'camera') {
-      if (lastRejectedCameraCodeRef.current === code) return;
-
-      // Farkli bir barkod gorulduyse onceki rejected kilidi kalkar.
-      lastRejectedCameraCodeRef.current = null;
-    }
-
     trackEvent('barcode_scanned');
 
 if (typeof window !== 'undefined') {
@@ -607,11 +622,6 @@ if (typeof window !== 'undefined') {
         if (pricing.accepted && pricing.ourPrice) {
           autoAddAcceptedItem(code, sanitizedProduct, sanitizedPricing);
         } else {
-          // Kamera ayni rejected barkodu tekrar gorurse tekrar isleme alma.
-          if (source === 'camera') {
-            lastRejectedCameraCodeRef.current = code;
-          }
-
           // Reddedilen urunler hunide gorunmuyordu - neyin neden reddedildigini
           // gormek icin kategori, rank ve amazon fiyati da gonderiliyor
           trackEvent('item_rejected', {
@@ -630,7 +640,7 @@ if (typeof window !== 'undefined') {
         resultTimerRef.current = setTimeout(() => {
           setAmazonResult(null);
           setScanError("");
-        }, 6000);
+        }, 10000);
       } else {
         const errorMessage = response.data.error || 'Amazon check failed';
       
@@ -660,16 +670,6 @@ setTimeout(() => {
 
       if (axios.isAxiosError(err) && err.response?.data?.error) {
         errorMessage = err.response.data.error;
-      }
-
-      // Kamera ayni bulunamayan barkodu kadrajda tutuyorsa
-      // 404 sonrasi tekrar tekrar API / Keepa sorgusu yapma.
-      if (
-        source === 'camera' &&
-        axios.isAxiosError(err) &&
-        err.response?.status === 404
-      ) {
-        lastRejectedCameraCodeRef.current = code;
       }
 
       trackEvent('item_lookup_error', {
@@ -1070,12 +1070,26 @@ useEffect(() => {
 
             {scanError && !amazonResult && !duplicateConfirm && (
               <div className="absolute bottom-0 left-0 right-0 z-20">
-                <div className="mx-3 mb-4 rounded-2xl shadow-2xl p-6 bg-red-50 border-2 border-red-400">
-                  <div className="flex items-center gap-4">
-                    <AlertCircleIcon size={40} className="text-red-500 flex-shrink-0" />
-                    <div>
-                      <p className="text-base font-semibold text-red-800">We Couldn't Verify This Item</p>
-                      <p className="text-sm text-red-700 mt-1">Please check the barcode and try again.</p>
+                <div className="mx-3 mb-4 rounded-2xl shadow-2xl p-4 bg-red-50 border-2 border-red-400">
+                  <div className="flex items-center gap-3">
+                    <AlertCircleIcon size={30} className="text-red-500 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-base font-semibold text-red-800">
+                        {scanErrorDisplay.title}
+                      </p>
+
+                      <p className="text-sm text-red-700 mt-1">
+                        {scanErrorDisplay.message}
+                      </p>
+
+                      {scanErrorDisplay.showGuide && (
+                        <Link
+                          href="/guides/barcode-not-found"
+                          className="inline-block mt-2 text-sm font-semibold text-blue-600 hover:text-blue-800"
+                        >
+                          What to do when an item isn't found →
+                        </Link>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1384,6 +1398,24 @@ useEffect(() => {
               Enter the full number printed under the main barcode.
             </p>
 
+            <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm">
+  <Link
+    href="/guides/how-to-read-a-barcode"
+    className="font-medium text-blue-600 hover:text-blue-800"
+  >
+    How to enter a barcode
+  </Link>
+
+  <span className="text-gray-300">|</span>
+
+  <Link
+    href="/guides/barcode-not-found"
+    className="font-medium text-blue-600 hover:text-blue-800"
+  >
+    Barcode not found?
+  </Link>
+</div>
+
             <p className="mt-2 text-sm text-gray-500 hidden md:block">
               Tip: Camera barcode scanning is available on mobile phones.
             </p>
@@ -1410,8 +1442,74 @@ useEffect(() => {
                 ))}
               </div>
             </div>
+
+            {scanError && !showScanner && (
+              <div className="relative mb-4 bg-white rounded-xl border-2 border-red-400 p-4 pl-10 shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => setScanError("")}
+                  aria-label="Close error message"
+                  className="absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+                >
+                  <span className="text-lg leading-none">×</span>
+                </button>
+
+                <div className="flex items-center gap-3">
+                  <AlertCircleIcon
+                    size={24}
+                    className="text-red-500 flex-shrink-0"
+                  />
+
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-red-800">
+                      {scanErrorDisplay.title}
+                    </p>
+
+                    <p className="text-sm text-red-700">
+                      {scanErrorDisplay.message}
+                    </p>
+
+                    {scanErrorDisplay.showGuide && (
+                      <Link
+                        href="/guides/barcode-not-found"
+                        className="inline-block mt-1 text-sm font-semibold text-blue-600 hover:text-blue-800"
+                      >
+                        What to do when an item isn't found →
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ---------- RESULT CARD ---------- */}
+            {amazonResult && !duplicateConfirm && !showScanner && (
+              <div className={`mb-4 bg-white rounded-xl border-2 p-4 flex items-center gap-2 shadow-sm ${amazonResult.pricing.accepted ? 'border-green-400' : 'border-red-400'}`}>
+                <div className="w-12 h-16 rounded overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-200">
+                  {amazonResult.product.image ? (
+                    <Image src={amazonResult.product.image} alt={amazonResult.product.title || "Product"} width={48} height={64} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <PackageIcon size={20} className="text-gray-400" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="font-medium text-gray-900 line-clamp-2">{amazonResult.product.title || "Product"}</p>
+                  <span className={`inline-flex items-center gap-1 mt-1 px-3 py-1 rounded-full text-sm font-bold ${amazonResult.pricing.accepted ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
+                    {amazonResult.pricing.accepted
+                      ? `Accepted — $${amazonResult.pricing.ourPrice?.toFixed(2)}`
+                      : 'Not Currently Accepted'}
+                  </span>
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
+
+
+
       </section>
 
       {/* ===================== RESULT + CART + CHECKOUT (acik zemin) ===================== */}
@@ -1420,15 +1518,9 @@ useEffect(() => {
           <div className={`${showCheckout ? 'max-w-6xl' : 'max-w-3xl'} mx-auto px-4 sm:px-6 lg:px-8 transition-all`}>
 
             {/* ---------- ERROR ---------- */}
-            {scanError && !showScanner && (
-              <div className="mb-4 bg-white rounded-xl border-2 border-red-400 p-4 flex items-center gap-3 shadow-sm">
-                <AlertCircleIcon size={24} className="text-red-500 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-red-800">We Couldn't Verify This Item</p>
-                  <p className="text-sm text-red-700">Please check the barcode and try again.</p>
-                </div>
-              </div>
-            )}
+
+
+            {/* ---------- ERROR ---------- */}
 
             {/* ---------- DUPLICATE (manual entry) ---------- */}
             {duplicateConfirm && !showScanner && (
@@ -1449,29 +1541,6 @@ useEffect(() => {
                     </div>
                   </>
                 )}
-              </div>
-            )}
-
-            {/* ---------- RESULT CARD ---------- */}
-            {amazonResult && !duplicateConfirm && !showScanner && (
-              <div className={`mb-4 bg-white rounded-xl border-2 p-4 flex items-center gap-4 shadow-sm ${amazonResult.pricing.accepted ? 'border-green-400' : 'border-red-400'}`}>
-                <div className="w-12 h-16 rounded overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-200">
-                  {amazonResult.product.image ? (
-                    <Image src={amazonResult.product.image} alt={amazonResult.product.title || "Product"} width={48} height={64} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <PackageIcon size={20} className="text-gray-400" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 line-clamp-2">{amazonResult.product.title || "Product"}</p>
-                  <span className={`inline-flex items-center gap-1 mt-1 px-3 py-1 rounded-full text-sm font-bold ${amazonResult.pricing.accepted ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
-                    {amazonResult.pricing.accepted
-                      ? `Accepted — $${amazonResult.pricing.ourPrice?.toFixed(2)}`
-                      : 'Not Currently Accepted'}
-                  </span>
-                </div>
               </div>
             )}
 

@@ -140,6 +140,18 @@ const guideSections = [
         href: '/guides/media-value-by-barcode',
       },
       {
+        title: 'How to Read and Enter a Barcode',
+        description:
+          'Find the main barcode on books, DVDs, CDs, and video games and enter it correctly.',
+        href: '/guides/how-to-read-a-barcode',
+      },
+      {
+        title: 'Barcode Not Found?',
+        description:
+          'Learn another way to identify the exact item when a barcode cannot be found.',
+        href: '/guides/barcode-not-found',
+      },
+      {
         title: 'Decluttr Alternatives',
         description:
           'Explore other ways to sell used physical media.',
