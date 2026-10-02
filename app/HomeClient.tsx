@@ -689,6 +689,53 @@ setTimeout(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bundleItems, clearAmazonResults]);
 
+  // Not Found guide'dan secilen urunu ana barkod alanina getir
+  // ve Get Quote islemini otomatik baslat.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const currentUrl = new URL(window.location.href);
+    const lookupCode = currentUrl.searchParams.get("lookup");
+
+    if (!lookupCode) return;
+
+    // Parametreyi hemen kaldir ki effect tekrar calisirsa
+    // ayni urun ikinci kez sorgulanmasin.
+    currentUrl.searchParams.delete("lookup");
+
+    const cleanUrl =
+      currentUrl.pathname +
+      (currentUrl.searchParams.toString()
+        ? `?${currentUrl.searchParams.toString()}`
+        : "") +
+      currentUrl.hash;
+
+    window.history.replaceState({}, "", cleanUrl);
+
+    // Barkodu once kutuda goster.
+    setIsbnInput(lookupCode);
+
+    // Arama alanina kaydir.
+    window.requestAnimationFrame(() => {
+      barcodeSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+
+      barcodeInputRef.current?.focus();
+    });
+
+    // Kullanici barkodu kisa bir an gordukten sonra
+    // Get Quote otomatik calisir.
+    window.setTimeout(() => {
+      handleBarcodeScanned(lookupCode, "manual");
+    }, 700);
+
+    // Bilerek cleanup yok:
+    // callback dependency degisince timer'in iptal edilmesini istemiyoruz.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleConfirmAddDuplicate = () => {
     if (!duplicateConfirm) return;
     const existing = duplicateConfirm.existingItem;

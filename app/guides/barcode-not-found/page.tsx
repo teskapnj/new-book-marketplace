@@ -1,19 +1,21 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import BarcodeNotFoundSearch from "@/components/BarcodeNotFoundSearch";
 
 const SITE_URL = "https://www.sellbookmedia.com";
 const PAGE_URL = `${SITE_URL}/guides/barcode-not-found`;
 
 export const metadata: Metadata = {
-  title: "Barcode Not Found? Find Your Item Another Way",
+  title: "Barcode Not Found? Search for Your Item",
   description:
-    "Barcode not found? Learn how to find the exact book, DVD, CD, or video game on Amazon and check the item on SellBookMedia.",
+    "Barcode not found? Search SellBookMedia by title to find a book, DVD, Blu-ray, CD, or video game and check the item another way.",
   keywords: [
     "barcode not found",
     "item not found by barcode",
-    "find item by barcode",
-    "find exact item on Amazon",
+    "find item by title",
     "barcode lookup",
+    "DVD barcode not found",
+    "CD barcode not found",
   ],
   alternates: {
     canonical: PAGE_URL,
@@ -25,16 +27,16 @@ export const metadata: Metadata = {
   openGraph: {
     type: "article",
     url: PAGE_URL,
-    title: "Barcode Not Found? Find Your Item Another Way",
+    title: "Barcode Not Found? Search for Your Item",
     description:
-      "Learn what to do when a book, DVD, CD, or video game barcode cannot be found.",
+      "Search SellBookMedia by title when a barcode cannot be found.",
     siteName: "SellBookMedia",
   },
   twitter: {
     card: "summary",
-    title: "Barcode Not Found? Find Your Item Another Way",
+    title: "Barcode Not Found? Search for Your Item",
     description:
-      "Learn what to do when a barcode cannot be found.",
+      "Search SellBookMedia by title when a barcode cannot be found.",
   },
 };
 
@@ -45,12 +47,12 @@ export default function BarcodeNotFoundGuide() {
       {
         "@type": "Article",
         "@id": `${PAGE_URL}#article`,
-        headline: "Barcode Not Found? Find Your Item Another Way",
+        headline: "Barcode Not Found? Search for Your Item",
         description:
-          "Learn what to do when a book, DVD, CD, or video game barcode cannot be found.",
+          "Search SellBookMedia by title when a barcode cannot be found.",
         url: PAGE_URL,
         datePublished: "2026-09-30",
-        dateModified: "2026-09-30",
+        dateModified: "2026-10-02",
         mainEntityOfPage: {
           "@type": "WebPage",
           "@id": PAGE_URL,
@@ -101,7 +103,6 @@ export default function BarcodeNotFoundGuide() {
         }}
       />
 
-      {/* HERO */}
       <header className="bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
         <div className="mx-auto max-w-3xl px-5 pb-12 pt-8 sm:px-8 sm:pb-14 sm:pt-10">
           <Link
@@ -120,171 +121,56 @@ export default function BarcodeNotFoundGuide() {
           </h1>
 
           <p className="mt-4 text-lg leading-relaxed text-blue-100 sm:text-xl">
-            If your barcode is correct but we cannot find the item, you can
-            still locate the exact product another way.
+            Search for your item by title instead.
           </p>
         </div>
       </header>
 
       <main className="mx-auto max-w-3xl px-5 py-10 sm:px-8 sm:py-14">
         <article>
-          {/* QUICK ANSWER */}
           <section className="rounded-2xl border border-blue-200 bg-blue-50 px-6 py-6">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
               Quick answer
             </p>
 
             <h2 className="mt-2 font-serif text-2xl font-bold text-slate-900">
-              Find the exact product on Amazon
+              Search by title
             </h2>
 
             <p className="mt-3 text-[16px] leading-relaxed text-slate-700">
-              Search for the item by its title, author, movie name, artist,
-              game title, or other identifying information. Make sure you
-              select the exact edition or product.
+              If the main barcode cannot be found, enter the title below.
+              We&apos;ll look for a relevant book, DVD, Blu-ray, 4K movie,
+              CD, or video game. For better results, include the format,
+              edition, or platform — for example: <strong>The Ringer DVD</strong>,{" "}
+              <strong>Pink Floyd Dark Side of the Moon CD</strong>,{" "}
+              <strong>Grand Theft Auto San Andreas PS2</strong>, or{" "}
+              <strong>The Hobbit hardcover</strong>. If we can&apos;t find a
+              relevant match, unfortunately we won&apos;t be able to make an
+              offer for that item at this time.
             </p>
           </section>
 
-          {/* QUICK TIP */}
-          <section className="mt-5 rounded-2xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
-              Quick tip
-            </p>
+          <BarcodeNotFoundSearch />
 
-            <p className="mt-2 text-[15px] leading-relaxed text-slate-700">
-              Set not-found items aside and finish scanning the rest first.
-              You can come back to them at the end.
-            </p>
-          </section>
-
-          {/* STEPS */}
-          <section className="mt-8 space-y-5">
-            {/* STEP 1 */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 font-bold text-white">
-                  1
-                </div>
-
-                <div>
-                  <h2 className="font-serif text-2xl font-bold text-slate-900">
-                    Find the exact item
-                  </h2>
-
-                  <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
-                    Search Amazon using the title or other information printed
-                    on the item. For books, check the author and edition. For
-                    movies, CDs, and games, check the exact title and version.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* STEP 2 */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 font-bold text-white">
-                  2
-                </div>
-
-                <div>
-                  <h2 className="font-serif text-2xl font-bold text-slate-900">
-                    Make sure it is the same product
-                  </h2>
-
-                  <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
-                    Check the cover, format, edition, publisher, release
-                    version, or other details. Different editions can have
-                    different product identifiers.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* STEP 3 */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 font-bold text-white">
-                  3
-                </div>
-
-                <div className="w-full">
-                  <h2 className="font-serif text-2xl font-bold text-slate-900">
-                    Find the product ID
-                  </h2>
-
-                  <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
-                    Amazon gives each product a 10-character identifier called an{" "}
-                    <strong>ASIN</strong>. You can find it on the Amazon
-                    product page, usually in the Product Information section.
-                  </p>
-
-                  <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
-                      Example ASIN
-                    </p>
-
-                    <p className="mt-1 font-mono text-base font-bold tracking-wide text-slate-900">
-                      B08N5KWB9H
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* STEP 4 */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 font-bold text-white">
-                  4
-                </div>
-
-                <div>
-                  <h2 className="font-serif text-2xl font-bold text-slate-900">
-                    Enter it in SellBookMedia
-                  </h2>
-
-                  <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
-                    Copy the ASIN and enter it in the{" "}
-                    <strong>SellBookMedia barcode field</strong>, then check
-                    the item again.
-                  </p>
-
-                  <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      SellBookMedia barcode field
-                    </p>
-
-                    <p className="mt-1 font-mono text-sm font-semibold text-slate-800">
-                      B08N5KWB9H
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* IMPORTANT */}
           <section className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 px-6 py-6">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
               Important
             </p>
 
             <p className="mt-2 text-[16px] leading-relaxed text-slate-700">
-              If the barcode is from a different edition, region, or product
-              version, make sure you find the exact matching item before
-              checking it again.
+              Check the cover, title, format, and edition before continuing.
+              If the result is not your exact item, search again using a more
+              specific title, author, artist, or edition.
             </p>
           </section>
 
-          {/* OTHER GUIDE */}
           <section className="mt-8 rounded-2xl border border-slate-200 bg-white px-6 py-6">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
               Barcode help
             </p>
 
             <h2 className="mt-2 font-serif text-2xl font-bold text-slate-900">
-              Not sure how to enter the barcode?
+              Not sure which barcode to scan?
             </h2>
 
             <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
@@ -300,14 +186,13 @@ export default function BarcodeNotFoundGuide() {
             </Link>
           </section>
 
-          {/* CTA */}
           <section className="mt-8 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 px-6 py-8 text-center">
             <h2 className="font-serif text-2xl font-bold text-white">
-              Ready to check your item?
+              Want to try the barcode again?
             </h2>
 
             <p className="mx-auto mt-2 max-w-md text-[15px] leading-relaxed text-blue-100">
-              Return to SellBookMedia and try your item again.
+              Return to SellBookMedia and enter or scan the main barcode.
             </p>
 
             <Link
