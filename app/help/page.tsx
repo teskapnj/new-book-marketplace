@@ -29,7 +29,7 @@ const GROUPS: Group[] = [
       },
       {
         q: "What can I scan?",
-        a: "The ISBN on a book, the UPC on a CD, DVD, Blu-ray, 4K disc, or game. Amazon ASINs work too. If a barcode is damaged, type the number in instead.",
+        a: "The ISBN on a book, or the UPC on a CD, DVD, Blu-ray, 4K disc, or game. If a barcode is damaged, type the number in instead.",
       },
       {
         q: "What do you buy?",

@@ -195,7 +195,7 @@ export default function SellerGuidePage() {
 
         {/* ---------- ADIM 1 ---------- */}
         <section id="scan" className="mb-16 scroll-mt-8">
-          <StepHeading n="01" title="Scan and add items" blurb="Three ways to identify an item" />
+          <StepHeading n="01" title="Scan and add items" blurb="Two ways to identify an item" />
 
           <div className="mt-6 grid gap-4 md:grid-cols-2 md:items-start">
             <div className="space-y-3">
@@ -205,9 +205,6 @@ export default function SellerGuidePage() {
               </Card>
               <Card title="Type it in">
                 Enter the barcode number by hand. Useful on desktop, or when a barcode is damaged.
-              </Card>
-              <Card title="Amazon ASIN">
-                If you have the ASIN, that works too.
               </Card>
             </div>
 
