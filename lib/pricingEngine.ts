@@ -148,12 +148,12 @@ function calculateBookPrice(usedPrice: number, salesRank: number): PricingResult
     };
   }
 
-  if (!usedPrice || usedPrice < 15) {
+  if (!usedPrice || usedPrice < 10) {
     return {
       accepted: false,
       reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
       category: 'books',
-      priceRange: usedPrice > 0 ? `Lowest used $${usedPrice} (< $15)` : "No used price"
+      priceRange: usedPrice > 0 ? `Lowest used $${usedPrice} (< $10)` : "No used price"
     };
   }
 
@@ -326,32 +326,20 @@ function calculateDVDPrice(price: number, salesRank: number): PricingResult {
   return { ...result, category: 'dvds' };
 }
 
-function usesExistingGamePricing(gamePlatform: string): boolean {
-  const platform = (gamePlatform || '').toLowerCase();
-
-  // SADECE bu 6 platform mevcut oyun motorunda kalır.
-  // Wii U özellikle Wii sayılmaz.
-  if (platform.includes('wii u')) return false;
-
-  return (
-    /\bps5\b|playstation\s*5/.test(platform) ||
-    /\bps4\b|playstation\s*4/.test(platform) ||
-    /\bps3\b|playstation\s*3/.test(platform) ||
-    /\bps2\b|playstation\s*2/.test(platform) ||
-    /\bps1\b|playstation\s*1/.test(platform) ||
-    // Keepa eski PS1 kategorisini yalnızca "PlayStation" diye döndürebilir.
-    platform.split('>').some((part) => part.trim() === 'playstation') ||
-    platform.split('>').some((part) => part.trim() === 'wii')
-  );
-}
-
 function calculateGamePrice(
   gameNewPrice: number,
   gameUsedPrice: number,
-  salesRank: number,
-  gamePlatform: string
+  salesRank: number
 ): PricingResult {
-  // GAME: sadece rank 100k ve altı
+  // TUM OYUNLAR:
+  // 1) USED varsa USED kullanilir.
+  // 2) USED yoksa lowest NEW kullanilir.
+  // 3) USED ve NEW ikisi de yoksa $3 teklif edilir.
+  // Rank maksimum 100k.
+  // $15-$30 -> %5
+  // $30 ustu -> %10
+  // Maximum offer -> $50
+
   if (salesRank > 100000) {
     return {
       accepted: false,
@@ -361,93 +349,68 @@ function calculateGamePrice(
     };
   }
 
-  const hasGameUsedPrice = gameUsedPrice > 0;
-  const hasGameNewPrice = gameNewPrice > 0;
-  const keepExistingPricing = usesExistingGamePricing(gamePlatform);
+  const hasUsedPrice = gameUsedPrice > 0;
+  const hasNewPrice = gameNewPrice > 0;
 
-  // PS1, PS2, Wii, PS3, PS4, PS5 DISINDAKI TUM OYUNLAR:
-  // NEW tamamen yok sayılır. Yalnızca USED kullanılır.
-  if (!keepExistingPricing) {
-    if (!hasGameUsedPrice || gameUsedPrice < 20) {
+  // USED varsa her zaman USED kullan
+  if (hasUsedPrice) {
+    if (gameUsedPrice < 15) {
       return {
         accepted: false,
         reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
         category: 'games',
-        priceRange: hasGameUsedPrice
-          ? `Game used $${gameUsedPrice} (< $20)`
-          : "No used game price",
+        priceRange: `Game used $${gameUsedPrice} (< $15)`,
         rankRange: "≤ 100k"
       };
     }
 
+    const percentage = gameUsedPrice <= 30 ? 0.05 : 0.10;
+
     return {
       accepted: true,
       ourPrice: Math.min(
-        Math.round(gameUsedPrice * 0.10 * 100) / 100,
+        Math.round(gameUsedPrice * percentage * 100) / 100,
         50
       ),
       category: 'games',
-      priceRange: `Game used $${gameUsedPrice} (10%)`,
+      priceRange: `Game used $${gameUsedPrice} (${Math.round(percentage * 100)}%)`,
       rankRange: "≤ 100k"
     };
   }
 
-  // PS1, PS2, Wii, PS3, PS4, PS5: MEVCUT oyun motoru AYNEN korunur.
-  if (hasGameUsedPrice && gameUsedPrice >= 40) {
+  // USED yoksa NEW kullan
+  if (hasNewPrice) {
+    if (gameNewPrice < 15) {
+      return {
+        accepted: false,
+        reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
+        category: 'games',
+        priceRange: `Game new $${gameNewPrice} (< $15)`,
+        rankRange: "≤ 100k"
+      };
+    }
+
+    const percentage = gameNewPrice <= 30 ? 0.05 : 0.10;
+
     return {
       accepted: true,
       ourPrice: Math.min(
-        Math.round(gameUsedPrice * 0.10 * 100) / 100,
+        Math.round(gameNewPrice * percentage * 100) / 100,
         50
       ),
       category: 'games',
-      priceRange: `Game used $${gameUsedPrice}`,
+      priceRange: `Game new $${gameNewPrice} (${Math.round(percentage * 100)}%)`,
       rankRange: "≤ 100k"
     };
   }
 
-  if (hasGameUsedPrice && gameUsedPrice < 40) {
-    if (hasGameNewPrice) {
-      const gameResult = calculateCDPrice(gameNewPrice, salesRank);
-
-      return {
-        ...gameResult,
-        category: 'games'
-      };
-    }
-
-    return {
-      accepted: true,
-      ourPrice: 1.5,
-      category: 'games',
-      priceRange: "Game used under $40, no new price",
-      rankRange: "≤ 100k"
-    };
-  }
-
-  if (!hasGameUsedPrice) {
-    if (hasGameNewPrice) {
-      const gameResult = calculateCDPrice(gameNewPrice, salesRank);
-
-      return {
-        ...gameResult,
-        category: 'games'
-      };
-    }
-
-    return {
-      accepted: true,
-      ourPrice: 5,
-      category: 'games',
-      priceRange: "Game has no used or new price",
-      rankRange: "≤ 100k"
-    };
-  }
-
+  // Hic fiyat yok
   return {
-    accepted: false,
-    reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
-    category: 'games'
+    accepted: true,
+    ourPrice: 3,
+    category: 'games',
+    priceRange: "No used or new price",
+    rankRange: "≤ 100k"
   };
 }
 
@@ -616,8 +579,7 @@ if (category === 'games') {
   return calculateGamePrice(
     product.gameNewPrice || 0,
     product.gameUsedPrice || 0,
-    product.sales_rank,
-    product.gamePlatform || ''
+    product.sales_rank
   );
 }
 
