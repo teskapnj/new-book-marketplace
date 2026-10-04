@@ -955,9 +955,8 @@ function isRentalMovie(product: any): boolean {
     /\b(?:rental version|rental edition|rental copy|rental exclusive|rental only|former rental|ex[-\s]?rental)\b/i;
 
   return (
+    /\brental\b/i.test(titleText) ||
     /\brental\b/i.test(structuredRentalText) ||
-    /\(\s*rental\s*\)|\[\s*rental\s*\]/i.test(titleText) ||
-    explicitRentalPattern.test(titleText) ||
     explicitRentalPattern.test(descriptiveText)
   );
 }
