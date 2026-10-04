@@ -1414,6 +1414,7 @@ useEffect(() => {
                 ref={barcodeInputRef}
                 type="text"
                 value={isbnInput}
+                maxLength={20}
                 onChange={(e) => setIsbnInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && isbnInput.trim()) {
