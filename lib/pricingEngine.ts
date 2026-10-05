@@ -550,7 +550,9 @@ export function calculateOurPrice(product: AmazonProduct): PricingResult {
 // Fiziksel film oldugu belli ise DVD/Blu-ray/4K motoruna yonlendir.
 if (
   category === 'unknown' &&
-  (product.type || '').toUpperCase() === 'PHYSICAL_MOVIE'
+  ['PHYSICAL_MOVIE', 'PHYSICAL_TV_SERIES'].includes(
+    (product.type || '').toUpperCase()
+  )
 ) {
   category = 'dvds';
 }

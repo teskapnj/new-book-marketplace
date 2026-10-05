@@ -562,7 +562,7 @@ export function useBarcodeScanner(options: BarcodeScannerOptions): BarcodeScanne
             const now = Date.now();
             const isSameCodeTooSoon =
               lastScanCodeRef.current === scannedCode &&
-              (now - lastScanTimeRef.current) < 2500; // aynı barkod 2.5 sn içinde tekrar sayılmaz
+              (now - lastScanTimeRef.current) < 3000; // aynı barkod 3 sn içinde tekrar sayılmaz
 
             if (!isSameCodeTooSoon && mountedRef.current) {
 
