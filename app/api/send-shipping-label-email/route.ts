@@ -183,16 +183,35 @@ export async function POST(request: NextRequest) {
   : "Your shipping label is ready";
 
 const emailInstruction = isQrCode
-  ? "Pack and seal your box before going to USPS. Show this QR code on your phone at a participating USPS location and they can print the shipping label for you."
-  : `Your label has been created. Print it, attach it to the package, and hand the sealed box to ${carrierUpper}.`;
+  ? "Your USPS QR code is ready. Follow the simple steps below."
+  : "Your prepaid shipping label is ready. Follow the simple steps below.";
 
-const emailActionText = isQrCode
-  ? "VIEW USPS QR CODE"
-  : "OPEN & PRINT SHIPPING LABEL";
+const emailStepsHtml = isQrCode
+  ? `
+    <div style="font-size:16px;font-weight:800;color:#172033;margin-bottom:10px;">What to do:</div>
+    <div style="font-size:15px;line-height:1.8;color:#344054;text-align:left;">
+      <strong>1.</strong> Click the BLUE button below.<br>
+      <strong>2.</strong> Open the QR code on your phone.<br>
+      <strong>3.</strong> Take your sealed box to USPS.<br>
+      <strong>4.</strong> Show the QR code to the USPS employee. They will print the shipping label for you.
+    </div>
+    <div style="margin-top:12px;padding:10px;background:#fef2f2;border:1px solid #fecaca;font-size:14px;font-weight:800;color:#991b1b;">
+      You do NOT need to print the QR code.
+    </div>
+  `
+  : `
+    <div style="font-size:16px;font-weight:800;color:#172033;margin-bottom:10px;">What to do:</div>
+    <div style="font-size:15px;line-height:1.8;color:#344054;text-align:left;">
+      <strong>1.</strong> Click the BLUE button below.<br>
+      <strong>2.</strong> Open and print the shipping label.<br>
+      <strong>3.</strong> Tape the printed label securely to your box.<br>
+      <strong>4.</strong> Take your sealed box to USPS.
+    </div>
+  `;
 
 const attachmentNote = isQrCode
-  ? "The QR code image is also attached."
-  : "The PDF label is also attached.";
+  ? "Can't open the button? The same QR code image is attached to this email. Open the attachment on your phone and show it at USPS."
+  : "Can't open the button? The same shipping label PDF is attached to this email. Open the attachment and print it.";
 
     const emailHtml = `<!DOCTYPE html>
 <html lang="en">
@@ -260,6 +279,37 @@ const attachmentNote = isQrCode
               ${emailInstruction}
               </p>
 
+              <!-- Primary shipping label action -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:22px;background:#fff7ed;border:2px solid #f59e0b;">
+                <tr>
+                  <td style="padding:20px;text-align:center;">
+                    <div style="font-size:15px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:#92400e;margin-bottom:14px;">
+                      ${isQrCode ? "YOUR USPS QR CODE IS READY" : "YOUR SHIPPING LABEL IS READY"}
+                    </div>
+
+                    ${emailStepsHtml}
+
+                    <div style="margin:18px 0 10px;font-size:16px;font-weight:900;color:#0b3b75;">
+                      ↓ CLICK THE BLUE BUTTON BELOW ↓
+                    </div>
+
+                    <a
+                      href="${shippingLabelUrl}"
+                      target="_blank"
+                      style="display:block;background:#0b3b75;color:#ffffff;padding:20px 20px;font-weight:900;font-size:19px;line-height:1.3;text-decoration:none;border:3px solid #062b56;"
+                    >
+                      ${isQrCode ? "OPEN MY USPS QR CODE" : "OPEN & PRINT MY USPS LABEL"}
+                    </a>
+
+                    ${
+                      labelAttachment
+                        ? `<div style="margin-top:14px;padding:12px;background:#ffffff;border:1px solid #fdba74;font-size:14px;font-weight:700;line-height:1.6;color:#7c2d12;">${attachmentNote}</div>`
+                        : ""
+                    }
+                  </td>
+                </tr>
+              </table>
+
               <!-- Postal / Utility shipment block -->
               <div style="margin-top:26px;border:2px solid #0b3b75;">
                 <div style="padding:16px 18px;background:#eef5fb;border-bottom:1px solid #b8c9df;">
@@ -288,20 +338,6 @@ const attachmentNote = isQrCode
                   </div>
                 </div>
               </div>
-
-              <a
-                href="${shippingLabelUrl}"
-                target="_blank"
-                style="display:block;margin-top:22px;text-align:center;background:#0b3b75;color:#ffffff;padding:15px 18px;font-weight:800;font-size:15px;text-decoration:none;"
-              >
-              ${emailActionText}
-              </a>
-
-              ${
-                labelAttachment
-                  ? `<div style="text-align:center;margin-top:9px;font-size:13px;color:#667085;">${attachmentNote}</div>`
-                  : ""
-              }
 
               <!-- Package requirements intentionally removed -->
 
@@ -342,14 +378,31 @@ Order No: ${shortId}
 
 ${emailInstruction}
 
+${isQrCode
+  ? `WHAT TO DO:
+1. Click the link below.
+2. Open the QR code on your phone.
+3. Take your sealed box to USPS.
+4. Show the QR code to the USPS employee.
+
+YOU DO NOT NEED TO PRINT THE QR CODE.
+
+OPEN MY USPS QR CODE:
+${shippingLabelUrl}`
+  : `WHAT TO DO:
+1. Click the link below.
+2. Open and print the shipping label.
+3. Tape the printed label securely to your box.
+4. Take your sealed box to USPS.
+
+OPEN & PRINT MY USPS LABEL:
+${shippingLabelUrl}`}
+
+${labelAttachment ? `${attachmentNote}\n` : ""}
 SHIPPING
 Carrier: ${carrierUpper}
 Tracking number: ${trackingNumber}
 ${totalItems ? `Items: ${totalItems}\n` : ""}
-${isQrCode ? "VIEW USPS QR CODE" : "OPEN & PRINT SHIPPING LABEL"}
-${shippingLabelUrl}
-
-${labelAttachment ? `${attachmentNote}\n` : ""}
 AFTER DROP-OFF
 Once ${carrierUpper} scans your package, tracking will begin. We'll email you again after your shipment arrives and is checked in.
 
