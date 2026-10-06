@@ -795,8 +795,12 @@ export default function AdminListingsPage() {
       
       // Get seller info for email
       const listingDoc = await getDoc(listingRef);
-      const sellerEmail = listingDoc.data()?.vendorEmail;
-      const paypalAccount = listingDoc.data()?.shippingInfo?.paypalAccount || "";
+      const listingData = listingDoc.data();
+      const sellerEmail = listingData?.vendorEmail;
+      const paypalAccount = listingData?.shippingInfo?.paypalAccount || "";
+      const originalOffer = Number(
+        listingData?.totalValue ?? selectedListing.totalValue ?? amount
+      );
       const currentUser = auth.currentUser;
 
 if (!currentUser) {
@@ -821,7 +825,8 @@ const idToken = await currentUser.getIdToken();
             listingId: listingId,
             sellerName: selectedListing.vendorName,
             paypalAccount: paypalAccount,
-            notes: paymentNotes
+            notes: paymentNotes,
+            originalOffer
           }),
         });
         

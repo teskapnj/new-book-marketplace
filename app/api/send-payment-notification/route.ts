@@ -46,16 +46,113 @@ export async function POST(request: NextRequest) {
       sellerName,
       paypalAccount,
       paypalEmail,
-      notes
+      notes,
+      originalOffer
     } = body;
 
-    // Admin notundaki satır atlamalarini maile <br> olarak yansit (kabul edilmeyen urunler alt alta gorunsun)
-    const notesHtml = notes
-      ? String(notes)
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/\r?\n/g, '<br>')
+    const escapeHtml = (value: unknown) =>
+      String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+    const rawNotes = String(notes || '').trim();
+
+    const notesHtml = rawNotes
+      ? escapeHtml(rawNotes).replace(/\r?\n/g, '<br>')
+      : '';
+
+    // Example:
+    // 024543665915(rental),024543665915(bootleg)
+    // Duplicate UPCs are intentionally preserved.
+    const rejectedItems = Array.from(
+      rawNotes.matchAll(/([0-9]{8,14}|[0-9]{9}[Xx])\s*\(\s*([^)]+?)\s*\)/g)
+    ).map((match) => ({
+      code: match[1],
+      reason:
+        match[2].charAt(0).toUpperCase() + match[2].slice(1)
+    }));
+
+    const finalPaymentAmount = Number(paymentAmount);
+
+    const noteOriginalOffer = rawNotes.match(
+      /Original offer:\s*\$?([0-9]+(?:\.[0-9]{1,2})?)/i
+    );
+
+    const suppliedOriginalOffer = Number(originalOffer);
+    const parsedNoteOriginalOffer = noteOriginalOffer
+      ? Number(noteOriginalOffer[1])
+      : NaN;
+
+    const originalOfferAmount = Number.isFinite(suppliedOriginalOffer)
+      ? suppliedOriginalOffer
+      : Number.isFinite(parsedNoteOriginalOffer)
+        ? parsedNoteOriginalOffer
+        : finalPaymentAmount;
+
+    const deductionAmount = Math.max(
+      originalOfferAmount - finalPaymentAmount,
+      0
+    );
+
+    const hasAdjustment =
+      rejectedItems.length > 0 || deductionAmount > 0.004;
+
+    const adjustmentCardHtml = hasAdjustment
+      ? `
+          <tr>
+            <td style="padding:8px 40px 16px 40px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fff7ed;border:2px solid #f59e0b;border-radius:12px;">
+                <tr>
+                  <td style="padding:22px 24px;">
+                    <div style="font-size:15px;font-weight:900;color:#92400e;text-transform:uppercase;margin-bottom:16px;">
+                      Payment Adjustment
+                    </div>
+
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #fed7aa;">
+                      <tr>
+                        <td style="padding:10px 12px;border-bottom:1px solid #ffedd5;color:#64748b;">Original Offer</td>
+                        <td style="padding:10px 12px;border-bottom:1px solid #ffedd5;text-align:right;font-weight:700;">$${originalOfferAmount.toFixed(2)}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:10px 12px;border-bottom:1px solid #ffedd5;color:#64748b;">Deduction</td>
+                        <td style="padding:10px 12px;border-bottom:1px solid #ffedd5;text-align:right;font-weight:800;color:#b91c1c;">-$${deductionAmount.toFixed(2)}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:12px;font-weight:800;">Final Payment</td>
+                        <td style="padding:12px;text-align:right;font-size:20px;font-weight:900;color:#059669;">$${finalPaymentAmount.toFixed(2)}</td>
+                      </tr>
+                    </table>
+
+                    ${
+                      rejectedItems.length
+                        ? `
+                    <div style="margin-top:18px;font-size:13px;font-weight:800;color:#991b1b;text-transform:uppercase;">
+                      Items Not Accepted
+                    </div>
+
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;background:#ffffff;border:1px solid #fecaca;">
+                      ${rejectedItems
+                        .map(
+                          (item) => `
+                      <tr>
+                        <td style="padding:10px;border-bottom:1px solid #fee2e2;font-family:monospace;font-size:14px;">
+                          ${escapeHtml(item.code)}
+                        </td>
+                        <td style="padding:10px;border-bottom:1px solid #fee2e2;text-align:right;font-size:14px;font-weight:700;color:#991b1b;">
+                          ${escapeHtml(item.reason)}
+                        </td>
+                      </tr>`
+                        )
+                        .join('')}
+                    </table>`
+                        : ''
+                    }
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>`
       : '';
 
     const rawPaymentAccount = String(paypalAccount || paypalEmail || '').trim();
@@ -134,6 +231,16 @@ export async function POST(request: NextRequest) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light">
+  <meta name="format-detection" content="telephone=no">
+  <style>
+    a[x-apple-data-detectors],
+    a[href^="tel:"] {
+      color: inherit !important;
+      text-decoration: none !important;
+      pointer-events: none !important;
+      cursor: text !important;
+    }
+  </style>
   <title>Payment Sent</title>
 </head>
 <body style="margin:0; padding:0; background-color:#f1f5f9; -webkit-font-smoothing:antialiased;">
@@ -213,9 +320,9 @@ export async function POST(request: NextRequest) {
                         <td style="padding:10px 0; font-size:14px; color:#0f172a; font-weight:600; text-align:right; font-family:monospace;">${listingId}</td>
                       </tr>
                     </table>
-                    ${notesHtml ? `
+                    ${!hasAdjustment && notesHtml ? `
                     <div style="margin-top:16px; padding-top:16px; border-top:1px solid #e2e8f0;">
-                      <div style="font-size:13px; font-weight:600; color:#64748b; margin-bottom:6px;">Adjustments &amp; Notes</div>
+                      <div style="font-size:13px; font-weight:600; color:#64748b; margin-bottom:6px;">Notes</div>
                       <div style="font-size:14px; color:#334155; line-height:1.6;">${notesHtml}</div>
                     </div>` : ''}
                   </td>
@@ -223,6 +330,8 @@ export async function POST(request: NextRequest) {
               </table>
             </td>
           </tr>
+
+${adjustmentCardHtml}
 
           <!-- What's next -->
           <tr>
