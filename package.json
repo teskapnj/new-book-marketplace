@@ -15,6 +15,7 @@
     "@googlemaps/js-api-loader": "^1.16.10",
     "@types/cheerio": "^0.22.35",
     "@vercel/analytics": "^1.5.0",
+    "@vercel/global-config": "^1.5.1",
     "@vercel/speed-insights": "^1.2.0",
     "@zxing/library": "^0.21.3",
     "axios": "^1.11.0",
