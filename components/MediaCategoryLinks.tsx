@@ -78,6 +78,14 @@ export default function MediaCategoryLinks({
             </Link>
           ))}
         </div>
+        <div className="mt-8 text-center">
+          <Link
+            href="/items-we-buy"
+            className="font-semibold text-blue-600 hover:text-blue-700"
+          >
+            See Recently Accepted Items →
+          </Link>
+        </div>
       </div>
     </section>
   );

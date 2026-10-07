@@ -2256,6 +2256,15 @@ useEffect(() => {
     Sell Video Games for Cash
   </Link>
 </li>
+  <li>
+    <Link
+      href="/items-we-buy"
+      className="text-gray-400 hover:text-white transition-colors"
+    >
+      Recently Accepted Items
+    </Link>
+  </li>
+
 
   <li>
     <Link

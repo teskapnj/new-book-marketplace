@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse, after } from 'next/server';
 import axios from 'axios';
 import { productCache } from '@/lib/productCache';
+import { recordRecentAcceptedItem } from '@/lib/recentAcceptedItems';
 
 let calculateOurPrice: any;
 try {
@@ -961,6 +962,24 @@ function isRentalMovie(product: any): boolean {
   );
 }
 
+function hasWweIdentity(product: any): boolean {
+  const text = [
+    product?.title,
+    product?.brand,
+    product?.manufacturer,
+    product?.publisher,
+    product?.label,
+    product?.studio,
+  ]
+    .map(flattenKeepaText)
+    .join(' ');
+
+  return (
+    /\bWWE\b/i.test(text) ||
+    /\bWorld Wrestling Entertainment\b/i.test(text)
+  );
+}
+
 function getEuropeanMovieBarcodeSignal(
   code: string,
   isDvdOrBluRay: boolean
@@ -1170,6 +1189,10 @@ function detectMovieRestriction(product: any, barcode: string): string | null {
   ]
     .map(flattenKeepaText)
     .join(' ');
+
+  if (hasWweIdentity(product)) {
+    return 'We do not accept WWE DVDs/Blu-rays.';
+  }
 
   if (isRentalMovie(product)) {
     return 'We do not accept rental-version DVDs/Blu-rays.';
@@ -1505,6 +1528,34 @@ export async function POST(request: NextRequest) {
       const cachedPricing: any = cachedResult.pricing;
       const cachedMessage = cachedResult.message;
 
+      // WWE DVD/Blu-ray artik kabul edilmiyor.
+      // Eski cache ACCEPTED olsa bile response seviyesinde reddet.
+      if (
+        cachedPricing?.category === 'dvds' &&
+        hasWweIdentity(cachedProduct)
+      ) {
+        const wwePricing = {
+          ...cachedPricing,
+          accepted: false,
+          ourPrice: 0,
+          reason: 'We do not accept WWE DVDs/Blu-rays.'
+        };
+
+        console.log(
+          `🚫 WWE MOVIE REJECTED: ${cleanCode} | CACHE HIT`
+        );
+
+        return NextResponse.json({
+          success: true,
+          data: {
+            product: cachedProduct,
+            pricing: wwePricing,
+            message: 'We do not accept WWE DVDs/Blu-rays.',
+            debug: { ...cachedResult.debug, cacheHit: true }
+          }
+        } as ApiResponse);
+      }
+
       // Cache source-neutral kalir. Manual ISBN isteginde Books disi
       // urunu sadece bu response icin reddet.
       if (
@@ -1532,6 +1583,16 @@ export async function POST(request: NextRequest) {
             debug: { ...cachedResult.debug, cacheHit: true }
           }
         } as ApiResponse);
+      }
+
+      if (cachedPricing?.accepted) {
+        after(() =>
+          recordRecentAcceptedItem(
+            cleanCode,
+            cachedProduct,
+            cachedPricing
+          )
+        );
       }
 
       const cachedMediaZoneTag = getMediaBarcodeZoneTag(
@@ -2497,6 +2558,16 @@ export async function POST(request: NextRequest) {
         console.error('Cache save error:', err);
       }
     });
+
+    if (responsePricingResult.accepted) {
+      after(() =>
+        recordRecentAcceptedItem(
+          cleanCode,
+          product,
+          responsePricingResult
+        )
+      );
+    }
 
     const speedLabel = totalTime < 1000 ? 'ULTRA FAST' : totalTime < 2000 ? 'FAST' : 'NORMAL';
     console.log(`[${speedLabel}] ${totalTime}ms - Keepa lookup (${effectiveLookupType})`);

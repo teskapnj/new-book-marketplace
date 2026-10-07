@@ -10,6 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/sell-cds-for-cash` },
     { url: `${SITE_URL}/sell-dvds-for-cash` },
     { url: `${SITE_URL}/sell-video-games-for-cash` },
+    { url: `${SITE_URL}/items-we-buy` },
 
     // Guides hub
     { url: `${SITE_URL}/guides` },

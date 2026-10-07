@@ -809,6 +809,15 @@ export default function SellVideoGamesForCashPage() {
                 <li><Link href="/sell-dvds-for-cash" className="text-gray-400 hover:text-white transition-colors">Sell DVDs, Blu-rays &amp; 4K</Link></li>
                 <li><Link href="/sell-cds-for-cash" className="text-gray-400 hover:text-white transition-colors">Sell CDs for Cash</Link></li>
                 <li><Link href="/sell-video-games-for-cash" className="text-gray-400 hover:text-white transition-colors">Sell Video Games for Cash</Link></li>
+  <li>
+    <Link
+      href="/items-we-buy"
+      className="text-gray-400 hover:text-white transition-colors"
+    >
+      Recently Accepted Items
+    </Link>
+  </li>
+
                 <li><Link href="/condition-guidelines" className="text-gray-400 hover:text-white transition-colors">Condition Guidelines</Link></li>
                 <li><Link href="/seller-guide" className="text-gray-400 hover:text-white transition-colors">Seller Guide</Link></li>
               </ul>
