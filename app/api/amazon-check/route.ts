@@ -78,7 +78,7 @@ const KEEPA_DOMAIN = 1;
 const KEEPA_UPDATE_HOURS = 24;
 
 const MANUAL_ISBN_MEDIA_MESSAGE =
-  'For DVDs, Blu-rays and CDs, please scan or enter the main barcode (UPC/EAN).';
+  'For DVDs and Blu-rays, please scan or enter the main barcode (UPC/EAN).';
 
 // ==================== KOD TİPİ ALGILAMA (aynı, değişmedi) ====================
 
@@ -1560,7 +1560,7 @@ export async function POST(request: NextRequest) {
       // urunu sadece bu response icin reddet.
       if (
         isManualValidIsbnRequest &&
-        cachedPricing?.category !== 'books'
+        cachedPricing?.category === 'dvds'
       ) {
         const manualPricing = {
           ...cachedPricing,
@@ -2475,7 +2475,7 @@ export async function POST(request: NextRequest) {
     // yalnizca kullaniciya donen sonuc reddedilir.
     const manualIsbnMediaRejected =
       isManualValidIsbnRequest &&
-      pricingResult.category !== 'books';
+      pricingResult.category === 'dvds';
 
     const responsePricingResult: PricingResult =
       manualIsbnMediaRejected
