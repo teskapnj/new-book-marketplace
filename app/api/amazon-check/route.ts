@@ -926,12 +926,12 @@ function flattenKeepaText(value: any): string {
 function isBooksOnCdAudioProduct(product: any): boolean {
   const normalizedBinding = String(product?.binding || '')
     .trim()
-    .replace(/[\\s_-]+/g, '')
+    .replace(/[\s_-]+/g, '')
     .toLowerCase();
 
   const hasAudioCdFormat =
     normalizedBinding === 'audiocd' ||
-    /\\baudio[\\s_-]*cd\\b(?![\\s_-]*rom)/i.test(
+    /\baudio[\s_-]*cd\b(?![\s_-]*rom)/i.test(
       flattenKeepaText(product?.format)
     );
 
