@@ -30,6 +30,7 @@ interface AmazonProduct {
   // BOOKS: Keepa lowest USED fiyatı. NEW olsa bile ayrıca taşınır.
   bookUsedPrice?: number;
   bookRuleVersion?: number;
+  gameRuleVersion?: number;
   // GAME için Keepa NEW ve USED fiyatları ayrı tutulur
   gameNewPrice?: number;
   gameUsedPrice?: number;
@@ -94,6 +95,7 @@ const WWE_OFFER = 1.15;
 const WWE_RANK_LIMIT = 100_000;
 const WWE_RULE_VERSION = 3;
 const BOOK_RULE_VERSION = 2;
+const GAME_RULE_VERSION = 1;
 
 // ==================== KOD TİPİ ALGILAMA (aynı, değişmedi) ====================
 
@@ -1649,6 +1651,18 @@ export async function POST(request: NextRequest) {
       cachedResult = null;
     }
 
+    // Oyun kurallari degistiginde yalnizca eski oyun cache'lerini yenile.
+    if (
+      cachedResult &&
+      !('notFound' in cachedResult) &&
+      cachedResult.pricing?.category === 'games' &&
+      (cachedResult.product as any)?.gameRuleVersion !== GAME_RULE_VERSION
+    ) {
+      console.log(`GAME RULE REFRESH: ${cleanCode} | old cache ignored`);
+      await productCache.removeFromCache(cacheIdentifier);
+      cachedResult = null;
+    }
+
     if (cachedResult) {
       // Keepa daha once bu barkod icin urun bulamadiysa 24 saat boyunca
       // yeniden Keepa'ya gitmeden ayni 404 cevabini dondur.
@@ -2624,6 +2638,9 @@ export async function POST(request: NextRequest) {
     // Diger kategorilere 'undefined' alan yazilmasin.
     if (pricingResult.category === 'books') {
       product.bookRuleVersion = BOOK_RULE_VERSION;
+    }
+    if (pricingResult.category === 'games') {
+      product.gameRuleVersion = GAME_RULE_VERSION;
     }
 
     // Base pricing cache'e source-neutral olarak yazilir.
