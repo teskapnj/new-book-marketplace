@@ -2513,7 +2513,9 @@ export async function POST(request: NextRequest) {
       gameUsedPrice: priceAnalysis.gameUsedPrice,
       mediaUsedPrice: priceAnalysis.gameUsedPrice,
       isWwe: isWweMovie,
-      wweRuleVersion: isWweMovie ? WWE_RULE_VERSION : undefined,
+      ...(isWweMovie
+        ? { wweRuleVersion: WWE_RULE_VERSION }
+        : {}),
       gamePlatform: extractKeepaGamePlatform(bestProduct),
       // Keepa format bilgisi -> pricingEngine kategori filtresi icin
       binding: bestProduct.binding || '',
