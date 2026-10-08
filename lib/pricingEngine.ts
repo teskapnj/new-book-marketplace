@@ -156,7 +156,7 @@ function calculateBookPrice(
       reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
       category: 'books',
       priceRange: referencePrice > 0
-        ? `Lowest ${priceSource} ${referencePrice} (< $10)`
+        ? `Lowest ${priceSource} $${referencePrice} (< $10)`
         : "No price available"
     };
   }
@@ -187,7 +187,7 @@ function calculateBookPrice(
     accepted: true,
     ourPrice,
     category: 'books',
-    priceRange: `Lowest ${priceSource} ${referencePrice} (${Math.round(percentage * 100)}%)`,
+    priceRange: `Lowest ${priceSource} $${referencePrice} (${Math.round(percentage * 100)}%)`,
     rankRange
   };
 }
