@@ -942,6 +942,21 @@ If you haven't had a chance to ship it, no worries.
 
           ${alreadyShippedBlock()}
 
+          <!-- My Orders alternative label access -->
+          <tr>
+            <td style="padding:16px 24px 0 24px;">
+              <div style="padding:16px;background:#eef5fb;border:1px solid #d4e3f5;border-radius:8px;font-size:14px;line-height:1.6;color:#344054;">
+                <strong>Need your shipping label or QR code again?</strong>
+                <br>
+                You can access your prepaid label or USPS QR code anytime in My Orders, along with tracking information.
+                <br>
+                <a href="https://www.sellbookmedia.com/my-orders" style="font-weight:800;color:#0b3b75;">
+                  Open My Orders
+                </a>
+              </div>
+            </td>
+          </tr>
+
           <tr>
             <td style="padding:16px 24px 0 24px;">
               <div style="
@@ -1030,6 +1045,11 @@ That's okay too. Simply reply to this email and let us know.
 
 ALREADY SHIPPED?
 You can ignore this message. Sometimes USPS tracking takes a little time to update after a package is dropped off.
+
+MY ORDERS
+Need your shipping label or QR code again?
+Access it here, along with tracking information:
+https://www.sellbookmedia.com/my-orders
 
 If you have any questions, simply reply to this email or contact us at support@sellbookmedia.com. We're happy to help.
 
@@ -1320,6 +1340,21 @@ async function sendTenDayReminder({
 
           ${alreadyShippedBlock()}
 
+          <!-- My Orders alternative label access -->
+          <tr>
+            <td style="padding:16px 24px 0 24px;">
+              <div style="padding:16px;background:#eef5fb;border:1px solid #d4e3f5;border-radius:8px;font-size:14px;line-height:1.6;color:#344054;">
+                <strong>Need your shipping label or QR code again?</strong>
+                <br>
+                You can access your prepaid label or USPS QR code anytime in My Orders, along with tracking information.
+                <br>
+                <a href="https://www.sellbookmedia.com/my-orders" style="font-weight:800;color:#0b3b75;">
+                  Open My Orders
+                </a>
+              </div>
+            </td>
+          </tr>
+
           <tr>
             <td style="padding:16px 24px 0 24px;">
               <div style="
@@ -1410,6 +1445,11 @@ That's okay too. Simply reply to this email and let us know.
 
 ALREADY SHIPPED?
 You can ignore this message. Sometimes USPS tracking takes a little time to update after a package is dropped off.
+
+MY ORDERS
+Need your shipping label or QR code again?
+Access it here, along with tracking information:
+https://www.sellbookmedia.com/my-orders
 
 If you have any questions, simply reply to this email or contact us at support@sellbookmedia.com. We're happy to help.
 

@@ -310,6 +310,12 @@ const attachmentNote = isQrCode
                 </tr>
               </table>
 
+              <div style="margin-top:16px;padding:14px 18px;background:#eef5fb;border:1px solid #d4e3f5;font-size:14px;line-height:1.6;color:#344054;">
+                <strong>Need your label later?</strong><br>
+                Your prepaid shipping label or USPS QR code is also available in
+                <a href="https://www.sellbookmedia.com/my-orders" style="font-weight:800;color:#0b3b75;">My Orders</a>.
+              </div>
+
               <!-- Postal / Utility shipment block -->
               <div style="margin-top:26px;border:2px solid #0b3b75;">
                 <div style="padding:16px 18px;background:#eef5fb;border-bottom:1px solid #b8c9df;">
@@ -405,6 +411,10 @@ Tracking number: ${trackingNumber}
 ${totalItems ? `Items: ${totalItems}\n` : ""}
 AFTER DROP-OFF
 Once ${carrierUpper} scans your package, tracking will begin. We'll email you again after your shipment arrives and is checked in.
+
+MY ORDERS
+You can also access your shipping label or USPS QR code here:
+https://www.sellbookmedia.com/my-orders
 
 SHIPPING REMINDER
 Please send your package within 15 days. After 15 days, the prepaid shipping label may be canceled and will no longer be valid.

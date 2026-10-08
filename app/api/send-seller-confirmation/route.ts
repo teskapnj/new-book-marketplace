@@ -187,6 +187,18 @@ export async function POST(request: NextRequest) {
                 </div>
               </div>
 
+              <div style="margin-top:18px;padding:16px;background:#eef5fb;border:1px solid #d4e3f5;">
+                <div style="font-size:14px;font-weight:800;color:#0b3b75;">
+                  Your shipping option will also be available in My Orders
+                </div>
+                <p style="margin:7px 0;font-size:13px;line-height:1.6;color:#53657a;">
+                  Once ready, you can access your prepaid PDF label or USPS QR code in your account.
+                </p>
+                <a href="https://www.sellbookmedia.com/my-orders" style="font-size:13px;font-weight:800;color:#0b3b75;">
+                  Open My Orders
+                </a>
+              </div>
+
               <div style="margin-top:30px;border-top:1px solid #dbe1e8;padding-top:24px;">
                 <div style="font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#344054;">
                   Submitted Items
@@ -246,6 +258,9 @@ What happens next?
 3. After we receive and inspect your items, we'll process payment using the method you selected at checkout.
 
 Please check your inbox and spam folder for the shipping email.
+
+Once ready, your shipping label or USPS QR code will also be available in My Orders:
+https://www.sellbookmedia.com/my-orders
 
 Need help? support@sellbookmedia.com
 

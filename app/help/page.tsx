@@ -61,6 +61,12 @@ const GROUPS: Group[] = [
         a: "Your selected prepaid shipping option is sent by email the same day you submit your order. If you don't see it by the end of the day, check your spam/junk folder first, then contact support.",
       },
       {
+        q: "Where can I find my shipping label or USPS QR code?",
+        a: "Once your prepaid shipping label or QR code is ready, you can access it anytime in My Orders. Sign in with the same account you used to submit your order.",
+        href: "/my-orders",
+        hrefLabel: "Open My Orders",
+      },
+      {
         q: "Are there any shipping fees?",
         a: "No. Shipping costs you nothing — your selected prepaid shipping option is emailed the same day you submit your order.",
       },
@@ -133,6 +139,7 @@ const GROUPS: Group[] = [
 ];
 
 const LINKS = [
+  { href: "/my-orders", title: "My Orders", blurb: "Access shipping labels, QR codes, and tracking" },
   { href: "/condition-guidelines", title: "Condition guidelines", blurb: "What we accept and reject" },
   { href: "/returns-policy", title: "Returns policy", blurb: "How rejected-item returns work" },
   { href: "/seller-guide", title: "Seller guide", blurb: "The whole process, step by step" },

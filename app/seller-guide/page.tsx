@@ -331,6 +331,23 @@ export default function SellerGuidePage() {
             ))}
           </ol>
 
+          <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-5">
+            <h3 className="font-semibold text-slate-900">
+              Your shipping label is also available in My Orders
+            </h3>
+            <p className="mt-2 text-[15px] leading-relaxed text-slate-700">
+              Can't find your shipping email? Once your prepaid PDF label
+              or USPS QR code is ready, sign in to My Orders to access it
+              and check your tracking information.
+            </p>
+            <Link
+              href="/my-orders"
+              className="mt-3 inline-flex font-semibold text-blue-700 hover:text-blue-900"
+            >
+              Go to My Orders →
+            </Link>
+          </div>
+
           <div className="mt-4 grid gap-4 md:grid-cols-2 md:items-start">
             <Card title="What arrives in the email" tone="good">
               <Bullets

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signInWithEmailAndPassword, setPersistence, browserLocalPersistence, browserSessionPersistence, User } from "firebase/auth";
@@ -10,6 +10,9 @@ import { FiHome, FiEye, FiEyeOff } from "react-icons/fi";
 import { useAuth } from "@/contexts/AuthContext";
 import DOMPurify from 'isomorphic-dompurify';
 
+
+// My Orders'dan gelen kullaniciyi giristen sonra geri dondur.
+// Yalnizca izin verilen dahili sayfaya yonlendirme yap.
 
 // Custom Password Input Component with Hold-to-Show functionality
 const PasswordInputHold = ({
@@ -128,6 +131,25 @@ const isAdminUser = async (email: string, uid: string): Promise<boolean> => {
 export default function LoginPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+
+  // Login sayfasi acildiginda donus adresini sabitle.
+  // Google ve email login ayni hedefi kullanacak.
+  const returnToMyOrders = useRef(false);
+
+  useEffect(() => {
+    const next = new URLSearchParams(window.location.search).get("next");
+    const saved = sessionStorage.getItem("sbm:loginReturn");
+
+    if (next === "/my-orders" || saved === "/my-orders") {
+      returnToMyOrders.current = true;
+    }
+
+    sessionStorage.removeItem("sbm:loginReturn");
+  }, []);
+
+  const getLoginDestination = (fallback: string): string => {
+    return returnToMyOrders.current ? "/my-orders" : fallback;
+  };
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -221,10 +243,10 @@ export default function LoginPage() {
         // ÇİFT KONTROLLÜ ADMIN REDIRECT - GÜVENLİ
         if (await isAdminUser(userData.email || firebaseUser.email || "", userId)) {
           console.log("Admin access granted");
-          router.push("/admin/dashboard");
+          router.push(getLoginDestination("/admin/dashboard"));
         } else {
           console.log("Redirecting to home page");
-          router.push("/");
+          router.push(getLoginDestination("/"));
         }
       } else {
         console.warn("User document not found, creating default profile");
@@ -253,7 +275,7 @@ export default function LoginPage() {
         
         // Yeni profil olusturuldu, ana sayfaya don
         console.log("Redirecting to home page");
-        router.push("/");
+        router.push(getLoginDestination("/"));
       }
     } catch (error) {
       console.error("Error checking user role:", error);
@@ -427,10 +449,10 @@ export default function LoginPage() {
         // Çift kontrollü admin redirect - GÜVENLİ
         if (await isAdminUser(formData.email, userCredential.user.uid)) {
           console.log("Admin access granted");
-          router.push("/admin/dashboard");
+          router.push(getLoginDestination("/admin/dashboard"));
         } else {
           console.log("Redirecting to home page");
-          router.push("/");
+          router.push(getLoginDestination("/"));
         }
       } else {
         // User document doesn't exist, create default profile in Firestore
@@ -461,7 +483,7 @@ export default function LoginPage() {
         
         // Yeni profil olusturuldu, ana sayfaya don
         console.log("Redirecting to home page");
-        router.push("/");
+        router.push(getLoginDestination("/"));
       }
     } catch (error: any) {
       console.error("Login error:", error);
@@ -555,10 +577,10 @@ export default function LoginPage() {
       // ÇİFT KONTROLLÜ ADMIN REDIRECT - GÜVENLİ
       if (await isAdminUser(socialUser.email || "", socialUser.uid)) {
         console.log("Social admin access granted");
-        router.push("/admin/dashboard");
+        router.push(getLoginDestination("/admin/dashboard"));
       } else {
         console.log("Redirecting to home page");
-        router.push("/");
+        router.push(getLoginDestination("/"));
       }
     } catch (error) {
       console.error("Social login role check error:", error);

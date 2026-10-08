@@ -1195,86 +1195,116 @@ useEffect(() => {
       )}
 
       {/* ===================== SUCCESS POPUP ===================== */}
-{showSuccessPopup && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70] p-4">
-    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4">
-      <div className="p-6">
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex justify-center flex-1">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-              <CheckCircleIcon size={32} className="text-green-600" />
-            </div>
-          </div>
-
-          <button
-            onClick={() => setShowSuccessPopup(false)}
-            className="text-gray-400 hover:text-gray-600"
+      {showSuccessPopup && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/65 p-2 sm:p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="order-success-title"
+            className="max-h-[calc(100dvh-16px)] w-full max-w-[430px] overflow-y-auto rounded-2xl bg-white shadow-2xl sm:max-h-[calc(100dvh-32px)]"
           >
-            <XIcon size={24} />
-          </button>
-        </div>
+            <div className="bg-gradient-to-r from-slate-900 via-blue-900 to-blue-700 px-4 py-4 text-white sm:px-5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-100">
+                  <CheckIcon size={27} className="text-emerald-700" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-blue-200">
+                    Order Received
+                  </p>
+                  <h2 id="order-success-title" className="mt-0.5 text-xl font-extrabold tracking-tight sm:text-2xl">
+                    Order submitted!
+                  </h2>
+                  <p className="mt-0.5 text-xs text-blue-100">
+                    Your order is confirmed.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowSuccessPopup(false)}
+                  aria-label="Close confirmation"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 hover:bg-white/20"
+                >
+                  <XIcon size={18} />
+                </button>
+              </div>
+            </div>
 
-        <h3 className="text-xl font-bold text-center text-gray-900 mb-2">
-          Order Submitted Successfully!
-        </h3>
+            <div className="space-y-4 px-4 py-4 sm:px-5">
 
-        <p className="text-gray-600 text-center mb-6">
-          Your selected prepaid shipping option will be sent by email the same day.
-        </p>
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 shrink-0 text-blue-700">
+                  <MailIcon size={21} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Shipping email arrives today
+                  </h3>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-600 sm:text-sm">
+                    We&apos;ll email your free PDF label or USPS QR code
+                    the same day. Check spam/junk too.
+                  </p>
+                </div>
+              </div>
 
-        <div className="bg-blue-50 rounded-lg p-4">
-          <div className="flex items-start">
-            <MailIcon
-              size={20}
-              className="text-blue-600 mt-0.5 mr-3 flex-shrink-0"
-            />
+              <div className="border-t border-slate-100" />
 
-            <div>
-              <h4 className="text-sm font-medium text-blue-800 mb-2">
-                What happens next?
-              </h4>
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 shrink-0 text-slate-500">
+                  <PackageIcon size={21} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Ship within 15 days
+                  </h3>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-600 sm:text-sm">
+                    Pack your items and follow the shipping instructions.
+                  </p>
+                </div>
+              </div>
 
-              <ul className="text-sm text-blue-700 space-y-2">
-                <li className="flex items-start">
-                  <CheckIcon
-                    size={16}
-                    className="text-blue-600 mr-2 mt-0.5 flex-shrink-0"
-                  />
-                  <span>
-                    Check your inbox and spam/junk folder for the shipping email
-                  </span>
-                </li>
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+                <h3 className="text-sm font-bold text-emerald-800">
+                  Need your label later?
+                </h3>
+                <p className="mt-1 text-xs leading-relaxed text-emerald-900/80 sm:text-sm">
+                  Access your label, QR code and tracking in My Orders once ready.
+                </p>
+              </div>
 
-                <li className="flex items-start">
-                  <CheckIcon
-                    size={16}
-                    className="text-blue-600 mr-2 mt-0.5 flex-shrink-0"
-                  />
-                  <span>
-                    Pack your items securely and follow the instructions in the shipping email
-                  </span>
-                </li>
+              <div className="flex gap-2">
+                <Link
+                  href="/my-orders"
+                  onClick={() => setShowSuccessPopup(false)}
+                  className="flex min-h-11 flex-1 items-center justify-center gap-1 rounded-xl bg-blue-700 px-2 py-2.5 text-center text-xs font-bold text-white hover:bg-blue-800 sm:text-sm"
+                >
+                  View My Orders
+                  <ArrowRightIcon size={15} />
+                </Link>
 
-                <li className="flex items-start">
-                  <CheckIcon
-                    size={16}
-                    className="text-blue-600 mr-2 mt-0.5 flex-shrink-0"
-                  />
-                  <span>
-                    Send your package within 15 days
-                  </span>
-                </li>
-              </ul>
+                <button
+                  type="button"
+                  onClick={() => setShowSuccessPopup(false)}
+                  className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-slate-200 px-2 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 sm:text-sm"
+                >
+                  Continue Selling
+                </button>
+              </div>
+
+              <p className="text-center text-xs text-slate-500">
+                Need help?{" "}
+                <Link
+                  href="/contact"
+                  onClick={() => setShowSuccessPopup(false)}
+                  className="font-bold text-blue-700 hover:underline"
+                >
+                  Contact support
+                </Link>
+              </p>
             </div>
           </div>
         </div>
-        <p className="mt-4 text-center text-sm text-gray-500">
-  If you don&apos;t receive your shipping email the same day, please check your spam/junk folder first. If it&apos;s still not there, email us at support@sellbookmedia.com.
-</p>
-      </div>
-    </div>
-  </div>
-)}
+      )}
 
       {/* ===================== HEADER ===================== */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
@@ -1313,6 +1343,17 @@ useEffect(() => {
             </div>
 
             <div className="flex items-center space-x-4">
+              <nav aria-label="Main navigation" className="flex items-center gap-4 text-sm font-medium text-gray-700">
+                <Link href="/seller-guide" className="hover:text-blue-600 transition-colors">
+                  Seller Guide
+                </Link>
+                <Link href="/my-orders" className="hover:text-blue-600 transition-colors">
+                  My Orders
+                </Link>
+                <Link href="/help" className="hover:text-blue-600 transition-colors">
+                  Help
+                </Link>
+              </nav>
               {loading ? (
                 <div className="h-10 w-32 bg-gray-200 rounded-lg animate-pulse"></div>
               ) : user ? (
@@ -1342,6 +1383,12 @@ useEffect(() => {
               </Link>
               <Link href="/seller-guide" className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors">
                 Seller Guide
+              </Link>
+              <Link href="/my-orders" className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors">
+                My Orders
+              </Link>
+              <Link href="/help" className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors">
+                Help
               </Link>
               <Link href="/contact" className="block font-medium text-gray-900 py-2 hover:text-blue-600 transition-colors">
                 Contact Us
@@ -2290,6 +2337,14 @@ useEffect(() => {
       className="text-gray-400 hover:text-white transition-colors"
     >
       Seller Guide
+    </Link>
+  </li>
+  <li>
+    <Link
+      href="/my-orders"
+      className="text-gray-400 hover:text-white transition-colors"
+    >
+      My Orders
     </Link>
   </li>
 </ul>

@@ -800,6 +800,24 @@ export default function CheckoutForm({
   )}
 </div>
 
+      {/* My Orders shipping-label reminder */}
+      <div className="rounded-xl border border-blue-200 bg-blue-50/70 px-4 py-3">
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 text-blue-700">
+            📦
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-slate-900">
+              Your shipping label will also be available in My Orders
+            </p>
+            <p className="mt-1 text-sm leading-relaxed text-slate-600">
+              Once it&apos;s ready, you can access your prepaid PDF label
+              or USPS QR code anytime in My Orders.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Payment */}
       <div className="border-t border-gray-100 pt-5">
         <h3 className="text-lg font-semibold text-gray-900 mb-3">
