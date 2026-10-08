@@ -37,6 +37,10 @@ interface BundleItem {
   } | null;
 }
 
+// Sadece admin ekraninda barkod gosterimini duzelt; Firebase verisini degistirme.
+const displayBarcode = (barcode: string): string =>
+  String(barcode ?? "").replace(/[-\s]/g, "");
+
 interface ShippingInfo {
   firstName?: string;
   lastName?: string;
@@ -2173,7 +2177,7 @@ const idToken = await currentUser.getIdToken();
                                       className="h-5 w-5 text-green-600 rounded focus:ring-green-500 mr-3 flex-shrink-0"
                                     />
                                     <span className="mr-2">{getCategoryIcon(item.category)}</span>
-                                    <span className="font-medium font-mono truncate">{item.isbn}</span>
+                                    <span className="font-medium font-mono truncate">{displayBarcode(item.isbn)}</span>
                                   </div>
                                   <span className="text-gray-600 flex-shrink-0 ml-2">
                                     ${item.price.toFixed(2)}
@@ -2236,7 +2240,7 @@ const idToken = await currentUser.getIdToken();
                               `All ${acceptedItemCount} items accepted. Paid in full: $${acceptedTotal.toFixed(2)}`
                             );
                           } else {
-                            const codes = rejected.map(({ it }) => it.isbn).join(", ");
+                            const codes = rejected.map(({ it }) => displayBarcode(it.isbn)).join(", ");
                             setPaymentNotes(
                               `Not accepted (${rejectedItemCount} item${rejectedItemCount !== 1 ? "s" : ""}): ${codes}\n` +
                               `Deducted: $${rejectedTotal.toFixed(2)}\n` +
