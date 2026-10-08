@@ -29,6 +29,7 @@ interface AmazonProduct {
   priceType?: 'new' | 'used' | 'none';
   // BOOKS: Keepa lowest USED fiyatı. NEW olsa bile ayrıca taşınır.
   bookUsedPrice?: number;
+  bookRuleVersion?: number;
   // GAME için Keepa NEW ve USED fiyatları ayrı tutulur
   gameNewPrice?: number;
   gameUsedPrice?: number;
@@ -92,6 +93,7 @@ const WWE_USED_PRICE_MIN = 50;
 const WWE_OFFER = 1.15;
 const WWE_RANK_LIMIT = 100_000;
 const WWE_RULE_VERSION = 3;
+const BOOK_RULE_VERSION = 1;
 
 // ==================== KOD TİPİ ALGILAMA (aynı, değişmedi) ====================
 
@@ -1601,6 +1603,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Yalnizca eski kitap fiyatlari yeniden hesaplansin.
+    // CD/DVD/oyun cache kayitlarini gereksiz yere gecersiz kilma.
+    if (
+      cachedResult &&
+      !('notFound' in cachedResult) &&
+      cachedResult.pricing?.category === 'books' &&
+      (cachedResult.product as any)?.bookRuleVersion !== BOOK_RULE_VERSION
+    ) {
+      console.log(`BOOK RULE REFRESH: ${cleanCode} | old cache ignored`);
+      await productCache.removeFromCache(cacheIdentifier);
+      cachedResult = null;
+    }
+
     if (cachedResult) {
       // Keepa daha once bu barkod icin urun bulamadiysa 24 saat boyunca
       // yeniden Keepa'ya gitmeden ayni 404 cevabini dondur.
@@ -2560,6 +2575,12 @@ export async function POST(request: NextRequest) {
         : isWweMovie
           ? calculateWwePricing(priceAnalysis.gameUsedPrice, salesRank)
           : calculateOurPrice(product);
+
+    // Kitap cache girislerinde yeni pricing kuralinin versiyonunu sakla.
+    // Diger kategorilere 'undefined' alan yazilmasin.
+    if (pricingResult.category === 'books') {
+      product.bookRuleVersion = BOOK_RULE_VERSION;
+    }
 
     // Base pricing cache'e source-neutral olarak yazilir.
     // Manual gecerli ISBN Books disi bir urune resolve olduysa
