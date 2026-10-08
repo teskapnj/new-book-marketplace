@@ -93,7 +93,7 @@ const WWE_USED_PRICE_MIN = 50;
 const WWE_OFFER = 1.15;
 const WWE_RANK_LIMIT = 100_000;
 const WWE_RULE_VERSION = 3;
-const BOOK_RULE_VERSION = 1;
+const BOOK_RULE_VERSION = 2;
 
 // ==================== KOD TİPİ ALGILAMA (aynı, değişmedi) ====================
 
@@ -918,6 +918,39 @@ function flattenKeepaText(value: any): string {
   }
 
   return String(value);
+}
+
+// Books altinda sesli kitap CD'sini yalnizca iki isaret birlikte varsa reddet:
+// Audio CD formati AND Books on CD alt kategorisi (Amazon browse node 69724).
+// Books altina yanlis yerlesmis muzik CD'lerini tek sinyale gore reddetme.
+function isBooksOnCdAudioProduct(product: any): boolean {
+  const normalizedBinding = String(product?.binding || '')
+    .trim()
+    .replace(/[\\s_-]+/g, '')
+    .toLowerCase();
+
+  const hasAudioCdFormat =
+    normalizedBinding === 'audiocd' ||
+    /\\baudio[\\s_-]*cd\\b(?![\\s_-]*rom)/i.test(
+      flattenKeepaText(product?.format)
+    );
+
+  if (!hasAudioCdFormat) return false;
+
+  const booksOnCdCategoryId = 69724;
+  const hasBooksOnCdCategory =
+    (Array.isArray(product?.categories) &&
+      product.categories.some(
+        (categoryId: any) => Number(categoryId) === booksOnCdCategoryId
+      )) ||
+    (Array.isArray(product?.categoryTree) &&
+      product.categoryTree.some(
+        (node: any) =>
+          Number(node?.catId) === booksOnCdCategoryId ||
+          String(node?.name || '').trim().toLowerCase() === 'books on cd'
+      ));
+
+  return hasBooksOnCdCategory;
 }
 
 function isPhysicalMovieProduct(product: any): boolean {
@@ -2560,19 +2593,30 @@ export async function POST(request: NextRequest) {
     const rejectedWweFormat =
       isWweMovie ? checkRejectedFormat(product) : null;
 
+    // Bu yeni ret filtresi SADECE Books icin; CD/DVD/oyunlara dokunma.
+    const rejectedBooksOnCdAudio =
+      detectCategory(category) === 'books' &&
+      isBooksOnCdAudioProduct(bestProduct);
+
     const pricingResult: PricingResult = mediaRestriction
       ? {
         accepted: false,
         reason: mediaRestriction,
         category: 'dvds'
       }
-      : rejectedWweFormat
+      : rejectedBooksOnCdAudio
         ? {
             accepted: false,
-            reason: rejectedWweFormat,
-            category: 'dvds'
+            reason: 'We do not currently accept audiobooks on CD.',
+            category: 'books'
           }
-        : isWweMovie
+        : rejectedWweFormat
+          ? {
+              accepted: false,
+              reason: rejectedWweFormat,
+              category: 'dvds'
+            }
+          : isWweMovie
           ? calculateWwePricing(priceAnalysis.gameUsedPrice, salesRank)
           : calculateOurPrice(product);
 
