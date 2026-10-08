@@ -28,6 +28,10 @@ interface AmazonProduct {
   // GAME için Keepa NEW ve USED fiyatları ayrı tutulur
   gameNewPrice?: number;
   gameUsedPrice?: number;
+  // WWE DVD/Blu-ray icin Keepa lowest USED fiyatini ayri tut.
+  mediaUsedPrice?: number;
+  isWwe?: boolean;
+  wweRuleVersion?: number;
   gamePlatform?: string;
   // Keepa format bilgisi (kategori filtresi icin pricingEngine'e gecer)
   binding?: string;
@@ -79,6 +83,10 @@ const KEEPA_UPDATE_HOURS = 24;
 
 const MANUAL_ISBN_MEDIA_MESSAGE =
   'For DVDs and Blu-rays, please scan or enter the main barcode (UPC/EAN).';
+
+const WWE_USED_PRICE_MIN = 50;
+const WWE_OFFER = 1.15;
+const WWE_RULE_VERSION = 2;
 
 // ==================== KOD TİPİ ALGILAMA (aynı, değişmedi) ====================
 
@@ -980,6 +988,30 @@ function hasWweIdentity(product: any): boolean {
   );
 }
 
+function calculateWwePricing(usedPrice: number): PricingResult {
+  if (
+    Number.isFinite(usedPrice) &&
+    usedPrice >= WWE_USED_PRICE_MIN
+  ) {
+    return {
+      accepted: true,
+      ourPrice: WWE_OFFER,
+      category: 'dvds',
+      priceRange: `WWE lowest used $${usedPrice} (>= $${WWE_USED_PRICE_MIN})`
+    };
+  }
+
+  return {
+    accepted: false,
+    reason: 'DOES NOT MEET OUR PURCHASING CRITERIA',
+    category: 'dvds',
+    priceRange:
+      usedPrice > 0
+        ? `WWE lowest used $${usedPrice} (< $${WWE_USED_PRICE_MIN})`
+        : 'WWE no used price'
+  };
+}
+
 function getEuropeanMovieBarcodeSignal(
   code: string,
   isDvdOrBluRay: boolean
@@ -1189,10 +1221,6 @@ function detectMovieRestriction(product: any, barcode: string): string | null {
   ]
     .map(flattenKeepaText)
     .join(' ');
-
-  if (hasWweIdentity(product)) {
-    return 'We do not accept WWE DVDs/Blu-rays.';
-  }
 
   if (isRentalMovie(product)) {
     return 'We do not accept rental-version DVDs/Blu-rays.';
@@ -1504,8 +1532,36 @@ export async function POST(request: NextRequest) {
 
     // ---- Cache kontrolü ----
     const cacheReadStart = Date.now();
-    const cachedResult = await productCache.getFromCache(cacheIdentifier);
+    let cachedResult = await productCache.getFromCache(cacheIdentifier);
     console.log(`⏱️ cacheRead=${Date.now() - cacheReadStart}ms`);
+
+    // Eski WWE cache kayitlari onceki "tum WWE reject" kuralina gore
+    // hesaplanmis olabilir. Sadece bu kayitlari bir kez canli Keepa'ya yenilet.
+    if (cachedResult && !('notFound' in cachedResult)) {
+      const cachedProductForWwe: any = cachedResult.product;
+      const cachedPricingForWwe: any = cachedResult.pricing;
+
+      const cachedWasWwe =
+        cachedPricingForWwe?.category === 'dvds' &&
+        (
+          cachedProductForWwe?.isWwe === true ||
+          hasWweIdentity(cachedProductForWwe) ||
+          cachedPricingForWwe?.reason ===
+            'We do not accept WWE DVDs/Blu-rays.'
+        );
+
+      if (
+        cachedWasWwe &&
+        cachedProductForWwe?.wweRuleVersion !== WWE_RULE_VERSION
+      ) {
+        console.log(
+          `🔄 WWE RULE REFRESH: ${cleanCode} | old cache ignored`
+        );
+
+        await productCache.removeFromCache(cacheIdentifier);
+        cachedResult = null;
+      }
+    }
 
     if (cachedResult) {
       // Keepa daha once bu barkod icin urun bulamadiysa 24 saat boyunca
@@ -1527,34 +1583,6 @@ export async function POST(request: NextRequest) {
       const cachedProduct: any = { ...cachedResult.product };
       const cachedPricing: any = cachedResult.pricing;
       const cachedMessage = cachedResult.message;
-
-      // WWE DVD/Blu-ray artik kabul edilmiyor.
-      // Eski cache ACCEPTED olsa bile response seviyesinde reddet.
-      if (
-        cachedPricing?.category === 'dvds' &&
-        hasWweIdentity(cachedProduct)
-      ) {
-        const wwePricing = {
-          ...cachedPricing,
-          accepted: false,
-          ourPrice: 0,
-          reason: 'We do not accept WWE DVDs/Blu-rays.'
-        };
-
-        console.log(
-          `🚫 WWE MOVIE REJECTED: ${cleanCode} | CACHE HIT`
-        );
-
-        return NextResponse.json({
-          success: true,
-          data: {
-            product: cachedProduct,
-            pricing: wwePricing,
-            message: 'We do not accept WWE DVDs/Blu-rays.',
-            debug: { ...cachedResult.debug, cacheHit: true }
-          }
-        } as ApiResponse);
-      }
 
       // Cache source-neutral kalir. Manual ISBN isteginde Books disi
       // urunu sadece bu response icin reddet.
@@ -2437,6 +2465,8 @@ export async function POST(request: NextRequest) {
     const image = extractKeepaImage(bestProduct);
     const asin = bestProduct.asin || codeInfo.searchCode;
 
+    const isWweProduct = hasWweIdentity(bestProduct);
+
     const product: AmazonProduct = {
       title,
       image,
@@ -2452,6 +2482,9 @@ export async function POST(request: NextRequest) {
       // GAME pricingEngine için ayrı Keepa fiyatları
       gameNewPrice: priceAnalysis.gameNewPrice,
       gameUsedPrice: priceAnalysis.gameUsedPrice,
+      mediaUsedPrice: priceAnalysis.gameUsedPrice,
+      isWwe: isWweProduct,
+      wweRuleVersion: isWweProduct ? WWE_RULE_VERSION : undefined,
       gamePlatform: extractKeepaGamePlatform(bestProduct),
       // Keepa format bilgisi -> pricingEngine kategori filtresi icin
       binding: bestProduct.binding || '',
@@ -2468,7 +2501,9 @@ export async function POST(request: NextRequest) {
         reason: mediaRestriction,
         category: 'dvds'
       }
-      : calculateOurPrice(product);
+      : isWweProduct
+        ? calculateWwePricing(priceAnalysis.gameUsedPrice)
+        : calculateOurPrice(product);
 
     // Base pricing cache'e source-neutral olarak yazilir.
     // Manual gecerli ISBN Books disi bir urune resolve olduysa
