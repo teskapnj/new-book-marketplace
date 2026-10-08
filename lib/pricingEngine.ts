@@ -70,7 +70,7 @@ const REJECTED_TYPES = [
  * Ürünün kabul edilmeyen bir formatta olup olmadığını kontrol eder.
  * Kabul edilmiyorsa reddetme sebebini döndürür, ediliyorsa null döndürür.
  */
-function checkRejectedFormat(product: AmazonProduct): string | null {
+export function checkRejectedFormat(product: AmazonProduct): string | null {
   const binding = (product.binding || '').toLowerCase().replace(/\s+/g, '');
   const type = (product.type || '').toUpperCase();
 
