@@ -6,9 +6,13 @@ import { productCache } from '@/lib/productCache';
 import { recordRecentAcceptedItem } from '@/lib/recentAcceptedItems';
 
 let calculateOurPrice: any;
+let checkRejectedFormat: any;
+let detectCategory: any;
 try {
   const pricingEngine = require('@/lib/pricingEngine');
   calculateOurPrice = pricingEngine.calculateOurPrice;
+  checkRejectedFormat = pricingEngine.checkRejectedFormat;
+  detectCategory = pricingEngine.detectCategory;
 } catch (e) {
   console.error('Failed to import pricingEngine:', e);
 }
@@ -86,7 +90,8 @@ const MANUAL_ISBN_MEDIA_MESSAGE =
 
 const WWE_USED_PRICE_MIN = 50;
 const WWE_OFFER = 1.15;
-const WWE_RULE_VERSION = 2;
+const WWE_RANK_LIMIT = 100_000;
+const WWE_RULE_VERSION = 3;
 
 // ==================== KOD TİPİ ALGILAMA (aynı, değişmedi) ====================
 
@@ -988,7 +993,21 @@ function hasWweIdentity(product: any): boolean {
   );
 }
 
-function calculateWwePricing(usedPrice: number): PricingResult {
+function calculateWwePricing(usedPrice: number, salesRank: number): PricingResult {
+  // WWE ozel teklifi yalnizca ana Movies & TV rank'i 1-100k ise verilir.
+  if (
+    !Number.isFinite(salesRank) ||
+    salesRank < 1 ||
+    salesRank > WWE_RANK_LIMIT
+  ) {
+    return {
+      accepted: false,
+      reason: 'DOES NOT MEET OUR PURCHASING CRITERIA',
+      category: 'dvds',
+      rankRange: 'WWE DVD/Blu-ray rank must be 1-100k'
+    };
+  }
+
   if (
     Number.isFinite(usedPrice) &&
     usedPrice >= WWE_USED_PRICE_MIN
@@ -2484,17 +2503,12 @@ export async function POST(request: NextRequest) {
     const image = extractKeepaImage(bestProduct);
     const asin = bestProduct.asin || codeInfo.searchCode;
 
-    // WWE ozel fiyat kurali sadece gercek fiziksel film urunlerine uygulanir.
-    // Boylece WWE kitap/CD/game urunleri yanlislikla DVD kuralina girmez.
-    const wweBinding =
-      String(bestProduct?.binding || '')
-        .toLowerCase()
-        .replace(/\s+/g, '');
-
+    // WWE ozel teklifi yalnizca fiziksel DVD/Blu-ray (dvds) icin.
+    // CD, kitap ve oyun kategorilerindeki WWE urunlerine uygulanmaz.
     const isWweMovie =
       isPhysicalMovieProduct(bestProduct) &&
       hasWweIdentity(bestProduct) &&
-      !['vhstape', 'vhs_tape', 'vhs'].includes(wweBinding);
+      !['books', 'cds', 'games'].includes(detectCategory(category));
 
     const product: AmazonProduct = {
       title,
@@ -2526,15 +2540,26 @@ export async function POST(request: NextRequest) {
       ? 'We do not accept rental-version DVDs/Blu-rays.'
       : detectMovieRestriction(bestProduct, cleanCode);
 
+    // WWE fiyat yolu da normal motorun VHS, vinyl, kaset ve
+    // dijital audiobook gibi reddedilen formatlarini atlamasin.
+    const rejectedWweFormat =
+      isWweMovie ? checkRejectedFormat(product) : null;
+
     const pricingResult: PricingResult = mediaRestriction
       ? {
         accepted: false,
         reason: mediaRestriction,
         category: 'dvds'
       }
-      : isWweMovie
-        ? calculateWwePricing(priceAnalysis.gameUsedPrice)
-        : calculateOurPrice(product);
+      : rejectedWweFormat
+        ? {
+            accepted: false,
+            reason: rejectedWweFormat,
+            category: 'dvds'
+          }
+        : isWweMovie
+          ? calculateWwePricing(priceAnalysis.gameUsedPrice, salesRank)
+          : calculateOurPrice(product);
 
     // Base pricing cache'e source-neutral olarak yazilir.
     // Manual gecerli ISBN Books disi bir urune resolve olduysa
