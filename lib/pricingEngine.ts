@@ -335,16 +335,11 @@ function calculateGamePrice(
   gameUsedPrice: number,
   salesRank: number
 ): PricingResult {
-  // TUM OYUNLAR:
-  // 1) USED varsa USED kullanilir.
-  // 2) USED yoksa lowest NEW kullanilir.
-  // 3) USED ve NEW ikisi de yoksa $3 teklif edilir.
-  // Rank maksimum 100k.
-  // $15-$30 -> %5
-  // $30 ustu -> %10
-  // Maximum offer -> $50
-
-  if (salesRank > 100000) {
+  // Oyunlar icin iki rank dilimi; USED varsa USED, yoksa NEW kullanilir.
+  // Rank 1-50k: $15-$30 %5, $30 ustu %10, fiyat yok $3, max $50.
+  // Rank 50k-100k: $15-$30 %3, $30 ustu %6, fiyat yok $1.50, max $25.
+  // Her iki dilimde de secilen fiyat $15 altindaysa reddedilir.
+  if (salesRank > 100_000) {
     return {
       accepted: false,
       reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
@@ -353,68 +348,49 @@ function calculateGamePrice(
     };
   }
 
+  const top50k = salesRank <= 50_000;
+  const rankRange = top50k ? "≤ 50k" : "50k-100k";
+  const lowPriceRate = top50k ? 0.05 : 0.03;
+  const highPriceRate = top50k ? 0.10 : 0.06;
+  const maxOffer = top50k ? 50 : 25;
+  const noPriceOffer = top50k ? 3 : 1.50;
+
+  // USED fiyati varsa NEW'den once kullan.
   const hasUsedPrice = gameUsedPrice > 0;
   const hasNewPrice = gameNewPrice > 0;
+  if (hasUsedPrice || hasNewPrice) {
+    const priceSource = hasUsedPrice ? 'used' : 'new';
+    const referencePrice = hasUsedPrice ? gameUsedPrice : gameNewPrice;
 
-  // USED varsa her zaman USED kullan
-  if (hasUsedPrice) {
-    if (gameUsedPrice < 15) {
+    if (referencePrice < 15) {
       return {
         accepted: false,
         reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
         category: 'games',
-        priceRange: `Game used $${gameUsedPrice} (< $15)`,
-        rankRange: "≤ 100k"
+        priceRange: `Game ${priceSource} $${referencePrice} (< $15)`,
+        rankRange
       };
     }
 
-    const percentage = gameUsedPrice <= 30 ? 0.05 : 0.10;
-
+    const percentage = referencePrice <= 30 ? lowPriceRate : highPriceRate;
     return {
       accepted: true,
       ourPrice: Math.min(
-        Math.round(gameUsedPrice * percentage * 100) / 100,
-        50
+        Math.round(referencePrice * percentage * 100) / 100,
+        maxOffer
       ),
       category: 'games',
-      priceRange: `Game used $${gameUsedPrice} (${Math.round(percentage * 100)}%)`,
-      rankRange: "≤ 100k"
+      priceRange: `Game ${priceSource} $${referencePrice} (${Math.round(percentage * 100)}%)`,
+      rankRange
     };
   }
 
-  // USED yoksa NEW kullan
-  if (hasNewPrice) {
-    if (gameNewPrice < 15) {
-      return {
-        accepted: false,
-        reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
-        category: 'games',
-        priceRange: `Game new $${gameNewPrice} (< $15)`,
-        rankRange: "≤ 100k"
-      };
-    }
-
-    const percentage = gameNewPrice <= 30 ? 0.05 : 0.10;
-
-    return {
-      accepted: true,
-      ourPrice: Math.min(
-        Math.round(gameNewPrice * percentage * 100) / 100,
-        50
-      ),
-      category: 'games',
-      priceRange: `Game new $${gameNewPrice} (${Math.round(percentage * 100)}%)`,
-      rankRange: "≤ 100k"
-    };
-  }
-
-  // Hic fiyat yok
   return {
     accepted: true,
-    ourPrice: 3,
+    ourPrice: noPriceOffer,
     category: 'games',
     priceRange: "No used or new price",
-    rankRange: "≤ 100k"
+    rankRange
   };
 }
 
