@@ -112,11 +112,9 @@ export function detectCategory(amazonCategory: string): ProductCategory {
 
 // ==================== YENİ SABİT KRİTERLER ====================
 
-// Senaryo: Hiç fiyat yok (ne NEW ne USED)
-const NO_PRICE_BOOK_RANK_LIMIT = 1_000_000;
-const NO_PRICE_BOOK_PRICE = 3;
-const NO_PRICE_BOOK_HIGH_RANK_LIMIT = 1_500_000;
-const NO_PRICE_BOOK_HIGH_RANK_PRICE = 0.75;
+// Books: USED ve NEW fiyati yoksa rank <= 1.5M icin $1.50 teklif.
+const NO_PRICE_BOOK_RANK_LIMIT = 1_500_000;
+const NO_PRICE_BOOK_PRICE = 1.50;
 const NO_PRICE_MEDIA_RANK_LIMIT = 100_000; // CD / DVD
 const NO_PRICE_MEDIA_PRICE = 1.95;
 const NO_PRICE_MEDIA_HIGH_RANK_LIMIT = 300_000;
@@ -129,16 +127,20 @@ const USED_ONLY_MEDIA_HIGH_RANK_LIMIT = 300_000;
 const USED_ONLY_MEDIA_HIGH_RANK_PRICE = 0.95;
 
 /**
- * BOOKS: Sadece lowest USED fiyat kullanilir. NEW fiyat tamamen yok sayilir.
+ * BOOKS: Once lowest USED, USED yoksa lowest NEW fiyat kullanilir.
  * Rank yuzdeleri:
  *   <= 200k      -> %9
  *   200k-500k    -> %7
  *   500k-1M      -> %6
  *   1M-1.5M      -> %5
- * Lowest USED < $10 -> reject
+ * Secilen fiyat (USED veya NEW) < $10 -> reject
  * Maximum offer -> $20
  */
-function calculateBookPrice(usedPrice: number, salesRank: number): PricingResult {
+function calculateBookPrice(
+  referencePrice: number,
+  salesRank: number,
+  priceSource: 'used' | 'new'
+): PricingResult {
   if (salesRank > 1_500_000) {
     return {
       accepted: false,
@@ -148,12 +150,14 @@ function calculateBookPrice(usedPrice: number, salesRank: number): PricingResult
     };
   }
 
-  if (!usedPrice || usedPrice < 10) {
+  if (!referencePrice || referencePrice < 10) {
     return {
       accepted: false,
       reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
       category: 'books',
-      priceRange: usedPrice > 0 ? `Lowest used $${usedPrice} (< $10)` : "No used price"
+      priceRange: referencePrice > 0
+        ? `Lowest ${priceSource} ${referencePrice} (< $10)`
+        : "No price available"
     };
   }
 
@@ -175,7 +179,7 @@ function calculateBookPrice(usedPrice: number, salesRank: number): PricingResult
   }
 
   const ourPrice = Math.min(
-    Math.round(usedPrice * percentage * 100) / 100,
+    Math.round(referencePrice * percentage * 100) / 100,
     20
   );
 
@@ -183,7 +187,7 @@ function calculateBookPrice(usedPrice: number, salesRank: number): PricingResult
     accepted: true,
     ourPrice,
     category: 'books',
-    priceRange: `Lowest used $${usedPrice} (${Math.round(percentage * 100)}%)`,
+    priceRange: `Lowest ${priceSource} ${referencePrice} (${Math.round(percentage * 100)}%)`,
     rankRange
   };
 }
@@ -416,7 +420,7 @@ function calculateGamePrice(
 
 /**
  * SENARYO 1-2: Hiç fiyat yok (ne NEW ne USED)
- * Kitap: rank ≤ 1,000,000 ise $3, 1M-1.5M ise $0.75, üstündeyse reddet
+ * Kitap: USED ve NEW yoksa rank ≤ 1.5M icin $1.50, ustundeyse reddet
  * CD/DVD: rank ≤ 100,000 ise $1.95, 100k-300k ise $0.95, üstündeyse reddet
  */
 function handleNoPriceScenario(category: ProductCategory, salesRank: number): PricingResult {
@@ -432,21 +436,11 @@ function handleNoPriceScenario(category: ProductCategory, salesRank: number): Pr
         };
       }
 
-      if (salesRank <= NO_PRICE_BOOK_HIGH_RANK_LIMIT) {
-        return {
-          accepted: true,
-          ourPrice: NO_PRICE_BOOK_HIGH_RANK_PRICE,
-          category: 'books',
-          priceRange: "No price available",
-          rankRange: "1M-1.5M"
-        };
-      }
-
       return {
         accepted: false,
         reason: "DOES NOT MEET OUR PURCHASING CRITERIA",
         category: 'books',
-        rankRange: `> ${NO_PRICE_BOOK_HIGH_RANK_LIMIT.toLocaleString()}`
+        rankRange: `> ${NO_PRICE_BOOK_RANK_LIMIT.toLocaleString()}`
       };
 
     case 'cds':
@@ -585,19 +579,25 @@ if (category === 'games') {
   );
 }
 
-  // BOOKS: NEW fiyat tamamen yok sayilir.
-  // Route'tan bookUsedPrice gelirse onu kullaniriz.
-  // Geriye donuk uyumluluk icin priceType === 'used' ise product.price lowest USED kabul edilir.
-  // USED hic yoksa mevcut no-price kitap kurali ($3 / $0.75) korunur.
+  // BOOKS: Once lowest USED, yoksa lowest NEW kullan.
+  // Iki fiyat da yoksa rank <= 1.5M icin sabit $1.50.
+  // Eski verilerde fiyat sadece priceType + price alaninda olabilir.
   if (category === 'books') {
     const lowestUsedPrice =
       product.bookUsedPrice || (product.priceType === 'used' ? product.price : 0);
 
-    if (!lowestUsedPrice || lowestUsedPrice <= 0) {
-      return handleNoPriceScenario('books', product.sales_rank);
+    if (lowestUsedPrice > 0) {
+      return calculateBookPrice(lowestUsedPrice, product.sales_rank, 'used');
     }
 
-    return calculateBookPrice(lowestUsedPrice, product.sales_rank);
+    const lowestNewPrice =
+      product.priceType === 'new' ? product.price : 0;
+
+    if (lowestNewPrice > 0) {
+      return calculateBookPrice(lowestNewPrice, product.sales_rank, 'new');
+    }
+
+    return handleNoPriceScenario('books', product.sales_rank);
   }
 
   const hasPrice = !!product.price && product.price > 0;
