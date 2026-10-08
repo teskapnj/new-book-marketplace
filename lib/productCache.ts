@@ -2,7 +2,7 @@
 import { db, FieldValue } from '@/lib/firebaseAdmin';
 import admin from 'firebase-admin';
 
-export const CACHE_RULES_VERSION = 2;
+export const CACHE_RULES_VERSION = 3;
 
 // Type definitions for cache
 export interface CachedAmazonProduct {

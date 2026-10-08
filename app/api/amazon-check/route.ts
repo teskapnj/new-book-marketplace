@@ -1282,12 +1282,31 @@ function detectMovieRestriction(product: any, barcode: string): string | null {
 
   // Acik Region 1 / A / Region Free gibi US-compatible kanit varsa
   // "Region 1/2" veya "A/B" gibi multi-region baskilari yanlis reject etme.
-  const regionMatch = searchableText.match(
-    /\b(?:playback\s+)?region(?:\s+code)?\s*[:#-]?\s*(2|3)\b/i
-  );
+  //
+  // US-compatible kanit YOKSA:
+  // DVD Region 2-6 reddedilir.
+  // Blu-ray Region B/C reddedilir.
+  if (!compatibleRegionEvidence) {
+    if (isBluRayMovie(product)) {
+      const bluRayRegionMatch = searchableText.match(
+        /\b(?:playback\s+)?regions?(?:\s+code)?\s*[:#-]?\s*(B|C)\b/i
+      );
 
-  if (regionMatch && !compatibleRegionEvidence) {
-    return `We do not accept Region ${regionMatch[1]} DVDs/Blu-rays.`;
+      if (bluRayRegionMatch) {
+        return (
+          `We do not accept Blu-ray Region ` +
+          `${bluRayRegionMatch[1].toUpperCase()}.`
+        );
+      }
+    } else {
+      const dvdRegionMatch = searchableText.match(
+        /\b(?:playback\s+)?regions?(?:\s+code)?\s*[:#-]?\s*(2|3|4|5|6)\b/i
+      );
+
+      if (dvdRegionMatch) {
+        return `We do not accept DVD Region ${dvdRegionMatch[1]}.`;
+      }
+    }
   }
 
   return null;
@@ -2465,7 +2484,17 @@ export async function POST(request: NextRequest) {
     const image = extractKeepaImage(bestProduct);
     const asin = bestProduct.asin || codeInfo.searchCode;
 
-    const isWweProduct = hasWweIdentity(bestProduct);
+    // WWE ozel fiyat kurali sadece gercek fiziksel film urunlerine uygulanir.
+    // Boylece WWE kitap/CD/game urunleri yanlislikla DVD kuralina girmez.
+    const wweBinding =
+      String(bestProduct?.binding || '')
+        .toLowerCase()
+        .replace(/\s+/g, '');
+
+    const isWweMovie =
+      isPhysicalMovieProduct(bestProduct) &&
+      hasWweIdentity(bestProduct) &&
+      !['vhstape', 'vhs_tape', 'vhs'].includes(wweBinding);
 
     const product: AmazonProduct = {
       title,
@@ -2483,8 +2512,8 @@ export async function POST(request: NextRequest) {
       gameNewPrice: priceAnalysis.gameNewPrice,
       gameUsedPrice: priceAnalysis.gameUsedPrice,
       mediaUsedPrice: priceAnalysis.gameUsedPrice,
-      isWwe: isWweProduct,
-      wweRuleVersion: isWweProduct ? WWE_RULE_VERSION : undefined,
+      isWwe: isWweMovie,
+      wweRuleVersion: isWweMovie ? WWE_RULE_VERSION : undefined,
       gamePlatform: extractKeepaGamePlatform(bestProduct),
       // Keepa format bilgisi -> pricingEngine kategori filtresi icin
       binding: bestProduct.binding || '',
@@ -2501,7 +2530,7 @@ export async function POST(request: NextRequest) {
         reason: mediaRestriction,
         category: 'dvds'
       }
-      : isWweProduct
+      : isWweMovie
         ? calculateWwePricing(priceAnalysis.gameUsedPrice)
         : calculateOurPrice(product);
 

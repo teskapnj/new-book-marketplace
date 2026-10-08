@@ -135,7 +135,7 @@ const USED_ONLY_MEDIA_HIGH_RANK_PRICE = 0.95;
  *   200k-500k    -> %7
  *   500k-1M      -> %6
  *   1M-1.5M      -> %5
- * Lowest USED < $20 -> reject
+ * Lowest USED < $10 -> reject
  * Maximum offer -> $20
  */
 function calculateBookPrice(usedPrice: number, salesRank: number): PricingResult {
@@ -653,9 +653,9 @@ export function testPricingEngine() {
     { title: "Test Book (NEW ignored, USED $30)", image: "", price: 100, sales_rank: 50000, category: "Books", priceType: 'new', bookUsedPrice: 30 },
     { title: "Test CD (new price)", image: "", price: 35, sales_rank: 50000, category: "CDs & Vinyl", priceType: 'new' },
 
-    // BOOKS: lowest USED >= $20; rank bandina gore yuzde.
+    // BOOKS: lowest USED >= $10; rank bandina gore yuzde.
     { title: "Test Book (used $100, rank 800k)", image: "", price: 100, sales_rank: 800000, category: "Books", priceType: 'used', bookUsedPrice: 100 },
-    { title: "Test Book (used under $20)", image: "", price: 15, sales_rank: 100000, category: "Books", priceType: 'used', bookUsedPrice: 15 },
+    { title: "Test Book (used under $10)", image: "", price: 9, sales_rank: 100000, category: "Books", priceType: 'used', bookUsedPrice: 9 },
     { title: "Test Book (used rank too high)", image: "", price: 100, sales_rank: 1600000, category: "Books", priceType: 'used', bookUsedPrice: 100 },
     { title: "Test DVD (used only, rank ok)", image: "", price: 15, sales_rank: 100000, category: "Movies & TV", priceType: 'used' },
     { title: "Test DVD (used only, rank too high)", image: "", price: 15, sales_rank: 200000, category: "Movies & TV", priceType: 'used' },
