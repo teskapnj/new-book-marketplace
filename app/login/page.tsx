@@ -753,7 +753,7 @@ export default function LoginPage() {
           <p>© 2024 SellBook Media. All rights reserved.</p>
           <div className="mt-2 space-x-4">
             <Link href="/terms" className="hover:text-gray-700">Terms</Link>
-            <Link href="/privacy" className="hover:text-gray-700">Privacy</Link>
+            <Link href="/privacy-policy" className="hover:text-gray-700">Privacy</Link>
             <Link href="/help" className="hover:text-gray-700">Help</Link>
           </div>
         </div>
